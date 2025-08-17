@@ -1,0 +1,39 @@
+name: Feature request
+description: Proponer una nueva funcionalidad
+title: "[Feature]: "
+labels: ["type:feature"]
+body:
+  - type: textarea
+    attributes:
+      label: Contexto
+      description: ¿Qué problema resuelve esta función?
+      placeholder: Describe el contexto y la necesidad de esta funcionalidad...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Criterios de aceptación
+      description: Usa formato Given/When/Then si aplica
+      placeholder: |
+        Given [contexto inicial]
+        When [acción del usuario]
+        Then [resultado esperado]
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Prioridad
+      description: Selecciona la prioridad de esta funcionalidad
+      options:
+        - prio:P0
+        - prio:P1
+        - prio:P2
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Información adicional
+      description: Cualquier información adicional, mockups, referencias, etc.
+      placeholder: Enlaces, imágenes, documentos de referencia...
+    validations:
+      required: false

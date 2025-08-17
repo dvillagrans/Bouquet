@@ -1,0 +1,65 @@
+name: Bug report
+description: Reportar un error o comportamiento inesperado
+title: "[Bug]: "
+labels: ["type:bug"]
+body:
+  - type: textarea
+    attributes:
+      label: Descripción del bug
+      description: Una descripción clara y concisa del problema
+      placeholder: Describe qué está pasando...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Pasos para reproducir
+      description: Pasos detallados para reproducir el comportamiento
+      placeholder: |
+        1. Ve a '...'
+        2. Haz clic en '...'
+        3. Desplázate hacia abajo hasta '...'
+        4. Ve el error
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Comportamiento esperado
+      description: Una descripción clara y concisa de lo que esperabas que pasara
+      placeholder: Describe qué debería pasar...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Comportamiento actual
+      description: Una descripción clara y concisa de lo que está pasando actualmente
+      placeholder: Describe qué está pasando en su lugar...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Capturas de pantalla
+      description: Si aplica, agrega capturas de pantalla para ayudar a explicar el problema
+      placeholder: Arrastra y suelta imágenes aquí...
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Información del entorno
+      description: Información sobre el entorno donde ocurre el bug
+      placeholder: |
+        - OS: [ej. iOS]
+        - Navegador: [ej. chrome, safari]
+        - Versión: [ej. 22]
+    validations:
+      required: false
+  - type: dropdown
+    attributes:
+      label: Severidad
+      description: ¿Qué tan crítico es este bug?
+      options:
+        - severity:critical
+        - severity:high
+        - severity:medium
+        - severity:low
+    validations:
+      required: true

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Preguntas generales
+    url: https://github.com/tu-user/tu-repo/discussions
+    about: Usa Discussions para dudas generales y conversaciones abiertas.
+  - name: Documentación
+    url: https://github.com/tu-user/tu-repo/wiki
+    about: Consulta la documentación del proyecto en el Wiki.
+  - name: Soporte técnico
+    url: https://github.com/tu-user/tu-repo/discussions/categories/q-a
+    about: Para preguntas técnicas específicas usa la categoría Q&A en Discussions.

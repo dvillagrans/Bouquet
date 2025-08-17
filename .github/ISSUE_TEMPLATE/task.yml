@@ -1,0 +1,66 @@
+name: Task
+description: Crear una tarea general de desarrollo o mantenimiento
+title: "[Task]: "
+labels: ["type:task"]
+body:
+  - type: textarea
+    attributes:
+      label: Descripción de la tarea
+      description: Una descripción clara de lo que necesita ser hecho
+      placeholder: Describe la tarea que necesita ser completada...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Objetivos
+      description: ¿Qué se espera lograr con esta tarea?
+      placeholder: Lista los objetivos específicos de esta tarea...
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Criterios de finalización
+      description: ¿Cómo sabremos que la tarea está completa?
+      placeholder: |
+        - [ ] Criterio 1
+        - [ ] Criterio 2
+        - [ ] Criterio 3
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Tipo de tarea
+      description: ¿Qué tipo de tarea es esta?
+      options:
+        - task:development
+        - task:maintenance
+        - task:documentation
+        - task:testing
+        - task:deployment
+        - task:research
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Prioridad
+      description: ¿Cuál es la prioridad de esta tarea?
+      options:
+        - prio:P0
+        - prio:P1
+        - prio:P2
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Dependencias
+      description: ¿Esta tarea depende de otras tareas o issues?
+      placeholder: Lista cualquier dependencia o prerequisito...
+    validations:
+      required: false
+  - type: textarea
+    attributes:
+      label: Notas adicionales
+      description: Cualquier información adicional relevante
+      placeholder: Enlaces, referencias, consideraciones especiales...
+    validations:
+      required: false

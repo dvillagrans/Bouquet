@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, ChefHat, QrCode, ArrowRight } from 'lucide-react';
+import { Users, ChefHat, QrCode, ArrowRight, Database } from 'lucide-react';
+import SupabaseTest from './SupabaseTest';
 
 interface HomePageProps {}
 
 export function HomePage({}: HomePageProps) {
   const navigate = useNavigate();
+  const [showSupabaseTest, setShowSupabaseTest] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#f5f3f0] bg-[linear-gradient(rgba(0,0,0,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.05)_1px,transparent_1px)] bg-[size:20px_20px]">
@@ -94,11 +97,27 @@ export function HomePage({}: HomePageProps) {
           </button>
         </div>
 
+        {/* Supabase Test Button */}
+        <div className="mt-8">
+          <button
+            onClick={() => setShowSupabaseTest(true)}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+          >
+            <Database className="h-4 w-4" />
+            Probar Conexión Supabase
+          </button>
+        </div>
+
         {/* Footer */}
         <div className="mt-12 text-center text-gray-500 text-sm">
           <p>© 2024 Bouquet - Sistema de División de Cuentas</p>
         </div>
       </div>
+      
+      {/* Supabase Test Modal */}
+      {showSupabaseTest && (
+        <SupabaseTest onClose={() => setShowSupabaseTest(false)} />
+      )}
     </div>
   );
 }

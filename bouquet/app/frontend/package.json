@@ -11,16 +11,17 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.55.0",
+    "axios": "^1.6.2",
+    "html5-qrcode": "^2.3.8",
+    "lucide-react": "^0.294.0",
+    "qr-scanner": "^1.4.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.1",
-    "axios": "^1.6.2",
-    "zustand": "^4.4.7",
-    "lucide-react": "^0.294.0",
     "sonner": "^1.2.4",
-    "qr-scanner": "^1.4.2",
-    "html5-qrcode": "^2.3.8",
-    "workbox-window": "^7.0.0"
+    "workbox-window": "^7.0.0",
+    "zustand": "^4.4.7"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",

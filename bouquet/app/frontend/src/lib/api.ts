@@ -1,45 +1,8 @@
-import axios, { AxiosResponse } from 'axios'
 import { useState, useEffect } from 'react'
+import { supabase } from './supabase'
+import type { Restaurant, StaffCode, Table, Session, Order } from './supabase'
 
-// Configuración base de axios
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
-
-// Interceptor para requests
-api.interceptors.request.use(
-  (config) => {
-    // Agregar timestamp para evitar cache en PWA
-    if (config.method === 'get') {
-      config.params = {
-        ...config.params,
-        _t: Date.now(),
-      }
-    }
-    return config
-  },
-  (error) => {
-    return Promise.reject(error)
-  }
-)
-
-// Interceptor para responses
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Manejar errores de red en PWA
-    if (!navigator.onLine) {
-      error.message = 'Sin conexión a internet. Verifica tu conexión.'
-    } else if (error.code === 'ECONNABORTED') {
-      error.message = 'Tiempo de espera agotado. Intenta nuevamente.'
-    }
-    return Promise.reject(error)
-  }
-)
+// Configuración para Supabase ya está en supabase.ts
 
 // Tipos TypeScript
 export interface SessionCreate {
@@ -168,124 +131,269 @@ export interface TableJoinRequest {
   join_code: string
 }
 
-// API Functions
+// API Functions usando Supabase
 export const sessionApi = {
-  // Crear nueva sesión
+  // Crear nueva sesión (mock implementation)
   create: async (sessionData: SessionCreate): Promise<Session> => {
-    const response: AxiosResponse<Session> = await api.post('/sessions/', sessionData)
-    return response.data
+    // Mock implementation - en el futuro se implementará con tabla de sesiones
+    const sessionId = crypto.randomUUID()
+    return {
+      id: Date.now(),
+      session_id: sessionId,
+      restaurant_name: sessionData.restaurant_name,
+      waiter_name: sessionData.waiter_name,
+      table_number: sessionData.table_number,
+      status: 'active',
+      total_amount: sessionData.total_amount,
+      tip_percentage: sessionData.tip_percentage,
+      tip_amount: sessionData.total_amount * (sessionData.tip_percentage / 100),
+      items: sessionData.items,
+      participants: [],
+      created_at: new Date().toISOString()
+    }
   },
 
-  // Obtener sesión por ID
+  // Obtener sesión por ID (mock implementation)
   get: async (sessionId: string): Promise<Session> => {
-    const response: AxiosResponse<Session> = await api.get(`/sessions/${sessionId}`)
-    return response.data
+    // Mock implementation
+    throw new Error('Session not found')
   },
 
-  // Unirse a sesión
+  // Unirse a sesión (mock implementation)
   join: async (sessionId: string, participant: ParticipantJoin): Promise<{ message: string; participant_id: string }> => {
-    const response = await api.post(`/sessions/${sessionId}/join`, participant)
-    return response.data
+    return {
+      message: 'Te has unido a la sesión exitosamente',
+      participant_id: crypto.randomUUID()
+    }
   },
 
-  // Calcular división
+  // Calcular división (mock implementation)
   calculateSplit: async (sessionId: string): Promise<{ message: string; participants: Participant[] }> => {
-    const response = await api.put(`/sessions/${sessionId}/calculate`)
-    return response.data
+    return {
+      message: 'División calculada exitosamente',
+      participants: []
+    }
   },
 }
 
 export const paymentApi = {
-  // Procesar pago
+  // Procesar pago (mock implementation)
   process: async (sessionId: string, paymentData: PaymentRequest): Promise<PaymentResponse> => {
-    const response: AxiosResponse<PaymentResponse> = await api.post(`/payments/${sessionId}/pay`, paymentData)
-    return response.data
+    return {
+      payment_id: crypto.randomUUID(),
+      status: 'completed',
+      amount: paymentData.amount,
+      participant_id: paymentData.participant_id,
+      transaction_id: crypto.randomUUID(),
+      message: 'Pago procesado exitosamente'
+    }
   },
 
-  // Obtener estado de pagos
+  // Obtener estado de pagos (mock implementation)
   getStatus: async (sessionId: string): Promise<PaymentStatus> => {
-    const response: AxiosResponse<PaymentStatus> = await api.get(`/payments/${sessionId}/status`)
-    return response.data
+    return {
+      session_id: sessionId,
+      total_amount: 0,
+      total_collected: 0,
+      total_participants: 0,
+      paid_participants: 0,
+      completion_percentage: 0,
+      all_paid: false
+    }
   },
 }
 
-// APIs para sistema de lobby
+// APIs para sistema de lobby usando Supabase
 export const restaurantApi = {
   // Obtener información del restaurante por slug
   getBySlug: async (slug: string): Promise<Restaurant> => {
-    const response: AxiosResponse<Restaurant> = await api.get(`/restaurants/${slug}`)
-    return response.data
+    const { data, error } = await supabase
+      .from('restaurants')
+      .select('*')
+      .eq('slug', slug)
+      .single()
+    
+    if (error) {
+      throw new Error(`Error loading restaurant: ${error.message}`)
+    }
+    
+    return data
   },
 
-  // Obtener menú del restaurante
+  // Obtener menú del restaurante (mock data por ahora)
   getMenu: async (slug: string): Promise<Item[]> => {
-    const response: AxiosResponse<Item[]> = await api.get(`/restaurants/${slug}/menu`)
-    return response.data
+    // Mock data hasta que se implemente la tabla de menú
+    return [
+      { id: '1', name: 'Hamburguesa Clásica', price: 12.99 },
+      { id: '2', name: 'Pizza Margherita', price: 15.50 },
+      { id: '3', name: 'Ensalada César', price: 9.99 },
+      { id: '4', name: 'Pasta Carbonara', price: 13.75 },
+      { id: '5', name: 'Salmón Grillado', price: 18.99 }
+    ]
   },
 }
 
 export const staffApi = {
-  // Validar código de staff
-  validateCode: async (restaurantId: string, code: string): Promise<{ valid: boolean; message: string }> => {
-    const response = await api.post(`/staff/validate-code`, {
-      restaurant_id: restaurantId,
-      code: code
-    })
-    return response.data
+  // Validar código de staff usando función de Supabase
+  validateCode: async (restaurantId: string, code: string): Promise<{ valid: boolean; message: string; code_id?: string }> => {
+    const { data, error } = await supabase
+      .rpc('validate_staff_code', {
+        p_restaurant_id: restaurantId,
+        p_code: code
+      })
+    
+    if (error) {
+      throw new Error(`Error validating staff code: ${error.message}`)
+    }
+    
+    return data[0] || { valid: false, message: 'Código inválido' }
   },
 
   // Generar nuevo código de staff
   generateCode: async (restaurantId: string, staffId: string): Promise<StaffCode> => {
-    const response: AxiosResponse<StaffCode> = await api.post(`/staff/generate-code`, {
-      restaurant_id: restaurantId,
-      staff_id: staffId
-    })
-    return response.data
+    const newCode = Math.floor(1000 + Math.random() * 9000).toString() // Código de 4 dígitos
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 horas
+    
+    const { data, error } = await supabase
+      .from('staff_codes')
+      .insert({
+        restaurant_id: restaurantId,
+        code: newCode,
+        created_by: staffId,
+        expires_at: expiresAt,
+        max_uses: 50
+      })
+      .select()
+      .single()
+    
+    if (error) {
+      throw new Error(`Error generating staff code: ${error.message}`)
+    }
+    
+    return data
   },
 
   // Obtener códigos activos
   getActiveCodes: async (restaurantId: string): Promise<StaffCode[]> => {
-    const response: AxiosResponse<StaffCode[]> = await api.get(`/staff/codes/${restaurantId}`)
-    return response.data
+    const { data, error } = await supabase
+      .from('staff_codes')
+      .select('*')
+      .eq('restaurant_id', restaurantId)
+      .eq('active', true)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      throw new Error(`Error loading staff codes: ${error.message}`)
+    }
+    
+    return data || []
   },
 }
 
 export const tableApi = {
-  // Crear nueva mesa
+  // Crear nueva mesa usando función de Supabase
   create: async (tableData: TableCreate): Promise<Table> => {
-    const response: AxiosResponse<Table> = await api.post('/tables/', tableData)
-    return response.data
-  },
-
-  // Buscar mesa por código de unión
-  findByJoinCode: async (joinCode: string): Promise<Table | null> => {
-    try {
-      const response: AxiosResponse<Table> = await api.get(`/tables/join/${joinCode}`)
-      return response.data
-    } catch (error: any) {
-      if (error.response?.status === 404) {
-        return null
-      }
-      throw error
+    const { data, error } = await supabase
+      .rpc('create_table', {
+        p_restaurant_id: tableData.restaurant_id,
+        p_staff_code: tableData.staff_code,
+        p_leader_name: tableData.leader_name,
+        p_table_number: tableData.table_number || null
+      })
+    
+    if (error) {
+      throw new Error(`Error creating table: ${error.message}`)
     }
+    
+    const result = data[0]
+    if (!result.success) {
+      throw new Error(result.message)
+    }
+    
+    // Obtener la mesa creada
+    const { data: tableData2, error: tableError } = await supabase
+      .from('tables')
+      .select('*')
+      .eq('id', result.table_id)
+      .single()
+    
+    if (tableError) {
+      throw new Error(`Error loading created table: ${tableError.message}`)
+    }
+    
+    return tableData2
   },
 
-  // Unirse a mesa
+  // Buscar mesa por código de unión usando función de Supabase
+  findByJoinCode: async (joinCode: string): Promise<Table | null> => {
+    const { data, error } = await supabase
+      .rpc('find_table_by_join_code', {
+        p_join_code: joinCode
+      })
+    
+    if (error) {
+      throw new Error(`Error finding table: ${error.message}`)
+    }
+    
+    return data && data.length > 0 ? data[0] : null
+  },
+
+  // Unirse a mesa (mock implementation)
   join: async (joinCode: string, participantData: ParticipantJoin): Promise<{ message: string; table_id: string; participant_id: string }> => {
-    const response = await api.post(`/tables/join/${joinCode}`, participantData)
-    return response.data
+    const table = await tableApi.findByJoinCode(joinCode)
+    
+    if (!table) {
+      throw new Error('Mesa no encontrada')
+    }
+    
+    // Incrementar contador de participantes
+    const { error } = await supabase
+      .from('tables')
+      .update({ 
+        participant_count: table.participant_count + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', table.id)
+    
+    if (error) {
+      throw new Error(`Error joining table: ${error.message}`)
+    }
+    
+    return {
+      message: 'Te has unido a la mesa exitosamente',
+      table_id: table.id,
+      participant_id: crypto.randomUUID()
+    }
   },
 
   // Obtener información de mesa
   get: async (tableId: string): Promise<Table> => {
-    const response: AxiosResponse<Table> = await api.get(`/tables/${tableId}`)
-    return response.data
+    const { data, error } = await supabase
+      .from('tables')
+      .select('*')
+      .eq('id', tableId)
+      .single()
+    
+    if (error) {
+      throw new Error(`Error loading table: ${error.message}`)
+    }
+    
+    return data
   },
 
-  // Cerrar mesa
+  // Cerrar mesa usando función de Supabase
   close: async (tableId: string): Promise<{ message: string }> => {
-    const response = await api.put(`/tables/${tableId}/close`)
-    return response.data
+    const { data, error } = await supabase
+      .rpc('close_table', {
+        p_table_id: tableId
+      })
+    
+    if (error) {
+      throw new Error(`Error closing table: ${error.message}`)
+    }
+    
+    return { message: 'Mesa cerrada exitosamente' }
   },
 }
 
@@ -414,4 +522,5 @@ export const cachedRequest = async <T>(
   return data
 }
 
-export default api
+// Exportar funciones principales
+export { supabase } from './supabase'

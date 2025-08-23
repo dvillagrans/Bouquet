@@ -10,14 +10,28 @@ load_dotenv()
 # Database URL
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://postgres:password@localhost:5432/bouquet"
+    "sqlite:///./bouquet.db"
 )
 
-# Async database URL
-ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
-
-# Create async engine
-engine = create_async_engine(ASYNC_DATABASE_URL, echo=True)
+# Create engine (sync for SQLite, async for PostgreSQL)
+if DATABASE_URL.startswith("sqlite"):
+    # SQLite sync engine
+    from sqlalchemy import create_engine
+    engine = create_engine(DATABASE_URL, echo=True)
+    from sqlalchemy.orm import sessionmaker
+    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    
+    # Dependency to get database session (sync)
+    def get_db():
+        db = SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+else:
+    # PostgreSQL async engine
+    ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+    engine = create_async_engine(ASYNC_DATABASE_URL, echo=True)
 
 # Create async session
 AsyncSessionLocal = sessionmaker(
@@ -37,7 +51,12 @@ async def get_db():
 
 # Initialize database
 async def init_db():
-    async with engine.begin() as conn:
-        # Import all models here to ensure they are registered
+    if DATABASE_URL.startswith("sqlite"):
+        # SQLite sync initialization
         from models import session  # noqa
-        await conn.run_sync(Base.metadata.create_all)
+        Base.metadata.create_all(bind=engine)
+    else:
+        # PostgreSQL async initialization
+        async with engine.begin() as conn:
+            from models import session  # noqa
+            await conn.run_sync(Base.metadata.create_all)

@@ -14,7 +14,7 @@ import {
   Activity
 } from 'lucide-react'
 import { RealTimeOrders, type OrderNotification } from './RealTimeOrders'
-import useWebSocket from '../hooks/useWebSocket'
+import { useWebSocketContext } from '../contexts/WebSocketContext'
 
 export interface TableSession {
   id: string
@@ -57,11 +57,7 @@ export const WaiterDashboard: React.FC<WaiterDashboardProps> = ({
   const [recentOrdersCount, setRecentOrdersCount] = useState(0)
   
   // WebSocket para actualizaciones en tiempo real
-  const { isConnected } = useWebSocket({
-    onConnect: () => {
-      console.log('Dashboard conectado a WebSocket')
-    }
-  })
+  const { isConnected } = useWebSocketContext()
 
   // Copiar código al portapapeles
   const copyCode = async (code: string) => {

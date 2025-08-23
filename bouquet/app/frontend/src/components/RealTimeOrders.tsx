@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import useWebSocket, { type WebSocketMessage } from '../hooks/useWebSocket'
+import { useWebSocketContext, type WebSocketMessage } from '../contexts/WebSocketContext'
 import { 
   Bell, 
   AlertCircle,
@@ -42,21 +42,30 @@ export const RealTimeOrders: React.FC<RealTimeOrdersProps> = ({
     subscribe,
     updateOrderStatus,
     joinTable
-  } = useWebSocket({
-    onConnect: () => {
+  } = useWebSocketContext()
+
+  // Efectos para manejar eventos de conexión
+  useEffect(() => {
+    if (isConnected) {
       toast.success('Conectado al sistema en tiempo real')
       // Unirse a todas las mesas activas
       activeTables.forEach(tableId => {
         joinTable(tableId, 'waiter')
       })
-    },
-    onDisconnect: () => {
+    }
+  }, [isConnected, activeTables, joinTable])
+
+  useEffect(() => {
+    if (!isConnected && connectionStatus === 'disconnected') {
       toast.warning('Desconectado del sistema en tiempo real')
-    },
-    onError: () => {
+    }
+  }, [isConnected, connectionStatus])
+
+  useEffect(() => {
+    if (connectionStatus === 'error') {
       toast.error('Error en la conexión en tiempo real')
     }
-  })
+  }, [connectionStatus])
 
   // Manejar nuevos pedidos
   useEffect(() => {

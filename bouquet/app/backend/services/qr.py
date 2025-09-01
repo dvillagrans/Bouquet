@@ -62,7 +62,7 @@ def generate_qr_code(
 
 def generate_session_qr(
     session_id: str,
-    base_url: str = "http://localhost:5173",
+    base_url: str = "http://localhost:5174",
     custom_params: Optional[dict] = None
 ) -> str:
     """Generar QR específico para sesiones de split-bill"""
@@ -88,7 +88,7 @@ def generate_payment_qr(
     session_id: str,
     participant_id: str,
     amount: float,
-    base_url: str = "http://localhost:5173"
+    base_url: str = "http://localhost:5174"
 ) -> str:
     """Generar QR para pago directo de un participante"""
     
@@ -105,7 +105,7 @@ def generate_payment_qr(
 
 def generate_receipt_qr(
     session_id: str,
-    base_url: str = "http://localhost:5173"
+    base_url: str = "http://localhost:5174"
 ) -> str:
     """Generar QR para ver recibo/resumen de la sesión"""
     

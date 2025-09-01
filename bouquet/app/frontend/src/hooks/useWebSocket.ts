@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useWebSocketContext, type WebSocketMessage } from '../contexts/WebSocketContext'
+import { useWebSocketContext } from '../contexts/WebSocketContext'
 
 export interface WebSocketConfig {
   onConnect?: () => void

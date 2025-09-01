@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { 
@@ -57,7 +57,49 @@ export const WaiterDashboard: React.FC<WaiterDashboardProps> = ({
   const [recentOrdersCount, setRecentOrdersCount] = useState(0)
   
   // WebSocket para actualizaciones en tiempo real
-  const { isConnected } = useWebSocketContext()
+  const { isConnected, messageHistory } = useWebSocketContext()
+
+  // Escuchar eventos de participantes que se unen
+  useEffect(() => {
+    const latestMessage = messageHistory[messageHistory.length - 1]
+    if (latestMessage && latestMessage.type === 'participant_joined') {
+      const { participantName, tableName, joinTime, tableCode } = latestMessage.data
+      const { tableId } = latestMessage
+      
+      // Actualizar la mesa correspondiente
+      const updatedTables = activeTables.map(table => {
+        if (table.id === tableId || table.join_code === tableCode) {
+          return {
+            ...table,
+            participants_count: table.participants_count + 1,
+            last_activity: joinTime
+          }
+        }
+        return table
+      })
+      
+      // Si la mesa no existe en activeTables, crear una nueva entrada
+      const existingTable = activeTables.find(table => table.id === tableId || table.join_code === tableCode)
+      if (!existingTable) {
+        const newTable: TableSession = {
+          id: tableId,
+          table_number: tableName || `Mesa ${tableCode}`,
+          join_code: tableCode,
+          created_at: joinTime,
+          participants_count: 1,
+          total_amount: 0,
+          status: 'active',
+          last_activity: joinTime,
+          recent_orders: [],
+          notifications: 0
+        }
+        updatedTables.push(newTable)
+      }
+      
+      onTableUpdate(updatedTables)
+      toast.success(`${participantName} se unió a la mesa ${tableName || tableCode}`)
+    }
+  }, [messageHistory, activeTables, onTableUpdate])
 
   // Copiar código al portapapeles
   const copyCode = async (code: string) => {

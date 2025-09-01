@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback, ReactNode } from 'react'
-import { toast } from 'sonner'
 
 export interface WebSocketMessage {
   type: 'table_update' | 'new_order' | 'participant_joined' | 'participant_left' | 'order_status_change'
@@ -34,13 +33,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   children,
   url = 'ws://localhost:8000/ws',
   reconnectInterval = 3000,
-  maxReconnectAttempts = 5
+  maxReconnectAttempts = 3
 }) => {
   const [isConnected, setIsConnected] = useState(false)
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected')
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null)
   const [messageHistory, setMessageHistory] = useState<WebSocketMessage[]>([])
-  
+
   const ws = useRef<WebSocket | null>(null)
   const reconnectAttempts = useRef(0)
   const reconnectTimeout = useRef<number | null>(null)
@@ -55,64 +54,89 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
     isConnecting.current = true
     setConnectionStatus('connecting')
-    
+
     try {
+      console.log('🔗 Intentando conectar WebSocket a:', url)
       ws.current = new WebSocket(url)
-      
+
+      // Timeout para conexión
+      const connectionTimeout = setTimeout(() => {
+        if (ws.current?.readyState === WebSocket.CONNECTING) {
+          console.warn('⏰ WebSocket timeout - cerrando conexión')
+          ws.current?.close()
+          isConnecting.current = false
+          setConnectionStatus('error')
+        }
+      }, 5000) // 5 segundos es suficiente
+
       ws.current.onopen = () => {
+        clearTimeout(connectionTimeout)
         isConnecting.current = false
         setIsConnected(true)
         setConnectionStatus('connected')
         reconnectAttempts.current = 0
-        console.log('WebSocket conectado (contexto compartido)')
+        console.log('✅ WebSocket conectado exitosamente')
+
+        // Enviar ping de prueba
+        try {
+          ws.current?.send(JSON.stringify({ type: 'ping', timestamp: new Date().toISOString() }))
+        } catch (e) {
+          console.warn('No se pudo enviar ping inicial:', e)
+        }
       }
-      
+
       ws.current.onmessage = (event) => {
         try {
+          console.log('📥 Mensaje WebSocket recibido:', event.data)
           const message: WebSocketMessage = JSON.parse(event.data)
           setLastMessage(message)
           setMessageHistory(prev => [...prev.slice(-49), message])
-          
+
           // Notificar a todos los suscriptores del tipo de mensaje
           const listeners = messageListeners.current.get(message.type)
           if (listeners) {
             listeners.forEach(listener => listener(message))
           }
-          
+
         } catch (error) {
           console.error('Error parsing WebSocket message:', error)
         }
       }
-      
-      ws.current.onclose = () => {
+
+      ws.current.onclose = (event) => {
+        clearTimeout(connectionTimeout)
         isConnecting.current = false
         setIsConnected(false)
         setConnectionStatus('disconnected')
-        console.log('WebSocket desconectado (contexto compartido)')
-        
-        if (reconnectAttempts.current < maxReconnectAttempts) {
+
+        console.log(`🔌 WebSocket cerrado: código ${event.code} (${event.reason || 'sin razón'})`)
+
+        // Solo intentar reconectar si no fue un cierre intencional y el servidor puede estar disponible
+        if (event.code !== 1000 && event.code !== 1001 && reconnectAttempts.current < maxReconnectAttempts) {
           reconnectAttempts.current++
-          console.log(`Intentando reconectar... (${reconnectAttempts.current}/${maxReconnectAttempts})`)
-          
+          const backoffTime = reconnectInterval * Math.pow(2, reconnectAttempts.current - 1)
+          console.log(`🔄 Intentando reconectar en ${backoffTime}ms... (${reconnectAttempts.current}/${maxReconnectAttempts})`)
+
           reconnectTimeout.current = window.setTimeout(() => {
             connect()
-          }, reconnectInterval)
-        } else {
+          }, backoffTime)
+        } else if (event.code !== 1000 && event.code !== 1001) {
           setConnectionStatus('error')
-          toast.error('No se pudo conectar al servidor en tiempo real')
+          console.warn('❌ WebSocket: Máximo de intentos alcanzado. Funcionando en modo sin tiempo real.')
         }
       }
-      
+
       ws.current.onerror = (error) => {
+        clearTimeout(connectionTimeout)
         isConnecting.current = false
-        setConnectionStatus('error')
-        console.error('WebSocket error (contexto compartido):', error)
+        console.warn('⚠️ WebSocket error (será manejado por onclose):', error.type)
+        // Dejar que onclose maneje el estado y reconexión
       }
-      
+
     } catch (error) {
       isConnecting.current = false
       setConnectionStatus('error')
-      console.error('Error creating WebSocket:', error)
+      console.error('💥 Error creando WebSocket:', error)
     }
   }, [url, reconnectInterval, maxReconnectAttempts])
 
@@ -122,12 +146,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       clearTimeout(reconnectTimeout.current)
       reconnectTimeout.current = null
     }
-    
+
     if (ws.current) {
       ws.current.close()
       ws.current = null
     }
-    
+
     isConnecting.current = false
     setIsConnected(false)
     setConnectionStatus('disconnected')
@@ -143,7 +167,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         timestamp: new Date().toISOString(),
         ...message
       }
-      
+
       ws.current.send(JSON.stringify(fullMessage))
       return true
     } else {
@@ -157,10 +181,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     if (!messageListeners.current.has(messageType)) {
       messageListeners.current.set(messageType, new Set())
     }
-    
+
     const listeners = messageListeners.current.get(messageType)!
     listeners.add(callback)
-    
+
     return () => {
       listeners.delete(callback)
       if (listeners.size === 0) {
@@ -209,7 +233,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   useEffect(() => {
     console.log('WebSocketProvider montado - iniciando conexión única')
     connect()
-    
+
     return () => {
       console.log('WebSocketProvider desmontado - cerrando conexión')
       disconnect()

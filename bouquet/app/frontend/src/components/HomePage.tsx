@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Users, ChefHat, QrCode, ArrowRight, Database } from 'lucide-react';
 import SupabaseTest from './SupabaseTest';
 
-interface HomePageProps {}
+interface HomePageProps { }
 
-export function HomePage({}: HomePageProps) {
+export function HomePage({ }: HomePageProps) {
   const navigate = useNavigate();
   const [showSupabaseTest, setShowSupabaseTest] = useState(false);
 
@@ -23,7 +23,7 @@ export function HomePage({}: HomePageProps) {
         {/* Main Options */}
         <div className="max-w-4xl w-full grid md:grid-cols-3 gap-6 mb-8">
           {/* Mesero Option */}
-          <div 
+          <div
             onClick={() => navigate('/waiter')}
             className="bg-white/80 backdrop-blur-sm rounded-xl p-8 shadow-soft border border-[#8B4B6B]/20 hover:border-[#8B4B6B]/40 hover:shadow-medium transition-all cursor-pointer group"
           >
@@ -43,7 +43,7 @@ export function HomePage({}: HomePageProps) {
           </div>
 
           {/* Cliente Option */}
-          <div 
+          <div
             onClick={() => navigate('/restaurant/demo')}
             className="bg-white/80 backdrop-blur-sm rounded-xl p-8 shadow-soft border border-[#8B4B6B]/20 hover:border-[#8B4B6B]/40 hover:shadow-medium transition-all cursor-pointer group"
           >
@@ -63,7 +63,7 @@ export function HomePage({}: HomePageProps) {
           </div>
 
           {/* Código Option */}
-          <div 
+          <div
             onClick={() => navigate('/join')}
             className="bg-white/80 backdrop-blur-sm rounded-xl p-8 shadow-soft border border-[#8B4B6B]/20 hover:border-[#8B4B6B]/40 hover:shadow-medium transition-all cursor-pointer group"
           >
@@ -89,7 +89,7 @@ export function HomePage({}: HomePageProps) {
           <p className="text-gray-600 text-sm mb-4">
             Prueba nuestra demo interactiva para ver cómo funciona el sistema de división de cuentas
           </p>
-          <button 
+          <button
             onClick={() => navigate('/restaurant/demo')}
             className="bg-[#8B4B6B] text-white px-6 py-2 rounded-lg hover:bg-[#7A4159] transition-colors text-sm font-medium"
           >
@@ -97,23 +97,56 @@ export function HomePage({}: HomePageProps) {
           </button>
         </div>
 
-        {/* Supabase Test Button */}
-        <div className="mt-8">
-          <button
-            onClick={() => setShowSupabaseTest(true)}
-            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-          >
-            <Database className="h-4 w-4" />
-            Probar Conexión Supabase
-          </button>
+        {/* Debug Navigation Buttons */}
+        <div className="mt-8 p-6 bg-white/80 backdrop-blur-sm rounded-xl shadow-soft border border-red-200">
+          <h3 className="text-lg font-semibold text-red-600 mb-4 text-center">🔧 Herramientas de Debugging</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <button
+              onClick={() => navigate('/waiter')}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors font-medium"
+            >
+              Página Waiter
+            </button>
+            <button
+              onClick={() => navigate('/websocket-test')}
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-purple-700 transition-colors font-medium"
+            >
+              WebSocket Test
+            </button>
+            <button
+              onClick={() => navigate('/simple-ws-test')}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700 transition-colors font-medium"
+            >
+              Simple WS Test
+            </button>
+            <button
+              onClick={() => navigate('/diagnostic')}
+              className="bg-orange-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-orange-700 transition-colors font-medium"
+            >
+              Diagnostic
+            </button>
+            <button
+              onClick={() => navigate('/ws-test')}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors font-medium"
+            >
+              WS Test
+            </button>
+            <button
+              onClick={() => setShowSupabaseTest(true)}
+              className="bg-green-800 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-900 transition-colors font-medium flex items-center justify-center gap-2"
+            >
+              <Database className="h-4 w-4" />
+              Supabase
+            </button>
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="mt-12 text-center text-gray-500 text-sm">
+        <div className="mt-8 text-center text-gray-500 text-sm">
           <p>© 2024 Bouquet - Sistema de División de Cuentas</p>
         </div>
       </div>
-      
+
       {/* Supabase Test Modal */}
       {showSupabaseTest && (
         <SupabaseTest onClose={() => setShowSupabaseTest(false)} />

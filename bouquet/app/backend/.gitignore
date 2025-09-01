@@ -129,6 +129,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+bouquet/
 
 # Spyder project settings
 .spyderproject
@@ -164,16 +165,25 @@ cython_debug/
 *.db
 *.sqlite
 *.sqlite3
+instance/
 
 # Alembic
 alembic/versions/*.py
 !alembic/versions/__init__.py
+
+# Uvicorn
+uvicorn.log
+
+# SQLAlchemy
+*.db-wal
+*.db-shm
 
 # Local development
 .env.local
 .env.development
 .env.test
 .env.production
+.env.staging
 
 # Database
 *.db-journal
@@ -185,6 +195,9 @@ logs/
 # Temporary files
 *.tmp
 *.temp
+*.swp
+*.swo
+*~
 
 # IDE
 .vscode/

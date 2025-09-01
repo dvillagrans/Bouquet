@@ -2,6 +2,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from typing import List, Dict
 import json
 import logging
+import asyncio
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -246,4 +247,3 @@ async def handle_websocket_message(websocket: WebSocket, message: dict):
         }, websocket)
 
 # Import asyncio for background tasks
-import asyncio

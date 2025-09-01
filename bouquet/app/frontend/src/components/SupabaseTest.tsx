@@ -21,7 +21,7 @@ const SupabaseTest: React.FC<SupabaseTestProps> = ({ onClose }) => {
       
       // Test 1: Verificar conexión básica
       addResult('📡 Probando conexión básica...')
-      const { data, error: connectionError } = await supabase
+      const { error: connectionError } = await supabase
         .from('restaurants')
         .select('count')
         .limit(1)

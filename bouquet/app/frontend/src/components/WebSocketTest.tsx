@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Alert, AlertDescription } from './ui/alert'
 import { Wifi, WifiOff, Send, Trash2 } from 'lucide-react'
 
 const WebSocketTest = () => {
@@ -112,11 +112,11 @@ const WebSocketTest = () => {
     const getStatusBadge = () => {
         switch (status) {
             case 'connected':
-                return <Badge variant="success"><Wifi className="h-3 w-3 mr-1" />Conectado</Badge>
+                return <Badge variant="default"><Wifi className="h-3 w-3 mr-1" />Conectado</Badge>
             case 'connecting':
-                return <Badge variant="warning">Conectando...</Badge>
+                return <Badge variant="secondary">Conectando...</Badge>
             case 'error':
-                return <Badge variant="error"><WifiOff className="h-3 w-3 mr-1" />Error</Badge>
+                return <Badge variant="destructive"><WifiOff className="h-3 w-3 mr-1" />Error</Badge>
             default:
                 return <Badge variant="secondary"><WifiOff className="h-3 w-3 mr-1" />Desconectado</Badge>
         }

@@ -1,13 +1,10 @@
 import { useState } from 'react'
-import { toast } from 'sonner'
-import { QrCode, Users, MapPin, Clock, Sparkles } from 'lucide-react'
+import { useToast } from './ui/use-toast'
+import { QrCode, MapPin, Clock, Sparkles } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Input } from './ui/input'
-import { Label } from './ui/label'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
-import { Separator } from './ui/separator'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 
 interface TableCodeGeneratorProps {
   onCodeGenerated?: (tableNumber: string) => void
@@ -20,6 +17,7 @@ export const TableCodeGenerator: React.FC<TableCodeGeneratorProps> = ({
   loading = false,
   className = ''
 }) => {
+  const { toast } = useToast()
   const [tableNumber, setTableNumber] = useState('')
   const [tableZone, setTableZone] = useState('salon')
   const [maxCapacity, setMaxCapacity] = useState('4')
@@ -29,7 +27,8 @@ export const TableCodeGenerator: React.FC<TableCodeGeneratorProps> = ({
     const newTableNumber = tableNumber || `${zonePrefix}-${Math.floor(Math.random() * 50) + 1}`
 
     onCodeGenerated?.(newTableNumber)
-    toast.success(`Creando mesa: ${newTableNumber}`, {
+    toast({
+      title: `Creando mesa: ${newTableNumber}`,
       description: `Zona: ${tableZone} • Capacidad: ${maxCapacity} personas`
     })
   }
@@ -65,41 +64,27 @@ export const TableCodeGenerator: React.FC<TableCodeGeneratorProps> = ({
       <CardContent className="space-y-6">
         {/* Zona de la mesa */}
         <div className="space-y-2">
-          <Label htmlFor="zone" className="text-sm font-medium">
+          <label htmlFor="zone" className="text-sm font-medium">
             Zona del restaurante
-          </Label>
-          <Select value={tableZone} onValueChange={setTableZone}>
-            <SelectTrigger id="zone">
-              <SelectValue placeholder="Selecciona una zona" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="salon">
-                <div className="flex items-center gap-2">
-                  <span>🪑</span>
-                  <span>Salón Principal</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="terraza">
-                <div className="flex items-center gap-2">
-                  <span>🌿</span>
-                  <span>Terraza</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="bar">
-                <div className="flex items-center gap-2">
-                  <span>🍺</span>
-                  <span>Zona de Bar</span>
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          </label>
+          <select 
+            id="zone" 
+            value={tableZone} 
+            onChange={(e) => setTableZone(e.target.value)}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="">Selecciona una zona</option>
+            <option value="salon">🪑 Salón Principal</option>
+            <option value="terraza">🌿 Terraza</option>
+            <option value="bar">🍺 Zona de Bar</option>
+          </select>
         </div>
 
         {/* Número de mesa */}
         <div className="space-y-2">
-          <Label htmlFor="table-number" className="text-sm font-medium">
+          <label htmlFor="table-number" className="text-sm font-medium">
             Identificador de Mesa
-          </Label>
+          </label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -118,43 +103,24 @@ export const TableCodeGenerator: React.FC<TableCodeGeneratorProps> = ({
 
         {/* Capacidad máxima */}
         <div className="space-y-2">
-          <Label htmlFor="capacity" className="text-sm font-medium">
+          <label htmlFor="capacity" className="text-sm font-medium">
             Capacidad máxima
-          </Label>
-          <Select value={maxCapacity} onValueChange={setMaxCapacity}>
-            <SelectTrigger id="capacity">
-              <SelectValue placeholder="Número de comensales" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="2">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <span>2 personas</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="4">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <span>4 personas</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="6">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <span>6 personas</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="8">
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <span>8+ personas</span>
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          </label>
+          <select 
+            id="capacity" 
+            value={maxCapacity} 
+            onChange={(e) => setMaxCapacity(e.target.value)}
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <option value="">Número de comensales</option>
+            <option value="2">👥 2 personas</option>
+            <option value="4">👥 4 personas</option>
+            <option value="6">👥 6 personas</option>
+            <option value="8">👥 8+ personas</option>
+          </select>
         </div>
 
-        <Separator />
+        <div className="border-t my-4"></div>
 
         {/* Botón principal */}
         <Button

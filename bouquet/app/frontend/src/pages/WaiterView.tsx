@@ -9,7 +9,7 @@ import { Plus, ChefHat, Wifi } from 'lucide-react'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge'
-import { Separator } from '../components/ui/separator'
+
 
 const WaiterView = () => {
   const [loading, setLoading] = useState(false)
@@ -190,7 +190,7 @@ const WaiterView = () => {
           </div>
         )}
 
-        <Separator className="my-6" />
+        <div className="border-t border-gray-200 my-6" />
 
         {/* Dashboard principal */}
         <WaiterDashboard

@@ -1,6 +1,6 @@
 import { useWebSocketContext } from '@/contexts/WebSocketContext'
 import { Wifi, WifiOff, AlertCircle } from 'lucide-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Alert, AlertDescription } from './ui/alert'
 
 interface ConnectionStatusProps {
     showDetails?: boolean
@@ -28,7 +28,7 @@ export const ConnectionStatus = ({ showDetails = false }: ConnectionStatusProps)
 
     // Modo detallado para mostrar en componentes
     return (
-        <Alert variant="warning" className="mb-4">
+        <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
                 <div className="flex items-center gap-2">

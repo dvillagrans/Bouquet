@@ -41,9 +41,9 @@ const ShadcnShowcase = () => {
                     <div className="flex flex-wrap gap-2">
                         <Button>Primario</Button>
                         <Button variant="secondary">Secundario</Button>
-                        <Button variant="success">Éxito</Button>
-                        <Button variant="warning">Advertencia</Button>
-                        <Button variant="error">Error</Button>
+                        <Button variant="default">Éxito</Button>
+                        <Button variant="outline">Advertencia</Button>
+                        <Button variant="destructive">Error</Button>
                         <Button variant="outline">Outline</Button>
                         <Button variant="ghost">Ghost</Button>
                     </div>
@@ -75,7 +75,7 @@ const ShadcnShowcase = () => {
                         </p>
                     </CardContent>
                     <CardFooter>
-                        <Badge variant="success">Activa</Badge>
+                        <Badge variant="default">Activa</Badge>
                     </CardFooter>
                 </Card>
 
@@ -93,7 +93,7 @@ const ShadcnShowcase = () => {
                         </p>
                     </CardContent>
                     <CardFooter>
-                        <Badge variant="warning">Pendiente</Badge>
+                        <Badge variant="secondary">Pendiente</Badge>
                     </CardFooter>
                 </Card>
 
@@ -115,7 +115,7 @@ const ShadcnShowcase = () => {
             <div className="space-y-4">
                 <h2 className="text-xl font-semibold">Alertas</h2>
 
-                <Alert variant="success">
+                <Alert variant="default">
                     <CheckCircle className="h-4 w-4" />
                     <AlertTitle>¡Orden completada!</AlertTitle>
                     <AlertDescription>
@@ -123,7 +123,7 @@ const ShadcnShowcase = () => {
                     </AlertDescription>
                 </Alert>
 
-                <Alert variant="warning">
+                <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Atención requerida</AlertTitle>
                     <AlertDescription>
@@ -131,7 +131,7 @@ const ShadcnShowcase = () => {
                     </AlertDescription>
                 </Alert>
 
-                <Alert variant="info">
+                <Alert variant="default">
                     <Info className="h-4 w-4" />
                     <AlertTitle>Nueva característica</AlertTitle>
                     <AlertDescription>
@@ -216,9 +216,9 @@ const ShadcnShowcase = () => {
                     <div className="flex flex-wrap gap-2">
                         <Badge>Default</Badge>
                         <Badge variant="secondary">Secundario</Badge>
-                        <Badge variant="success">Disponible</Badge>
-                        <Badge variant="warning">En espera</Badge>
-                        <Badge variant="error">Agotado</Badge>
+                        <Badge variant="default">Disponible</Badge>
+                        <Badge variant="outline">En espera</Badge>
+                         <Badge variant="destructive">Agotado</Badge>
                         <Badge variant="outline">Outline</Badge>
                     </div>
                 </CardContent>

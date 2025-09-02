@@ -118,11 +118,11 @@ const SimpleWebSocketTest = () => {
     const getStatusBadge = () => {
         switch (status) {
             case 'connected':
-                return <Badge variant="success">Conectado</Badge>
+                return <Badge variant="default">Conectado</Badge>
             case 'connecting':
-                return <Badge variant="warning">Conectando...</Badge>
+                return <Badge variant="secondary">Conectando...</Badge>
             case 'error':
-                return <Badge variant="error">Error</Badge>
+                return <Badge variant="destructive">Error</Badge>
             default:
                 return <Badge variant="secondary">Desconectado</Badge>
         }

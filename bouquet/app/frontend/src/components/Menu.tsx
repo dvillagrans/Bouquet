@@ -1,4 +1,7 @@
 import { Home, User, ShoppingCart } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 type Category = 'drinks' | 'breakfast' | 'appetizers' | 'dishes' | 'desserts'
 
@@ -71,26 +74,30 @@ export function Menu({ category, onBack, onAddToBasket, onViewBasket, basketCoun
         </div>
         
         <div className="flex space-x-2">
-          <button 
+          <Button 
+            variant="ghost" 
+            size="icon" 
             onClick={onBack}
-            className="w-8 h-8 bg-[#8B4B6B]/20 rounded-full flex items-center justify-center hover:bg-[#8B4B6B]/30 transition-colors"
+            className="w-8 h-8 bg-[#8B4B6B]/20 hover:bg-[#8B4B6B]/30 text-[#8B4B6B]"
           >
-            <Home className="w-4 h-4 text-[#8B4B6B]" />
-          </button>
-          <div className="w-8 h-8 bg-[#8B4B6B]/20 rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-[#8B4B6B]" />
-          </div>
-          <button 
+            <Home className="w-4 h-4" />
+          </Button>
+          <Button variant="ghost" size="icon" className="w-8 h-8 bg-[#8B4B6B]/20 hover:bg-[#8B4B6B]/30 text-[#8B4B6B]">
+            <User className="w-4 h-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
             onClick={onViewBasket}
-            className="relative w-8 h-8 bg-[#8B4B6B]/20 rounded-full flex items-center justify-center hover:bg-[#8B4B6B]/30 transition-colors"
+            className="relative w-8 h-8 bg-[#8B4B6B]/20 hover:bg-[#8B4B6B]/30 text-[#8B4B6B]"
           >
-            <ShoppingCart className="w-4 h-4 text-[#8B4B6B]" />
+            <ShoppingCart className="w-4 h-4" />
             {basketCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
                 {basketCount}
-              </span>
+              </Badge>
             )}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -104,25 +111,29 @@ export function Menu({ category, onBack, onAddToBasket, onViewBasket, basketCoun
       <div className="max-w-2xl mx-auto">
         <div className="grid gap-4">
           {items.map((item) => (
-            <div 
+            <Card 
               key={item.id}
-              className="bg-white/80 backdrop-blur-sm rounded-lg p-4 shadow-sm border border-[#8B4B6B]/20 flex items-center justify-between"
+              className="bg-white/80 backdrop-blur-sm border-[#8B4B6B]/20"
             >
-              <div className="flex-1">
-                <h3 className="text-[#8B4B6B] font-medium">{item.name}</h3>
-                {item.description && (
-                  <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                )}
-                <p className="text-lg font-medium text-gray-800 mt-2">${item.price.toFixed(2)}</p>
-              </div>
-              
-              <button
-                onClick={() => onAddToBasket(item)}
-                className="bg-[#8B4B6B] text-white px-4 py-2 rounded-lg hover:bg-[#7A4159] transition-colors ml-4"
-              >
-                Agregar
-              </button>
-            </div>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-[#8B4B6B] font-medium">{item.name}</CardTitle>
+                    {item.description && (
+                      <CardDescription className="text-sm text-gray-600 mt-1">{item.description}</CardDescription>
+                    )}
+                    <p className="text-lg font-medium text-gray-800 mt-2">${item.price.toFixed(2)}</p>
+                  </div>
+                  
+                  <Button
+                    onClick={() => onAddToBasket(item)}
+                    className="bg-[#8B4B6B] hover:bg-[#7A4159] text-white ml-4"
+                  >
+                    Agregar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       </div>

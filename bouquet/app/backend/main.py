@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api import sessions, payments, webhooks, restaurants, staff, tables
+from api import sessions, payments, webhooks, restaurants, staff, tables, websockets
 from db import init_db
 
 app = FastAPI(
@@ -13,10 +13,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",  # Frontend Vite dev server
-        "http://localhost:5174",  # Frontend Vite dev server alternativo
-        "https://localhost:5173",
-        "https://localhost:5174"
+                "http://localhost:5174",  # Frontend Vite dev server
+        "http://127.0.0.1:5174",
+        "https://localhost:5174",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -30,6 +29,7 @@ app.include_router(webhooks.router, prefix="/api/webhooks", tags=["webhooks"])
 app.include_router(restaurants.router, prefix="/api", tags=["restaurants"])
 app.include_router(staff.router, prefix="/api", tags=["staff"])
 app.include_router(tables.router, prefix="/api", tags=["tables"])
+app.include_router(websockets.router, tags=["websockets"])
 
 @app.on_event("startup")
 async def startup_event():

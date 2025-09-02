@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Users, Search, AlertCircle, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { tableApi, restaurantApi, Restaurant } from '../lib/api';
+import { useWebSocketContext } from '../contexts/WebSocketContext';
 
 interface JoinTableProps {}
 
@@ -21,6 +22,7 @@ interface TableInfo {
 export function JoinTable({}: JoinTableProps) {
   const navigate = useNavigate();
   const { slug } = useParams();
+  const { sendMessage } = useWebSocketContext();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -134,6 +136,27 @@ export function JoinTable({}: JoinTableProps) {
 
   const handleJoinTable = () => {
     if (tableInfo) {
+      // Enviar notificación WebSocket al mesero
+      const participantName = `Cliente ${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      
+      sendMessage({
+        type: 'participant_joined',
+        tableId: tableInfo.id,
+        data: {
+          participantName,
+          tableName: tableInfo.table_number ? `Mesa ${tableInfo.table_number}` : `Mesa ${tableInfo.join_code}`,
+          joinTime: new Date().toISOString(),
+          tableCode: tableInfo.join_code,
+          leaderName: tableInfo.leader_name
+        }
+      });
+      
+      console.log('Notificación WebSocket enviada: participant_joined', {
+        tableId: tableInfo.id,
+        participantName,
+        tableCode: tableInfo.join_code
+      });
+      
       // Redirigir al flujo normal de cliente con el código de mesa
       navigate(`/join/${tableInfo.join_code}`);
     }

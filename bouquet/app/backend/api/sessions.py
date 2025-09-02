@@ -72,7 +72,7 @@ async def create_session(
         await db.refresh(new_session)
         
         # Generar QR code y URL de unión
-        join_url = f"http://localhost:5173/join/{new_session.session_id}"
+        join_url = f"http://localhost:5174/join/{new_session.session_id}"
         qr_code = generate_qr_code(join_url)
         
         new_session.join_url = join_url

@@ -3,15 +3,25 @@ from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 import os
-from supabase import create_client, Client
 
 router = APIRouter()
 
-# Configuración de Supabase
-SUPABASE_URL = os.getenv("SUPABASE_URL", "https://wigvkfxvdbrkzpelsfgt.supabase.co")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndpZ3ZrZnh2ZGJya3pwZWxzZmd0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTczOTA2NCwiZXhwIjoyMDcxMzE1MDY0fQ.uyktfQNtgpqyx21AMcGZ_xtLy8ujgUAUq5NM7DfsRgk")
+# Configuración de Supabase (opcional)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+# Inicializar Supabase solo si las credenciales están disponibles
+supabase = None
+if SUPABASE_URL and SUPABASE_SERVICE_KEY:
+    try:
+        from supabase import create_client, Client
+        supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        print("Supabase client initialized successfully for staff")
+    except Exception as e:
+        print(f"Failed to initialize Supabase client for staff: {e}")
+        supabase = None
+else:
+    print("Supabase credentials not found for staff, using demo mode")
 
 # Modelos Pydantic
 class StaffCodeValidationRequest(BaseModel):
@@ -45,26 +55,40 @@ async def validate_staff_code(request: StaffCodeValidationRequest):
     Validar código de staff
     """
     try:
-        # Llamar a la función de base de datos para validar el código
-        response = supabase.rpc(
-            "validate_staff_code",
-            {
-                "p_restaurant_id": request.restaurant_id,
-                "p_code": request.code
-            }
-        ).execute()
-        
-        if not response.data or len(response.data) == 0:
+        if supabase:
+            # Llamar a la función de base de datos para validar el código
+            response = supabase.rpc(
+                "validate_staff_code",
+                {
+                    "p_restaurant_id": request.restaurant_id,
+                    "p_code": request.code
+                }
+            ).execute()
+            
+            if not response.data or len(response.data) == 0:
+                return StaffCodeValidationResponse(
+                    valid=False,
+                    message="Error al validar el código"
+                )
+            
+            result = response.data[0]
             return StaffCodeValidationResponse(
-                valid=False,
-                message="Error al validar el código"
+                valid=result["valid"],
+                message=result["message"]
             )
-        
-        result = response.data[0]
-        return StaffCodeValidationResponse(
-            valid=result["valid"],
-            message=result["message"]
-        )
+        else:
+            # Modo demo: códigos válidos predefinidos
+            demo_codes = {"1234", "5678", "9999"}
+            if request.code in demo_codes:
+                return StaffCodeValidationResponse(
+                    valid=True,
+                    message="Código válido (modo demo)"
+                )
+            else:
+                return StaffCodeValidationResponse(
+                    valid=False,
+                    message="Código inválido"
+                )
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")

@@ -10,7 +10,7 @@
 
 ## 👨‍🍳 Flujo del Mesero
 
-### Diagrama Principal - Gestión de Mesa
+### Diagrama Principal - Flujo Simplificado
 
 ```mermaid
 flowchart TD
@@ -18,88 +18,69 @@ flowchart TD
     B --> C[Pantalla de Login]
     C --> D{¿Credenciales válidas?}
     D -->|No| C
-    D -->|Sí| E[Dashboard de Mesas]
+    D -->|Sí| E[Dashboard Principal]
     
     E --> F{¿Qué acción?}
-    F -->|Nueva mesa| G[Crear Nueva Cuenta]
-    F -->|Mesa existente| H[Seleccionar Mesa]
-    F -->|Ver resumen| I[Ver Métricas del Día]
+    F -->|Generar código de mesa| G[Generar Código]
+    F -->|Ver mesas activas| H[Dashboard de Mesas]
+    F -->|Ver métricas| I[Ver Métricas del Día]
     
-    G --> J[Ingresar número de mesa]
-    J --> K[Confirmar creación]
-    K --> L[Mesa creada - Estado: Activa]
-    L --> M[Ir a Detalle de Mesa]
+    G --> G1[Click: Generar Código]
+    G1 --> G2[Sistema genera código de 6 dígitos]
+    G2 --> G3[Mostrar código y QR]
+    G3 --> G4[Mesa activa - Esperando clientes]
+    G4 --> H
     
-    H --> M[Detalle de Mesa]
-    M --> N{¿Qué hacer en la mesa?}
-    N -->|Agregar ítem| O[Formulario Agregar Ítem]
-    N -->|Generar QR| P[Generar Código QR]
-    N -->|Ver pagos| Q[Monitor de Pagos]
-    N -->|Cerrar mesa| R[Proceso de Cierre]
+    H --> H1[Lista de mesas activas]
+    H1 --> H2[Ver detalles de mesa específica]
+    H2 --> H3[Monitor en tiempo real]
+    H3 --> H4{¿Acción en mesa?}
+    H4 -->|Ver pedidos| H5[Lista de ítems pedidos]
+    H4 -->|Ver pagos| H6[Estado de pagos]
+    H4 -->|Cerrar mesa| H7[Cerrar mesa]
+    H4 -->|Volver| H1
     
-    O --> O1[Ingresar nombre del ítem]
-    O1 --> O2[Ingresar precio]
-    O2 --> O3[Ingresar cantidad]
-    O3 --> O4[Agregar notas opcionales]
-    O4 --> O5[Guardar ítem]
-    O5 --> M
+    H5 --> H8[WebSocket: Actualizaciones automáticas]
+    H6 --> H8
+    H8 --> H3
     
-    P --> P1[Verificar que hay ítems]
-    P1 --> P2{¿Hay ítems en la mesa?}
-    P2 -->|No| P3[Mostrar error: Agregar ítems primero]
-    P2 -->|Sí| P4[Generar QR único]
-    P4 --> P5[Mostrar QR en pantalla]
-    P5 --> P6[Opción: Imprimir QR]
-    P6 --> M
-    P3 --> M
+    H7 --> H9{¿Mesa 100% pagada?}
+    H9 -->|No| H10[Error: Pagos pendientes]
+    H9 -->|Sí| H11[Confirmar cierre]
+    H11 --> H12[Mesa cerrada]
+    H12 --> H1
+    H10 --> H3
     
-    Q --> Q1[Ver lista de ítems]
-    Q1 --> Q2[Ver estado de pago por ítem]
-    Q2 --> Q3[Ver porcentaje total pagado]
-    Q3 --> Q4[Ver clientes que han pagado]
-    Q4 --> M
-    
-    R --> R1{¿Mesa 100% pagada?}
-    R1 -->|No| R2[Mostrar error: Pagos pendientes]
-    R1 -->|Sí| R3[Confirmar cierre de mesa]
-    R3 --> R4[Mesa cerrada - Generar reporte]
-    R4 --> E
-    R2 --> M
-    
-    I --> I1[Ver total de mesas del día]
-    I1 --> I2[Ver ingresos totales]
-    I2 --> I3[Ver mesas activas]
+    I --> I1[Total de mesas del día]
+    I1 --> I2[Ingresos totales]
+    I2 --> I3[Mesas activas]
     I3 --> E
 ```
 
-### Subproceso: Gestión de Ítems
+### Subproceso: Generación de Código de Mesa
 
 ```mermaid
 flowchart TD
-    A[Mesero en Detalle de Mesa] --> B[Click "Agregar Ítem"]
-    B --> C[Formulario de Ítem]
-    C --> D[Ingresar nombre]
-    D --> E[Ingresar precio]
-    E --> F[Seleccionar cantidad]
-    F --> G{¿Agregar notas?}
-    G -->|Sí| H[Escribir notas especiales]
-    G -->|No| I[Guardar ítem]
-    H --> I
-    I --> J{¿Ítem guardado exitosamente?}
-    J -->|Sí| K[Actualizar lista de ítems]
-    J -->|No| L[Mostrar error]
-    K --> M[Recalcular total de mesa]
-    M --> N[Volver a Detalle de Mesa]
-    L --> C
-    
-    N --> O{¿Agregar más ítems?}
-    O -->|Sí| B
-    O -->|No| P[Continuar con otras acciones]
+    A[Mesero en Dashboard] --> B[Click: Generar Nueva Mesa]
+    B --> C[Sistema genera código único]
+    C --> D[Código de 6 dígitos creado]
+    D --> E[Generar QR automáticamente]
+    E --> F[Mostrar código y QR en pantalla]
+    F --> G[Mesa registrada como activa]
+    G --> H[WebSocket: Notificar sistema]
+    H --> I[Código listo para compartir]
+    I --> J{¿Qué hacer?}
+    J -->|Mostrar a clientes| K[Clientes escanean QR]
+    J -->|Generar otro código| B
+    J -->|Ver dashboard| L[Ir a Dashboard de Mesas]
+    K --> M[Clientes se conectan a la mesa]
+    M --> N[Actualizaciones en tiempo real]
+    N --> L
 ```
 
 ## 📱 Flujo del Cliente
 
-### Diagrama Principal - Experiencia del Comensal
+### Diagrama Principal - Experiencia del Cliente
 
 ```mermaid
 flowchart TD
@@ -110,78 +91,155 @@ flowchart TD
     D -->|Sí| F[Cargar PWA en móvil]
     
     F --> G[Pantalla de Bienvenida]
-    G --> H[Mostrar logo del restaurante]
-    H --> I[Mostrar número de mesa]
-    I --> J[Botón "Ver Mi Cuenta"]
-    J --> K[Cargar cuenta de la mesa]
+    G --> H[Mostrar información del restaurante]
+    H --> I[Mostrar código de mesa]
+    I --> J[Solicitar autenticación del usuario]
+    J --> K{¿Usuario autenticado?}
+    K -->|No| L[Registro/Login obligatorio]
+    K -->|Sí| M[Acceder al menú digital]
+    L --> L1[Ingresar email y nombre]
+    L1 --> L2[Verificar email (opcional)]
+    L2 --> M
     
-    K --> L{¿Hay ítems en la mesa?}
-    L -->|No| M[Mensaje: La mesa aún no tiene ítems]
-    L -->|Sí| N[Lista de ítems con checkboxes]
+    M --> N[WebSocket: Conectar a mesa como participante]
+    N --> O[Cargar menú del restaurante por categorías]
+    O --> P[Explorar categorías disponibles]
+    P --> Q[Seleccionar ítem del menú base]
+    Q --> R{¿Ítem tiene modificadores?}
+    R -->|Sí| S[Mostrar grupos de modificadores]
+    R -->|No| W[Especificar cantidad]
     
-    N --> O[Cliente revisa lista completa]
-    O --> P[Cliente selecciona sus ítems]
-    P --> Q{¿Seleccionó al menos un ítem?}
-    Q -->|No| R[Mensaje: Debe seleccionar al menos un ítem]
-    Q -->|Sí| S[Calcular subtotal de ítems seleccionados]
+    S --> T[Seleccionar modificadores obligatorios]
+    T --> U[Seleccionar modificadores opcionales]
+    U --> V[Calcular precio con modificadores]
+    V --> W
     
-    S --> T[Calcular IVA]
-    T --> U[Calcular propina sugerida]
-    U --> V[Mostrar desglose en barra inferior]
-    V --> W[Botón "Proceder al Pago"]
-    W --> X[Pantalla de Checkout]
+    W --> X[Agregar al carrito personal]
+    X --> Y[WebSocket: Notificar al mesero y otros participantes]
     
-    X --> Y[Resumen final de pago]
-    Y --> Z[Seleccionar método de pago]
-    Z --> AA{¿Qué método?}
-    AA -->|Stripe| BB[Formulario de tarjeta Stripe]
-    AA -->|MercadoPago| CC[Formulario MercadoPago]
+    Y --> Z{¿Continuar pidiendo?}
+    Z -->|Sí| P
+    Z -->|No| AA[Revisar carrito completo]
     
-    BB --> DD[Ingresar datos de tarjeta]
-    CC --> DD
-    DD --> EE[Validar datos]
-    EE --> FF{¿Datos válidos?}
-    FF -->|No| GG[Mostrar errores de validación]
-    FF -->|Sí| HH[Procesar pago]
+    AA --> BB[Calcular subtotal con modificadores]
+    BB --> CC[Calcular IVA]
+    CC --> DD[Calcular propina sugerida]
+    DD --> EE[Mostrar desglose total]
+    EE --> FF[Botón: Proceder al Pago]
+    FF --> GG[Pantalla de Checkout]
     
-    GG --> DD
-    HH --> II{¿Pago exitoso?}
-    II -->|No| JJ[Mostrar error de pago]
-    II -->|Sí| KK[Pantalla de confirmación]
+    Y --> Z[Resumen final de pago]
+    Z --> AA[Seleccionar método de pago]
+    AA --> BB{¿Qué método?}
+    BB -->|Stripe| CC[Formulario de tarjeta Stripe]
+    BB -->|MercadoPago| DD[Formulario MercadoPago]
     
-    KK --> LL[Mostrar recibo digital]
-    LL --> MM[Mostrar número de transacción]
-    MM --> NN[Opción: Enviar recibo por email]
-    NN --> OO[Mensaje: Gracias por su pago]
-    OO --> PP[Opción: Volver a la cuenta]
+    CC --> EE[Ingresar datos de tarjeta]
+    DD --> EE
+    EE --> FF[Validar datos]
+    FF --> GG{¿Datos válidos?}
+    GG -->|No| HH[Mostrar errores de validación]
+    GG -->|Sí| II[Procesar pago]
     
-    JJ --> X
-    R --> P
-    M --> QQ[Botón "Actualizar"]
-    QQ --> K
-    E --> RR[Contactar al mesero]
+    HH --> EE
+    II --> JJ{¿Pago exitoso?}
+    JJ -->|No| KK[Mostrar error de pago]
+    JJ -->|Sí| LL[WebSocket: Notificar pago exitoso]
+    
+    LL --> MM[Pantalla de confirmación]
+    MM --> NN[Mostrar recibo digital]
+    NN --> OO[Mostrar número de transacción]
+    OO --> PP[Opción: Enviar recibo por email]
+    PP --> QQ[Mensaje: Gracias por su pago]
+    QQ --> RR[Opción: Continuar en la mesa]
+    
+    KK --> Y
+    E --> SS[Contactar al mesero]
+    RR --> TT[Seguir conectado para más pedidos]
+    TT --> M
 ```
 
-### Subproceso: Selección de Ítems
+### Subproceso: Selección de Ítems del Cliente con Modificadores
 
 ```mermaid
 flowchart TD
-    A[Cliente ve lista de ítems] --> B{¿Ítem tiene cantidad > 1?}
-    B -->|Sí| C[Mostrar selector de cantidad]
-    B -->|No| D[Checkbox simple]
+    A[Cliente autenticado ve menú] --> B[Explorar categorías del menú]
+    B --> C[Seleccionar categoría específica]
+    C --> D[Ver ítems base de la categoría]
+    D --> E[Seleccionar ítem base del menú]
     
-    C --> E[Cliente selecciona cantidad deseada]
-    E --> F[Actualizar subtotal en tiempo real]
-    D --> F
+    E --> F{¿Ítem tiene grupos de modificadores?}
+    F -->|No| M[Especificar cantidad]
+    F -->|Sí| G[Cargar grupos de modificadores]
     
-    F --> G{¿Más ítems por seleccionar?}
-    G -->|Sí| H[Continuar seleccionando]
-    G -->|No| I[Revisar selección final]
+    G --> H[Mostrar modificadores obligatorios]
+    H --> I[Seleccionar opciones obligatorias]
+    I --> J{¿Hay modificadores opcionales?}
+    J -->|Sí| K[Mostrar modificadores opcionales]
+    J -->|No| L[Calcular precio final]
     
-    H --> A
-    I --> J[Mostrar resumen de selección]
-    J --> K[Calcular totales]
-    K --> L[Habilitar botón de pago]
+    K --> K1[Seleccionar modificadores deseados]
+    K1 --> L
+    
+    L --> L1[Precio base + ajustes de modificadores]
+    L1 --> M
+    
+    M --> N[Agregar notas especiales (opcional)]
+    N --> O[Confirmar selección]
+    O --> P[Guardar en TAB_ITEMS con JSON de modificadores]
+    P --> Q[WebSocket: Notificar mesero y participantes]
+    Q --> R[Actualizar total de mesa en tiempo real]
+    R --> S{¿Continuar pidiendo?}
+    S -->|Sí| A
+    S -->|No| T[Revisar carrito completo]
+    
+    T --> U[Ver resumen con modificadores]
+    U --> V[Calcular subtotal + IVA + propina]
+    V --> W[Habilitar botón de pago]
+    W --> X[Proceder al checkout]
+```
+
+### Subproceso: Autenticación Obligatoria de Usuario
+
+```mermaid
+flowchart TD
+    A[Cliente accede vía QR] --> B[Verificar si usuario está autenticado]
+    B --> C{¿Usuario ya autenticado?}
+    C -->|Sí| D[Continuar al menú]
+    C -->|No| E[Mostrar pantalla de autenticación]
+    
+    E --> F{¿Qué método prefiere?}
+    F -->|Email| G[Formulario de registro/login]
+    F -->|Google| H[OAuth con Google]
+    F -->|Facebook| I[OAuth con Facebook]
+    
+    G --> G1[Ingresar email]
+    G1 --> G2[Ingresar nombre completo]
+    G2 --> G3[Validar email formato]
+    G3 --> G4{¿Email válido?}
+    G4 -->|No| G5[Mostrar error de validación]
+    G4 -->|Sí| G6[Crear usuario en base de datos]
+    G5 --> G1
+    
+    H --> H1[Autenticación con Google]
+    H1 --> H2[Obtener datos del perfil]
+    H2 --> H3[Crear/actualizar usuario]
+    
+    I --> I1[Autenticación con Facebook]
+    I1 --> I2[Obtener datos del perfil]
+    I2 --> I3[Crear/actualizar usuario]
+    
+    G6 --> J[Usuario creado exitosamente]
+    H3 --> J
+    I3 --> J
+    
+    J --> K[Crear participante en la mesa]
+    K --> L[Asignar user_id al participante]
+    L --> M[WebSocket: Notificar nueva conexión]
+    M --> D
+    
+    D --> N[Acceso completo al sistema]
+    N --> O[Puede realizar pedidos y pagos]
 ```
 
 ## 👨‍💼 Flujo del Administrador
@@ -233,7 +291,7 @@ flowchart TD
 ```mermaid
 flowchart TD
     A[Cliente en proceso de pago] --> B[Cliente cierra aplicación]
-    B --> C[Pago queda en estado "pendiente"]
+    B --> C[Pago queda en estado pendiente]
     C --> D[Sistema mantiene selección por 30 min]
     D --> E{¿Cliente regresa?}
     E -->|Sí| F[Restaurar selección]
@@ -257,18 +315,20 @@ flowchart TD
     G --> I[Mostrar información de contacto]
 ```
 
-### Caso 3: Mesa con múltiples pagos simultáneos
+### Caso 3: Mesa con múltiples clientes conectados
 
 ```mermaid
 flowchart TD
-    A[Múltiples clientes pagan simultáneamente] --> B[Sistema bloquea ítems seleccionados]
-    B --> C[Procesar pagos en paralelo]
-    C --> D{¿Conflicto en ítems?}
-    D -->|Sí| E[Primer pago exitoso toma el ítem]
-    D -->|No| F[Todos los pagos procesan normalmente]
-    E --> G[Segundo cliente ve ítem no disponible]
-    G --> H[Sugerir seleccionar otros ítems]
-    F --> I[Actualizar estado de mesa en tiempo real]
+    A[Múltiples clientes conectados a la mesa] --> B[WebSocket: Sincronización en tiempo real]
+    B --> C[Cada cliente ve pedidos de otros]
+    C --> D[Cliente A agrega ítem]
+    D --> E[WebSocket: Notificar a todos los clientes]
+    E --> F[Actualizar vista de todos instantáneamente]
+    F --> G[Cliente B ve nuevo ítem agregado]
+    G --> H[Cliente B puede agregar sus propios ítems]
+    H --> I[WebSocket: Notificar mesero y otros clientes]
+    I --> J[Mesero ve todos los pedidos en tiempo real]
+    J --> K[Sistema mantiene sincronización continua]
 ```
 
 ## 📊 Estados del Sistema
@@ -277,19 +337,18 @@ flowchart TD
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Creada
-    Creada --> Activa : Agregar primer ítem
-    Activa --> ConQR : Generar QR
-    ConQR --> PagoParcial : Cliente paga
-    PagoParcial --> PagoParcial : Más pagos
-    PagoParcial --> Completada : 100% pagado
-    Completada --> Cerrada : Mesero cierra
-    Cerrada --> [*]
+    [*] --> waiting_customers
+    waiting_customers --> active : Primer cliente se conecta
+    active --> partial_payment : Cliente realiza pago parcial
+    partial_payment --> partial_payment : Más pagos parciales
+    partial_payment --> fully_paid : 100% pagado
+    fully_paid --> closed : Mesero cierra mesa
+    closed --> [*]
     
-    Activa --> Cancelada : Mesero cancela
-    ConQR --> Cancelada : Mesero cancela
-    PagoParcial --> Cancelada : Mesero cancela
-    Cancelada --> [*]
+    waiting_customers --> abandoned : Timeout sin clientes
+    active --> abandoned : Timeout sin actividad
+    partial_payment --> abandoned : Timeout sin completar
+    abandoned --> [*]
 ```
 
 ### Estados de Pago
@@ -328,19 +387,34 @@ stateDiagram-v2
 
 ## 📝 Notas Importantes
 
-1. **Tiempo de sesión**: Las selecciones de clientes expiran en 30 minutos
-2. **Concurrencia**: El sistema maneja múltiples clientes pagando simultáneamente
-3. **Recuperación**: Los meseros pueden ver el estado en tiempo real
-4. **Notificaciones**: El sistema notifica cambios de estado automáticamente
-5. **Backup**: Todos los estados se persisten en la base de datos
+1. **Flujo Simplificado**: El mesero usa códigos de staff temporales para generar mesas, los clientes eligen sus propios ítems del menú estructurado
+2. **Autenticación Obligatoria**: Todos los usuarios deben autenticarse antes de realizar pedidos o pagos
+3. **Sistema de Menú Completo**: Categorías, ítems base, modificadores y cálculos automáticos de precios
+4. **Modificadores Flexibles**: Soporte para modificadores obligatorios y opcionales con ajustes de precio
+5. **Estados de Mesa Granulares**: 6 estados (waiting_customers, active, partial_payment, fully_paid, closed, abandoned)
+6. **Tiempo Real**: WebSockets mantienen sincronización instantánea entre todos los dispositivos
+7. **Concurrencia**: Múltiples clientes autenticados pueden conectarse y pedir simultáneamente
+8. **Persistencia**: Todos los pedidos, modificadores y pagos se guardan automáticamente en Supabase
+9. **Recuperación**: El sistema mantiene el estado incluso si se pierde la conexión
+10. **Notificaciones**: Actualizaciones automáticas para meseros y clientes
+11. **Trazabilidad**: Cada pedido está vinculado a un usuario específico para auditoría completa
+12. **Validaciones Automáticas**: Constraints de base de datos para integridad de precios y cálculos
 
 ## 🔧 Consideraciones Técnicas
 
-* **WebSockets**: Para actualizaciones en tiempo real
+* **WebSockets (Supabase Realtime)**: Sincronización instantánea de pedidos, pagos y estado de mesa
 
-* **Estado local**: Mantener estado en localStorage para recuperación
+* **Base de Datos**: Supabase PostgreSQL con Row Level Security (RLS) para seguridad
 
-* **Retry logic**: Reintentos automáticos para operaciones críticas
+* **Estado Reactivo**: Zustand para manejo de estado local con persistencia
 
-* **Logging**: Registrar todos los cambios de estado para auditoría
+* **PWA**: Aplicación web progresiva para experiencia nativa en móviles
+
+* **Códigos QR**: Generación automática de códigos únicos de 6 dígitos
+
+* **Pagos**: Integración con Stripe y MercadoPago para procesamiento seguro
+
+* **Retry Logic**: Reintentos automáticos para operaciones críticas de red
+
+* **Logging**: Auditoría completa de todas las transacciones y cambios de estado
 

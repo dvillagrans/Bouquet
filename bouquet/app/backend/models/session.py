@@ -38,7 +38,7 @@ class Session(BaseModel):
     allow_partial_payments = Column(Boolean, default=True)
     
     # Metadatos adicionales
-    metadata = Column(JSON, nullable=True, default=dict)
+    extra_data = Column(JSON, nullable=True, default=dict)
     
     def __repr__(self):
         return f"<Session(session_id={self.session_id}, restaurant={self.restaurant_name}, total={self.total_amount})>"

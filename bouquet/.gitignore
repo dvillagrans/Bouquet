@@ -6,7 +6,6 @@
 .env.development.local
 .env.test.local
 .env.production.local
-
 # IDE and Editor files
 .vscode/
 .idea/
@@ -77,6 +76,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Node.js dependencies
+node_modules/
+
 # Runtime data
 pids/
 *.pid
@@ -122,3 +124,29 @@ dist
 # Temporary folders
 tmp/
 temp/
+
+# Project specific
+# Bouquet app specific files
+app/uploads/
+app/static/uploads/
+*.session
+
+# Development tools
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/c_cpp_properties.json
+.vscode/ipch/
+
+# Package lock files (keep only one)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Local configuration
+local.config.js
+local.config.json
+
+# Performance monitoring
+.clinic/
+0x/

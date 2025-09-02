@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .connecting {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .log {
+            background-color: #f8f9fa;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+        }
+
+        input {
+            padding: 10px;
+            margin: 5px;
+            width: 300px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>WebSocket Test para Bouquet</h1>
+
+    <div id="status" class="status disconnected">Desconectado</div>
+
+    <div>
+        <input type="text" id="url" value="ws://localhost:8000/ws" placeholder="WebSocket URL">
+        <button onclick="connect()">Conectar</button>
+        <button onclick="disconnect()">Desconectar</button>
+    </div>
+
+    <div>
+        <input type="text" id="message" placeholder="Mensaje de prueba">
+        <button onclick="sendMessage()">Enviar Mensaje</button>
+    </div>
+
+    <div>
+        <button onclick="sendPing()">Enviar Ping</button>
+        <button onclick="joinSession()">Unirse a Sesión de Prueba</button>
+        <button onclick="clearLog()">Limpiar Log</button>
+    </div>
+
+    <div id="log" class="log"></div>
+
+    <script>
+        let ws = null;
+        const statusEl = document.getElementById('status');
+        const logEl = document.getElementById('log');
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logEl.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function updateStatus(status, className) {
+            statusEl.textContent = status;
+            statusEl.className = `status ${className}`;
+        }
+
+        function connect() {
+            const url = document.getElementById('url').value;
+
+            try {
+                updateStatus('Conectando...', 'connecting');
+                log(`Intentando conectar a: ${url}`);
+
+                ws = new WebSocket(url);
+
+                ws.onopen = function (event) {
+                    updateStatus('Conectado', 'connected');
+                    log('✅ WebSocket conectado exitosamente');
+                };
+
+                ws.onmessage = function (event) {
+                    log(`📥 Mensaje recibido: ${event.data}`);
+                    try {
+                        const data = JSON.parse(event.data);
+                        log(`📋 Mensaje parseado: ${JSON.stringify(data, null, 2)}`);
+                    } catch (e) {
+                        log(`⚠️ No se pudo parsear como JSON: ${e.message}`);
+                    }
+                };
+
+                ws.onclose = function (event) {
+                    updateStatus('Desconectado', 'disconnected');
+                    log(`❌ WebSocket cerrado: código ${event.code}, razón: ${event.reason}`);
+                };
+
+                ws.onerror = function (error) {
+                    updateStatus('Error', 'disconnected');
+                    log(`🚨 Error de WebSocket: ${error}`);
+                };
+
+            } catch (error) {
+                updateStatus('Error', 'disconnected');
+                log(`💥 Error al crear WebSocket: ${error.message}`);
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function sendMessage() {
+            const message = document.getElementById('message').value;
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(message);
+                log(`📤 Mensaje enviado: ${message}`);
+                document.getElementById('message').value = '';
+            } else {
+                log('❌ WebSocket no está conectado');
+            }
+        }
+
+        function sendPing() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const pingMessage = {
+                    type: 'ping',
+                    timestamp: new Date().toISOString()
+                };
+                ws.send(JSON.stringify(pingMessage));
+                log(`🏓 Ping enviado`);
+            } else {
+                log('❌ WebSocket no está conectado');
+            }
+        }
+
+        function joinSession() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const joinMessage = {
+                    type: 'join_session',
+                    session_id: 'test-session-123',
+                    user_type: 'waiter',
+                    user_id: 'test-waiter-1'
+                };
+                ws.send(JSON.stringify(joinMessage));
+                log(`🚪 Enviando solicitud para unirse a sesión de prueba`);
+            } else {
+                log('❌ WebSocket no está conectado');
+            }
+        }
+
+        function clearLog() {
+            logEl.innerHTML = '';
+        }
+
+        // Auto conectar al cargar la página
+        window.onload = function () {
+            log('Página cargada. Haz clic en "Conectar" para probar WebSocket.');
+        };
+    </script>
+</body>
+
+</html>

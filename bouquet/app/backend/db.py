@@ -1,5 +1,3 @@
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 import os
@@ -7,25 +5,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Database URL
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
-    "postgresql://postgres:password@localhost:5432/bouquet"
-)
+print("Loading database configuration...")  # Debug
 
-# Async database URL
-ASYNC_DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+# Database URL - Force async SQLite
+DATABASE_URL = "sqlite+aiosqlite:///./bouquet.db"
+
+print(f"Using DATABASE_URL: {DATABASE_URL}")  # Debug print
 
 # Create async engine
-engine = create_async_engine(ASYNC_DATABASE_URL, echo=True)
+engine = create_async_engine(DATABASE_URL, echo=True)
 
 # Create async session
 AsyncSessionLocal = sessionmaker(
     engine, class_=AsyncSession, expire_on_commit=False
 )
 
-# Base class for models
-Base = declarative_base()
+# Import Base from models
+from models.base import Base
 
 # Dependency to get database session
 async def get_db():
@@ -37,7 +33,12 @@ async def get_db():
 
 # Initialize database
 async def init_db():
+    print("Initializing database...")
     async with engine.begin() as conn:
-        # Import all models here to ensure they are registered
-        from models import session  # noqa
+        # Import all models to ensure they're registered with Base
+        from models.session import Session  # noqa
+        
+        print(f"Found {len(Base.metadata.tables)} tables to create")
+        print("Creating tables...")
         await conn.run_sync(Base.metadata.create_all)
+        print("Database initialization complete!")

@@ -1,0 +1,215 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.2 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{nty/global//global/global}
+    \entry{revel}{misc}{}
+      \name{author}{1}{}{%
+        {{hash=dabd4d512578eb2fce10ef06c0345e13}{%
+           family={{Revel Systems}},
+           familyi={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{dabd4d512578eb2fce10ef06c0345e13}
+      \strng{fullhash}{dabd4d512578eb2fce10ef06c0345e13}
+      \strng{bibnamehash}{dabd4d512578eb2fce10ef06c0345e13}
+      \strng{authorbibnamehash}{dabd4d512578eb2fce10ef06c0345e13}
+      \strng{authornamehash}{dabd4d512578eb2fce10ef06c0345e13}
+      \strng{authorfullhash}{dabd4d512578eb2fce10ef06c0345e13}
+      \field{sortinit}{R}
+      \field{sortinithash}{5e1c39a9d46ffb6bebd8f801023a9486}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Software de gestión y punto de venta}
+      \field{title}{Revel Systems POS}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://revelsystems.com/
+      \endverb
+      \verb{url}
+      \verb https://revelsystems.com/
+      \endverb
+    \endentry
+    \entry{softrestaurant}{misc}{}
+      \name{author}{1}{}{%
+        {{hash=8ca504f23391cb29ea315353c7f443de}{%
+           family={{Soft Restaurant}},
+           familyi={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{8ca504f23391cb29ea315353c7f443de}
+      \strng{fullhash}{8ca504f23391cb29ea315353c7f443de}
+      \strng{bibnamehash}{8ca504f23391cb29ea315353c7f443de}
+      \strng{authorbibnamehash}{8ca504f23391cb29ea315353c7f443de}
+      \strng{authornamehash}{8ca504f23391cb29ea315353c7f443de}
+      \strng{authorfullhash}{8ca504f23391cb29ea315353c7f443de}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Software de gestión de restaurantes}
+      \field{title}{Soft Restaurant}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://softrestaurant.com/
+      \endverb
+      \verb{url}
+      \verb https://softrestaurant.com/
+      \endverb
+    \endentry
+    \entry{splitwise}{misc}{}
+      \name{author}{1}{}{%
+        {{hash=462f0d10e9a2fe16eb896cf2ae8b4ac5}{%
+           family={{Splitwise Inc.}},
+           familyi={S\bibinitperiod}}}%
+      }
+      \strng{namehash}{462f0d10e9a2fe16eb896cf2ae8b4ac5}
+      \strng{fullhash}{462f0d10e9a2fe16eb896cf2ae8b4ac5}
+      \strng{bibnamehash}{462f0d10e9a2fe16eb896cf2ae8b4ac5}
+      \strng{authorbibnamehash}{462f0d10e9a2fe16eb896cf2ae8b4ac5}
+      \strng{authornamehash}{462f0d10e9a2fe16eb896cf2ae8b4ac5}
+      \strng{authorfullhash}{462f0d10e9a2fe16eb896cf2ae8b4ac5}
+      \field{sortinit}{S}
+      \field{sortinithash}{b164b07b29984b41daf1e85279fbc5ab}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Aplicación móvil para división de gastos}
+      \field{title}{Splitwise - Split bills and expenses}
+      \field{urlday}{15}
+      \field{urlmonth}{1}
+      \field{urlyear}{2024}
+      \field{year}{2024}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://www.splitwise.com/
+      \endverb
+      \verb{url}
+      \verb https://www.splitwise.com/
+      \endverb
+    \endentry
+    \entry{toast}{misc}{}
+      \name{author}{1}{}{%
+        {{hash=5e42b391b9460c08bd41f53901ff8530}{%
+           family={{Toast, Inc.}},
+           familyi={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{5e42b391b9460c08bd41f53901ff8530}
+      \strng{fullhash}{5e42b391b9460c08bd41f53901ff8530}
+      \strng{bibnamehash}{5e42b391b9460c08bd41f53901ff8530}
+      \strng{authorbibnamehash}{5e42b391b9460c08bd41f53901ff8530}
+      \strng{authornamehash}{5e42b391b9460c08bd41f53901ff8530}
+      \strng{authorfullhash}{5e42b391b9460c08bd41f53901ff8530}
+      \field{sortinit}{T}
+      \field{sortinithash}{9af77f0292593c26bde9a56e688eaee9}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Software de punto de venta para restaurantes}
+      \field{title}{Toast POS}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://pos.toasttab.com
+      \endverb
+      \verb{url}
+      \verb https://pos.toasttab.com
+      \endverb
+    \endentry
+    \entry{touchbistro}{misc}{}
+      \name{author}{1}{}{%
+        {{hash=e3d11b26c74023a611ecdbbf77f9f202}{%
+           family={{TouchBistro Inc.}},
+           familyi={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{e3d11b26c74023a611ecdbbf77f9f202}
+      \strng{fullhash}{e3d11b26c74023a611ecdbbf77f9f202}
+      \strng{bibnamehash}{e3d11b26c74023a611ecdbbf77f9f202}
+      \strng{authorbibnamehash}{e3d11b26c74023a611ecdbbf77f9f202}
+      \strng{authornamehash}{e3d11b26c74023a611ecdbbf77f9f202}
+      \strng{authorfullhash}{e3d11b26c74023a611ecdbbf77f9f202}
+      \field{sortinit}{T}
+      \field{sortinithash}{9af77f0292593c26bde9a56e688eaee9}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Software de punto de venta para restaurantes}
+      \field{title}{TouchBistro}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://www.touchbistro.com/
+      \endverb
+      \verb{url}
+      \verb https://www.touchbistro.com/
+      \endverb
+    \endentry
+    \entry{tricount}{misc}{}
+      \name{author}{1}{}{%
+        {{hash=1dbedd79007b239ac37099929e829e13}{%
+           family={{Tricount SPRL}},
+           familyi={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{1dbedd79007b239ac37099929e829e13}
+      \strng{fullhash}{1dbedd79007b239ac37099929e829e13}
+      \strng{bibnamehash}{1dbedd79007b239ac37099929e829e13}
+      \strng{authorbibnamehash}{1dbedd79007b239ac37099929e829e13}
+      \strng{authornamehash}{1dbedd79007b239ac37099929e829e13}
+      \strng{authorfullhash}{1dbedd79007b239ac37099929e829e13}
+      \field{sortinit}{T}
+      \field{sortinithash}{9af77f0292593c26bde9a56e688eaee9}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Aplicación móvil para gestión de gastos compartidos}
+      \field{title}{Tricount - Shared expenses made simple}
+      \field{urlday}{15}
+      \field{urlmonth}{1}
+      \field{urlyear}{2024}
+      \field{year}{2024}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://www.tricount.com/
+      \endverb
+      \verb{url}
+      \verb https://www.tricount.com/
+      \endverb
+    \endentry
+    \entry{upserve}{misc}{}
+      \name{author}{1}{}{%
+        {{hash=a469ddf4d11bb71398d0cee681a5d2e7}{%
+           family={{Upserve}},
+           familyi={U\bibinitperiod}}}%
+      }
+      \strng{namehash}{a469ddf4d11bb71398d0cee681a5d2e7}
+      \strng{fullhash}{a469ddf4d11bb71398d0cee681a5d2e7}
+      \strng{bibnamehash}{a469ddf4d11bb71398d0cee681a5d2e7}
+      \strng{authorbibnamehash}{a469ddf4d11bb71398d0cee681a5d2e7}
+      \strng{authornamehash}{a469ddf4d11bb71398d0cee681a5d2e7}
+      \strng{authorfullhash}{a469ddf4d11bb71398d0cee681a5d2e7}
+      \field{sortinit}{U}
+      \field{sortinithash}{6901a00e45705986ee5e7ca9fd39adca}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Software de gestión de restaurantes}
+      \field{title}{Upserve POS}
+      \field{year}{2024}
+      \verb{urlraw}
+      \verb https://upserve.com/
+      \endverb
+      \verb{url}
+      \verb https://upserve.com/
+      \endverb
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

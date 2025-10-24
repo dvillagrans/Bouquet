@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Base colors - Albescent White palette */
+    --background: 33 65% 93%;
+    --foreground: 355 58% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 355 58% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 355 58% 8%;
+
+    /* Primary - Pink accent */
+    --primary: 335 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Coral Tree */
+    --secondary: 355 32% 56%;
+    --secondary-foreground: 0 0% 100%;
+
+    /* Muted - Light albescent */
+    --muted: 35 64% 89%;
+    --muted-foreground: 38 31% 20%;
+
+    /* Accent - Buccaneer */
+    --accent: 354 39% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Destructive */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders and inputs */
+    --border: 38 57% 69%;
+    --input: 36 69% 80%;
+    --ring: 335 100% 50%;
+
+    --radius: 1rem;
+
+    /* Custom brand colors */
+    --albescent-white: 33 65% 93%;
+    --pink: 335 100% 50%;
+    --pink-light: 350 100% 85%;
+    --coral-tree: 355 32% 56%;
+    --buccaneer: 354 39% 50%;
+    --lynch: 213 24% 49%;
+
+    /* Gradients and effects */
+    --gradient-elegant: linear-gradient(135deg, hsl(var(--pink-light)), hsl(var(--albescent-white)));
+    --shadow-soft: 0 4px 20px rgba(255, 0, 100, 0.1);
+    --shadow-elegant: 0 8px 30px rgba(255, 0, 100, 0.15);
+    
+    /* Liquid Glass Effects */
+    --glass-bg: hsla(0, 0%, 100%, 0.1);
+    --glass-bg-light: hsla(0, 0%, 100%, 0.15);
+    --glass-bg-medium: hsla(0, 0%, 100%, 0.25);
+    --glass-border: hsla(0, 0%, 100%, 0.2);
+    --glass-shadow: 0 8px 32px 0 rgba(255, 0, 100, 0.2);
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+  
+  .glass-light {
+    background: var(--glass-bg-light);
+    backdrop-filter: blur(12px) saturate(180%);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid var(--glass-border);
+  }
+  
+  .glass-medium {
+    background: var(--glass-bg-medium);
+    backdrop-filter: blur(20px) saturate(200%);
+    -webkit-backdrop-filter: blur(20px) saturate(200%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+  
+  .glass-card {
+    background: linear-gradient(135deg, hsla(0, 0%, 100%, 0.15), hsla(0, 0%, 100%, 0.05));
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid hsla(0, 0%, 100%, 0.18);
+    box-shadow: 0 8px 32px 0 rgba(255, 0, 100, 0.15);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

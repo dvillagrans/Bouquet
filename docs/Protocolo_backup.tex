@@ -1,0 +1,182 @@
+\documentclass[12pt]{report}
+
+% ======= Paquetes base =======
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage{geometry}
+\geometry{letterpaper, top=2.5cm, bottom=2.5cm, left=3cm, right=2.5cm}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{lscape}
+\usepackage{pgfgantt}      % Diagramas de Gantt
+\usepackage{pdflscape}     % (opcional) página apaisada
+\usepackage{xcolor}        % (opcional) colores de barras
+\usepackage{csquotes}
+\usepackage[backend=biber]{biblatex}
+\addbibresource{referencias.bib}
+
+% ======= Times New Roman =======
+\usepackage{mathptmx}
+
+% estilos opcionales para que se vea pro
+\ganttset{
+  calendar week text={},
+  bar/.append style = {fill=black!10},
+  group/.append style = {fill=black!20},
+  milestone/.append style = {fill=black},
+  progress label text = {},
+  link/.style = {->, thick},
+}
+
+% ======= Interlineado y párrafo (E7) =======
+\setstretch{1.0} % sencillo
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0pt}
+% Configurar tamaño de fuente base a 12pt
+\renewcommand{\normalsize}{\fontsize{12}{14.4}\selectfont}
+\normalsize
+
+% ======= Títulos numerados 12 pt (E6) =======
+\titleformat{\chapter}{\bfseries\fontsize{12}{14.4}\selectfont}{\thechapter.}{1em}{}
+\titlespacing*{\chapter}{0pt}{20pt}{15pt}
+\titleformat{\section}{\bfseries\fontsize{12}{14.4}\selectfont}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\bfseries\fontsize{12}{14.4}\selectfont}{\thesubsection.}{0.6em}{}
+
+% ======= Comandos de portada (E1–E5) =======
+\newcommand{\TituloTT}[1]{\begin{center}\textbf{\Large #1}\end{center}} % 14 pt, negrita, centrado
+\newcommand{\Proposito}[1]{\begin{center}#1\end{center}}
+\newcommand{\Registro}[1]{\begin{center}\textbf{\textit{#1}}\end{center}} % 12 pt, negrita+cursiva, centrado
+\newcommand{\NotaPequena}[1]{{\normalsize \textbf{#1}}}
+
+% ======= Tablas compactas =======
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+% ======= Configuración para tablas y figuras (10pt) =======
+\newcommand{\tablefont}{\fontsize{10}{12}\selectfont}
+\newcommand{\captionfont}{\fontsize{10}{12}\selectfont}
+
+% ======= Hyperref al final =======
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue, citecolor=black}
+
+\begin{document}
+
+% =======================
+% PORTADA / CARÁTULA
+% =======================
+\thispagestyle{empty}
+
+\begin{center}
+% \includegraphics[width=3cm]{logo_ipn.png} \hspace{2cm} \includegraphics[width=3cm]{logo_escom.png} \\[1cm]
+\textbf{\Large INSTITUTO POLITÉCNICO NACIONAL} \\[0.5cm]
+\textbf{\large ESCUELA SUPERIOR DE CÓMPUTO} \\[0.5cm]
+\textbf{\large LICENCIATURA EN CIENCIA DE DATOS} \\[1.5cm]
+\end{center}
+
+\TituloTT{Sistema Omnicanal y Plataforma Progresiva para la Gestión de Mesas, Órdenes y Pagos en Restaurantes}
+
+\Proposito{Desarrollo de una aplicación web progresiva que integra gestión de mesas virtuales, pedidos colaborativos y sistemas de pago flexibles para modernizar la experiencia gastronómica.} % (E2)
+
+\Registro{Registro: \,[asignado por la CATT]} % (E3)
+
+\vspace{1cm}
+\begin{center}
+\textbf{Trabajo Terminal No.:}\;[TT\#] \\[4mm]
+\textbf{Alumnos:}\; Natalia Anaya Ramírez, Diego Villagrán Salazar \\[2mm]
+\textbf{Director:}\; [Nombre del Director] \\[4mm]
+\textbf{Correo de contacto:}\; \texttt{nataliaanayaa@gmail.com}
+\end{center}
+
+\newpage
+
+% =======================
+% RESUMEN Y PALABRAS CLAVE
+% =======================
+\section*{Resumen}
+Este proyecto propone el desarrollo de una aplicación progresiva (PWA) para restaurantes, la cual combina acceso web y móvil en una sola plataforma. El sistema integra tres canales: (1) aplicación para usuarios, (2) panel de cocina y (3) panel administrativo administrativo. La característica principal es la gestión flexible de cuenta, donde cada usuario puede pagar su propio consumo, la de otros comensales, la cuenta completa, o realizar aportaciones a una mesa virtual compartida. De esta forma, se reorganiza la experiencia de pago y se centraliza información valiosa para análisis, trazabilidad y conciliaciones futuras.
+
+\section*{Palabras clave}
+Aplicaciones Progresivas; Restaurantes; Omnicanalidad; Sistemas Distribuidos; Inteligencia de Negocios.
+
+\tableofcontents
+\newpage
+
+% =======================
+% 7. CRONOGRAMA
+% =======================
+\chapter{Cronograma}
+
+\begin{landscape}
+\begin{figure}[ht]
+\centering
+
+\begin{ganttchart}[
+  hgrid, vgrid,
+  time slot format=isodate,
+  x unit=0.5cm, y unit chart=0.7cm,
+  bar height=0.5,
+  group height=0.6,
+  milestone height=0.6
+]{2024-08-01}{2025-12-31}
+
+  \gantttitle{Cronograma del Proyecto 2024--2025}{17} \\
+  \gantttitlecalendar{year, month=name} \\
+
+  % ===== Fase I: Diseño y Planificación =====
+  \ganttgroup{Fase I: Diseño y Planificación}{2024-08-01}{2024-10-31} \\
+  \ganttbar[bar/.append style={fill=green!60}]{Análisis de Requerimientos}{2024-08-01}{2024-09-30} \\
+  \ganttbar[bar/.append style={fill=green!60}]{Diseño de Base de Datos}{2024-10-01}{2024-10-31} \\
+
+  % ===== Fase II: Desarrollo Core =====
+  \ganttgroup{Fase II: Desarrollo Core}{2024-11-01}{2025-10-31} \\
+  \ganttbar[bar/.append style={fill=green!60}]{Mesas Virtuales y Cuentas}{2024-11-01}{2025-03-31} \\
+  \ganttbar[bar/.append style={fill=orange!60}]{Módulo de Cocina}{2025-01-01}{2025-10-31} \\
+  \ganttbar[bar/.append style={fill=orange!60}]{Sistema de Pagos}{2025-03-01}{2025-11-30} \\
+
+  % ===== Fase III: Integración y Testing =====
+  \ganttgroup{Fase III: Integración y Testing}{2025-09-01}{2025-12-31} \\
+  \ganttbar[bar/.append style={fill=orange!60}]{Panel Administrativo}{2025-09-01}{2025-11-30} \\
+  \ganttbar{Pruebas del Sistema}{2025-11-01}{2025-12-31} \\
+  \ganttbar{Documentación Técnica}{2025-09-01}{2025-12-31} \\
+
+  % ===== Fase IV: Finalización =====
+  \ganttgroup{Fase IV: Finalización}{2025-12-01}{2025-12-31} \\
+  \ganttbar{Validación y Entrega}{2025-12-01}{2025-12-31} \\
+
+  % ===== Hitos =====
+  \ganttmilestone{Diseño completo}{2024-10-31} \\
+  \ganttmilestone{Core funcional}{2025-10-31} \\
+  \ganttmilestone{Sistema completo}{2025-12-31} \\
+
+  % Línea de "hoy"
+  \ganttvrule[vrule/.style={draw=red!64, dashed, line width=1pt}]{Hoy}{2025-09-19}
+
+\end{ganttchart}
+
+\caption{Cronograma del proyecto con fechas actualizadas, fases, tareas e hitos principales}
+\label{fig:cronograma-gantt}
+\end{figure}
+\end{landscape}
+
+\vspace{0.5cm}
+
+\textbf{Leyenda del Diagrama:}
+\begin{itemize}[leftmargin=*, itemsep=2pt]
+    \item \textcolor{green!60}{\rule{0.8cm}{0.25cm}} \textbf{Completado} - Tareas finalizadas al 100\%
+    \item \textcolor{orange!60}{\rule{0.8cm}{0.25cm}} \textbf{En Progreso} - Tareas con avance parcial
+    \item \textcolor{black!10}{\rule{0.8cm}{0.25cm}} \textbf{Planificado} - Tareas pendientes de iniciar
+    \item \textcolor{black!20}{\rule{0.8cm}{0.25cm}} \textbf{Fases} - Agrupación lógica de actividades
+    \item \textcolor{black}{\scalebox{1.2}{$\bullet$}} \textbf{Hitos} - Puntos críticos de entrega
+    \item \textcolor{red!64}{\rule{0.8cm}{1pt}} \textbf{Línea Actual} - Momento presente del proyecto (Sept 2025)
+\end{itemize}
+
+\end{document}

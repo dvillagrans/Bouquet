@@ -1,0 +1,333 @@
+\documentclass[12pt]{report}
+
+% ======= Paquetes base =======
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage{geometry}
+\geometry{letterpaper, top=2.5cm, bottom=2.5cm, left=3cm, right=2.5cm}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{float}         % Para posicionamiento forzado de figuras [H]
+\usepackage{lscape}
+\usepackage{pgfgantt}      % Diagramas de Gantt
+\usepackage{pdflscape}     % (opcional) página apaisada
+\usepackage{xcolor}        % (opcional) colores de barras
+\usepackage{csquotes}
+\usepackage{amssymb}
+\usepackage{multicol}      % Para columnas múltiples
+\usepackage{tcolorbox}     % Para recuadros con color
+\usepackage{pdfpages}      % Para incluir páginas PDF
+\usepackage[backend=biber]{biblatex}
+\addbibresource{referencias.bib}
+
+% ======= Times New Roman =======
+\usepackage{mathptmx}
+
+% ======= Interlineado y párrafo (E7) =======
+\setstretch{1.0} % sencillo
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0pt}
+% Configurar tamaño de fuente base a 12pt
+\renewcommand{\normalsize}{\fontsize{12}{14.4}\selectfont}
+\normalsize
+
+% ======= Títulos numerados 12 pt (E6) =======
+% Configurar numeración de secciones como 1, 2, 3 en lugar de 0.1, 0.2
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+
+\titleformat{\chapter}{\bfseries\fontsize{12}{14.4}\selectfont}{\thechapter.}{1em}{}
+\titlespacing*{\chapter}{0pt}{20pt}{15pt}
+\titleformat{\section}{\bfseries\fontsize{12}{14.4}\selectfont}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\bfseries\fontsize{12}{14.4}\selectfont}{\thesubsection.}{0.6em}{}
+
+% ======= Comandos de portada (E1–E5) =======
+\newcommand{\TituloTT}[1]{\begin{center}\textbf{\Large #1}\end{center}} % 14 pt, negrita, centrado
+\newcommand{\Proposito}[1]{\begin{center}#1\end{center}}
+\newcommand{\Registro}[1]{\begin{center}\textbf{\textit{#1}}\end{center}} % 12 pt, negrita+cursiva, centrado
+\newcommand{\NotaPequena}[1]{{\normalsize \textbf{#1}}}
+
+% ======= Tablas compactas =======
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+% ======= Configuración para tablas y figuras (10pt) =======
+\usepackage{caption}
+\captionsetup{font=footnotesize}  % 10pt para todos los captions
+\newcommand{\tablefont}{\fontsize{10}{12}\selectfont}
+
+% ======= Hyperref al final =======
+% estilos opcionales para que se vea pro
+\ganttset{
+  calendar week text={},
+  bar/.append style = {fill=black!10},
+  group/.append style = {fill=black!20},
+  milestone/.append style = {fill=black},
+  progress label text = {},
+  link/.style = {->, thick},
+}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue, citecolor=black}
+
+\begin{document}
+
+% =======================
+% PORTADA / CARÁTULA
+% =======================
+\thispagestyle{empty}
+
+\TituloTT{Sistema Omnicanal y Plataforma Progresiva para la Gestión de Mesas, Órdenes y Pagos en Restaurantes}
+\begin{center}
+\textbf{Alumnos:} Natalia Anaya Ramírez, Diego Villagrán Salazar \\
+\textbf{Director:} Guzmán Flores Jessie Paulina\\
+\textbf{Correo de contacto:} \texttt{nataliaanayaa@gmail.com}
+\end{center}
+
+% =======================
+% RESUMEN Y PALABRAS CLAVE
+% =======================
+\section*{Resumen}
+Desarrollo de una aplicación web progresiva (PWA) para restaurantes que implementa: (1) sistema de mesas virtuales mediante códigos QR únicos, (2) gestión de pedidos individuales y compartidos en tiempo real, (3) procesamiento de pagos flexibles (individual o por cuenta compartida), y (4) panel administrativo básico con métricas operacionales. El sistema centraliza la comunicación entre comensales, cocina y administración, proporcionando trazabilidad completa de transacciones y estados de pedidos mediante una base de datos unificada.
+
+\section*{Palabras clave}
+Aplicaciones Progresivas; Restaurantes; Sistemas Distribuidos; Inteligencia de Negocios; Bases de Datos.
+
+% =======================
+% 1. INTRODUCCIÓN
+% =======================
+\section{Introducción}
+En los restaurantes tradicionales, el proceso de división de cuentas al final de la visita genera inconvenientes operativos: identificación manual de consumos individuales, múltiples formas de pago fragmentadas y conciliación compleja de ingresos. Los sistemas actuales como Soft Restaurant, Upserve o TouchBistro carecen de funcionalidades de división automática de cuentas y selección individual de productos por parte del usuario.
+
+La solución propuesta implementa cuatro módulos técnicos principales:
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Autenticación y mesas virtuales:} Códigos QR únicos de 6 dígitos para acceso controlado a mesas compartidas.
+  \item \textbf{Gestión de pedidos granular:} Cada usuario selecciona productos específicos de su consumo individual con trazabilidad completa.
+  \item \textbf{Sistema de pagos flexibles:} Liquidación individual o contribución proporcional a cuentas compartidas mediante múltiples métodos de pago.
+  \item \textbf{Sincronización en tiempo real:} WebSockets para actualizaciones instantáneas entre dispositivos conectados a la misma mesa.
+\end{enumerate}
+
+A diferencia de aplicaciones de división de gastos (Splitwise, Tricount) que operan sobre montos fijos, este sistema integra directamente los productos del restaurante con la lógica de división, eliminando la desconexión entre consumo y liquidación.
+
+No se encontraron trabajos terminales relacionados con un desarrollo de aplicaciones centralizado omnicanal para restaurantes que incluya divisiones de cuenta y pagos en una mesa virtual enfocado al sector restaurantero.
+
+Para evaluar la posición competitiva de nuestra solución, se presenta a continuación un análisis comparativo con los principales sistemas de gestión de restaurantes del mercado:
+
+% =======================
+% TABLA COMPARATIVA DE SISTEMAS SIMILARES
+% =======================
+{\tiny
+\begin{longtable}{p{2.5cm}p{1.8cm}p{1.8cm}p{1.8cm}p{1.8cm}p{1.8cm}p{1.8cm}}
+\toprule
+\textbf{Funcionalidad} & \textbf{Tricount/Splitwise \cite{tricount}\cite{splitwise}} & \textbf{TouchBistro \cite{touchbistro}} & \textbf{Soft Restaurant \cite{softrestaurant}} & \textbf{Revel \cite{revel}} & \textbf{Upserve \cite{upserve}} & \textbf{Toast \cite{toast}} \\
+\midrule
+\textbf{División de cuentas} & Excelente para gastos personales & Sí, split por mesa/asiento & Sí, gestión por mesa/comensal & Sí, división flexible & Sí, soporte completo & Sí, split avanzado \\
+\addlinespace
+\textbf{Auto-pedido cliente} & No/limitado & Medio con integraciones & Sí, e-menu digital & Sí, pantallas cocina & Sí, apps integradas & Sí, pedidos directos \\
+\addlinespace
+\textbf{Comunicación integral} & Limitada & Sí, flujo completo & Sí, orden→cocina→admin & Sí, pantallas+backend & Sí, canal operativo & Sí, sistema completo \\
+\addlinespace
+\textbf{Dashboard/Analítica} & Muy limitada & Sí, reportes nube & Sí, analítica integrada & Sí, reportes empresariales & Sí, análisis avanzado & Sí, tiempo real \\
+\addlinespace
+\textbf{POS} & No aplicable & Sí, especializado & Sí, módulo central & Sí, restaurante/comercio & Sí, enfoque restaurante & Sí, núcleo sistema \\
+\addlinespace
+\textbf{Inventarios} & No/básico & Moderado integrado & Sí, control+alertas & Sí, manejo stock & Sí, seguimiento insumos & Sí, gestión completa \\
+\addlinespace
+\textbf{Reportes} & Limitado gastos & Sí, ventas/uso & Sí, múltiples reportes & Sí, cadenas/sucursales & Sí, personal/ventas & Sí, métricas robustas \\
+\addlinespace
+\textbf{Menús/Cartas} & No aplicable & Sí, gestión completa & Sí, digital+QR & Sí, cartas/modificadores & Sí, promociones & Sí, menús especiales \\
+\addlinespace
+\textbf{Gestión mesas} & No aplicable & Sí, reservas/asignación & Sí, estados/ocupación & Sí, mesas/reservas & Sí, mesas/turnos & Sí, gestión avanzada \\
+\addlinespace
+\textbf{Pagos tiempo real} & Sí, gastos compartidos & Limitado, integración & Sí, procesamiento & Sí, múltiples métodos & Sí, tiempo real & Sí, completo \\
+\addlinespace
+\textbf{Solución Propuesta} & \textbf{División colaborativa avanzada + reportes métricas} & \textbf{Pedidos QR + gestión digital} & \textbf{Comunicación integrada + mesas inteligentes} & \textbf{Dashboard BI + pagos colaborativos} & \textbf{POS especializado + PWA omnicanal} & \textbf{Inventarios completos + sistema integral} \\
+\bottomrule
+\caption{Comparación de funcionalidades entre sistemas existentes y la solución propuesta.}
+\end{longtable}
+}
+
+% =======================
+% 2. OBJETIVO
+% =======================
+\section{Objetivo}
+Desarrollar una aplicación progresiva (PWA) para la gestión integral de restaurantes que permita: crear mesas virtuales, gestionar pedidos, ofrecer esquemas flexibles de pago individual y compartido, y generar \textit{dashboards} administrativos, integrando todos los canales en una base de datos centralizada.
+
+% =======================
+% 3. JUSTIFICACIÓN
+% =======================
+\section{Justificación}
+La problemática de división de cuentas al final de la estadía de un grupo de personas en un restaurante suele ser tediosa y propensa a errores, por lo cual la aplicación le facilita al cliente tener una cuenta de su consumo y le da el poder de elección si desea pagar la cuenta de otro comensal, aportar a la cuenta compartida y generar un cobro exacto de lo que haya decidido pagar, de tal forma que sea amigable y práctico para el usuario.
+
+Por otro lado, la concentración de los datos y la trazabilidad de las transacciones genera un sistema que facilita la conciliación de los restaurantes y proporciona los recursos para generar dashboards administrativos o futuros análisis en busca de patrones o tendencias, así mismo evita el consumo de distintos proveedores, centralizando todo en un único sistema. Para los restaurantes es esencial tener control de su operación y, en adición, información que los ayude a generar nuevos modelos de negocio o tomar decisiones.
+
+Existen plataformas que ya generan algunas de estas acciones, sin embargo ninguna incluye la omnicanalidad entre las áreas del comercio, división de cuentas, trazabilidad de pagos y estatus. Es un proyecto de complejidad alta que requiere conocimiento tanto en el área tecnológica como en las áreas financieras, fiscales, contables y de proveedores. Como analistas de datos utilizaremos materias vistas como Bases de Datos, Desarrollo Web, Análisis y Visualización de Datos.
+
+Los productos serán:
+\begin{enumerate}[leftmargin=*]
+  \item Base de datos transaccional
+  \item Aplicación web progresiva con tres vistas: usuario, cocina y mesero.
+  \item Dashboard administrativo
+\end{enumerate}
+
+% =======================
+% 4. PRODUCTOS O RESULTADOS ESPERADOS
+% =======================
+\section{Productos o Resultados esperados}
+
+El proyecto entregará una aplicación progresiva (PWA) integral que incluye interfaces diferenciadas para usuarios y administrativos encargados de inicializar las mesas virtuales, así como un módulo especializado de cocina con estados de órdenes organizados en un tablero Kanban seccionado por \emph{status}. Adicionalmente, se desarrollará un panel administrativo completo para reportes y conciliación, junto con la implementación de esquemas flexibles de pagos individuales, colaborativos y compartidos.
+
+El sistema incluirá código fuente completamente documentado, manual de usuario y documentación técnica detallada, además de una base de datos centralizada diseñada para futuros análisis e inteligencia de negocios. El sistema está diseñado para ofrecer un rendimiento óptimo con tiempos de respuesta rápidos y una experiencia de usuario fluida y eficiente.
+
+La arquitectura tecnológica se fundamenta en un stack moderno que comprende React@18 + TypeScript + TailwindCSS@3 + Vite como bundler para el frontend, garantizando desarrollo rápido y optimización de producción. El backend utiliza Express.js@4 + TypeScript + Node.js para APIs RESTful con middleware de autenticación y validación, mientras que la base de datos emplea Supabase (PostgreSQL) con Row Level Security para control granular de acceso y Supabase Realtime para WebSockets.
+
+Para optimización del rendimiento se implementará Redis como capa de cache para consultas frecuentes y gestión de sesiones, complementado con integración dual de Stripe y MercadoPago APIs para procesamiento seguro de transacciones. El sistema de autenticación utilizará Supabase Auth con soporte para múltiples proveedores (email, Google, Facebook), y la generación automática de códigos QR únicos se realizará mediante la biblioteca qrcode para acceso a mesas.
+El siguiente diagrama presenta la arquitectura completa del sistema, ilustrando la estructura de capas, los componentes tecnológicos principales y el flujo de datos que permitirá la integración efectiva de todos los módulos del sistema omnicanal:
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{arquitectura.png}
+\caption{Arquitectura completa del sistema.}
+\label{fig:arquitectura}
+\end{figure}
+
+\subsection{\textbf{Definición de Módulos del Sistema}}
+
+El sistema está estructurado en cinco capas que trabajan de manera coordinada para ofrecer una experiencia omnicanal completa:
+
+\subsubsection{Usuarios del Sistema}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Cliente:} Escanea el código QR de la mesa para acceder al menú digital, selecciona productos y decide cómo dividir la cuenta al momento del pago.
+  \item \textbf{Mesero:} Administra las mesas del restaurante, puede agregar productos a las órdenes existentes y monitorea el progreso de los pedidos desde la cocina.
+  \item \textbf{Cocinero:} Visualiza las órdenes entrantes en un tablero organizado, actualiza el estatus de preparación y coordina los tiempos de entrega.
+  \item \textbf{Administrador:} Configura el menú del restaurante, revisa reportes de ventas y accede a métricas detalladas del negocio.
+\end{itemize}
+
+\subsubsection{Aplicaciones Web Progresivas}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Stack Tecnológico:} React 18 con TypeScript para mayor robustez del código y TailwindCSS 3 para un diseño consistente y responsivo.
+  \item \textbf{Aplicación Cliente:} Permite navegar el menú, agregar productos al carrito personal y procesar pagos de forma individual o colaborativa.
+  \item \textbf{Panel Mesero:} Facilita la gestión de múltiples mesas simultáneamente y la comunicación directa con el área de cocina.
+  \item \textbf{Interfaz Cocina:} Organiza las órdenes en columnas según su estatus (recibido, preparando, listo) similar a un tablero Kanban.
+  \item \textbf{Dashboard Administrativo:} Concentra reportes de ventas, configuración de productos y análisis de tendencias del restaurante.
+\end{itemize}
+
+\subsubsection{Lógica de Negocio}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Backend Principal:} Node.js con Express.js maneja todas las operaciones del servidor y expone APIs REST para cada funcionalidad.
+  \item \textbf{Endpoints API:} Rutas específicas para login, gestión de mesas, procesamiento de pedidos, manejo de pagos y generación de reportes.
+  \item \textbf{Middleware:} Valida datos de entrada, verifica permisos de usuario y maneja errores de manera centralizada.
+  \item \textbf{Comunicación Tiempo Real:} WebSockets mantienen sincronizados todos los dispositivos conectados a una misma mesa.
+  \item \textbf{Gestión de Mesas:} Genera códigos QR únicos de 6 dígitos y controla el acceso de usuarios a cada mesa virtual.
+  \item \textbf{Procesamiento de Pedidos:} Registra cada producto seleccionado por usuario individual y mantiene el historial completo de la orden.
+  \item \textbf{Sistema de Pagos:} Integra múltiples pasarelas para procesar transacciones seguras y dividir cuentas automáticamente.
+  \item \textbf{Módulo de Reportes:} Procesa datos transaccionales para generar métricas operativas y análisis de ventas.
+\end{itemize}
+
+\subsubsection{Almacenamiento de Datos}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Base de Datos Principal:} PostgreSQL a través de Supabase con políticas de seguridad a nivel de fila para proteger información sensible.
+  \item \textbf{Cache de Sesiones:} Redis almacena temporalmente datos de sesiones activas y consultas frecuentes para mejorar el rendimiento.
+  \item \textbf{Almacén Analítico:} Data warehouse separado para consultas históricas y análisis de inteligencia de negocios.
+  \item \textbf{Procesos ETL:} Scripts automatizados que extraen, transforman y cargan datos desde la base transaccional hacia el almacén analítico.
+\end{itemize}
+
+\subsubsection{Integraciones Externas}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Stripe:} Procesa pagos con tarjetas internacionales y maneja suscripciones recurrentes si el restaurante lo requiere.
+  \item \textbf{MercadoPago:} Acepta métodos de pago locales como transferencias bancarias, efectivo en tiendas y billeteras digitales.
+  \item \textbf{Autenticación Supabase:} Permite login con email/contraseña o cuentas sociales como Google y Facebook.
+  \item \textbf{Supabase Realtime:} Proporciona la infraestructura de WebSockets para actualizaciones instantáneas entre dispositivos.
+  \item \textbf{Generador QR:} Biblioteca JavaScript que crea códigos QR únicos para cada mesa del restaurante.
+  \item \textbf{Monitoreo:} Herramientas de logging y alertas para detectar errores y monitorear el rendimiento del sistema.
+\end{itemize}
+
+\subsubsection{Infraestructura de Despliegue}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Frontend:} Aplicaciones React desplegadas en CDN para carga rápida desde cualquier ubicación geográfica.
+  \item \textbf{Backend:} Servidores Node.js con escalamiento automático según la demanda de usuarios concurrentes.
+  \item \textbf{Automatización:} Pipeline CI/CD que ejecuta pruebas automáticas y despliega nuevas versiones sin interrumpir el servicio.
+\end{itemize}
+
+% =======================
+% 5. METODOLOGÍA
+% =======================
+\newpage
+\section{Metodología}
+
+El desarrollo del sistema omnicanal para restaurantes seguirá una metodología ágil basada en Scrum, organizando el trabajo en sprints de duración fija. Esta aproximación permite entregar funcionalidades incrementales que pueden ser probadas y validadas de manera continua.
+
+La metodología seleccionada se fundamenta en los siguientes principios:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Desarrollo iterativo:} Cada sprint de 2-3 semanas produce un entregable funcional que agrega valor al sistema.
+  \item \textbf{Validación temprana:} Los prototipos y funcionalidades se prueban desde las primeras iteraciones para detectar problemas de usabilidad.
+  \item \textbf{Flexibilidad de requisitos:} La arquitectura modular permite ajustar funcionalidades según feedback de usuarios y restricciones técnicas.
+  \item \textbf{Integración continua:} Cada módulo desarrollado se integra inmediatamente con los componentes existentes.
+\end{itemize}
+
+
+El proyecto se estructura en 12 sprints que abarcan desde el análisis inicial hasta las pruebas finales del sistema. Cada sprint tiene objetivos específicos y entregables medibles:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Analítica de negocio y Arquitectura}
+  \item \textbf{Sprint 2: Diseño de la base de datos}
+  \item \textbf{Sprint 3: Desarrollo de la base de datos}
+  \item \textbf{Sprint 4: Diseño de vistas y mockups}
+  \item \textbf{Sprint 5: Diseño y arquitectura de backend}
+  \item \textbf{Sprint 6: Definición de KPI y vistas de Dashboard}
+  \item \textbf{Sprint 7: Implementación del dashboard}
+  \item \textbf{Sprint 8: Desarrollo del PAW mesero}
+  \item \textbf{Sprint 9: Desarrollo del PAW comensal}
+  \item \textbf{Sprint 10: Desarrollo del PAW cocina}
+  \item \textbf{Sprint 11: Integración de la API de pagos}
+  \item \textbf{Sprint 12: Pruebas}
+\end{enumerate}
+
+Se generará un tablero Kanban en GitHub, el cual tendrá los estatus: inicializado, en progreso, en revisión y finalizado. Cabe aclarar que ninguno de estos estatus es final, ya que puede volver a cualquier otro estado excepto inicializado.
+Se pueden agregar nuevas tareas dentro del sprint si es necesario.
+
+La implementación de las aplicaciones web progresivas para los diferentes roles (comensal, cocina, mesero) y el desarrollo del dashboard administrativo requieren una arquitectura robusta y escalable que soporte las funcionalidades descritas.
+
+% =======================
+% CRONOGRAMA DE ACTIVIDADES
+% =======================
+
+Para la ejecución exitosa del proyecto, se ha desarrollado un cronograma detallado que abarca el período de febrero a diciembre de 2026. Este cronograma está dividido en dos diagramas de Gantt que muestran la distribución de actividades y responsabilidades entre los miembros del equipo de desarrollo. La planificación temporal considera las dependencias entre tareas, los recursos disponibles y los hitos críticos del proyecto, asegurando una progresión ordenada desde la fase de análisis hasta la implementación completa del sistema omnicanal para restaurantes.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Nat.png}
+\caption{Cronograma de actividades - Natalia (Febrero - Diciembre 2026).}
+\label{fig:gantt-nat}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{Diego.png}
+\caption{Cronograma de actividades - Diego (Febrero - Diciembre 2026).}
+\label{fig:gantt-diego}
+\end{figure}
+
+
+% =======================
+% 7. REFERENCIAS
+% =======================
+\newpage
+\section{Referencias}
+\printbibliography[heading=none]
+
+% =======================
+% 8. ALUMNOS Y DIRECTORES
+% =======================
+\newpage
+\includepdf[pages=-]{hoja-firmas.pdf}
+
+\end{document}

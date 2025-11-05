@@ -1,97 +1,145 @@
+import React, { useContext, useState, useMemo, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '@/context/CartContext';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Plus, ShoppingCart } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { menuItems } from '@/data/menuData';
-import flowerLogo from '@/assets/flower-logo.png';
+import { ModernMenuCard } from '@/components/ui/modern-menu-card';
+
+import { Input } from '@/components/ui/input';
+
+import { FloatingActionButton } from '@/components/ui/micro-interactions';
+import { ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Menu = () => {
   const { category } = useParams<{ category: string }>();
   const { addToCart, cart } = useCart();
+  
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  const filteredItems = menuItems.filter((item) => item.category === category);
+  useEffect(() => {
+    // Simulate loading time for better UX
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [category]);
+
   const cartItemsCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+
+  // Filter items based on current category and search term
+  const filteredItems = useMemo(() => {
+    let items = category 
+      ? menuItems.filter(item => item.category === category)
+      : menuItems;
+
+    // Apply search filter
+    if (searchTerm) {
+      items = items.filter(item =>
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return items;
+  }, [category, searchTerm]);
 
   const getCategoryTitle = () => {
     const titles: Record<string, string> = {
       drinks: 'Drinks',
       breakfast: 'Breakfast',
       appetizers: 'Appetizers',
-      dishes: 'Dishes',
+      dishes: 'Main Dishes',
       desserts: 'Desserts',
     };
     return titles[category || ''] || 'Menu';
   };
 
+  const getCategoryDescription = () => {
+    const descriptions: Record<string, string> = {
+      drinks: 'Refreshing beverages to quench your thirst',
+      breakfast: 'Start your day with our delicious morning options',
+      appetizers: 'Perfect starters to begin your meal',
+      dishes: 'Hearty and satisfying main courses',
+      desserts: 'Sweet treats to end your meal perfectly',
+    };
+    return descriptions[category || ''] || 'Explore our menu';
+  };
+
   const handleAddToCart = (item: typeof menuItems[0]) => {
     addToCart(item);
-    toast.success(`${item.name} added to cart`);
+    toast.success(`${item.name} added to cart`, {
+      description: "Item successfully added to your basket",
+      duration: 2000,
+    });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-albescent-white-50 via-pink-50 to-coral-tree-50">
-      {/* Header */}
-      <header className="glass sticky top-0 z-10 border-0 border-b border-glass-border">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/home')}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+    <div className="min-h-screen bg-gray-50 pt-20 sm:pt-24">
+      {/* Content */}
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        {/* Category Header */}
+        <div className="mb-4 sm:mb-6 text-center">
+          <h2 className="text-xl sm:text-2xl font-medium text-buccaneer-800">
+            {getCategoryTitle()}
+          </h2>
+        </div>
 
-          <div className="flex items-center gap-3">
-            <img src={flowerLogo} alt="Bouquet" className="w-10 h-10" />
-            <h1 className="text-2xl font-script text-buccaneer-700">Bouquet</h1>
+        {/* Search */}
+        <div className="mb-4 sm:mb-6">
+          <div className="relative max-w-md mx-auto">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="text"
+              placeholder="Buscar..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-10 sm:h-12 text-base rounded-lg border border-gray-200 focus:border-coral-tree-400 focus:ring-1 focus:ring-coral-tree-400"
+            />
           </div>
-          
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigate('/cart')}
-            className="relative"
-          >
-            <ShoppingCart className="h-5 w-5" />
-            {cartItemsCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-primary text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                {cartItemsCount}
-              </span>
-            )}
-          </Button>
         </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-6 py-8">
-        <h2 className="text-5xl font-script text-center text-buccaneer-700 mb-12">{getCategoryTitle()}</h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {filteredItems.map((item) => (
-            <Card key={item.id} className="glass-card hover:glass-medium transition-all duration-300 hover:shadow-xl overflow-hidden group border-0">
-              <CardHeader>
-                <CardTitle className="text-xl font-elegant text-buccaneer-800">{item.name}</CardTitle>
-                <CardDescription className="text-coral-tree-700 font-medium">{item.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-primary">${item.price.toFixed(2)}</span>
-                  <Button
-                    variant="default"
-                    size="icon"
-                    onClick={() => handleAddToCart(item)}
-                    className="rounded-full group-hover:scale-110 transition-transform"
-                  >
-                    <Plus className="h-5 w-5" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* Menu Items Grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-40 sm:h-48 bg-gray-100 rounded-lg animate-pulse"></div>
+            ))}
+          </div>
+        ) : filteredItems.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {filteredItems.map((item) => (
+              <ModernMenuCard
+                key={item.id}
+                item={item}
+                onAddToCart={() => handleAddToCart(item)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 sm:py-12">
+            <p className="text-gray-500 mb-4 text-sm sm:text-base">No encontramos resultados</p>
+            <button
+              onClick={() => setSearchTerm('')}
+              className="px-4 py-2 bg-coral-tree-500 text-white rounded-lg hover:bg-coral-tree-600 transition-colors text-sm sm:text-base"
+            >
+              Limpiar búsqueda
+            </button>
+          </div>
+        )}
+
+        {/* Floating Action Button for Cart */}
+        {cartItemsCount > 0 && (
+          <FloatingActionButton
+            icon={<ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />}
+            onClick={() => navigate('/cart')}
+            tooltip={`View cart (${cartItemsCount} items)`}
+          />
+        )}
       </main>
     </div>
   );

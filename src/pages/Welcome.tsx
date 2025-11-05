@@ -7,6 +7,7 @@ import flowerLogo from '@/assets/flower-logo.png';
 
 const Welcome = () => {
   const [name, setName] = useState('');
+  const [staffCode, setStaffCode] = useState('');
   const { setUserName } = useCart();
   const navigate = useNavigate();
 
@@ -19,48 +20,38 @@ const Welcome = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-100 via-albescent-white-50 to-coral-tree-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-6">
-            <img src={flowerLogo} alt="Bouquet" className="w-20 h-20 drop-shadow-lg" />
-            <h1 className="text-6xl font-script text-buccaneer-700 ml-4 drop-shadow-sm">Bouquet</h1>
-          </div>
-        </div>
+    <div className="min-h-screen bg-champagne flex items-center justify-center p-6">
+      <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-6">
+        <img src={flowerLogo} alt="Bouquet" className="w-20 h-20 mx-auto" />
+        
+        <h2 className="text-center text-coral-tree-700 text-sm font-medium">
+          Hi, please insert your name
+        </h2>
+        
+        <Input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Natalia"
+          className="w-full text-center text-base h-12 bg-white border border-gray-300 focus:ring-2 focus:ring-coral-tree-300 focus:border-transparent rounded-lg"
+          required
+        />
 
-        <div className="glass-card rounded-3xl shadow-2xl p-8 border-0">
-          <h2 className="text-4xl font-script text-center text-buccaneer-800 mb-8 drop-shadow-sm">Welcome</h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-center text-coral-tree-800 mb-4 text-lg font-elegant">
-                Hi, please insert your name
-              </label>
-              <Input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-                className="w-full text-center text-lg h-12 glass-light border-0 focus:ring-2 focus:ring-primary rounded-xl"
-                required
-              />
-            </div>
+        <Input
+          type="text"
+          value={staffCode}
+          onChange={(e) => setStaffCode(e.target.value)}
+          placeholder="Ingresa el código de staff"
+          className="w-full text-center text-base h-12 bg-white border border-gray-300 focus:ring-2 focus:ring-coral-tree-300 focus:border-transparent rounded-lg"
+        />
 
-            <Button 
-              type="submit" 
-              variant="elegant" 
-              size="lg" 
-              className="w-full text-lg shadow-lg"
-            >
-              Continue
-            </Button>
-          </form>
-
-          <div className="mt-8 flex justify-center">
-            <img src={flowerLogo} alt="Flower decoration" className="w-24 h-24 opacity-60 drop-shadow-md" />
-          </div>
-        </div>
-      </div>
+        <Button 
+          type="submit" 
+          className="w-full bg-coral-tree-500 hover:bg-coral-tree-600 text-white font-medium py-3 rounded-lg transition-colors"
+        >
+          Continue
+        </Button>
+      </form>
     </div>
   );
 };

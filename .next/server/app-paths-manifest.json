@@ -1,0 +1,10 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/assign/route": "app/api/assign/route.js",
+  "/api/items/route": "app/api/items/route.js",
+  "/api/payments/intent/route": "app/api/payments/intent/route.js",
+  "/api/sessions/route": "app/api/sessions/route.js",
+  "/api/webhooks/stripe/route": "app/api/webhooks/stripe/route.js",
+  "/join/[code]/page": "app/join/[code]/page.js",
+  "/page": "app/page.js"
+}

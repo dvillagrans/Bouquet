@@ -1,0 +1,10 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/assign/route": "/api/assign",
+  "/api/items/route": "/api/items",
+  "/api/payments/intent/route": "/api/payments/intent",
+  "/api/sessions/route": "/api/sessions",
+  "/api/webhooks/stripe/route": "/api/webhooks/stripe",
+  "/join/[code]/page": "/join/[code]",
+  "/page": "/"
+}

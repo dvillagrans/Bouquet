@@ -1,13 +1,7 @@
 import Link from "next/link";
-
-import {
-  AmbientLeaf,
-  CornerOrnament,
-  FloralEngraving,
-} from "@/components/landing/BotanicalElements";
 import { ProductMockup } from "@/components/landing/ProductMockup";
 
-const inlineStats = [
+const stats = [
   { n: "+40", label: "restaurantes" },
   { n: "4.9★", label: "valoración" },
   { n: "100%", label: "renovación" },
@@ -15,95 +9,164 @@ const inlineStats = [
 
 export const Hero = () => {
   return (
-    <section className="relative min-h-screen overflow-hidden bg-cream px-6 pb-20 pt-28 sm:pt-32 lg:px-10 lg:pt-36">
-      {/* Decorative botanicals */}
-      <CornerOrnament className="absolute left-6 top-28 hidden h-20 w-20 text-charcoal/18 xl:block" />
-      <CornerOrnament className="absolute bottom-20 right-6 hidden h-20 w-20 text-charcoal/14 xl:block" flip />
-      <AmbientLeaf className="absolute left-0 top-44 hidden h-32 w-32 -rotate-12 text-charcoal/45 xl:block" size={128} />
-      <FloralEngraving className="absolute right-[9%] top-28 hidden h-36 w-36 text-gold/45 xl:block" />
+    <section className="relative min-h-screen overflow-hidden bg-cream">
+      {/* Structural column rule — editorial grid marker */}
+      <div
+        className="pointer-events-none absolute bottom-0 left-[clamp(1.5rem,5.5vw,5.5rem)] top-0 hidden w-px bg-charcoal/[0.065] lg:block"
+        aria-hidden
+      />
 
-      {/* Ambient glows */}
-      <div className="pointer-events-none absolute left-[10%] top-[22%] hidden h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(168,185,165,0.14),rgba(168,185,165,0))] blur-3xl lg:block" />
-      <div className="pointer-events-none absolute right-[8%] top-[10%] hidden h-52 w-52 rounded-full bg-[radial-gradient(circle,rgba(183,146,93,0.11),rgba(183,146,93,0))] blur-3xl lg:block" />
+      {/* Live status indicator */}
+      <div
+        className="absolute right-6 hidden items-center gap-2 lg:right-10 lg:flex"
+        style={{ top: "clamp(7rem,9vw,9.5rem)", animation: "fade-in 0.5s ease-out 0.85s both" }}
+        aria-hidden
+      >
+        <span
+          className="h-1.5 w-1.5 rounded-full bg-sage-deep"
+          style={{ animation: "pulse-slow 2.4s ease-in-out infinite" }}
+        />
+        <span className="text-[0.56rem] font-bold uppercase tracking-[0.32em] text-charcoal/30">
+          Turno activo
+        </span>
+      </div>
 
-      <div className="relative mx-auto max-w-7xl">
-        {/* Split layout: editorial text left, product right */}
-        <div className="grid items-start gap-14 lg:grid-cols-[1fr_1.15fr] lg:gap-12 xl:gap-16">
+      <div className="relative mx-auto max-w-[1440px] px-6 pb-20 lg:pl-[clamp(6rem,10vw,9rem)] lg:pr-10 lg:pb-28">
 
-          {/* ── LEFT: Editorial content ── */}
-          <div className="flex flex-col lg:pt-6">
+        {/* Edition label */}
+        <div
+          className="pt-28 sm:pt-32 lg:pt-36"
+          style={{ animation: "fade-in 0.5s ease-out both" }}
+        >
+          <span className="inline-flex items-center gap-3 text-[0.57rem] font-bold uppercase tracking-[0.38em] text-charcoal/32">
+            <span
+              className="inline-block h-px w-5 bg-charcoal/25"
+              style={{ animation: "tick-in 0.6s ease-out 0.25s both" }}
+            />
+            Temporada I · Sistema operativo para restaurantes
+          </span>
+        </div>
 
-            {/* Overline */}
-            <div className="opacity-0 animate-[fade-in_0.6s_ease-out_forwards]">
-              <span className="inline-flex items-center gap-3 text-[0.63rem] font-bold uppercase tracking-[0.32em] text-charcoal/45">
-                <span className="h-px w-8 bg-gold/55 opacity-0 animate-[draw-line_0.7s_ease-out_0.3s_forwards]" />
-                Sistema operativo para restaurantes
-              </span>
-            </div>
+        {/* ── HEADLINE CASCADE ───────────────────────────────────── */}
+        {/*
+         *  Three typographic registers:
+         *    Row 1 — muted italic intro   (~7rem, 40% opacity) — the whisper
+         *    Row 2 — massive anchor word  (~14rem, full)        — the declaration
+         *    Row 3 — resolved close       (~7rem, full)         — the settle
+         *
+         *  The size contrast mirrors the product's promise:
+         *  clarity is the loud center of everything.
+         */}
+        <div className="mt-7 select-none">
 
-            {/* Big headline */}
-            <h1 className="mt-6 max-w-[14ch] font-serif text-[clamp(3.4rem,7.2vw,7rem)] font-medium leading-[0.91] tracking-[-0.04em] text-charcoal opacity-0 animate-[fade-in_0.8s_ease-out_0.08s_forwards,slide-from-bottom_0.8s_cubic-bezier(0.22,1,0.36,1)_0.08s_forwards]">
+          {/* Row 1 */}
+          <div
+            className="overflow-hidden"
+            style={{ animation: "reveal-up 0.65s cubic-bezier(0.22,1,0.36,1) 0.08s both" }}
+          >
+            <p className="font-serif text-[clamp(2.8rem,6.6vw,7rem)] font-normal italic leading-[0.88] tracking-[-0.02em] text-charcoal/38">
               Opera con
-              <span className="mt-1 block italic text-charcoal/65">claridad,</span>
-              ritmo y{" "}
-              <span className="font-light italic text-gold">control.</span>
-            </h1>
+            </p>
+          </div>
 
-            {/* Description */}
-            <p className="mt-8 max-w-[38ch] text-[0.93rem] font-medium leading-[1.85] text-charcoal/55 opacity-0 animate-[fade-in_0.8s_ease-out_0.22s_forwards]">
+          {/* Row 2 — the mountain */}
+          <div
+            className="-mt-1 overflow-hidden sm:-mt-2"
+            style={{ animation: "reveal-up 0.72s cubic-bezier(0.22,1,0.36,1) 0.16s both" }}
+          >
+            <h1 className="font-serif text-[clamp(5rem,13.2vw,14rem)] font-medium leading-[0.82] tracking-[-0.05em] text-charcoal">
+              claridad,
+            </h1>
+          </div>
+
+          {/* Row 3 */}
+          <div
+            className="-mt-1 overflow-hidden"
+            style={{ animation: "reveal-up 0.72s cubic-bezier(0.22,1,0.36,1) 0.24s both" }}
+          >
+            <p className="font-serif text-[clamp(2.8rem,6.6vw,7rem)] font-normal leading-[0.92] tracking-[-0.02em] text-charcoal">
+              ritmo y{" "}
+              <span className="italic text-gold">control.</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Horizontal rule — separates declaration from execution */}
+        <div
+          className="mt-10 h-px origin-left bg-charcoal/[0.09]"
+          style={{ animation: "tick-in 1s cubic-bezier(0.22,1,0.36,1) 0.38s both" }}
+        />
+
+        {/* ── CONTENT GRID ──────────────────────────────────────── */}
+        <div
+          className="mt-8 grid gap-12 lg:grid-cols-[0.6fr_1.6fr] lg:gap-14"
+          style={{ animation: "fade-in 0.7s ease-out 0.52s both" }}
+        >
+
+          {/* LEFT — descriptor · CTAs · stats */}
+          <div className="flex flex-col gap-9 lg:pt-1.5">
+
+            <p className="max-w-[32ch] text-[0.88rem] font-medium leading-[1.95] text-charcoal/46">
               Gestiona mesas, órdenes y pagos desde una sola plataforma pensada para restaurantes que quieren correr sin caos.
             </p>
 
-            {/* CTAs */}
-            <div className="mt-10 flex items-center gap-5 opacity-0 animate-[fade-in_0.8s_ease-out_0.34s_forwards]">
+            {/* CTAs — sharp corners, operational feel */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
               <Link
                 href="#demo"
-                className="group inline-flex h-12 items-center gap-2 rounded-full bg-charcoal px-7 text-[0.83rem] font-bold text-cream shadow-[0_18px_38px_-18px_rgba(43,36,30,0.72)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_26px_48px_-16px_rgba(43,36,30,0.88)]"
+                className="group inline-flex h-11 items-center gap-2 bg-charcoal px-6 text-[0.79rem] font-bold text-cream shadow-[0_14px_34px_-18px_rgba(43,36,30,0.65)] transition-all duration-300 hover:-translate-y-px hover:shadow-[0_20px_44px_-16px_rgba(43,36,30,0.8)]"
               >
                 Solicitar demo
                 <svg
-                  className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5"
+                  className="h-3 w-3 transition-transform duration-300 group-hover:translate-x-0.5"
+                  viewBox="0 0 16 16"
                   fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                  aria-hidden
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14m-5-5 5 5-5 5" />
+                  <path
+                    d="M2 8h12m-5-5 5 5-5 5"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               </Link>
               <Link
                 href="#producto"
-                className="text-[0.83rem] font-semibold text-charcoal/55 transition-colors duration-200 hover:text-charcoal"
+                className="text-[0.79rem] font-semibold text-charcoal/40 underline underline-offset-4 decoration-charcoal/20 transition-colors duration-200 hover:text-charcoal hover:decoration-charcoal/40"
               >
-                Ver el producto →
+                Ver el producto
               </Link>
             </div>
 
-            {/* Inline stats */}
-            <div className="mt-12 flex items-center gap-8 border-t border-charcoal/[0.08] pt-8 opacity-0 animate-[fade-in_0.8s_ease-out_0.5s_forwards]">
-              {inlineStats.map(({ n, label }) => (
+            {/* Stats — typographic, no cards */}
+            <div className="flex items-start gap-7 border-t border-charcoal/[0.08] pt-7">
+              {stats.map(({ n, label }) => (
                 <div key={label}>
-                  <p className="font-serif text-[1.85rem] font-semibold leading-none text-charcoal">{n}</p>
-                  <p className="mt-1.5 text-[0.6rem] font-bold uppercase tracking-[0.22em] text-charcoal/38">{label}</p>
+                  <p className="font-serif text-[1.65rem] font-semibold leading-none text-charcoal">
+                    {n}
+                  </p>
+                  <p className="mt-1.5 text-[0.56rem] font-bold uppercase tracking-[0.24em] text-charcoal/30">
+                    {label}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* ── RIGHT: Product mockup ── */}
-          <div
-            id="producto"
-            className="opacity-0 animate-[fade-in_1s_ease-out_0.2s_forwards,slide-from-bottom_1s_cubic-bezier(0.22,1,0.36,1)_0.2s_forwards] lg:sticky lg:top-28"
-          >
+          {/* RIGHT — product */}
+          <div id="producto" className="lg:sticky lg:top-28">
             <ProductMockup />
           </div>
         </div>
-
-        {/* Hidden anchors */}
-        <div id="demo" className="sr-only" aria-hidden>Demo</div>
-        <div id="soluciones" className="sr-only" aria-hidden>Soluciones</div>
-        <div id="nosotros" className="sr-only" aria-hidden>Nosotros</div>
-        <div id="contacto" className="sr-only" aria-hidden>Contacto</div>
       </div>
+
+      {/* Hidden anchors */}
+      <div id="demo"      className="sr-only" aria-hidden>Demo</div>
+      <div id="soluciones" className="sr-only" aria-hidden>Soluciones</div>
+      <div id="nosotros"  className="sr-only" aria-hidden>Nosotros</div>
+      <div id="contacto"  className="sr-only" aria-hidden>Contacto</div>
     </section>
   );
 };

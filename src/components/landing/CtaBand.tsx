@@ -1,53 +1,100 @@
 import Link from "next/link";
 
+const stats = [
+  { n: "+40",   label: "restaurantes" },
+  { n: "4.9★",  label: "valoración"   },
+  { n: "100%",  label: "renovación"   },
+];
+
+/*
+ *  Concept: "Hoja de Servicio" — the nightly briefing sheet.
+ *  Four horizontal bands divided by hairline rules — like a kitchen
+ *  service document. Dark, flat, no glows. Every element earns its place.
+ *
+ *  Band 1 — edition + live time label         (48px)
+ *  Band 2 — big headline + CTA                (flex, generous)
+ *  Band 3 — three spread stats                (56px)
+ */
 export const CtaBand = () => (
-  <section className="relative overflow-hidden bg-canvas py-32 lg:py-44">
-    {/* Subtle ambient — just enough, not AI-blob levels */}
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_55%_at_50%_110%,rgba(201,160,84,0.07),transparent)]"
-    />
+  <section className="overflow-hidden bg-canvas" id="contacto">
 
-    <div className="relative mx-auto max-w-7xl px-6 lg:px-10">
-      {/* Split: big headline left, action right */}
-      <div className="flex flex-col gap-12 lg:flex-row lg:items-end lg:justify-between">
+    {/* Band 1 — document header */}
+    <div className="border-b border-light/[0.07] px-6 py-4 lg:px-12">
+      <div className="mx-auto flex max-w-7xl items-center justify-between">
+        <span className="text-[0.56rem] font-bold uppercase tracking-[0.38em] text-dim">
+          Bouquet OS · Temporada I
+        </span>
+        <span className="flex items-center gap-2 text-[0.56rem] font-bold uppercase tracking-[0.38em] text-dim">
+          <span
+            className="h-1.5 w-1.5 rounded-full bg-sage-deep"
+            style={{ animation: "pulse-slow 2.4s ease-in-out infinite" }}
+              aria-hidden="true"
+          />
+          Turno nocturno
+        </span>
+      </div>
+    </div>
 
-        {/* Left — editorial headline */}
-        <div>
-          <span className="text-[0.63rem] font-bold uppercase tracking-[0.36em] text-dim">
-            Empieza hoy
-          </span>
-          <h2 className="mt-5 max-w-[18ch] font-serif text-[clamp(2.8rem,5.8vw,6rem)] font-medium italic leading-[0.92] tracking-[-0.035em] text-light">
-            ¿Listo para operar con claridad?
+    {/* Band 2 — headline + action */}
+    <div className="px-6 py-16 lg:px-12 lg:py-24">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-14 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-20">
+
+          {/* Headline */}
+          <h2 className="font-serif text-[clamp(3rem,6.8vw,7.2rem)] font-medium leading-[0.88] tracking-[-0.04em] text-light">
+            Empieza a operar<br />
+            <span className="italic text-light/55">con claridad</span><br />
+            desde mañana.
           </h2>
-        </div>
 
-        {/* Right — description + CTA */}
-        <div className="flex flex-col gap-6 lg:items-end lg:pb-2">
-          <p className="max-w-[34ch] text-[0.9rem] font-medium leading-[1.85] text-dim lg:text-right">
-            Únete a los restaurantes que ya coordinan sala, cocina y caja desde un solo lugar. Sin caos, sin papeles.
-          </p>
-          <div className="flex flex-col items-start gap-3 lg:items-end">
+          {/* CTA block */}
+          <div className="flex flex-col gap-4 lg:items-end lg:pb-2">
             <Link
               href="#demo"
-              className="group inline-flex items-center gap-2.5 rounded-full bg-glow px-9 py-4 text-[0.875rem] font-bold text-ink shadow-[0_0_44px_-10px_rgba(201,160,84,0.5)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_60px_-8px_rgba(201,160,84,0.68)]"
+              className="group inline-flex min-h-11 items-center gap-2.5 bg-cream px-8 text-[0.82rem] font-bold text-charcoal shadow-none transition-all duration-300 hover:-translate-y-px hover:bg-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+              style={{ height: "3.25rem" }}
             >
               Solicitar demo gratuito
               <svg
-                className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5"
+                className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
-                strokeWidth={2.5}
+                strokeWidth={2.2}
+                aria-hidden="true"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14m-5-5 5 5-5 5" />
               </svg>
             </Link>
-            <p className="text-[0.68rem] font-medium text-dim">
-              Sin tarjeta de crédito · Configuración en 1 día
+            <p className="text-[0.6rem] font-medium text-dim">
+              Sin tarjeta de crédito · Configuración en 1 día · Soporte incluido
             </p>
           </div>
         </div>
+      </div>
+    </div>
+
+    {/* Band 3 — stats spread */}
+    <div className="border-t border-light/[0.07] px-6 py-7 lg:px-12">
+      <div className="mx-auto grid max-w-7xl grid-cols-3">
+        {stats.map(({ n, label }, i) => (
+          <div
+            key={label}
+            className={[
+              "flex flex-col gap-1.5 py-1",
+              i === 1 ? "items-center text-center" : "",
+              i === 2 ? "items-end text-right" : "",
+              i > 0 ? "border-l border-light/[0.07] pl-8 sm:pl-12" : "",
+            ].join(" ")}
+          >
+            <p className="font-serif text-[clamp(1.6rem,3.5vw,2.4rem)] font-semibold leading-none text-glow">
+              {n}
+            </p>
+            <p className="text-[0.56rem] font-bold uppercase tracking-[0.26em] text-dim">
+              {label}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
   </section>

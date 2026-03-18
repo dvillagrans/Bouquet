@@ -4,14 +4,10 @@ const stats = [
   { value: "100%", label: "Renovación anual",     sub: "de contratos"   },
 ];
 
+/* H-1 fix: removed radial gold glow — AI color palette antipattern */
 export const SocialProof = () => (
-  <section className="relative overflow-hidden bg-ink py-28 lg:py-40">
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(201,160,84,0.065),transparent)]"
-    />
-
-    <div className="relative mx-auto max-w-7xl px-6 lg:px-10">
+  <section className="bg-ink py-28 lg:py-40">
+    <div className="mx-auto max-w-7xl px-6 lg:px-10">
 
       {/* Stats strip */}
       <div className="mb-20 grid grid-cols-3 gap-6 border-b border-wire pb-20 sm:gap-12 lg:gap-16">
@@ -47,3 +43,4 @@ export const SocialProof = () => (
     </div>
   </section>
 );
+

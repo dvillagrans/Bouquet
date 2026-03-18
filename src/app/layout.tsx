@@ -31,13 +31,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      {process.env.NODE_ENV === "development" && (
-        <Script
-          src="//unpkg.com/react-grab/dist/index.global.js"
-          crossOrigin="anonymous"
-          strategy="beforeInteractive"
-        />
-      )}
+      <head>
+        {process.env.NODE_ENV === "development" && (
+          <Script
+            src="//unpkg.com/react-grab/dist/index.global.js"
+            crossOrigin="anonymous"
+            strategy="beforeInteractive"
+          />
+        )}
+      </head>
       <body className={`${serif.variable} ${sans.variable} font-sans antialiased`}>
         {children}
       </body>

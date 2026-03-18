@@ -112,10 +112,10 @@ export const Features = () => (
         {pillars.map(({ number, title, body, tags, accent, accentColor, preview }) => (
           <div
             key={number}
-            className="group grid gap-8 py-14 md:grid-cols-[2.5rem_1fr] md:gap-14 lg:grid-cols-[2.5rem_1fr_1.1fr] lg:py-16"
+            className="group grid gap-8 py-14 md:grid-cols-[2.5rem_1fr] md:gap-14 lg:grid-cols-[2.5rem_1fr_1.1fr] lg:gap-16 lg:py-16"
           >
             {/* Number — large, background-like */}
-            <span className="font-serif text-[2.2rem] font-light leading-none text-wire transition-colors duration-400 group-hover:text-dim">
+            <span className="font-serif text-[2.2rem] font-light leading-none text-wire transition-colors duration-500 group-hover:text-dim">
               {number}
             </span>
 
@@ -135,8 +135,8 @@ export const Features = () => (
               </div>
             </div>
 
-            {/* Preview panel */}
-            <div className="rounded-2xl border border-wire bg-canvas p-5 lg:p-6">
+            {/* Preview panel — decorative mockup UI, hidden on tablet */}
+            <div className="hidden rounded-2xl border border-wire bg-canvas p-5 lg:block lg:p-6" aria-hidden="true">
               {preview}
             </div>
           </div>

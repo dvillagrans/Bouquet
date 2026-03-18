@@ -5,21 +5,22 @@ import "./globals.css";
 const serif = Cormorant_Garamond({
   variable: "--font-cormorant",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["300", "400", "500", "600", "700"],
+  style: ["normal", "italic"],
   display: "swap",
 });
 
 const sans = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Bouquet — Premium Hospitality OS",
+  title: "Bouquet — Hospitality OS para restaurantes",
   description:
-    "La plataforma operativa elegante para hoteles boutique y espacios de hospitalidad premium.",
+    "Gestiona mesas, órdenes y pagos desde una sola plataforma. Pensada para restaurantes que no aceptan el desorden.",
 };
 
 export default function RootLayout({

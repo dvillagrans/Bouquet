@@ -1,0 +1,60 @@
+# Git Ignore para Proyecto LaTeX - TT1
+
+# 📦 Archivos generados por LaTeX (NO son necesarios en git)
+_build/
+*.aux
+*.log
+*.toc
+*.out
+*.fls
+*.fdb_latexmk
+*.blg
+*.bbl
+*.synctex.gz
+
+# 📄 PDFs compilados (se generan durante compilación)
+pdf/
+*.pdf
+!pdf/.gitkeep
+
+# 🔧 Archivos de editors/IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# 📊 Archivos temporales
+*.tmp
+*.temp
+*.bak
+
+# 🐍 Python (si hay scripts)
+__pycache__/
+*.pyc
+.python-version
+
+# 📦 Node modules (si no lo usan, ignorar)
+node_modules/
+package-lock.json
+
+# 🌐 Sistema (OS files)
+.DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+
+# 📝 Solo para desarrollo local (no commitear)
+local-config/
+secrets/
+.env
+
+# ✅ IMPORTANTE: Sí mantener en git:
+# sources/ - los .tex
+# _assets/ - logos
+# _bibliografia/ - el .bib
+# _reportes/ - manuales y reportes
+# compile.sh - script de compilación
+# README.md - documentación

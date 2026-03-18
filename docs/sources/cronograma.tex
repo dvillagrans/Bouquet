@@ -1,0 +1,93 @@
+\documentclass[10pt]{article}
+
+% ======= Paquetes base =======
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage{geometry}
+\geometry{a5paper, top=1.5cm, bottom=1.5cm, left=2cm, right=1.5cm}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{mathptmx}
+\usepackage{caption}
+\captionsetup{font=footnotesize}
+
+% ======= Interlineado =======
+\setstretch{1.0}
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0pt}
+
+% ======= Títulos =======
+\titleformat{\section}{\bfseries\fontsize{10}{12}\selectfont}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\bfseries\fontsize{10}{12}\selectfont}{\thesubsection.}{0.6em}{}
+
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue, citecolor=black}
+
+\begin{document}
+
+% =======================
+% ENCABEZADO
+% =======================
+\begin{center}
+  {\bfseries\fontsize{11}{13}\selectfont
+  Sistema Omnicanal y Plataforma Progresiva para la Gestión\\
+  de Mesas, Órdenes y Pagos en Restaurantes}\\[4pt]
+  {\fontsize{9}{11}\selectfont
+  Natalia Anaya Ramírez \quad Diego Villagrán Salazar}
+\end{center}
+
+\vspace{6pt}
+
+% =======================
+% METODOLOGÍA — SPRINTS
+% =======================
+\section{Metodología y Planificación}
+
+El desarrollo sigue una metodología ágil basada en Scrum con sprints de duración fija (2--3 semanas cada uno), que permiten entregar funcionalidades incrementales y validarlas de manera continua. El proyecto se estructura en \textbf{12 sprints}:
+
+\begin{enumerate}[leftmargin=*, itemsep=1pt, topsep=2pt]
+  \item \textbf{Sprint 1:} Analítica de negocio y Arquitectura
+  \item \textbf{Sprint 2:} Diseño de la base de datos
+  \item \textbf{Sprint 3:} Desarrollo de la base de datos
+  \item \textbf{Sprint 4:} Diseño de vistas y mockups
+  \item \textbf{Sprint 5:} Diseño y arquitectura de backend
+  \item \textbf{Sprint 6:} Definición de KPI y vistas de Dashboard
+  \item \textbf{Sprint 7:} Implementación del dashboard
+  \item \textbf{Sprint 8:} Desarrollo del PAW mesero
+  \item \textbf{Sprint 9:} Desarrollo del PAW comensal
+  \item \textbf{Sprint 10:} Desarrollo del PAW cocina
+  \item \textbf{Sprint 11:} Integración de la API de pagos
+  \item \textbf{Sprint 12:} Pruebas
+\end{enumerate}
+
+Se generará un tablero Kanban en GitHub con los estatus: \emph{inicializado}, \emph{en progreso}, \emph{en revisión} y \emph{finalizado}. Ninguno de estos estatus es final; puede volver a cualquier otro estado excepto inicializado. Pueden agregarse nuevas tareas dentro del sprint si es necesario.
+
+% =======================
+% CRONOGRAMA
+% =======================
+\section{Cronograma de Actividades}
+
+Para la ejecución exitosa del proyecto se ha desarrollado un cronograma detallado que abarca el período de \textbf{febrero a diciembre de 2026}. La planificación considera las dependencias entre tareas, los recursos disponibles y los hitos críticos, asegurando una progresión ordenada desde la fase de análisis hasta la implementación completa del sistema omnicanal.
+
+El cronograma está dividido en dos diagramas de Gantt que muestran la distribución de actividades y responsabilidades entre los miembros del equipo:
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{Nat.png}
+\caption{Cronograma de actividades — Natalia (Febrero–Diciembre 2026).}
+\label{fig:gantt-nat}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{Diego.png}
+\caption{Cronograma de actividades — Diego (Febrero–Diciembre 2026).}
+\label{fig:gantt-diego}
+\end{figure}
+
+\end{document}

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import "tailwindcss" source("..");
 
 @theme inline {
   --font-sans: var(--font-manrope);
@@ -13,11 +13,21 @@
   --color-gold-light: #C9A876;
   --color-coffee: #7A5C3E;
   --color-sage: #A8B9A5;
+  --color-sage-deep: #6E8B6A;
   --color-charcoal: #2B241E;
   --color-charcoal-light: #3D3428;
   --color-cream: #FAF6F0;
+  --color-ember: #A8562A;
+  --color-ember-pale: #F5EAE2;
 
-  --animate-pulse-slow: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  /* ── Dark mode palette ── */
+  --color-ink:    #0C0907;
+  --color-canvas: #131008;
+  --color-panel:  #1B1710;
+  --color-wire:   #2C2418;
+  --color-light:  #EDE8E1;
+  --color-dim:    #7A6E60;
+  --color-glow:   #C9A054;
 }
 
 html,
@@ -39,121 +49,136 @@ body {
   margin: 0;
 }
 
+/* Fallback spacing when Tailwind utilities are not generated (e.g. with Turbopack). :where() keeps specificity low so Tailwind wins when it does generate. */
+:where(.py-5) { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+:where(.py-16) { padding-top: 4rem; padding-bottom: 4rem; }
+:where(.py-24) { padding-top: 6rem; padding-bottom: 6rem; }
+:where(.pt-24) { padding-top: 6rem; }
+:where(.pt-10) { padding-top: 2.5rem; }
+:where(.pb-12) { padding-bottom: 3rem; }
+:where(.pt-8) { padding-top: 2rem; }
+:where(.px-6) { padding-left: 1.5rem; padding-right: 1.5rem; }
+:where(.px-4) { padding-left: 1rem; padding-right: 1rem; }
+:where(.px-5) { padding-left: 1.25rem; padding-right: 1.25rem; }
+:where(.px-7) { padding-left: 1.75rem; padding-right: 1.75rem; }
+:where(.px-9) { padding-left: 2.25rem; padding-right: 2.25rem; }
+:where(.py-2\.5) { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+:where(.py-3\.5) { padding-top: 0.875rem; padding-bottom: 0.875rem; }
+:where(.gap-1\.5) { gap: 0.375rem; }
+:where(.gap-2) { gap: 0.5rem; }
+:where(.gap-2\.5) { gap: 0.625rem; }
+:where(.gap-3) { gap: 0.75rem; }
+:where(.gap-4) { gap: 1rem; }
+:where(.gap-5) { gap: 1.25rem; }
+:where(.gap-6) { gap: 1.5rem; }
+:where(.gap-8) { gap: 2rem; }
+:where(.gap-10) { gap: 2.5rem; }
+:where(.gap-12) { gap: 3rem; }
+:where(.py-4) { padding-top: 1rem; padding-bottom: 1rem; }
+:where(.py-12) { padding-top: 3rem; padding-bottom: 3rem; }
+:where(.mt-2) { margin-top: 0.5rem; }
+:where(.mt-5) { margin-top: 1.25rem; }
+:where(.mt-7) { margin-top: 1.75rem; }
+:where(.mt-8) { margin-top: 2rem; }
+:where(.mt-10) { margin-top: 2.5rem; }
+:where(.mt-12) { margin-top: 3rem; }
+:where(.mt-14) { margin-top: 3.5rem; }
+:where(.mt-16) { margin-top: 4rem; }
+:where(.mx-auto) { margin-left: auto; margin-right: auto; }
+:where(.p-4) { padding: 1rem; }
+:where(.p-6) { padding: 1.5rem; }
+@media (min-width: 1024px) {
+  :where(.lg\:px-10) { padding-left: 2.5rem; padding-right: 2.5rem; }
+  :where(.lg\:py-5) { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+  :where(.lg\:py-32) { padding-top: 8rem; padding-bottom: 8rem; }
+  :where(.lg\:py-0) { padding-top: 0; padding-bottom: 0; }
+  :where(.md\:pl-10) { padding-left: 2.5rem; }
+  :where(.md\:pr-10) { padding-right: 2.5rem; }
+}
+@media (min-width: 1280px) {
+  :where(.xl\:gap-16) { gap: 4rem; }
+}
+
 a {
   color: inherit;
   text-decoration: none;
 }
 
-/* Custom scrollbar hiding */
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
 
-/* Custom animations */
-@keyframes pulse-slow {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
+/* ─── Keyframes ─────────────────────────────────────────── */
 
 @keyframes fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-@keyframes slide-in-from-left {
-  from {
-    transform: translateX(-20px);
-  }
-  to {
-    transform: translateX(0);
-  }
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0);    }
 }
 
-@keyframes slide-in-from-right {
-  from {
-    transform: translateX(20px);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
-@keyframes slide-in-from-bottom {
-  from {
-    transform: translateY(20px);
-  }
-  to {
-    transform: translateY(0);
-  }
+@keyframes reveal-left {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0);     }
 }
 
 @keyframes scale-in {
-  from {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1);    }
 }
 
-.animate-pulse-slow {
-  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+@keyframes marquee {
+  from { transform: translateX(0);    }
+  to   { transform: translateX(-50%); }
 }
 
-.animate-in {
-  animation-fill-mode: both;
+@keyframes marquee-reverse {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0);    }
 }
 
-.fade-in {
-  animation-name: fade-in;
+@keyframes float-gentle {
+  0%, 100% { transform: translateY(0px);  }
+  50%       { transform: translateY(-10px); }
 }
 
-.slide-in-from-left {
-  animation-name: slide-in-from-left;
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.4; }
 }
 
-.slide-in-from-right {
-  animation-name: slide-in-from-right;
+@keyframes tick-in {
+  from { transform: scaleX(0); transform-origin: left; }
+  to   { transform: scaleX(1); transform-origin: left; }
 }
 
-.slide-in-from-bottom {
-  animation-name: slide-in-from-bottom;
+@keyframes slide-from-bottom {
+  from { transform: translateY(32px); }
+  to   { transform: translateY(0);    }
 }
 
-.scale-in {
-  animation-name: scale-in;
+@keyframes slide-from-top {
+  from { transform: translateY(-20px); }
+  to   { transform: translateY(0);     }
 }
 
-.duration-300 {
-  animation-duration: 300ms;
+@keyframes reveal-scale {
+  from { opacity: 0; transform: scale(0.94) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0);       }
 }
 
-.duration-500 {
-  animation-duration: 500ms;
+@keyframes draw-line {
+  from { transform: scaleX(0); transform-origin: left; opacity: 0; }
+  to   { transform: scaleX(1); transform-origin: left; opacity: 1; }
 }
 
-.duration-700 {
-  animation-duration: 700ms;
-}
-
-/* Smooth scroll behavior */
 @media (prefers-reduced-motion: no-preference) {
-  html {
-    scroll-behavior: smooth;
-  }
+  html { scroll-behavior: smooth; }
 }

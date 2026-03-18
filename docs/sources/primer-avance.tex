@@ -1,0 +1,562 @@
+\documentclass[12pt]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage{geometry}
+\geometry{letterpaper, top=2cm, bottom=2cm, left=3cm, right=2cm}
+
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{csquotes}
+
+
+
+\usepackage{cite}
+\bibliographystyle{ieeetr}
+
+\usepackage{hyperref}
+\hypersetup{hidelinks}
+
+\usepackage{mathptmx}
+
+\setstretch{1.0}
+\newcommand{\coverlogoheight}{2.6cm}
+
+\begin{document}
+
+% =======================
+% PORTADA TT1 (formato ESCOM/IPN)
+% =======================
+\thispagestyle{empty}
+\noindent
+\begin{tabular}{p{0.18\textwidth}p{0.80\textwidth}}
+  \centering
+  \begin{minipage}[t][0.92\textheight][t]{\linewidth}
+    \centering
+    \vspace{0.1cm}
+    \IfFileExists{ipn.png}{\includegraphics[height=\coverlogoheight,keepaspectratio]{ipn.png}}{\fbox{\parbox{0.9\linewidth}{\centering\small Logo IPN}}}
+    \vfill
+    {\color{blue}\rule{1.2pt}{0.55\textheight}}
+    \hspace{0.1cm}
+    {\color{blue}\rule{1.2pt}{0.55\textheight}}
+    \vfill
+    \IfFileExists{escom.png}{\includegraphics[height=\coverlogoheight,keepaspectratio]{escom.png}}{\fbox{\parbox{0.9\linewidth}{\centering\small Logo ESCOM}}}
+  \end{minipage}
+  &
+  \begin{minipage}[t][0.92\textheight][t]{\linewidth}
+    \centering
+    \vspace{0.7cm}
+
+    {\fontsize{20}{24}\selectfont\bfseries INSTITUTO POLITECNICO NACIONAL\par}
+    {\fontsize{16}{19}\selectfont\bfseries ESCUELA SUPERIOR DE COMPUTO\par}
+
+    \vspace{1.2cm}
+    {\fontsize{20}{24}\selectfont\bfseries ESCOM\par}
+
+    \vspace{1.1cm}
+    {\fontsize{14}{17}\selectfont\itshape Trabajo Terminal I\par}
+
+    \vspace{0.7cm}
+    {\fontsize{16}{19}\selectfont\bfseries ``Sistema Omnicanal y Plataforma Progresiva\par
+    para la Gestion de Mesas, Ordenes y Pagos en Restaurantes''\par}
+
+    \vspace{0.5cm}
+    {\fontsize{14}{17}\selectfont 2026 -- B122\par}
+
+    \vspace{1.0cm}
+    {\fontsize{14}{17}\selectfont\itshape Presentan\par}
+    \vspace{0.2cm}
+    {\fontsize{14}{17}\selectfont\bfseries
+      Natalia Anaya Ramirez\par
+      Diego Villagran Salazar\par
+    }
+
+    \vspace{1.0cm}
+    {\fontsize{14}{17}\selectfont\itshape Directores\par}
+    \vspace{0.2cm}
+    {\fontsize{14}{17}\selectfont\bfseries Guzman Flores Jessie Paulina\par}
+
+    \vfill
+    {\fontsize{12}{15}\selectfont Fecha de presentacion de TT-I\par}
+    \vspace{0.15cm}
+    {\fontsize{12}{15}\selectfont Marzo 2026\par}
+  \end{minipage}
+\end{tabular}
+
+\newpage
+% =======================
+% Resumen
+% =======================
+\section*{Resumen}
+Desarrollo de una aplicación web progresiva (PWA) para restaurantes que implementa: (1) sistema de mesas virtuales mediante códigos QR únicos, (2) gestión de pedidos individuales y compartidos en tiempo real, (3) procesamiento de pagos flexibles (individual o por cuenta compartida), y (4) panel administrativo básico con métricas operacionales. El sistema centraliza la comunicación entre comensales, cocina y administración, proporcionando trazabilidad completa de transacciones y estados de pedidos mediante una base de datos unificada.
+
+% --- Palabras clave ---
+\section*{Palabras clave}
+Aplicaciones Web Progresivas (PWA); Restaurantes; Sistemas Distribuidos; Inteligencia de Negocios; Bases de Datos Relacionales; Pagos Digitales; Códigos QR; Comunicación en Tiempo Real; Arquitectura Cliente-Servidor; Mesas Virtuales; Sincronización de Pedidos; Omnicanalidad; División de Cuentas; WebSockets; PostgreSQL; Supabase Realtime; Dashboard Administrativo.
+
+\newpage
+% --- Agradecimientos ---
+\section*{Agradecimientos}
+\mbox{}
+
+\newpage
+% =======================
+% Índice (tabla de contenidos)
+% =======================
+\tableofcontents
+
+\newpage
+% =======================
+% INTRODUCCIÓN
+% =======================
+\chapter{Introducción}
+
+En los establecimientos del sector restaurantero, la gestión de pedidos y el proceso de pago representan una parte fundamental de la experiencia del cliente y del control operativo del negocio. Sin embargo, en muchos restaurantes estos procesos aún dependen de métodos tradicionales que implican la intervención constante del personal, registros manuales o sistemas parcialmente digitalizados. Esto puede generar inconvenientes como errores en los pedidos, retrasos en la comunicación con cocina y dificultades al momento de dividir la cuenta entre varios comensales.
+
+Uno de los problemas más frecuentes ocurre cuando un grupo de personas comparte una mesa y desea pagar únicamente por los productos que consumió. En estos casos, el personal del restaurante debe identificar manualmente los consumos individuales, calcular proporciones o dividir la cuenta total, lo cual puede resultar tedioso, propenso a errores y generar tiempos de espera innecesarios.
+
+En los últimos años han surgido diferentes sistemas tecnológicos orientados a la gestión de restaurantes, tales como sistemas de punto de venta (POS), aplicaciones de pedidos digitales o plataformas de administración de inventarios. No obstante, muchas de estas soluciones se centran principalmente en la operación interna del restaurante y no integran completamente la participación directa del cliente en el proceso de selección de productos, gestión de pedidos y división de pagos dentro de una misma plataforma.
+
+Ante esta problemática, el presente trabajo propone el desarrollo de un sistema omnicanal basado en una aplicación web progresiva (PWA) que permita la creación de mesas virtuales mediante códigos QR, a través de las cuales los comensales puedan acceder al menú digital del restaurante, seleccionar los productos que desean consumir y gestionar el pago de su consumo de manera individual o colaborativa.
+
+El sistema permitirá la sincronización en tiempo real entre los distintos actores involucrados en el proceso del servicio, incluyendo clientes, meseros, cocina y administradores. De esta forma, se busca centralizar la gestión de pedidos, mejorar la comunicación entre áreas y facilitar el proceso de pago mediante esquemas flexibles de división de cuentas.
+
+Asimismo, el sistema generará información estructurada sobre las transacciones y el comportamiento de consumo de los usuarios, lo cual permitirá a los restaurantes contar con métricas operacionales y herramientas para el análisis de su actividad comercial.
+
+Con ello, el proyecto busca aportar una solución tecnológica que mejore la experiencia del cliente, optimice los procesos operativos del restaurante y proporcione una base de datos centralizada que permita el análisis y la generación de inteligencia de negocio.
+
+\section{Planteamiento del problema}
+La operación en mesa en muchos restaurantes sigue dependiendo de procesos manuales para registrar pedidos, coordinar cambios con cocina y dividir cuentas entre múltiples comensales. Esta dinámica incrementa el riesgo de errores, retrabajo y retrasos en momentos críticos del servicio, especialmente en mesas compartidas con consumo mixto (individual y común).
+
+Desde la perspectiva tecnológica, existe una brecha entre las herramientas de operación interna del restaurante y la interacción directa del cliente. En la práctica, no siempre se dispone de una plataforma única que conecte acceso a la mesa, pedido, actualización de estado y pago dividido con trazabilidad de extremo a extremo.
+
+Desde la perspectiva de negocio, esta fragmentación reduce eficiencia operativa, limita la experiencia del comensal y dificulta la disponibilidad de datos confiables para indicadores administrativos. Por ello, se requiere una solución que unifique estos procesos en tiempo real y con una base de datos centralizada.
+
+% =======================
+% 1. Objetivos
+% =======================
+\section{Objetivos}
+% --- 1.1 Objetivo general ---
+\subsection{Objetivo general}
+Desarrollar un sistema omnicanal basado en una aplicación web progresiva (PWA) para la gestión de mesas, órdenes y pagos en restaurantes, que permita a los comensales acceder mediante códigos QR a mesas virtuales, registrar pedidos, participar en esquemas de pago individual o compartido y sincronizar la información en tiempo real con las áreas de mesero, cocina y administración, integrando todos los procesos en una base de datos centralizada.
+
+% --- 1.2 Objetivos específicos ---
+\subsection{Objetivos específicos}
+\begin{itemize}[leftmargin=*, itemsep=0.35em]
+  \item Analizar los procesos operativos involucrados en la atención de mesas, la toma de pedidos y la división de cuentas en restaurantes, con el fin de identificar los requerimientos funcionales y técnicos del sistema.
+  \item Diseñar la arquitectura general del sistema, definiendo los módulos correspondientes a comensal, mesero, cocina y administración, así como los mecanismos de comunicación e integración entre ellos.
+  \item Diseñar e implementar una base de datos centralizada que permita almacenar de manera estructurada la información de usuarios, mesas, órdenes, productos, pagos y estados operativos del sistema.
+  \item Desarrollar una interfaz para comensales que permita acceder al menú digital mediante códigos QR, seleccionar productos, registrar pedidos y participar en la división de cuentas de forma individual o colaborativa.
+  \item Desarrollar las interfaces operativas para meseros y cocina, de manera que faciliten la gestión de mesas, el seguimiento de órdenes y la actualización de estados en tiempo real.
+  \item Implementar un módulo de pagos que permita gestionar esquemas flexibles de liquidación, contemplando pagos individuales, compartidos o colaborativos mediante integración con pasarelas de pago digitales.
+  \item Desarrollar un dashboard administrativo que concentre reportes, métricas operacionales e información relevante para el análisis y la toma de decisiones dentro del restaurante.
+  \item Validar el funcionamiento integral del sistema mediante pruebas sobre los módulos desarrollados, verificando la correcta sincronización de pedidos, pagos y estados entre los diferentes actores involucrados.
+\end{itemize}
+
+% =======================
+% 2. Justificación
+% =======================
+\section{Justificación}
+El proceso de atención en restaurantes involucra múltiples actividades que deben ejecutarse de manera coordinada para garantizar una experiencia satisfactoria al cliente y una operación eficiente para el establecimiento. Entre estas actividades destacan la asignación de mesas, el registro de órdenes, la comunicación con cocina, el seguimiento del estado de los pedidos y el procesamiento de pagos. Aunque en la actualidad existen sistemas digitales orientados a apoyar parte de estas tareas, en muchos casos la interacción entre áreas continúa fragmentada y la participación directa del comensal en la gestión de su consumo es limitada.
+
+Una de las problemáticas más frecuentes dentro del sector restaurantero se presenta al momento de dividir la cuenta entre varios comensales. En este escenario, es común que el personal deba identificar manualmente qué productos corresponden a cada persona, calcular montos parciales y coordinar diferentes métodos de pago sobre una misma cuenta. Este procedimiento no solo incrementa el tiempo de atención, sino que también puede provocar errores de cálculo, confusión entre los usuarios y dificultades en la conciliación de pagos.
+
+La relevancia de este proyecto radica en proponer una solución tecnológica que permita atender dicha problemática desde un enfoque integral. El sistema omnicanal planteado busca centralizar en una misma plataforma la gestión de mesas, órdenes y pagos, permitiendo que los comensales participen directamente en el registro de su consumo mediante el acceso a mesas virtuales por códigos QR. A través de esta dinámica, cada usuario podrá seleccionar productos, visualizar su consumo individual y decidir si desea pagar únicamente lo propio, contribuir a una cuenta compartida o cubrir consumos adicionales, reduciendo la dependencia de procesos manuales al cierre del servicio.
+
+Además del beneficio directo para los clientes, la propuesta aporta ventajas importantes para los restaurantes. Al contar con una base de datos centralizada y trazabilidad de las transacciones, el sistema facilita el control de la operación, mejora la comunicación entre comensales, meseros y cocina, y permite disponer de información estructurada para la generación de reportes y métricas administrativas. Esto representa una oportunidad para fortalecer la toma de decisiones, optimizar procesos internos y sentar las bases para futuros análisis de comportamiento de consumo e inteligencia de negocio.
+
+La originalidad del trabajo se encuentra en la integración de distintas funciones que usualmente aparecen separadas en soluciones existentes. Mientras algunas plataformas se especializan en el punto de venta, otras en pedidos digitales y otras en división de gastos, la propuesta desarrollada en este trabajo busca reunir la gestión operativa del restaurante con la interacción directa del cliente y la flexibilidad en el proceso de pago dentro de un mismo ecosistema tecnológico. De esta forma, se plantea una solución orientada específicamente al contexto restaurantero, donde la división de cuentas no se realiza sobre montos fijos, sino sobre productos reales consumidos dentro de una mesa compartida.
+
+Asimismo, el proyecto presenta un nivel de complejidad significativo, ya que involucra conocimientos de desarrollo web, bases de datos, sincronización en tiempo real, modelado de procesos, integración de pasarelas de pago y análisis de información. Su construcción requiere definir una arquitectura capaz de soportar distintos perfiles de usuario, múltiples vistas de operación y comunicación continua entre módulos, manteniendo consistencia en los datos y una experiencia de uso adecuada. Por ello, el desarrollo de este sistema constituye una aplicación práctica e integradora de los conocimientos adquiridos en la formación académica, particularmente en áreas como bases de datos, desarrollo de aplicaciones web, análisis de datos y diseño de sistemas.
+
+En este sentido, la realización del proyecto se justifica tanto por su utilidad práctica en el ámbito restaurantero como por su valor académico y tecnológico, al proponer una solución viable a una necesidad operativa real mediante el uso de herramientas modernas de desarrollo y una visión centrada en la integración de procesos.
+
+\section{Alcances y límites}
+\subsection{Alcances}
+\begin{itemize}[leftmargin=*, itemsep=0.35em]
+  \item Implementación de una PWA para comensal, mesero, cocina y administración.
+  \item Gestión de mesas virtuales con acceso mediante códigos QR únicos.
+  \item Registro y seguimiento de órdenes con actualización de estados en tiempo real.
+  \item Soporte para pagos individuales, compartidos y colaborativos dentro de una misma mesa.
+  \item Persistencia centralizada de datos para trazabilidad operativa y consulta administrativa.
+  \item Dashboard administrativo básico con métricas operacionales iniciales.
+\end{itemize}
+
+\subsection{Límites}
+\begin{itemize}[leftmargin=*, itemsep=0.35em]
+  \item No se contempla integración con hardware propietario de punto de venta en esta etapa.
+  \item No se considera despliegue multi-sucursal con consolidación corporativa en tiempo real.
+  \item No se incluye optimización avanzada de rutas de preparación o planeación de inventario.
+  \item No se desarrollará un motor de recomendación personalizado con inteligencia artificial como parte del alcance base.
+  \item La analítica se limita a indicadores operativos iniciales y no a un sistema de BI avanzado de autoservicio.
+\end{itemize}
+
+% =======================
+% Capítulo 2. Estado del Arte y Marco Teórico
+% =======================
+\chapter{Estado del Arte y Marco Teórico}
+\section{Marco Teórico}
+% --- 3.1 Fundamentos contextuales ---
+\subsection{Fundamentos contextuales}
+% -- Restaurantes como entornos de operación y servicio --
+\subsubsection{Restaurantes como entornos de operación y servicio}
+
+Los restaurantes constituyen entornos de operación y servicio en los que convergen procesos de atención al cliente, coordinación del personal, gestión de órdenes, preparación de alimentos y cobro de consumos. A diferencia de otros negocios, su funcionamiento depende de la sincronización continua entre actividades visibles para el cliente, como la asignación de mesas, la toma de pedidos y el pago, y actividades internas, como la preparación en cocina, la actualización de inventario y el seguimiento del estado de las órdenes. En este sentido, la operación restaurantera puede entenderse como un sistema sociotécnico en el que intervienen personas, recursos, tecnología e información de manera simultánea \cite{lightspeed_boh_foh_2024,square_restaurant_pos_2025}.
+
+Dentro de este entorno suelen distinguirse dos grandes ámbitos operativos: el \textit{front of house} y el \textit{back of house}. El primero comprende las actividades de contacto directo con el cliente, como la recepción, administración de mesas, toma de órdenes, servicio en mesa y procesamiento del pago. El segundo agrupa las tareas internas del restaurante, principalmente las relacionadas con cocina, preparación, coordinación de órdenes y demás procesos que ocurren detrás de escena. La documentación de plataformas especializadas en hospitalidad y sistemas de punto de venta muestra que ambos ámbitos deben mantenerse conectados para lograr un flujo de servicio eficiente y consistente \cite{oracle_simphony_config,square_restaurant_pos_2025}.
+
+En la práctica, la operación de un restaurante no se limita a registrar ventas. Los sistemas modernos de punto de venta para restaurantes integran funciones de gestión de menús, coordinación entre personal, seguimiento de ventas, administración de inventario y procesamiento de pagos. Asimismo, diversos proveedores tecnológicos destacan que mantener conectadas las actividades de sala, cocina y administración permite reducir tiempos de espera, ordenar mejor el flujo de trabajo y mejorar la experiencia del cliente. Esto refuerza la idea de que el restaurante debe analizarse como una operación integral y no como un conjunto aislado de tareas \cite{square_restaurant_pos_2025,lightspeed_restaurant_pos}.
+
+Además, la experiencia del cliente se encuentra cada vez más influida por el uso de tecnología en los procesos de ordenamiento y pago. La \textit{National Restaurant Association} reportó en 2024 que las tecnologías orientadas a mejorar velocidad, precisión y conveniencia son relevantes tanto para consumidores como para operadores, y que existe interés por herramientas digitales para ordenar y pagar \cite{nra_tech_landscape_2024,nra_automated_ordering_payment_2024}. Esto sugiere que la digitalización ya no solo responde a una necesidad operativa interna, sino también a una expectativa creciente del usuario respecto a comodidad, rapidez y autonomía durante el servicio \cite{nra_tech_landscape_2024}.
+
+Bajo esta perspectiva, los restaurantes pueden modelarse como entornos donde la calidad del servicio depende en gran medida de la circulación correcta de la información. Una orden mal transmitida, un cambio no sincronizado en cocina o una cuenta mal gestionada afectan tanto la percepción del cliente como la eficiencia operativa del negocio. Por ello, al estudiar un sistema para la gestión de mesas, órdenes y pagos, resulta necesario comprender al restaurante como un entorno de servicio integrado, donde cada interacción entre cliente, personal y tecnología tiene impacto directo sobre la operación completa \cite{square_restaurant_pos_2025,lightspeed_restaurant_pos}.
+
+% -- Gestión de órdenes y división de cuentas en restaurantes --
+\subsubsection{Gestión de órdenes y división de cuentas en restaurantes}
+
+La gestión de órdenes en restaurantes comprende el conjunto de actividades mediante las cuales se registran, transmiten, preparan, actualizan y entregan los productos solicitados por los comensales. En un entorno de servicio en mesa, este proceso involucra la interacción continua entre personal de sala, cocina y sistemas de registro, por lo que la precisión en el flujo de información resulta indispensable para mantener la calidad del servicio. Diversos proveedores de tecnología para restaurantes destacan que los sistemas de punto de venta y las pantallas de cocina permiten centralizar las órdenes y visualizarlas en tiempo real, reduciendo ambigüedades y mejorando la coordinación entre las áreas operativas \cite{square_restaurant_pos_2025,toast_kds_2026,square_kds_2025}.
+
+En los modelos tradicionales, la toma de órdenes y su comunicación a cocina puede depender de notas manuales, terminales fijas o intermediación constante del personal. Este esquema incrementa la probabilidad de errores de captura, omisiones, retrasos en la actualización del estado de los platillos y problemas de sincronización entre lo que solicita el cliente y lo que finalmente se prepara. La literatura comercial sobre sistemas de cocina y operación restaurantera coincide en que la digitalización del flujo de órdenes contribuye a aumentar la precisión, acelerar la preparación y mantener alineados los procesos de \textit{front of house} y \textit{back of house} \cite{square_kds_2025,toast_cash_register_2025,square_kds_product}.
+
+Un componente particularmente relevante en este contexto es la gestión de mesas compartidas. Cuando varios comensales participan en una misma mesa, cada orden puede corresponder a consumos individuales, consumos compartidos o modificaciones realizadas durante el servicio. En estos escenarios, el restaurante no solo debe registrar correctamente qué productos fueron solicitados, sino también conservar trazabilidad sobre quién los consumió, en qué momento se integraron a la orden y cómo deberán ser liquidados al final del servicio. Esta necesidad de trazabilidad se vuelve más importante cuando las órdenes cambian dinámicamente o cuando se busca ofrecer mayor autonomía al cliente durante la experiencia de consumo \cite{lightspeed_tableside_2024,nra_mobile_order_systems_2025}.
+
+La división de cuentas representa uno de los puntos más sensibles dentro de la operación del restaurante. En una mesa grupal, el personal suele tener que separar manualmente consumos, calcular fracciones o registrar pagos distintos sobre una misma cuenta. Proveedores de soluciones de pago y servicio en mesa reconocen esta problemática y han incorporado funciones de \textit{split bill}, pagos parciales y cobro en distintos momentos como parte de sus sistemas, precisamente para reducir la fricción operativa y ofrecer mayor flexibilidad al cliente \cite{lightspeed_tableside_2024,lightspeed_restaurant_payments,lightspeed_tableservice_2021}.
+
+Desde la perspectiva del usuario, la posibilidad de ordenar y pagar con apoyo de tecnología también se relaciona con rapidez, conveniencia y control sobre el consumo. La \textit{National Restaurant Association} ha señalado que los sistemas móviles de ordenamiento y pago pueden mejorar la eficiencia del servicio en mesa, ya que permiten enviar órdenes directamente a cocina o barra sin que el personal tenga que abandonar la mesa, además de facilitar el pago desde el mismo punto de atención \cite{nra_mobile_order_systems_2025}. De forma complementaria, estudios recientes de la asociación indican que existe interés creciente por tecnologías que permitan ordenar y pagar con mayor autonomía dentro del restaurante \cite{nra_tech_landscape_2024,nra_automated_ordering_payment_2024}.
+
+En consecuencia, la gestión de órdenes y la división de cuentas no deben entenderse como procesos aislados, sino como componentes estrechamente vinculados dentro de la experiencia operativa y de servicio del restaurante. Un sistema que aspire a optimizar esta operación debe ser capaz de registrar pedidos con precisión, sincronizar su estado entre los distintos actores involucrados y mantener trazabilidad suficiente para soportar esquemas de pago individual, colaborativo o compartido. Esta visión resulta especialmente relevante para el desarrollo de plataformas omnicanal orientadas al sector restaurantero, donde la integración entre órdenes, mesas y pagos constituye parte central de la propuesta de valor \cite{square_restaurant_pos_2025,toast_kds_2026,lightspeed_restaurant_payments}.
+
+% -- Omnicanalidad en sistemas digitales de servicio --
+\subsubsection{Omnicanalidad en sistemas digitales de servicio}
+
+La omnicanalidad se entiende como un enfoque integrado de interacción y operación en el que múltiples canales de contacto con el usuario funcionan de manera conectada para ofrecer una experiencia continua y consistente. En lugar de tratar cada canal como un punto aislado, la estrategia omnicanal busca unificar datos, procesos y flujos de atención entre interfaces digitales y físicas, de forma que la experiencia del usuario mantenga coherencia independientemente del medio utilizado \cite{shopify_omnichannel_experience_2025,shopify_omnichannel_operations_2025}.
+
+En términos operativos, la omnicanalidad no solo implica la existencia de varios canales, sino la capacidad de sincronizarlos alrededor de una misma base de información. Shopify define las operaciones omnicanal como la gestión conjunta de canales de venta, datos del cliente y procesos de negocio como un sistema cohesionado, lo cual constituye la base para brindar experiencias fluidas entre tienda física, comercio electrónico, aplicaciones móviles y otros puntos de contacto \cite{shopify_omnichannel_operations_2025}. Esta perspectiva resulta relevante porque desplaza el enfoque desde la simple digitalización de tareas hacia la integración completa del servicio.
+
+En el sector restaurantero, la omnicanalidad ha adquirido relevancia debido a la coexistencia de distintos medios de interacción entre cliente y establecimiento, como consumo en sitio, pedidos digitales, pagos móviles, plataformas de entrega, menús accesibles por código QR y sistemas administrativos internos. Proveedores especializados en tecnología para restaurantes señalan que las soluciones de ordenamiento digital omnicanal permiten conectar experiencias propias del restaurante, como sitios web o aplicaciones, con otros canales de atención y cumplimiento, incluyendo consumo en salón, entrega, recolección y servicio para llevar \cite{deliverect_digital_ordering_2026,deliverect_omnichannel_restaurant_2024}.
+
+Desde esta perspectiva, la omnicanalidad en restaurantes no se limita a vender por varios medios, sino a coordinar de manera integral la experiencia del usuario y la operación interna. Cuando un sistema permite que la información de pedidos, mesas, pagos y estados de preparación circule de manera unificada entre comensales, meseros, cocina y administración, se establece una arquitectura de servicio donde cada actor interactúa con el mismo flujo de datos. Esto reduce fricciones, evita duplicidad de información y favorece una respuesta más rápida ante cambios en la operación \cite{deliverect_digital_ordering_2026,shopify_omnichannel_experience_2025}.
+
+Adicionalmente, la omnicanalidad fortalece la trazabilidad de la información y la capacidad analítica del negocio. Al centralizar datos provenientes de distintos puntos de interacción, el sistema puede generar un panorama más completo de la operación, del comportamiento del cliente y del desempeño del servicio. Esta integración no solo mejora la experiencia del usuario final, sino que también proporciona insumos para la toma de decisiones y la optimización de procesos internos \cite{shopify_omnichannel_operations_2025,shopify_omnichannel_experience_2025}.
+
+En el contexto del presente proyecto, la omnicanalidad constituye un principio de diseño fundamental, ya que la solución propuesta busca integrar en una misma plataforma las interacciones del comensal con el menú digital y el pago, la gestión operativa del mesero, la actualización de estados en cocina y la visualización de métricas administrativas. Por ello, el concepto de omnicanalidad resulta pertinente como base teórica para modelar un sistema que no opere mediante módulos desconectados, sino como un ecosistema digital unificado orientado al servicio restaurantero \cite{deliverect_omnichannel_restaurant_2024,shopify_omnichannel_operations_2025}.
+
+% -- Aplicaciones Web Progresivas (PWA) --
+\subsubsection{Aplicaciones Web Progresivas (PWA)}
+
+Las Aplicaciones Web Progresivas, conocidas como \textit{Progressive Web Apps} (PWA), son aplicaciones construidas con tecnologías web que buscan ofrecer una experiencia de uso similar a la de una aplicación instalada en una plataforma específica. De acuerdo con MDN, una PWA puede ejecutarse en múltiples dispositivos desde una sola base de código y, al mismo tiempo, ofrecer capacidades propias de aplicaciones nativas, como instalación en el dispositivo, funcionamiento sin conexión y cierta integración con el sistema operativo \cite{mdn_pwa_2025,mdn_what_is_pwa_2025}.
+
+Desde la perspectiva de \textit{web.dev}, las PWA constituyen experiencias tipo aplicación desarrolladas y distribuidas sobre la web, aprovechando capacidades modernas del navegador para mejorar la interacción con el usuario \cite{webdev_pwa_overview,webdev_learn_pwa}. Este enfoque resulta especialmente relevante porque permite combinar el alcance universal de la web con características que tradicionalmente se asocian con aplicaciones móviles o de escritorio, como acceso rápido, experiencia inmersiva y uso desde un ícono instalado \cite{mdn_pwa_2025,mdn_manifest_2025}.
+
+Una PWA no es un estándar único ni una tecnología aislada, sino un patrón de diseño que integra varias capacidades de la plataforma web. Entre sus componentes más relevantes se encuentran el \textit{web app manifest}, que proporciona metadatos necesarios para la instalación y presentación de la aplicación, y los \textit{service workers}, que permiten controlar solicitudes de red, almacenamiento en caché y experiencias fuera de línea o resilientes ante conectividad limitada \cite{mdn_manifest_2025,mdn_pwa_reference_2025}. En este sentido, las PWA se apoyan en mecanismos de mejora progresiva, de manera que la experiencia se adapta a las capacidades del navegador y del dispositivo disponible \cite{mdn_pwa_2025,mdn_pwa_best_practices_2025}.
+
+Entre las ventajas más importantes de las PWA destaca la posibilidad de mantener una sola base de código para distintos entornos de ejecución. Esto reduce costos de desarrollo y mantenimiento frente a estrategias que requieren aplicaciones separadas para múltiples plataformas. Además, su naturaleza web facilita la actualización continua del sistema sin depender de ciclos de distribución propios de tiendas de aplicaciones, lo cual puede ser conveniente para sistemas que requieren cambios frecuentes o iteraciones rápidas \cite{mdn_pwa_2025,webdev_learn_pwa}.
+
+Otra ventaja significativa es su capacidad de instalación. El manifiesto web permite describir aspectos como el nombre de la aplicación, íconos y comportamiento de apertura, de modo que el navegador pueda ofrecer al usuario la opción de instalarla en su dispositivo \cite{mdn_manifest_2025}. Una vez instalada, una PWA puede ejecutarse en una ventana independiente del navegador y ofrecer una experiencia más cercana a la de una aplicación convencional \cite{chrome_transition_apps_2023,mdn_what_is_pwa_2025}.
+
+Asimismo, las PWA pueden mejorar la disponibilidad y el rendimiento percibido del sistema. Los \textit{service workers} permiten implementar estrategias de caché y recuperación de recursos que favorecen tiempos de carga más estables y experiencias con cierto grado de funcionamiento sin conexión o bajo conectividad limitada \cite{mdn_pwa_reference_2025,mdn_pwa_best_practices_2025}. Aunque las capacidades específicas dependen del navegador y del entorno, este modelo resulta valioso en escenarios donde la continuidad del servicio y la rapidez de acceso son factores importantes para la experiencia del usuario \cite{webdev_pwa_overview,mdn_pwa_2025}.
+
+En el contexto del presente proyecto, las PWA resultan adecuadas porque permiten ofrecer a comensales, meseros y personal operativo una interfaz accesible desde dispositivos móviles o de escritorio sin requerir la instalación obligatoria de aplicaciones nativas. Esto facilita el acceso mediante navegador o instalación opcional, reduce barreras de adopción y favorece la actualización continua del sistema. Además, su compatibilidad con tecnologías web modernas las convierte en una alternativa pertinente para implementar una solución omnicanal orientada a la gestión de mesas, órdenes y pagos en restaurantes \cite{mdn_pwa_2025,webdev_pwa_overview,mdn_pwa_best_practices_2025}.
+
+% -- Arquitectura cliente-servidor --
+\subsubsection{Arquitectura cliente-servidor}
+
+La arquitectura cliente-servidor es un modelo de computación distribuida en el que una aplicación se divide en componentes con responsabilidades diferenciadas. En este esquema, el cliente se encarga de iniciar solicitudes, presentar información al usuario y capturar interacciones, mientras que el servidor recibe dichas solicitudes, las procesa y devuelve una respuesta con los recursos o datos requeridos \cite{mdn_client_server_2025,mdn_http_overview_2026,ibm_client_server_model}.
+
+En el contexto de aplicaciones web, esta arquitectura se manifiesta de manera natural a través del intercambio de mensajes entre navegadores, aplicaciones móviles u otras interfaces cliente, y uno o varios servidores que alojan lógica de negocio, servicios y acceso a datos. MDN describe este funcionamiento indicando que los servidores esperan solicitudes del cliente, las procesan y responden mediante protocolos como HTTP, el cual constituye la base del intercambio de información en la Web \cite{mdn_client_server_2025,mdn_http_overview_2026}. Bajo este modelo, el cliente no necesita conocer los detalles internos de procesamiento del servidor, sino únicamente los mecanismos de comunicación establecidos.
+
+Una de las principales ventajas de esta arquitectura es la separación de responsabilidades. El cliente concentra la lógica de presentación e interacción con el usuario, mientras que el servidor administra operaciones como autenticación, validación, acceso a base de datos, gestión de sesiones y exposición de servicios \cite{mdn_server_side_intro_2025,oracle_client_server_2021}. Esta distribución favorece la mantenibilidad del sistema, ya que permite modificar o escalar componentes de manera relativamente independiente, siempre que se preserve la interfaz de comunicación entre ellos.
+
+Asimismo, la arquitectura cliente-servidor sirve como base para esquemas de mayor complejidad, como la arquitectura por capas o de tres niveles. IBM define la arquitectura de tres capas como una organización lógica en la que la aplicación se divide en una capa de presentación, una capa de aplicación y una capa de datos \cite{ibm_three_tier_2025}. Este enfoque resulta especialmente útil en sistemas web modernos, ya que facilita aislar la interfaz de usuario, la lógica de negocio y el almacenamiento persistente de información, mejorando la escalabilidad y la claridad estructural del sistema.
+
+En sistemas orientados a múltiples tipos de usuario, como los del ámbito restaurantero, esta arquitectura permite que distintas interfaces cliente compartan una misma base de servicios del lado del servidor. Por ejemplo, una vista para comensales, una interfaz para meseros, un panel de cocina y un módulo administrativo pueden consumir la misma lógica de negocio y los mismos datos centralizados, manteniendo reglas consistentes para el registro de órdenes, la actualización de estados y el procesamiento de pagos. Esta característica resulta valiosa cuando se requiere integrar diversos puntos de interacción dentro de un mismo ecosistema digital \cite{mdn_client_server_2025,ibm_networking_2025}.
+
+En el presente proyecto, la arquitectura cliente-servidor constituye el fundamento estructural para implementar una solución omnicanal de gestión de mesas, órdenes y pagos. La capa cliente estará conformada por las interfaces web progresivas utilizadas por comensales y personal del restaurante, mientras que la capa servidor concentrará la lógica de negocio, la comunicación con la base de datos y la exposición de servicios para autenticación, gestión de órdenes, actualización de estados y procesamiento de pagos. Bajo este modelo, la separación entre presentación, procesamiento y almacenamiento permite construir un sistema más organizado, escalable y apto para sincronización entre múltiples actores.
+
+% -- Bases de datos relacionales y centralización de la información --
+\subsubsection{Bases de datos relacionales y centralización de la información}
+
+Las bases de datos relacionales constituyen uno de los modelos más utilizados para el almacenamiento estructurado de información en sistemas transaccionales. IBM define una base de datos relacional como un tipo de base de datos que organiza la información en tablas compuestas por filas y columnas, en las cuales los datos pueden relacionarse entre sí mediante claves y estructuras definidas \cite{ibm_relational_database_2025,ibm_database_2025}. Este modelo permite representar entidades y relaciones de forma lógica, facilitando la consulta, actualización y administración consistente de la información dentro de una aplicación.
+
+Una de las características fundamentales de los sistemas relacionales es el uso de esquemas bien definidos y tablas normalizadas. Microsoft señala que los sistemas gestores de bases de datos relacionales organizan la información en tablas normalizadas bajo un enfoque de \textit{schema-on-write}, lo que favorece la integridad de los datos y el soporte de transacciones ACID \cite{microsoft_data_models_2025}. Estas propiedades resultan especialmente relevantes en sistemas donde múltiples operaciones deben ejecutarse con precisión, como ocurre en el registro de órdenes, pagos y estados operativos dentro de un restaurante.
+
+Las transacciones ACID representan otro elemento central de este modelo. IBM describe estas propiedades como atomicidad, consistencia, aislamiento y durabilidad, garantizando que las operaciones sobre los datos se ejecuten de manera confiable incluso en contextos de concurrencia \cite{ibm_relational_database_2025}. En entornos donde varias acciones pueden ocurrir casi simultáneamente, como la creación de órdenes, actualización del estado de un pedido o procesamiento de pagos parciales, contar con mecanismos transaccionales sólidos permite reducir inconsistencias y preservar la confiabilidad de la información.
+
+La integridad de los datos es también un criterio esencial en el diseño de bases de datos relacionales. IBM define la integridad de datos como la garantía de que la información permanezca exacta, completa y consistente a lo largo de su ciclo de vida \cite{ibm_data_integrity_2025}. En términos de modelado, esto implica estructurar adecuadamente las tablas, definir llaves primarias y foráneas, y establecer restricciones que eviten redundancia innecesaria o anomalías de actualización. Por ello, el enfoque relacional resulta apropiado cuando se requiere trazabilidad clara entre entidades como usuarios, mesas, órdenes, productos y pagos.
+
+En el contexto de sistemas de operación restaurantera, la centralización de la información dentro de una base de datos relacional permite unificar los datos generados por distintos módulos del sistema en una única fuente de verdad. Bajo esta lógica, las acciones realizadas por comensales, meseros, cocina y administración pueden registrarse en estructuras comunes, manteniendo consistencia entre vistas y procesos. Esta centralización favorece no solo la operación transaccional cotidiana, sino también la generación de reportes, métricas administrativas y procesos posteriores de análisis \cite{microsoft_oltp_2026,ibm_data_consistency_2025}.
+
+Además, PostgreSQL representa una opción particularmente adecuada dentro de este paradigma, ya que se describe oficialmente como un sistema de gestión de bases de datos objeto-relacional, robusto y orientado a cargas de trabajo complejas \cite{postgresql_about_2026,postgresql_home_2026}. En el caso de Supabase, la plataforma extiende PostgreSQL e incorpora funcionalidades adicionales como acceso administrado, respaldos y capacidades en tiempo real, manteniendo como base un motor relacional completo \cite{supabase_docs_2026,supabase_database_overview_2026}. Esto resulta conveniente para proyectos que requieren combinar persistencia estructurada con sincronización entre clientes y servicios.
+
+En el presente proyecto, la base de datos relacional centralizada constituye el núcleo para almacenar información asociada con mesas virtuales, usuarios, órdenes, productos, pagos y estados operativos. Su uso permite modelar adecuadamente las relaciones entre estos elementos, preservar la integridad de las transacciones y ofrecer una estructura sólida para soportar tanto la operación en tiempo real como la futura explotación analítica de los datos generados por el sistema.
+
+% -- Comunicación en tiempo real mediante WebSockets --
+\subsubsection{Comunicación en tiempo real mediante WebSockets}
+
+La comunicación en tiempo real es un componente relevante en sistemas donde múltiples actores requieren observar cambios de estado de manera casi inmediata. En aplicaciones web tradicionales, este intercambio suele realizarse mediante solicitudes HTTP iniciadas por el cliente; sin embargo, este esquema puede resultar limitado cuando se necesita mantener una actualización continua de la información sin recurrir a consultas repetitivas. En este contexto, la tecnología WebSocket proporciona un mecanismo más adecuado para establecer comunicación bidireccional persistente entre cliente y servidor \cite{mdn_websockets_api_2025,rfc6455_2011}.
+
+De acuerdo con MDN, la API de WebSockets permite abrir una sesión de comunicación interactiva de dos vías entre el navegador del usuario y un servidor, haciendo posible enviar mensajes y recibir respuestas sin necesidad de consultar continuamente al servidor \cite{mdn_websockets_api_2025}. A nivel de protocolo, el estándar RFC 6455 define WebSocket como un mecanismo de comunicación bidireccional sobre una conexión TCP, iniciado mediante un \textit{handshake} de apertura y seguido por un esquema de intercambio de mensajes en ambas direcciones \cite{rfc6455_2011}. Esta característica permite reducir la sobrecarga asociada con esquemas de sondeo periódico y favorece interacciones más fluidas.
+
+Una de las principales ventajas de WebSockets es que mantiene una conexión persistente entre cliente y servidor. Esto permite que el servidor pueda notificar eventos al cliente conforme ocurren, sin esperar a que el navegador solicite explícitamente una actualización. En sistemas donde los cambios en la información tienen impacto inmediato sobre la experiencia del usuario, este enfoque mejora la sincronización entre interfaces y disminuye la latencia percibida en la actualización de datos \cite{mdn_websockets_api_2025,mdn_websocket_interface_2024}.
+
+En aplicaciones orientadas a operación restaurantera, la comunicación en tiempo real resulta particularmente útil para sincronizar el flujo de trabajo entre los distintos actores del sistema. Por ejemplo, cuando un comensal registra una orden, el cambio puede reflejarse de forma inmediata en la interfaz del mesero o en el tablero de cocina; del mismo modo, la actualización del estado de preparación de un pedido puede mostrarse en otras vistas conectadas al sistema. Esta capacidad de propagación inmediata de eventos contribuye a mantener coherencia operativa entre módulos y a reducir errores derivados de información desactualizada.
+
+Desde la perspectiva de implementación, plataformas como Supabase Realtime utilizan conexiones WebSocket persistentes para entregar actualizaciones en tiempo real a los clientes conectados \cite{supabase_realtime_background_2026}. Esto resulta conveniente en arquitecturas modernas basadas en aplicaciones web, ya que permite combinar almacenamiento estructurado en una base de datos relacional con mecanismos de difusión de cambios sobre registros o eventos específicos. En consecuencia, WebSockets se convierten en un medio adecuado para soportar sincronización continua entre usuarios y servicios dentro de una misma plataforma.
+
+Además, el uso de tecnologías del lado del servidor orientadas a E/S no bloqueante favorece este tipo de comunicación. Node.js, por ejemplo, se basa en un modelo de ejecución con \textit{event loop} que permite manejar operaciones de entrada y salida de manera eficiente, incluso cuando múltiples conexiones permanecen activas \cite{node_event_loop_2025,node_streams_event_driven_2025}. Esta característica lo vuelve apropiado para aplicaciones que requieren atender eventos en tiempo real y distribuir actualizaciones hacia varios clientes conectados de manera simultánea.
+
+En el contexto del presente proyecto, la comunicación en tiempo real mediante WebSockets constituye un elemento esencial para sincronizar la interacción entre comensales, meseros, cocina y administración. Gracias a esta tecnología, los cambios en órdenes, pagos o estados de preparación pueden reflejarse de manera inmediata en las diferentes interfaces del sistema, fortaleciendo la coordinación operativa y mejorando la experiencia de uso dentro del entorno restaurantero \cite{mdn_websockets_api_2025,rfc6455_2011,supabase_realtime_background_2026}.
+
+% -- Códigos QR como mecanismo de acceso a mesas virtuales --
+\subsubsection{Códigos QR como mecanismo de acceso a mesas virtuales}
+
+Los códigos QR (\textit{Quick Response}) son códigos bidimensionales diseñados para almacenar información de manera compacta y permitir su lectura rápida mediante dispositivos ópticos. DENSO WAVE, empresa asociada con su desarrollo original, indica que el código QR se encuentra estandarizado internacionalmente bajo la norma ISO/IEC 18004, lo que ha favorecido su adopción amplia en distintos contextos de identificación, acceso y enlace a recursos digitales \cite{denso_qr_standard_2026}. Esta estandarización lo convierte en un mecanismo confiable para integrar elementos físicos con sistemas digitales.
+
+A diferencia de otros mecanismos de acceso que exigen captura manual de direcciones, credenciales o identificadores, el código QR permite transferir información directamente al dispositivo del usuario mediante un escaneo. Esta característica reduce fricción en el acceso, acelera la interacción inicial y disminuye errores asociados con la introducción manual de datos. En el ámbito de las aplicaciones web, esto resulta especialmente útil cuando se busca dirigir al usuario hacia una interfaz específica, como un menú digital, una sesión autenticada o, en este caso, una mesa virtual asociada a un restaurante \cite{toast_qr_menus_2025,toast_contactless_dining_2025}.
+
+En el sector restaurantero, los códigos QR han adquirido relevancia como mecanismo para desplegar menús digitales, habilitar ordenamiento en mesa y facilitar pagos desde dispositivos móviles. Toast señala que las tecnologías de \textit{contactless dining} suelen incluir menús QR, ordenamiento móvil y pago digital como parte de una experiencia sin intercambio de objetos físicos \cite{toast_contactless_dining_2025}. De manera complementaria, herramientas orientadas al \textit{at-table ordering} destacan que los menús QR permiten a los clientes consultar información actualizada y ordenar desde su dispositivo, reduciendo tiempos de espera y mejorando la precisión operativa \cite{toast_ordering_technology_2025,square_spring_food_beverage_2025}.
+
+Desde una perspectiva de diseño de sistemas, el uso de códigos QR como punto de entrada permite asociar un identificador físico con una entidad lógica del sistema. En el presente proyecto, dicha entidad corresponde a una mesa virtual. Bajo este enfoque, cada mesa del restaurante puede disponer de un código QR único que, al ser escaneado, dirige al comensal hacia la vista correspondiente dentro de la plataforma. Esta estrategia facilita que varios usuarios se integren a una misma mesa digital sin requerir procesos de registro complejos en el momento del acceso.
+
+Asimismo, el uso de códigos QR favorece una arquitectura más flexible en términos de experiencia de usuario. En lugar de depender exclusivamente de terminales controladas por el establecimiento, el sistema puede aprovechar los propios dispositivos de los comensales como punto de interacción con el menú, los pedidos y los pagos. Este enfoque reduce barreras de adopción, mejora la autonomía del cliente y se alinea con tendencias recientes en soluciones digitales para restaurantes, donde el acceso mediante escaneo constituye una vía común para iniciar experiencias de ordenamiento y pago \cite{toast_vs_square_qr_2025,square_spring_food_beverage_2025}.
+
+En consecuencia, los códigos QR representan una tecnología pertinente para implementar el acceso a mesas virtuales dentro de una plataforma omnicanal restaurantera. Su rapidez de lectura, facilidad de despliegue y compatibilidad con dispositivos móviles permiten enlazar el entorno físico del restaurante con el sistema digital de gestión, facilitando el ingreso de los comensales y sirviendo como punto de partida para procesos posteriores como selección de productos, registro de órdenes y división de pagos \cite{denso_qr_standard_2026,toast_contactless_dining_2025,toast_ordering_technology_2025}.
+
+% -- Sistemas de pago digital y pasarelas de pago --
+\subsubsection{Sistemas de pago digital y pasarelas de pago}
+
+Los sistemas de pago digital comprenden el conjunto de tecnologías y servicios que permiten procesar transacciones electrónicas entre usuarios, comercios e instituciones financieras. En el entorno web, estos sistemas facilitan que el cobro de bienes o servicios pueda realizarse mediante interfaces digitales, reduciendo la dependencia de procesos presenciales o manuales y permitiendo automatizar parte del flujo de confirmación, validación y registro de pagos \cite{stripe_payments_docs_2026,mercadopago_docs_2026}.
+
+Dentro de este ecosistema, las pasarelas de pago desempeñan un papel fundamental al actuar como intermediarios tecnológicos entre el comercio, el cliente y los servicios financieros involucrados en la transacción. Stripe documenta su plataforma de pagos como una infraestructura capaz de soportar distintos métodos de pago dentro de una misma integración \cite{stripe_payments_docs_2026}. De forma similar, Mercado Pago presenta sus soluciones para cobro en línea como herramientas integrables que permiten a los comercios aceptar pagos digitales a través de distintas modalidades \cite{mercadopago_docs_2026}. Esta capacidad de abstracción resulta valiosa para sistemas que requieren flexibilidad en la forma en que los usuarios liquidan sus consumos.
+
+En aplicaciones web, los pagos digitales también pueden beneficiarse de interfaces orientadas a reducir fricción durante el proceso de checkout. MDN describe la \textit{Payment Request API} como una interfaz destinada a disminuir la cantidad de pasos requeridos para completar un pago en línea, permitiendo que ciertas aplicaciones o navegadores gestionen información de pago y la proporcionen al comercio de forma más directa \cite{mdn_payment_request_api_2025,mdn_payment_request_using_2025}. Aunque esta API no reemplaza por sí misma a un procesador o pasarela, sí representa una capa útil dentro de experiencias de pago modernas orientadas a mejorar la usabilidad.
+
+Además de la funcionalidad, la seguridad constituye un aspecto central en cualquier sistema de pagos digitales. El PCI Security Standards Council mantiene estándares y lineamientos orientados a proteger la información de pago a lo largo de todo su ciclo de manejo \cite{pci_security_standards_overview_2026,pci_document_library_2026}. Dentro de este contexto, la tokenización representa una estrategia importante para disminuir la exposición de datos sensibles, sustituyendo la información original de pago por identificadores alternativos utilizados durante el procesamiento \cite{pci_tsp_standard_2026}. Este enfoque resulta relevante en arquitecturas modernas, donde el comercio busca delegar el manejo directo de datos sensibles a proveedores especializados.
+
+En el ámbito restaurantero, los sistemas de pago digital aportan ventajas particulares debido a que la liquidación de una cuenta puede realizarse de distintas maneras: pago total, pago individual, pago compartido o múltiples pagos parciales sobre una misma orden. La disponibilidad de pasarelas integrables y métodos de pago diversos favorece la construcción de sistemas donde la lógica de cobro puede adaptarse a distintos escenarios operativos sin depender exclusivamente de terminales físicas o procesos manuales \cite{stripe_payments_docs_2026,mercadopago_docs_2026}.
+
+En el presente proyecto, las pasarelas de pago constituyen un componente esencial para habilitar esquemas flexibles de liquidación dentro de una mesa virtual. Su integración permitirá asociar órdenes y montos a transacciones digitales procesadas mediante servicios externos especializados, manteniendo trazabilidad sobre qué usuario pagó, cuánto pagó y a qué parte de la cuenta corresponde dicho pago. De esta forma, los sistemas de pago digital no solo facilitan el cobro electrónico, sino que también amplían las posibilidades de división de cuentas y fortalecen la consistencia operativa del sistema propuesto \cite{stripe_payments_docs_2026,mercadopago_docs_2026,pci_security_standards_overview_2026}.
+
+% -- Dashboards administrativos e inteligencia de negocio --
+\subsubsection{Dashboards administrativos e inteligencia de negocio}
+
+La inteligencia de negocio, o \textit{Business Intelligence} (BI), se refiere al conjunto de procesos y tecnologías orientados a recopilar, gestionar y analizar datos organizacionales con el propósito de generar información útil para la toma de decisiones. IBM define la inteligencia de negocio como un conjunto de procesos tecnológicos para recolectar, administrar y analizar datos con el fin de producir conocimientos que apoyen las estrategias y operaciones del negocio \cite{ibm_bi_2025}. Bajo esta perspectiva, la BI no se limita a la visualización de datos, sino que comprende una infraestructura más amplia de integración, almacenamiento, análisis y consumo de información.
+
+Dentro de este ecosistema, los dashboards administrativos representan una de las herramientas más visibles y prácticas para presentar información relevante de manera sintética. Tableau define un dashboard como una forma de mostrar distintos tipos de datos visuales en un solo lugar, con el objetivo de comunicar información relacionada de manera clara y fácil de comprender \cite{tableau_dashboard_overview_2026}. De manera similar, Microsoft señala que un dashboard en Power BI es una sola página o lienzo que utiliza visualizaciones para contar una historia con los elementos más importantes de esa información \cite{powerbi_dashboards_2025,powerbi_dashboards_users_2025}. Estas definiciones coinciden en que el dashboard funciona como una interfaz resumida para observar indicadores y tendencias de manera rápida.
+
+Los dashboards permiten concentrar en una sola vista métricas clave de desempeño, estados operativos, comparaciones y alertas. En contextos organizacionales, esto facilita que los responsables de la operación puedan identificar variaciones, problemas o patrones sin necesidad de revisar registros aislados o tablas extensas. Además, una plataforma de análisis visual como Tableau o Power BI enfatiza que los dashboards ayudan a transformar datos en información comprensible y accionable, favoreciendo un consumo más eficiente de los datos dentro de la organización \cite{tableau_what_is_tableau_2026,powerbi_overview_2025}.
+
+En el caso de los sistemas transaccionales, los dashboards administrativos cobran especial valor cuando los datos operativos se centralizan y se actualizan de forma consistente. La disponibilidad de órdenes, pagos, estados de servicio y otra información estructurada permite construir vistas que apoyen el monitoreo del desempeño del negocio. De manera complementaria, plataformas como Apache Superset muestran que los dashboards pueden integrarse directamente sobre diversas fuentes de datos y servir como herramientas de exploración, visualización y análisis para múltiples perfiles de usuario \cite{superset_intro_2026,superset_home_2026}. Esto evidencia que los dashboards no solo son un recurso de presentación, sino también una capa de consumo analítico sobre los datos generados por el sistema.
+
+En el ámbito restaurantero, un dashboard administrativo puede utilizarse para visualizar información como ventas, frecuencia de pedidos, tiempos de preparación, estados de mesas, comportamiento de pago o productos más consumidos. La concentración de esta información en paneles facilita la supervisión de la operación diaria y ofrece una base para decisiones relacionadas con eficiencia, atención al cliente y estrategias comerciales. En este sentido, la inteligencia de negocio complementa la función transaccional del sistema, extendiéndola hacia la observación y análisis del comportamiento operativo.
+
+En el presente proyecto, los dashboards administrativos forman parte del valor agregado de la solución propuesta, ya que la centralización de datos sobre mesas, órdenes y pagos permite generar métricas útiles para el restaurante. A través de estos paneles, la administración podrá visualizar indicadores operativos y obtener una perspectiva general del funcionamiento del negocio. Por tanto, la incorporación de dashboards e inteligencia de negocio no solo fortalece la dimensión analítica del sistema, sino que también incrementa su utilidad como herramienta integral de gestión \cite{ibm_bi_2025,tableau_dashboard_overview_2026,powerbi_overview_2025}.
+
+% =======================
+% 4. Estado del arte
+% =======================
+\section{Estado del arte}
+% --- 4.1 Antecedentes académicos y técnicos ---
+\subsection{Antecedentes académicos y técnicos}
+
+La literatura relacionada con sistemas digitales para restaurantes, omnicanalidad, pedidos en mesa, menús QR y pagos digitales muestra que la digitalización puede generar mejoras operativas importantes, aunque también introduce retos asociados con la experiencia del usuario, la integración de canales y la complejidad técnica del sistema. Para el presente trabajo, los antecedentes académicos y técnicos se organizaron en cinco ejes principales: (1) digitalización, omnicanalidad y desempeño operativo; (2) autoservicio en mesa y aplicaciones móviles; (3) códigos QR como mecanismo de acceso y consulta; (4) sincronización en tiempo real y arquitectura de software; y (5) pagos digitales, propinas electrónicas y división de cuenta.
+
+% -- Digitalización, omnicanalidad y desempeño operativo --
+\subsubsection{Digitalización, omnicanalidad y desempeño operativo}
+
+Diversos trabajos recientes han analizado el efecto de la transformación digital en la industria restaurantera. La evidencia reporta que la incorporación de tecnologías para procesos de sala y de operación interna puede asociarse con mejoras en productividad y eficiencia operativa. En particular, se ha documentado que la digitalización del \textit{front of house} y del \textit{back of house} contribuye a fortalecer el desempeño organizacional, especialmente cuando los sistemas permiten integrar información de distintas áreas del negocio. \cite{lee2024digital}
+
+De forma complementaria, también se han propuesto modelos analíticos para estudiar la operación restaurantera en contextos omnicanal. Estos modelos, apoyados en teoría de colas y teoría de juegos, muestran que la conveniencia de operar mediante canales presenciales, digitales o una combinación de ambos depende de factores como la sensibilidad de los clientes al tiempo de espera, la capacidad del restaurante y las comisiones asociadas a plataformas externas. \cite{wang2024omnichannel}
+
+Estos antecedentes resultan relevantes para el presente proyecto, ya que respaldan la pertinencia de diseñar una plataforma que integre la operación presencial del restaurante con mecanismos digitales de interacción, manteniendo una base de datos centralizada y sincronización entre los distintos actores del sistema.
+
+% -- Autoservicio en mesa y aplicaciones móviles --
+\subsubsection{Autoservicio en mesa y aplicaciones móviles}
+
+La literatura también ha explorado el efecto de tecnologías de autoservicio dentro del restaurante, como dispositivos de pedido o pago en mesa y aplicaciones móviles de ordenamiento. Se ha reportado que estas herramientas pueden incrementar las ventas por cuenta, reducir la duración del servicio y mejorar la productividad al aumentar la rotación de mesas. \cite{tan2020tabletop,gao2018omnichannel}
+
+No obstante, otros estudios señalan que la incorporación intensiva de aplicaciones móviles de pedido también puede relacionarse con disminuciones en ciertos indicadores de satisfacción del consumidor, lo que sugiere que la mejora operativa no siempre se traduce automáticamente en una mejor experiencia del usuario. \cite{xu2024mobile}
+
+En consecuencia, los antecedentes disponibles muestran que las tecnologías de autoservicio representan una oportunidad importante para optimizar la operación restaurantera, pero su diseño e implementación deben considerar cuidadosamente la experiencia del comensal y la interacción con el personal del establecimiento.
+
+% -- Códigos QR en restaurantes --
+\subsubsection{Códigos QR en restaurantes}
+
+El uso de códigos QR en restaurantes ha sido estudiado principalmente en relación con menús digitales, acceso a información y procesos de ordenamiento. Algunos trabajos explican la intención de uso de menús QR a partir de variables como utilidad percibida, facilidad de uso, influencia social, hábito y percepción de privacidad. \cite{koay2024qr}
+
+Sin embargo, otros estudios experimentales muestran que la experiencia de uso de menús QR no siempre es percibida positivamente. Se ha encontrado que pueden generar inconveniencia percibida y afectar negativamente la lealtad del cliente, particularmente cuando existe una alta preferencia por la interacción con el personal de servicio. \cite{hewage2024qr}
+
+Asimismo, investigaciones recientes han examinado la relación entre menús QR, calidad del servicio y satisfacción, destacando que factores como el riesgo percibido y el contexto cultural pueden modificar la aceptación de estas tecnologías. \cite{yigitoglu2025qr}
+
+Estos hallazgos son especialmente relevantes para este trabajo, ya que el acceso a la mesa virtual se propone mediante códigos QR, por lo que el diseño del sistema deberá priorizar facilidad de uso, rapidez de acceso y baja fricción durante la interacción.
+
+% -- Sincronización en tiempo real y arquitectura --
+\subsubsection{Sincronización en tiempo real y arquitectura}
+
+En el ámbito técnico, los antecedentes muestran que los sistemas que requieren actualización casi inmediata entre múltiples actores se benefician de arquitecturas orientadas a eventos, comunicación desacoplada e idempotencia en comandos y transacciones. Aunque varios de estos estudios no se desarrollan específicamente en el contexto restaurantero, sus aportaciones son transferibles a sistemas de pedidos y pagos que requieren mantener consistencia operativa en tiempo real. \cite{iovescu2024realtime}
+
+De manera complementaria, las especificaciones y estándares asociados a las aplicaciones web progresivas, como \textit{Web App Manifest}, \textit{Service Workers} y \textit{Payment Request API}, proporcionan la base técnica para construir soluciones web instalables, con soporte para comportamiento resiliente y mejora de la experiencia de pago en entornos modernos. \cite{w3c_manifest,w3c_serviceworkers,w3c_paymentrequest}
+
+En este sentido, la literatura técnica sugiere que una arquitectura basada en eventos, sincronización en tiempo real y mecanismos de tolerancia a fallos resulta adecuada para el desarrollo de una PWA omnicanal orientada a la gestión de mesas, órdenes y pagos.
+
+% -- Pagos digitales, propinas y división de cuenta --
+\subsubsection{Pagos digitales, propinas y división de cuenta}
+
+A diferencia de otros temas revisados, la literatura académica específica sobre división de cuenta en restaurantes es más limitada. No obstante, existen antecedentes útiles en el estudio de pagos digitales, propinas electrónicas y algoritmos de liquidación de deudas entre múltiples participantes.
+
+En el caso de las propinas digitales, investigaciones recientes muestran que la percepción de manipulación en las interfaces puede afectar negativamente la satisfacción del usuario y la favorabilidad hacia la marca, lo que resalta la importancia de diseñar flujos de pago transparentes y éticamente adecuados. \cite{alsaati2026etipping}
+
+También se ha estudiado la relación entre el uso de interfaces QR, el ahorro de tiempo y la intención de uso, así como su posible efecto sobre el comportamiento de propina en determinados contextos culturales. \cite{parvez2025qr}
+
+Por otro lado, desde el punto de vista algorítmico, se ha demostrado que algunos problemas de minimización de transacciones en contextos de reparto de gastos pueden ser computacionalmente complejos, incluso NP-completos, lo cual resulta relevante si se busca optimizar la asignación o conciliación de pagos entre varios comensales. \cite{bultel2020splitwise}
+
+En conjunto, estos antecedentes permiten fundamentar la necesidad de diseñar un sistema de pago dividido que sea funcionalmente flexible, transparente para el usuario y técnicamente consistente.
+
+\begin{table}[H]
+\centering
+\setlength{\aboverulesep}{0pt}
+\setlength{\belowrulesep}{0pt}
+\begin{tabularx}{\textwidth}{p{3cm}p{1cm}p{2cm}XX}
+\toprule
+\textbf{Trabajo} & \textbf{Año} & \textbf{Tipo} & \textbf{Aporte principal} & \textbf{Aplicabilidad al proyecto} \\
+\midrule
+\hline
+\textbf{Trabajo} & \textbf{Año} & \textbf{Tipo} & \textbf{Aporte principal} & \textbf{Aplicabilidad al proyecto} \\ \hline
+Lee, Jang y Kim & 2024 & Artículo & Relación positiva entre transformación digital y productividad en restaurantes. & Justifica la integración tecnológica de procesos operativos. \\
+Wang et al. & 2024 & Artículo & Modela la conveniencia de operar en canales dine-in, delivery y omnicanal. & Sustenta el enfoque omnicanal del sistema. \\
+Tan y Netessine & 2020 & Artículo & Tecnologías en mesa aumentan ventas y reducen duración del servicio. & Apoya el uso de pedidos y pagos digitales en mesa. \\
+Koay y Ang & 2024 & Artículo & Analiza intención de uso de menús QR con variables UTAUT2 y privacidad. & Orienta el diseño UX del acceso por QR. \\
+Hewage, Boman y Lefebvre & 2024 & Artículo & Menús QR pueden reducir lealtad por inconveniencia percibida. & Advierte sobre la necesidad de minimizar fricción y ofrecer alternativas. \\
+Iovescu y Tudose & 2024 & Artículo & Propone arquitecturas orientadas a eventos para sincronización en tiempo real. & Fundamenta el uso de eventos y consistencia para órdenes y pagos. \\
+Alsaati et al. & 2026 & Artículo & La manipulación percibida en interfaces de propina afecta satisfacción y marca. & Sustenta diseño ético y transparente del flujo de pagos. \\
+Bultel et al. & 2020 & Artículo & Minimizar transacciones en reparto de gastos puede ser NP-completo. & Sirve como antecedente teórico para modelos de división de pagos. \\
+\bottomrule
+\end{tabularx}
+\caption*{\normalfont\textbf{TABLA I}. Resumen de antecedentes académicos y técnicos relacionados con el proyecto}
+\label{tab:antecedentes_academicos}
+\end{table}
+
+% --- 4.2 Soluciones de mercado y aplicaciones comerciales ---
+\subsection{Soluciones de mercado y aplicaciones comerciales}
+
+En el mercado actual existen diversas plataformas orientadas a la gestión de restaurantes, las cuales incorporan funcionalidades como punto de venta, administración de mesas, cocina digital, pedidos mediante QR y procesamiento de pagos. Sin embargo, las soluciones disponibles difieren en el nivel de integración entre canales, en la flexibilidad para la división de cuentas y en el grado en que el comensal participa directamente en el flujo de pedido y pago.
+
+Para el análisis comparativo del presente trabajo, las soluciones comerciales se organizaron en tres grupos: (1) plataformas POS y KDS integradas, (2) plataformas de gestión omnicanal de órdenes y (3) pasarelas o procesadores de pago con capacidades de integración digital.
+
+% -- Plataformas POS y KDS integradas --
+\subsubsection{Plataformas POS y KDS integradas}
+
+Las plataformas de punto de venta orientadas a restaurantes han evolucionado hacia ecosistemas más amplios que incluyen gestión de mesas, cocina digital, pedidos desde QR y mecanismos de división de cuenta. Soluciones como Toast, Square for Restaurants, Lightspeed Restaurant y TouchBistro incorporan funcionalidades de \textit{split bill}, pagos múltiples, visualización de órdenes en cocina y herramientas para mejorar la eficiencia operativa.
+
+En general, estas plataformas muestran un alto nivel de madurez en la gestión interna del restaurante, particularmente en procesos administrados por meseros, caja o cocina. No obstante, en varios casos la experiencia de pago dividido sigue estando más centrada en la lógica operativa del establecimiento que en un flujo completamente autónomo para el comensal. Además, muchas de estas soluciones forman parte de ecosistemas cerrados, con dependencia de hardware, pasarelas o configuraciones específicas del proveedor.
+
+Por ello, aunque estas plataformas constituyen referentes importantes para el presente proyecto, también evidencian una oportunidad de desarrollar una solución más flexible, centrada en la interacción directa del cliente y no exclusivamente en la operación del personal.
+
+% -- Plataformas omnicanal de gestión de órdenes --
+\subsubsection{Plataformas omnicanal de gestión de órdenes}
+
+En una segunda categoría se encuentran soluciones como Deliverect, orientadas principalmente a centralizar órdenes provenientes de múltiples canales, tales como delivery, takeout, dine-in y sistemas de terceros. Estas plataformas destacan por su capacidad de integración con POS existentes y por coordinar menús, estados y flujos de órdenes entre distintos orígenes.
+
+Su principal aportación consiste en la capa de integración omnicanal, más que en la gestión detallada de mesas o en el flujo de pago dividido centrado en el usuario final. En este sentido, funcionan más como orquestadores de canales que como una solución integral de interacción comensal--mesa--pago.
+
+Para el presente proyecto, estas plataformas son relevantes porque muestran la importancia de definir una fuente única de verdad para el estado de las órdenes y de diseñar mecanismos claros de sincronización entre módulos.
+
+% -- Pasarelas y procesadores de pago --
+\subsubsection{Pasarelas y procesadores de pago}
+
+Finalmente, una tercera capa de soluciones comerciales corresponde a las pasarelas y procesadores de pago, como Stripe y Mercado Pago. Estas herramientas no están orientadas específicamente a la gestión de mesas o cocina, pero sí ofrecen infraestructura crítica para el procesamiento de cobros digitales, tokenización y conciliación de transacciones.
+
+En algunos casos, estas plataformas también permiten implementar modelos de distribución de fondos entre múltiples partes, especialmente en contextos tipo marketplace. Sin embargo, en un restaurante tradicional, la necesidad principal no es repartir el dinero entre varios comercios, sino permitir que distintos comensales liquiden parcial o totalmente una misma cuenta de manera coordinada.
+
+Por ello, estas soluciones se consideran complementarias al sistema propuesto: no resuelven por sí mismas la lógica de división de cuenta en una mesa virtual, pero proporcionan la base tecnológica necesaria para ejecutar los pagos de forma segura y trazable.
+
+\begin{table}[H]
+\centering
+\setlength{\aboverulesep}{0pt}
+\setlength{\belowrulesep}{0pt}
+\begin{tabularx}{\textwidth}{p{2.5cm}p{3cm}p{2.2cm}p{2cm}X}
+\toprule
+\textbf{Proveedor} & \textbf{Producto} & \textbf{QR / mesa} & \textbf{Split bill} & \textbf{Observaciones} \\
+\midrule
+\hline
+\textbf{Proveedor} & \textbf{Producto} & \textbf{QR / mesa} & \textbf{Split bill} & \textbf{Observaciones} \\ \hline
+Toast & POS + Mobile Order \& Pay + KDS & Sí & Sí & Ecosistema robusto, fuerte integración interna, pero con dependencia del stack del proveedor. \\
+Square & Square for Restaurants + KDS & Sí & Sí & Soporta pagos múltiples y división por ítems, con fuerte integración de pagos propios. \\
+Lightspeed & Restaurant + Order Anywhere + KDS & Sí & Sí & Buen soporte para cuenta dividida y pedidos por QR, aunque con variaciones según región. \\
+TouchBistro & POS + Tableside + KDS & Parcial & Sí & Fuerte en operación en sala, pero algunas funciones dependen de módulos o socios externos. \\
+Deliverect & Order Management + Integraciones & Parcial & No central & Destaca en agregación omnicanal, no tanto en mesa y pago dividido. \\
+Soft Restaurant & POS + add-ons & Parcial & No confirmado & Relevante en el contexto mexicano, pero con documentación pública limitada. \\
+Mercado Pago & Checkout / Links / QR & No específico & Parcial & Útil como capa de pago, no como gestor integral de restaurante. \\
+Stripe & Payments + Connect & No específico & Parcial & Flexible por API, pero requiere que la lógica de división se implemente en la aplicación. \\
+\bottomrule
+\end{tabularx}
+\caption*{\normalfont\textbf{TABLA II}. Comparación de soluciones comerciales relacionadas con el proyecto}
+\label{tab:soluciones_comerciales}
+\end{table}
+
+% --- 4.3 Síntesis del estado del arte ---
+\subsection{Síntesis del estado del arte}
+
+A partir de la revisión académica y comercial realizada, se observa que existen avances importantes en digitalización de restaurantes, autoservicio en mesa, menús QR, plataformas omnicanal y procesamiento de pagos digitales. Sin embargo, también se identifican vacíos relevantes en la integración de estas capacidades dentro de una solución unificada centrada en el comensal.
+
+En particular, las plataformas comerciales existentes tienden a resolver adecuadamente la división de cuenta desde la perspectiva operativa del restaurante, pero ofrecen menor flexibilidad cuando se busca que los propios comensales gestionen, en tiempo real, pedidos, pagos parciales, divisiones por ítem o porción, y contribuciones colaborativas dentro de una misma mesa virtual.
+
+Asimismo, la literatura muestra que el uso de tecnologías como menús QR y autoservicio puede mejorar la eficiencia operativa, aunque no garantiza por sí mismo una mejor experiencia de usuario. Por ello, el diseño de una solución como la propuesta en este trabajo requiere equilibrar productividad, facilidad de uso, transparencia en pagos y consistencia en tiempo real.
+
+En este sentido, el presente proyecto se posiciona como una propuesta que busca integrar en una sola plataforma la gestión de mesas, órdenes y pagos divididos, combinando acceso mediante códigos QR, sincronización en tiempo real y trazabilidad de transacciones, con un enfoque omnicanal orientado específicamente al contexto restaurantero.
+
+% =======================
+% Capítulo 3. Estudio de Factibilidad y Gestión de Riesgos
+% =======================
+\chapter{Estudio de Factibilidad y Gestión de Riesgos}
+\section{Estudio de factibilidad}
+
+\subsection{Factibilidad técnica}
+El proyecto es técnicamente viable debido a la disponibilidad de herramientas maduras para su implementación: framework web moderno para PWA, servicios backend con base de datos relacional y sincronización en tiempo real, y pasarelas de pago con APIs documentadas. El equipo cuenta con conocimientos en desarrollo web, modelado de datos y arquitectura cliente-servidor, necesarios para construir la solución propuesta.
+
+\subsection{Factibilidad operativa}
+La solución está orientada a actores con flujos de trabajo ya existentes en restaurante (comensal, mesero, cocina y administrador). La adopción se facilita al usar interfaces web accesibles desde dispositivos comunes y por reducir pasos manuales en toma de pedido y cierre de cuenta. La curva de aprendizaje esperada es baja para comensal y moderada para operación interna.
+
+\subsection{Factibilidad económica}
+La factibilidad económica se sustenta en un enfoque incremental con herramientas de desarrollo de bajo costo inicial y despliegue en infraestructura escalable por demanda. El beneficio esperado proviene de reducción de errores operativos, menor tiempo de cierre de cuenta y mayor disponibilidad de datos para decisiones administrativas. En etapas posteriores se puede complementar con un análisis cuantitativo de ROI por restaurante piloto.
+
+\subsection{Factibilidad legal}
+El sistema debe cumplir principios de protección de datos personales aplicables al contexto mexicano y buenas prácticas de seguridad en pagos. La arquitectura propuesta evita almacenar datos sensibles completos de tarjeta y delega el procesamiento al proveedor de pago. También se verificará compatibilidad de licencias de bibliotecas y componentes de terceros usados en el desarrollo.
+
+\section{Análisis de riesgos}
+\begin{table}[H]
+\centering
+\setlength{\aboverulesep}{0pt}
+\setlength{\belowrulesep}{0pt}
+\begin{tabularx}{\textwidth}{p{3.2cm}p{2cm}p{2cm}X}
+\toprule
+\textbf{Riesgo} & \textbf{Probabilidad} & \textbf{Impacto} & \textbf{Mitigación} \\
+\midrule
+\hline
+\textbf{Riesgo} & \textbf{Probabilidad} & \textbf{Impacto} & \textbf{Mitigación} \\ \hline
+Fallas de conectividad en operación en mesa & Media & Alta & Estrategias de reconexión, reintentos e interfaz resiliente ante desconexión temporal. \\
+Inconsistencias en sincronización de estados & Media & Alta & Eventos idempotentes, validaciones transaccionales y pruebas de concurrencia. \\
+Complejidad en lógica de pago dividido & Media & Alta & Modelo de dominio explícito para saldos y reglas de liquidación; pruebas de integración con casos límite. \\
+Baja adopción por parte del personal & Baja-Media & Media & Capacitación breve, manual de usuario operativo y despliegue progresivo por turnos. \\
+Dependencia de servicios externos (pagos/infraestructura) & Media & Media & Diseñar desacoplamiento por adaptadores y planes de contingencia operativa. \\
+\bottomrule
+\end{tabularx}
+\caption*{\normalfont\textbf{TABLA III}. Riesgos principales del proyecto y plan de mitigación}
+\label{tab:riesgos_proyecto}
+\end{table}
+
+\newpage
+% =======================
+% Referencias Bibliográficas
+% =======================
+\bibliography{refererncias}
+
+\end{document}

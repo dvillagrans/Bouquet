@@ -1,27 +1,31 @@
-import { TopBar } from "@/components/landing/TopBar";
-import { Hero } from "@/components/landing/Hero";
-import { ProductMockup } from "@/components/landing/ProductMockup";
+import { TopBar }          from "@/components/landing/TopBar";
+import { Hero }            from "@/components/landing/Hero";
+import { Ticker }          from "@/components/landing/Ticker";
+import { Features }        from "@/components/landing/Features";
+import { DashboardSection } from "@/components/landing/DashboardSection";
+import { SocialProof }     from "@/components/landing/SocialProof";
+import { CtaBand }         from "@/components/landing/CtaBand";
+import { Footer }          from "@/components/landing/Footer";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-cream font-sans selection:bg-gold/20 selection:text-charcoal relative overflow-hidden">
-      
-      {/* Background Gradients using actual tailwind configuration colors */}
-      <div className="pointer-events-none absolute inset-0 z-0 flex justify-center">
-        <div className="absolute top-0 h-[600px] w-full max-w-4xl rounded-full bg-sage/10 blur-[100px] mix-blend-multiply" />
-        <div className="absolute -right-40 top-40 h-[600px] w-[600px] rounded-full bg-champagne/20 blur-[100px] mix-blend-multiply" />
-      </div>
-
-      {/* Grid Pattern overlay for texture */}
-      <div className="pointer-events-none absolute inset-0 z-0 bg-[linear-gradient(to_right,#2B241E05_1px,transparent_1px),linear-gradient(to_bottom,#2B241E05_1px,transparent_1px)] bg-[size:32px_32px]" />
-
+    <div className="min-h-screen bg-ink font-sans text-light selection:bg-glow/25 selection:text-ink">
       <TopBar />
-      
-      <main className="relative z-10 w-full pb-32">
+      <main>
+        {/* 1 — Hero full-viewport: headline + floor plan SVG en vivo */}
         <Hero />
-        <ProductMockup />
+        {/* 2 — Feature ticker: scrolling names in dark band */}
+        <Ticker />
+        {/* 3 — Feature pillars: 3 cards with mini-previews */}
+        <Features />
+        {/* 4 — Full product dashboard showcase */}
+        <DashboardSection />
+        {/* 5 — Stats + testimonial quote */}
+        <SocialProof />
+        {/* 6 — Final CTA */}
+        <CtaBand />
       </main>
-
+      <Footer />
     </div>
   );
 }

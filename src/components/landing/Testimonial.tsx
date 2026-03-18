@@ -11,7 +11,7 @@ export const Testimonial = () => (
 
       {/* Quote */}
       <blockquote className="mt-10 font-serif text-[clamp(1.7rem,3.2vw,3rem)] font-medium italic leading-[1.25] text-cream/85">
-        "Antes del turno revisaba notas, apps y papeles. Ahora abro Bouquet y sé exactamente en qué va cada mesa, cada orden."
+        &ldquo;Antes del turno revisaba notas, apps y papeles. Ahora abro Bouquet y sé exactamente en qué va cada mesa, cada orden.&rdquo;
       </blockquote>
 
       {/* Attribution */}

@@ -86,7 +86,6 @@ interface CartPanelProps {
   cartTotal: number;
   partySize: number;
   tableCode: string;
-  guestName: string;
   scrollable?: boolean;
   onRemove: (id: string) => void;
   onClear: () => void;
@@ -96,7 +95,7 @@ interface CartPanelProps {
 }
 
 function CartPanel({
-  cartItems, cart, cartCount, cartTotal, partySize, tableCode, guestName,
+  cartItems, cart, cartCount, cartTotal, partySize, tableCode,
   scrollable, onRemove, onClear, onClose, onCheckout, isSubmitting
 }: CartPanelProps) {
   return (
@@ -242,7 +241,7 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
   );
 
   const cartPanelProps = {
-    cartItems, cart, cartCount, cartTotal, partySize, tableCode, guestName,
+    cartItems, cart, cartCount, cartTotal, partySize, tableCode,
     onRemove: (id: string) => setQty(id, 0),
     onClear:  () => setCart({}),
     onCheckout: handleCheckout,
@@ -372,8 +371,12 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
           </div>
 
           {/* RIGHT: Sticky order panel (desktop only) */}
-          <aside className="hidden lg:block" style={{ position: "sticky", top: "65px" }}>
-            <div className="mt-10 border-t-2 border-glow pt-8">
+          <aside
+            className="hidden lg:block z-20"
+            // Ajuste del offset para alinear mejor con el header sticky.
+            style={{ position: "sticky", top: "60px" }}
+          >
+            <div className="mt-6 rounded-2xl border border-wire bg-panel/40 p-6 backdrop-blur-sm">
               <CartPanel {...cartPanelProps} />
             </div>
           </aside>

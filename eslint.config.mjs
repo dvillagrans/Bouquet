@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Prisma client + artifacts are generated and frequently trigger strict TS/ESLint rules.
+    "src/generated/**",
   ]),
 ]);
 

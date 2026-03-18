@@ -25,7 +25,7 @@ export const SocialProof = () => (
       {/* Editorial blockquote — let the type do the work */}
       <div className="max-w-[28ch] lg:max-w-none">
         <blockquote className="font-serif text-[clamp(2rem,4.2vw,4.4rem)] font-medium italic leading-[1.15] tracking-[-0.025em] text-light/70">
-          "Antes del turno revisaba notas, apps y papeles. Ahora abro Bouquet y sé exactamente en qué va cada mesa y cada orden."
+          &ldquo;Antes del turno revisaba notas, apps y papeles. Ahora abro Bouquet y sé exactamente en qué va cada mesa y cada orden.&rdquo;
         </blockquote>
 
         <footer className="mt-10 flex items-center gap-4">

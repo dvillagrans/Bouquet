@@ -247,7 +247,7 @@ import { advanceOrderStatus, undoOrderStatus } from "@/actions/orders";
 
 export default function KDSBoard({ initialOrders }: { initialOrders: Order[] }) {
   const [orders, setOrders]           = useState<Order[]>(initialOrders);
-  const [isPending, startTransition]  = useTransition();
+  const [, startTransition]          = useTransition();
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [view, setView]               = useState<ViewMode>("activas");

@@ -41,7 +41,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
 
       {/* Main content */}
       <main className="dash-main min-h-screen" style={{ paddingTop: "3.5rem" }}>
-        <div style={{ marginLeft: "0" }} className="dash-content-offset">
+        <div className="dash-content-offset">
           {children}
         </div>
       </main>

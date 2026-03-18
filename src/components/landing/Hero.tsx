@@ -124,7 +124,7 @@ export const Hero = () => (
             </Link>
             <Link
               href="#producto"
-              className="text-[0.79rem] font-semibold text-charcoal/40 underline underline-offset-4 decoration-charcoal/20 transition-colors duration-200 hover:text-charcoal hover:decoration-charcoal/40"
+              className="inline-flex min-h-[44px] items-center text-[0.79rem] font-semibold text-charcoal/40 underline underline-offset-4 decoration-charcoal/20 transition-colors duration-200 hover:text-charcoal hover:decoration-charcoal/40"
             >
               Ver el producto
             </Link>

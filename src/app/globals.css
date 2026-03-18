@@ -180,8 +180,11 @@ body {
 }
 @media (min-width: 1024px) {
   :where(.lg\:px-10) { padding-left: 2.5rem; padding-right: 2.5rem; }
+  :where(.lg\:px-12) { padding-left: 3rem;   padding-right: 3rem;   }
   :where(.lg\:py-5)  { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+  :where(.lg\:py-24) { padding-top: 6rem;    padding-bottom: 6rem;    }
   :where(.lg\:py-32) { padding-top: 8rem;    padding-bottom: 8rem;    }
+  :where(.lg\:py-40) { padding-top: 10rem;   padding-bottom: 10rem;   }
   :where(.lg\:py-0)  { padding-top: 0;       padding-bottom: 0;       }
   :where(.lg\:pb-20) { padding-bottom: 5rem; }
   :where(.lg\:pb-24) { padding-bottom: 6rem; }

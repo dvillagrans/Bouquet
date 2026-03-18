@@ -46,11 +46,13 @@ export function TableAccessScreen({ tableCode, isLikelyValid }: TableAccessScree
       className="min-h-screen bg-cream pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
       aria-labelledby="access-heading"
     >
+      <div className="mx-auto max-w-2xl">
+
       {/* ─── ZONE 1: Logo ───────────────────────────────────────────
           Generous top padding — the logo floats, doesn't crowd.
           Padding respeta safe area y da más espacio en 320px.        */}
       <div
-        className="px-4 pt-6 pb-8 sm:px-8 sm:pt-10 sm:pb-10 lg:px-12 lg:max-w-2xl lg:mx-auto"
+        className="px-4 pt-6 pb-8 sm:px-8 sm:pt-10 sm:pb-10 lg:px-12"
         style={{ animation: "table-access-enter 0.5s cubic-bezier(0.25, 1, 0.5, 1) 0s both" }}
       >
         <Link
@@ -71,7 +73,7 @@ export function TableAccessScreen({ tableCode, isLikelyValid }: TableAccessScree
           The code is the hero — large, unhurried, with room above
           and below before the divider.                               */}
       <div
-        className="border-b border-charcoal/[0.07] px-4 pb-8 sm:px-8 sm:pb-10 lg:px-12 lg:max-w-2xl lg:mx-auto"
+        className="border-b border-charcoal/[0.07] px-4 pb-8 sm:px-8 sm:pb-10 lg:px-12"
         style={{ animation: "table-access-enter 0.5s cubic-bezier(0.25, 1, 0.5, 1) 0.08s both" }}
       >
         <p className="mb-5 sm:mb-7 text-[0.54rem] font-bold uppercase tracking-[0.44em] text-charcoal/22">
@@ -115,7 +117,7 @@ export function TableAccessScreen({ tableCode, isLikelyValid }: TableAccessScree
           Each field lives in its own row with breathing room.
           Touch targets ≥44px; labels legibles en móvil.              */}
       <div
-        className="px-4 pt-8 sm:px-8 sm:pt-10 lg:px-12 lg:max-w-2xl lg:mx-auto"
+        className="px-4 pt-8 sm:px-8 sm:pt-10 lg:px-12"
         style={{ animation: "table-access-enter 0.5s cubic-bezier(0.25, 1, 0.5, 1) 0.16s both" }}
       >
         <div className="max-w-sm">
@@ -252,7 +254,7 @@ export function TableAccessScreen({ tableCode, isLikelyValid }: TableAccessScree
 
       {/* ─── ZONE 4: Footer ────────────────────────────────────────── */}
       <div
-        className="px-4 pb-8 pt-8 sm:px-8 sm:pb-10 sm:pt-10 lg:px-12 lg:max-w-2xl lg:mx-auto"
+        className="px-4 pb-8 pt-8 sm:px-8 sm:pb-10 sm:pt-10 lg:px-12"
         style={{ animation: "table-access-enter 0.5s cubic-bezier(0.25, 1, 0.5, 1) 0.24s both" }}
       >
         <Link
@@ -262,6 +264,8 @@ export function TableAccessScreen({ tableCode, isLikelyValid }: TableAccessScree
           Volver al inicio
         </Link>
       </div>
+
+      </div>{/* /mx-auto max-w-2xl */}
 
       <p id="form-status" className="sr-only" aria-live="polite">
         {isSubmitting ? "Procesando acceso a la mesa." : ""}

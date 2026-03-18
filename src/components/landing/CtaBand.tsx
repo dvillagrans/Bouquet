@@ -36,7 +36,7 @@ export const CtaBand = () => (
     </div>
 
     {/* Band 2 — headline + action */}
-    <div className="px-6 py-16 lg:px-12 lg:py-24">
+    <div className="px-6 py-20 lg:px-12 lg:py-32">
       <div className="mx-auto max-w-7xl">
         <div className="grid gap-14 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-20">
 
@@ -75,7 +75,7 @@ export const CtaBand = () => (
     </div>
 
     {/* Band 3 — stats spread */}
-    <div className="border-t border-light/[0.07] px-6 py-7 lg:px-12">
+    <div className="border-t border-light/[0.07] px-6 py-10 lg:px-12">
       <div className="mx-auto grid max-w-7xl grid-cols-3">
         {stats.map(({ n, label }, i) => (
           <div

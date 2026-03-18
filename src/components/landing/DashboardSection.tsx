@@ -5,11 +5,11 @@ import { ProductMockup } from "@/components/landing/ProductMockup";
  *  No card frames — just clean label + value + sub text in a grid row.
  */
 export const DashboardSection = () => (
-  <section className="bg-canvas py-24 lg:py-32" id="producto">
+  <section className="bg-canvas py-28 lg:py-40" id="producto">
     <div className="mx-auto max-w-7xl px-6 lg:px-10">
 
       {/* Header */}
-      <div className="mb-14 flex flex-col gap-3">
+      <div className="mb-20 flex flex-col gap-5">
         <div className="flex items-center gap-3">
           <span className="h-px w-6 shrink-0 bg-glow/50" aria-hidden="true" />
           <span className="text-[0.64rem] font-bold uppercase tracking-[0.34em] text-dim">El producto</span>
@@ -27,7 +27,7 @@ export const DashboardSection = () => (
       <ProductMockup />
 
       {/* Fact strip — typographic, no card frames */}
-      <div className="mt-12 grid grid-cols-2 gap-x-8 gap-y-8 border-t border-wire pt-10 sm:grid-cols-4 sm:gap-x-0 sm:divide-x sm:divide-wire">
+      <div className="mt-16 grid grid-cols-2 gap-x-8 gap-y-10 border-t border-wire pt-14 sm:grid-cols-4 sm:gap-x-0 sm:divide-x sm:divide-wire">
         {[
           { label: "Configuración",  value: "1 día",     sub: "Del onboarding al primer turno" },
           { label: "Dispositivos",   value: "Cualquier", sub: "iPad, tablet, laptop, teléfono"  },

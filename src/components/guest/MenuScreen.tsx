@@ -68,7 +68,7 @@ function QtyControl({
       <button
         onClick={onAdd}
         aria-label={`Agregar ${name}`}
-        className="flex h-8 w-8 items-center justify-center border border-wire text-dim transition-colors duration-150 hover:border-glow/60 hover:text-glow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
+        className="flex h-11 w-11 items-center justify-center border border-wire text-dim transition-colors duration-150 hover:border-glow/60 hover:text-glow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
       >
         <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3" aria-hidden="true">
           <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -81,7 +81,7 @@ function QtyControl({
       <button
         onClick={onDec}
         aria-label={`Quitar uno de ${name}`}
-        className="flex h-8 w-8 items-center justify-center border border-glow/40 text-glow transition-colors hover:border-glow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
+        className="flex h-11 w-11 items-center justify-center border border-glow/40 text-glow transition-colors hover:border-glow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
       >
         <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3" aria-hidden="true">
           <path d="M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -93,7 +93,7 @@ function QtyControl({
       <button
         onClick={onInc}
         aria-label={`Agregar otro de ${name}`}
-        className="flex h-8 w-8 items-center justify-center border border-glow/40 text-glow transition-colors hover:border-glow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
+        className="flex h-11 w-11 items-center justify-center border border-glow/40 text-glow transition-colors hover:border-glow focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
       >
         <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3" aria-hidden="true">
           <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
@@ -112,6 +112,7 @@ interface CartPanelProps {
   cartTotal: number;
   partySize: number;
   tableCode: string;
+  guestName: string;
   scrollable?: boolean;
   onRemove: (id: string) => void;
   onClear: () => void;
@@ -119,7 +120,7 @@ interface CartPanelProps {
 }
 
 function CartPanel({
-  cartItems, cart, cartCount, cartTotal, partySize, tableCode,
+  cartItems, cart, cartCount, cartTotal, partySize, tableCode, guestName,
   scrollable, onRemove, onClear, onClose,
 }: CartPanelProps) {
   return (
@@ -180,9 +181,12 @@ function CartPanel({
             </p>
           </div>
 
-          <button className="mt-6 w-full bg-glow py-4 text-[0.72rem] font-bold uppercase tracking-[0.22em] text-ink transition-all duration-200 hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow">
+          <Link
+            href={`/mesa/${encodeURIComponent(tableCode)}/cuenta?guest=${encodeURIComponent(guestName)}&pax=${partySize}`}
+            className="mt-6 block w-full bg-glow py-4 text-center text-[0.72rem] font-bold uppercase tracking-[0.22em] text-ink transition-all duration-200 hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
+          >
             Enviar orden
-          </button>
+          </Link>
           <button
             onClick={onClear}
             className="mt-3 w-full border border-wire py-3 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-dim transition-colors hover:border-light/20 hover:text-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
@@ -231,7 +235,7 @@ export function MenuScreen({ guestName, partySize, tableCode }: MenuScreenProps)
   );
 
   const cartPanelProps = {
-    cartItems, cart, cartCount, cartTotal, partySize, tableCode,
+    cartItems, cart, cartCount, cartTotal, partySize, tableCode, guestName,
     onRemove: (id: string) => setQty(id, 0),
     onClear:  () => setCart({}),
   } satisfies Omit<CartPanelProps, "onClose" | "scrollable">;
@@ -371,7 +375,7 @@ export function MenuScreen({ guestName, partySize, tableCode }: MenuScreenProps)
       {/* ── MOBILE BOTTOM BAR (shown when cart has items) ────────────── */}
       {cartCount > 0 && (
         <div
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-wire bg-panel px-6 py-4 lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-wire bg-panel px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden"
           style={{ animation: "slide-from-bottom 0.25s cubic-bezier(0.25,0.46,0.45,0.94) both" }}
         >
           <button
@@ -406,7 +410,7 @@ export function MenuScreen({ guestName, partySize, tableCode }: MenuScreenProps)
             aria-hidden="true"
           />
           <div
-            className="absolute inset-x-0 bottom-0 border-t border-wire bg-panel px-6 py-6"
+            className="absolute inset-x-0 bottom-0 border-t border-wire bg-panel px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
             style={{ animation: "slide-from-bottom 0.28s cubic-bezier(0.25,0.46,0.45,0.94) both" }}
           >
             <CartPanel {...cartPanelProps} scrollable onClose={() => setDrawerOpen(false)} />

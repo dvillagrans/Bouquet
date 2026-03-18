@@ -72,7 +72,7 @@ export const TopBar = () => {
           {/* Mobile hamburger */}
           <button
             onClick={() => setOpen(!open)}
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-wire text-dim transition-colors hover:border-light/20 hover:text-light lg:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-wire text-dim transition-colors hover:border-light/20 hover:text-light lg:hidden"
             aria-label={open ? "Cerrar menú" : "Abrir menú"}
             aria-expanded={open}
             aria-controls="mobile-menu"

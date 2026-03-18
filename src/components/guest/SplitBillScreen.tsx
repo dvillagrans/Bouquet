@@ -194,7 +194,7 @@ export function SplitBillScreen({ tableCode, guestName, partySize }: SplitBillSc
                 key={rate}
                 onClick={() => setTipRate(rate as TipRate)}
                 className={[
-                  "px-5 py-2.5 text-[0.65rem] font-bold uppercase tracking-[0.22em] transition-colors duration-150",
+                  "min-h-[44px] px-5 py-2.5 text-[0.65rem] font-bold uppercase tracking-[0.22em] transition-colors duration-150",
                   tipRate === rate
                     ? "bg-glow text-ink"
                     : "border border-wire text-dim hover:border-light/20 hover:text-light",
@@ -245,7 +245,7 @@ export function SplitBillScreen({ tableCode, guestName, partySize }: SplitBillSc
                   onClick={() => adjustSplit(-1)}
                   disabled={splitCount <= 1}
                   aria-label="Restar persona"
-                  className="flex h-10 w-10 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light disabled:opacity-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
+                  className="flex h-11 w-11 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light disabled:opacity-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
                 >
                   <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3" aria-hidden="true">
                     <path d="M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -259,7 +259,7 @@ export function SplitBillScreen({ tableCode, guestName, partySize }: SplitBillSc
                   onClick={() => adjustSplit(1)}
                   disabled={splitCount >= 20}
                   aria-label="Agregar persona"
-                  className="flex h-10 w-10 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light disabled:opacity-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
+                  className="flex h-11 w-11 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light disabled:opacity-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
                 >
                   <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3" aria-hidden="true">
                     <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -321,7 +321,7 @@ export function SplitBillScreen({ tableCode, guestName, partySize }: SplitBillSc
         </div>
 
         {/* ── CONFIRM ──────────────────────────────────────────────── */}
-        <div className="border-t border-wire pb-16 pt-8">
+        <div className="border-t border-wire pt-8" style={{ paddingBottom: "max(4rem, env(safe-area-inset-bottom, 4rem))" }}>
           <button
             onClick={() => setConfirmed(true)}
             className="w-full bg-glow py-5 text-[0.76rem] font-bold uppercase tracking-[0.22em] text-ink transition-all duration-200 hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"

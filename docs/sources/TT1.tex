@@ -979,6 +979,16 @@ Uno de los módulos principales desarrollados consiste en el trayecto de usuario
 
 El diseño de estos componentes fue estandarizado siguiendo una paleta de colores oscuro (\textit{dark mode}), con elementos que minimizan el esfuerzo de compresión cognitiva del cliente, apegándose a buenas prácticas de \textit{frontend} e interfaces enfocadas en la experiencia de usuario (UX).
 
+\subsection{Implementación del Flujo de Cocina (Kitchen Display System)}
+Continuando con la operación de las comandas emitidas por los comensales, se implementó el módulo del \textit{Kitchen Display System} (KDS), el cual actúa como panel de control principal para el personal de preparación y cocina. Este módulo suprime la necesidad de tickets físicos de papel, aumentando la eficiencia y trazabilidad operativa de los pedidos:
+
+\begin{enumerate}[leftmargin=*, itemsep=0.35em]
+    \item \textbf{Tablero Kanban Dinámico (\textit{KDS Board}):} Los pedidos entrantes se organizan en un tablero de columnas lógicas que representan los estados operativos del restaurante: ``Nuevas'' (Pendientes), ``En Preparación'' y ``Listas''. El cocinero puede avanzar las órdenes al siguiente estado mediante un solo toque, optimizando los tiempos de coordinación con los meseros.
+    \item \textbf{Gestión de Tiempos y Alertas Críticas:} Para mitigar los tiempos de espera prolongados de los comensales, las comandas digitales implementan un seguimiento de tiempo de vida. Al superar heurísticas de tolerancia predefinidas (como $15$ minutos), las tarjetas notifican al chef (estado de prevención en ámbar). Si el pedido rebasase los $30$ minutos de espera, la interfaz alerta enérgicamente mediante recursos visuales intermitentes de tipo emergencia su estado \textit{crítico}.
+    \item \textbf{Separación por Estaciones Operativas:} Los restaurantes separan la preparación entre cocina general y barra de bebidas. Para dar frente a la complejidad concurrente, se implementaron botones para el filtrado especializado para que cada usuario (chef o barman) vea únicamente los platos o bebidas que le conciernen de la misma orden conjunta de la mesa.
+    \item \textbf{Prevención de Errores y Trazabilidad:} Dentro del ritmo de trabajo acelerado de una cocina, los errores táctiles (como marcar listo un pedido erróneo) son comunes. El módulo adhiere un mecanismo antierrores (botón \textit{Deshacer}) y un cambio de vista que muestra un informe de ``Historial de Entregas''. Además, las notas y exigencias dietéticas escritas por el cliente vía la vista \textit{Menu Grid} (por ejemplo, ``sin cebolla'') son resaltadas enfáticamente en los tableros.
+\end{enumerate}
+
 \section{Manual de pruebas: plan y ejecución}
 \subsection{Plan de pruebas}
 Se definieron pruebas unitarias para reglas críticas de negocio, pruebas de integración para flujos entre módulos (comensal-mesero-cocina-pagos) y pruebas de estrés básico para concurrencia de usuarios por mesa.

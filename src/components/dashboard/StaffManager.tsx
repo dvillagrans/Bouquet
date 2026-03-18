@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { UserPlus, Trash2, Edit2 } from "lucide-react";
+import { UserPlus, Trash2 } from "lucide-react";
 
 type Role = "Administrador" | "Mesero" | "Cocina" | "Barra";
 
@@ -99,12 +99,6 @@ export default function StaffManager() {
 
             {/* Actions */}
             <div className="flex items-center gap-2 opacity-100 transition-opacity duration-150 lg:opacity-0 lg:group-hover:opacity-100">
-              <button
-                aria-label={`Editar a ${member.name}`}
-                className="flex h-9 w-9 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light"
-              >
-                <Edit2 className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
               <button
                 onClick={() => handleDelete(member.id)}
                 aria-label={`Eliminar a ${member.name}`}

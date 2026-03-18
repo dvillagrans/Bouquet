@@ -26,46 +26,23 @@ type Order = {
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
-const MOCK_ORDERS: Order[] = [
-  {
-    id: "ORD-001", tableCode: "Mesa 1", status: "pending",
-    createdAt: new Date(Date.now() - 1000 * 60 * 3),
-    items: [
-      { id: "i1", name: "Hamburguesa Clásica", quantity: 2, notes: "Sin cebolla, bien cocida", station: "cocina" },
-      { id: "i2", name: "Limonada de Menta",   quantity: 1, station: "barra" },
-    ],
-  },
-  {
-    id: "ORD-002", tableCode: "Mesa 4", status: "preparing",
-    createdAt: new Date(Date.now() - 1000 * 60 * 18),
-    items: [
-      { id: "i3", name: "Ensalada César",    quantity: 1, station: "cocina" },
-      { id: "i4", name: "Cerveza Artesanal", quantity: 2, station: "barra"  },
-    ],
-  },
-  {
-    id: "ORD-004", tableCode: "Mesa 7", status: "pending",
-    createdAt: new Date(Date.now() - 1000 * 60 * 35),
-    items: [
-      { id: "i6", name: "Tacos de Ribeye", quantity: 3, notes: "Urgente, cliente esperando", station: "cocina" },
-    ],
-  },
-  {
-    id: "ORD-003", tableCode: "Mesa 2", status: "ready",
-    createdAt: new Date(Date.now() - 1000 * 60 * 25),
-    items: [
-      { id: "i5", name: "Mojito Tradicional", quantity: 1, station: "barra" },
-    ],
-  },
-  {
-    id: "ORD-005", tableCode: "Mesa 9", status: "delivered",
-    createdAt: new Date(Date.now() - 1000 * 60 * 50),
-    deliveredAt: new Date(Date.now() - 1000 * 60 * 10),
-    items: [
-      { id: "i7", name: "Agua Mineral", quantity: 1, station: "barra" },
-    ],
-  },
-];
+
+// ─── Live clock ───────────────────────────────────────────────────────────────
+
+function LiveClock() {
+  const [time, setTime] = useState(() => new Date());
+
+  useEffect(() => {
+    const id = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <span className="font-mono text-[0.9rem] font-semibold tabular-nums text-light/70">
+      {time.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+    </span>
+  );
+}
 
 // ─── Urgency helpers ──────────────────────────────────────────────────────────
 
@@ -265,35 +242,71 @@ function KDSColumn({
 type StationFilter = "todas" | "cocina" | "barra";
 type ViewMode = "activas" | "historial";
 
-export default function KDSBoard() {
-  const [orders, setOrders]           = useState<Order[]>(MOCK_ORDERS);
+import { useTransition } from "react";
+import { advanceOrderStatus, undoOrderStatus } from "@/actions/orders";
+
+export default function KDSBoard({ initialOrders }: { initialOrders: Order[] }) {
+  const [orders, setOrders]           = useState<Order[]>(initialOrders);
+  const [isPending, startTransition]  = useTransition();
+
   const [currentTime, setCurrentTime] = useState(new Date());
   const [view, setView]               = useState<ViewMode>("activas");
   const [station, setStation]         = useState<StationFilter>("todas");
 
   useEffect(() => {
-    const id = setInterval(() => setCurrentTime(new Date()), 30000);
+    const id = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(id);
   }, []);
 
   function advanceOrderState(orderId: string, currentStatus: OrderStatus) {
+    // Optimistic Update
+
     const next: Record<OrderStatus, OrderStatus> = {
       pending: "preparing", preparing: "ready", ready: "delivered", delivered: "delivered",
     };
+    const optimisticNextStatus = next[currentStatus];
     setOrders(prev => prev.map(o =>
       o.id === orderId
-        ? { ...o, status: next[currentStatus], deliveredAt: next[currentStatus] === "delivered" ? new Date() : o.deliveredAt }
+        ? { ...o, status: optimisticNextStatus, deliveredAt: optimisticNextStatus === "delivered" ? new Date() : o.deliveredAt }
         : o
     ));
+
+    startTransition(async () => {
+      try {
+        await advanceOrderStatus(orderId, currentStatus);
+      } catch (err) {
+        console.error("Failed to advance order", err);
+        // revert on error
+        setOrders(prev => prev.map(o =>
+          o.id === orderId
+            ? { ...o, status: currentStatus }
+            : o
+        ));
+      }
+    });
   }
 
   function undoOrderState(orderId: string, currentStatus: OrderStatus) {
     const prev: Record<OrderStatus, OrderStatus> = {
       pending: "pending", preparing: "pending", ready: "preparing", delivered: "ready",
     };
+    
+    const optimisticPrevStatus = prev[currentStatus];
     setOrders(orders => orders.map(o =>
-      o.id === orderId ? { ...o, status: prev[currentStatus] } : o
+      o.id === orderId ? { ...o, status: optimisticPrevStatus } : o
     ));
+
+    startTransition(async () => {
+      try {
+        await undoOrderStatus(orderId, currentStatus);
+      } catch (err) {
+        console.error("Failed to undo order", err);
+        // revert on error
+        setOrders(orders => orders.map(o =>
+          o.id === orderId ? { ...o, status: currentStatus } : o
+        ));
+      }
+    });
   }
 
   function filterByStation(list: Order[]): Order[] {
@@ -325,11 +338,16 @@ export default function KDSBoard() {
         style={{ animation: "reveal-up 0.4s cubic-bezier(0.22,1,0.36,1) both" }}
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[0.5rem] font-bold uppercase tracking-[0.44em] text-dim">Monitor de cocina</p>
-            <h1 className="mt-1 font-serif text-[1.6rem] font-medium leading-none tracking-[-0.02em] text-light">
-              Kitchen Display
-            </h1>
+          <div className="flex items-center gap-5">
+            <div>
+              <p className="text-[0.5rem] font-bold uppercase tracking-[0.44em] text-dim">Monitor de cocina</p>
+              <h1 className="mt-1 font-serif text-[1.6rem] font-medium leading-none tracking-[-0.02em] text-light">
+                Kitchen Display
+              </h1>
+            </div>
+            <div className="hidden items-center border-l border-wire pl-5 sm:flex">
+              <LiveClock />
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">

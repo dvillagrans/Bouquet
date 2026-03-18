@@ -6,22 +6,54 @@ import { TrendingUp, TrendingDown, Activity } from "lucide-react";
 const PERIODS = ["Hoy", "Semana", "Mes"] as const;
 type Period = typeof PERIODS[number];
 
-const stats = [
-  { label: "Ventas totales",   value: "$42,500", change: "+12.5%", up: true  },
-  { label: "Ticket promedio",  value: "$450",    change: "+5.2%",  up: true  },
-  { label: "Mesas atendidas",  value: "98",      change: "−2.1%",  up: false },
-  { label: "Platos vendidos",  value: "312",     change: "+8.4%",  up: true  },
-];
+type Stat = { label: string; value: string; change: string; up: boolean };
 
-const topItems = [
-  { name: "Hamburguesa Clásica", sold: 45, revenue: "$8,100" },
-  { name: "Limonada de Menta",   sold: 32, revenue: "$1,440" },
-  { name: "Tacos de Ribeye",     sold: 28, revenue: "$7,000" },
-  { name: "Ensalada César",      sold: 18, revenue: "$2,160" },
-];
+const STATS_BY_PERIOD: Record<string, Stat[]> = {
+  "Hoy": [
+    { label: "Ventas totales",  value: "$8,450",   change: "+6.2%",  up: true  },
+    { label: "Ticket promedio", value: "$410",     change: "−3.1%",  up: false },
+    { label: "Mesas atendidas", value: "21",       change: "+4.8%",  up: true  },
+    { label: "Platos vendidos", value: "64",       change: "+11.2%", up: true  },
+  ],
+  "Semana": [
+    { label: "Ventas totales",  value: "$42,500",  change: "+12.5%", up: true  },
+    { label: "Ticket promedio", value: "$450",     change: "+5.2%",  up: true  },
+    { label: "Mesas atendidas", value: "98",       change: "−2.1%",  up: false },
+    { label: "Platos vendidos", value: "312",      change: "+8.4%",  up: true  },
+  ],
+  "Mes": [
+    { label: "Ventas totales",  value: "$168,200", change: "+9.1%",  up: true  },
+    { label: "Ticket promedio", value: "$435",     change: "+2.8%",  up: true  },
+    { label: "Mesas atendidas", value: "387",      change: "+15.3%", up: true  },
+    { label: "Platos vendidos", value: "1,248",    change: "+7.6%",  up: true  },
+  ],
+};
+
+const TOP_ITEMS_BY_PERIOD: Record<string, { name: string; sold: number; revenue: string }[]> = {
+  "Hoy": [
+    { name: "Hamburguesa Clásica", sold: 9,  revenue: "$1,620" },
+    { name: "Tacos de Ribeye",     sold: 7,  revenue: "$1,750" },
+    { name: "Limonada de Menta",   sold: 6,  revenue: "$270"   },
+    { name: "Ensalada César",      sold: 4,  revenue: "$480"   },
+  ],
+  "Semana": [
+    { name: "Hamburguesa Clásica", sold: 45, revenue: "$8,100" },
+    { name: "Limonada de Menta",   sold: 32, revenue: "$1,440" },
+    { name: "Tacos de Ribeye",     sold: 28, revenue: "$7,000" },
+    { name: "Ensalada César",      sold: 18, revenue: "$2,160" },
+  ],
+  "Mes": [
+    { name: "Hamburguesa Clásica", sold: 178, revenue: "$32,040" },
+    { name: "Tacos de Ribeye",     sold: 112, revenue: "$28,000" },
+    { name: "Limonada de Menta",   sold: 130, revenue: "$5,850"  },
+    { name: "Ensalada César",      sold: 74,  revenue: "$8,880"  },
+  ],
+};
 
 export default function ReportsView() {
   const [period, setPeriod] = useState<Period>("Hoy");
+  const stats    = STATS_BY_PERIOD[period];
+  const topItems = TOP_ITEMS_BY_PERIOD[period];
 
   return (
     <div className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">

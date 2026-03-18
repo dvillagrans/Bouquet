@@ -75,7 +75,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         className="hidden border-b border-wire px-7 py-3 lg:block"
         style={{ animation: "fade-in 0.4s ease-out 0.05s both" }}
       >
-        <p className="text-[0.55rem] font-bold uppercase tracking-[0.3em] text-dim/40">
+        <p className="text-[0.55rem] font-bold uppercase tracking-[0.3em] text-dim/60">
           Panel de control
         </p>
       </div>

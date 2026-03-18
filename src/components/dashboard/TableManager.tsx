@@ -11,6 +11,12 @@ const STATUS_STYLES: Record<TableStatus, string> = {
   SUCIA:      "text-ember border-ember/40",
 };
 
+const STATUS_LABEL: Record<TableStatus, string> = {
+  DISPONIBLE: "Disponible",
+  OCUPADA:    "Ocupada",
+  SUCIA:      "Por limpiar",
+};
+
 const STATUS_DOT: Record<TableStatus, string> = {
   DISPONIBLE: "bg-sage-deep",
   OCUPADA:    "bg-glow",
@@ -176,7 +182,7 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
                   style={table.status === "OCUPADA" ? { animation: "pulse-slow 2.4s ease-in-out infinite" } : undefined}
                 />
                 <span className={`text-[0.65rem] font-bold uppercase tracking-[0.2em] border px-2 py-0.5 ${STATUS_STYLES[table.status]}`}>
-                  {table.status}
+                  {STATUS_LABEL[table.status]}
                 </span>
               </div>
 
@@ -189,7 +195,7 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
               {/* Code */}
               <div className="flex-1">
                 <p className="text-[0.55rem] font-bold uppercase tracking-[0.24em] text-dim">Código QR</p>
-                <p className="mt-0.5 font-mono text-[0.9rem] font-semibold text-glow">{table.qrCode}</p>
+                <p className="mt-0.5 font-mono text-[0.9rem] font-semibold text-light/60">{table.qrCode}</p>
               </div>
 
               {/* Actions — always visible on touch, hover-reveal on desktop */}
@@ -199,7 +205,7 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
                   className="inline-flex h-9 items-center gap-2 border border-wire px-3 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
                 >
                   <QrCode className="h-3.5 w-3.5" aria-hidden="true" />
-                  Ver QR
+                  Ver menú
                 </button>
                 <button
                   onClick={() => handleDelete(table.id)}

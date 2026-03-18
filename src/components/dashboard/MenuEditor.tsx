@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useOptimistic } from "react";
+import { useState, useTransition } from "react";
 import { Plus, Search, Edit2, Trash2 } from "lucide-react";
 import { toggleItemSoldOut, deleteMenuItem } from "@/actions/menu";
 
@@ -27,6 +27,10 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
   const [isAdding, setIsAdding] = useState(false);
   const [newItem, setNewItem] = useState({
     name: "", description: "", price: "", categoryId: "", isPopular: false, station: "COCINA" as "COCINA" | "BARRA"
+  });
+  const [editingItem, setEditingItem] = useState<MenuItemDB | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "", description: "", price: "", categoryId: "", isPopular: false,
   });
 
   const CATEGORIES = ["Todas", ...initialCategories.map(c => c.name)];
@@ -56,6 +60,45 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
       setItems(prev => [...prev, { ...created, categoryName: catName }]);
       setIsAdding(false);
       setNewItem({ name: "", description: "", price: "", categoryId: "", isPopular: false, station: "COCINA" });
+    });
+  }
+
+  function openEdit(item: MenuItemDB) {
+    setEditingItem(item);
+    setEditForm({
+      name: item.name,
+      description: item.description || "",
+      price: item.price.toString(),
+      categoryId: initialCategories.find(c => c.name === item.categoryName)?.id || "",
+      isPopular: item.isPopular,
+    });
+  }
+
+  function handleEditItem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingItem || !editForm.name || !editForm.price || !editForm.categoryId) return;
+
+    const catName = initialCategories.find(c => c.id === editForm.categoryId)?.name || editingItem.categoryName;
+
+    setItems(prev => prev.map(item => item.id === editingItem.id ? {
+      ...item,
+      name: editForm.name,
+      description: editForm.description || null,
+      price: parseFloat(editForm.price),
+      categoryName: catName,
+      isPopular: editForm.isPopular,
+    } : item));
+    setEditingItem(null);
+
+    startTransition(async () => {
+      const { updateMenuItem } = await import("@/actions/menu");
+      await updateMenuItem(editingItem.id, {
+        name: editForm.name,
+        description: editForm.description || undefined,
+        price: parseFloat(editForm.price),
+        categoryId: editForm.categoryId,
+        isPopular: editForm.isPopular,
+      });
     });
   }
 
@@ -171,6 +214,60 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
         </div>
       )}
 
+      {/* ── Modal: Editar Platillo ──────────────────────────── */}
+      {editingItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-6 backdrop-blur-sm">
+          <div className="w-full max-w-md border border-wire bg-canvas p-8">
+            <p className="mb-1 text-[0.52rem] font-bold uppercase tracking-[0.44em] text-dim">Edición</p>
+            <h2 className="mb-8 font-serif text-[1.6rem] font-medium leading-none text-light">Editar platillo</h2>
+
+            <form onSubmit={handleEditItem} className="flex flex-col gap-5">
+              <div>
+                <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">Nombre</label>
+                <input required type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30" />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">Descripción</label>
+                <textarea rows={2} value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="w-full resize-none border border-wire bg-transparent p-3 text-[0.8rem] text-light outline-none focus:border-light/30" />
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">Precio</label>
+                  <input required type="number" min="0" step="0.01" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })} className="h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30" />
+                </div>
+                <div className="flex-1">
+                  <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">Categoría</label>
+                  <select required value={editForm.categoryId} onChange={e => setEditForm({ ...editForm, categoryId: e.target.value })} className="h-10 w-full cursor-pointer appearance-none border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30">
+                    <option value="" className="bg-ink text-dim">Seleccionar</option>
+                    {initialCategories.map(c => (
+                      <option key={c.id} value={c.id} className="bg-ink">{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input type="checkbox" checked={editForm.isPopular} onChange={e => setEditForm({ ...editForm, isPopular: e.target.checked })} className="accent-glow" />
+                  <span className="text-[0.7rem] text-light">Es Platillo Top</span>
+                </label>
+              </div>
+
+              <div className="mt-4 flex gap-3 border-t border-wire/50 pt-4">
+                <button type="button" onClick={() => setEditingItem(null)} className="flex-1 border border-wire py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={isPending} className="flex-1 bg-light py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-ink transition-colors hover:bg-light/90 disabled:opacity-50">
+                  {isPending ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* ── Category tabs ───────────────────────────────────── */}
       <div className="mb-8 flex border-b border-wire overflow-x-auto scrollbar-hide" style={{ animation: "fade-in 0.4s ease-out 0.15s both" }}>
         {CATEGORIES.map(cat => (
@@ -253,6 +350,7 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
               {/* Actions */}
               <div className="flex items-center gap-2 opacity-100 transition-opacity duration-150 lg:opacity-0 lg:group-hover:opacity-100">
                 <button
+                  onClick={() => openEdit(item)}
                   aria-label={`Editar ${item.name}`}
                   className="flex h-9 w-9 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light"
                 >

@@ -1,52 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { submitComensalOrder } from "@/actions/comensal";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-type Category = "entrada" | "plato" | "bebida" | "postre";
+interface Category {
+  id: string;
+  name: string;
+}
 
 interface MenuItem {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   price: number;
-  category: Category;
+  categoryId: string;
+  categoryName?: string;
   note?: string;
 }
-
-// ─── Data ────────────────────────────────────────────────────────────────────
-
-const CATEGORY_LABELS: Record<Category, string> = {
-  entrada: "Entradas",
-  plato:   "Platos principales",
-  bebida:  "Bebidas",
-  postre:  "Postres",
-};
-
-const CATEGORIES: Array<{ id: Category | "todos"; label: string }> = [
-  { id: "todos",   label: "Todo"     },
-  { id: "entrada", label: "Entradas" },
-  { id: "plato",   label: "Platos"   },
-  { id: "bebida",  label: "Bebidas"  },
-  { id: "postre",  label: "Postres"  },
-];
-
-const MENU: MenuItem[] = [
-  { id: "e1", name: "Ceviche Clásico",     description: "Pescado fresco marinado en limón, cebolla morada, chile serrano y cilantro", price: 185, category: "entrada" },
-  { id: "e2", name: "Camarones al Ajillo", description: "Salteados con ajo negro, mantequilla y vino blanco seco",                   price: 220, category: "entrada", note: "Contiene mariscos" },
-  { id: "e3", name: "Sopa de Lima",        description: "Caldo de pollo con lima, tortilla crujiente y hierbas frescas",             price: 145, category: "entrada" },
-  { id: "p1", name: "Pato Confitado",      description: "Pechuga en su jugo, papas doradas y verduras de temporada salteadas",       price: 345, category: "plato"   },
-  { id: "p2", name: "Filete Mignon",       description: "Corte de 250g, salsa demi-glace de hongos silvestres y cebollín",          price: 450, category: "plato"   },
-  { id: "p3", name: "Branzino a la Sal",   description: "Filete mediterráneo bajo corteza de sal, aceite de oliva y limón",          price: 320, category: "plato"   },
-  { id: "p4", name: "Risotto de Hongos",   description: "Carnaroli cremoso, champiñones frescos y parmesano Reggiano 24 meses",      price: 210, category: "plato",  note: "Vegetariano" },
-  { id: "b1", name: "Agua de Horchata",    description: "Bebida refrescante con arroz, nueces, canela y especias de la casa",        price:  45, category: "bebida"  },
-  { id: "b2", name: "Vino Tinto Reserva",  description: "Copa de selección premium, rotación semanal",                               price:  95, category: "bebida"  },
-  { id: "b3", name: "Mezcal Artesanal",    description: "Espadín joven de Oaxaca, servido con naranja y sal de gusano",              price: 120, category: "bebida"  },
-  { id: "d1", name: "Flan de Vainilla",    description: "Clásico caramelizado con crema fresca y extracto de vainilla de Papantla",  price:  85, category: "postre"  },
-  { id: "d2", name: "Chocolate Derretido", description: "Belga 70% cacao, frutos rojos y pan brioche tostado con mantequilla",       price: 110, category: "postre"  },
-];
 
 // ─── QtyControl ──────────────────────────────────────────────────────────────
 
@@ -117,11 +91,13 @@ interface CartPanelProps {
   onRemove: (id: string) => void;
   onClear: () => void;
   onClose?: () => void;
+  onCheckout: () => void;
+  isSubmitting?: boolean;
 }
 
 function CartPanel({
   cartItems, cart, cartCount, cartTotal, partySize, tableCode, guestName,
-  scrollable, onRemove, onClear, onClose,
+  scrollable, onRemove, onClear, onClose, onCheckout, isSubmitting
 }: CartPanelProps) {
   return (
     <>
@@ -181,12 +157,13 @@ function CartPanel({
             </p>
           </div>
 
-          <Link
-            href={`/mesa/${encodeURIComponent(tableCode)}/cuenta?guest=${encodeURIComponent(guestName)}&pax=${partySize}`}
-            className="mt-6 block w-full bg-glow py-4 text-center text-[0.72rem] font-bold uppercase tracking-[0.22em] text-ink transition-all duration-200 hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
+          <button
+            onClick={onCheckout}
+            disabled={isSubmitting}
+            className="mt-6 block w-full bg-glow py-4 text-center text-[0.72rem] font-bold uppercase tracking-[0.22em] text-ink transition-all duration-200 hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow disabled:opacity-50 disabled:hover:-translate-y-0"
           >
-            Enviar orden
-          </Link>
+            {isSubmitting ? "Enviando..." : "Enviar orden"}
+          </button>
           <button
             onClick={onClear}
             className="mt-3 w-full border border-wire py-3 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-dim transition-colors hover:border-light/20 hover:text-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
@@ -205,14 +182,42 @@ interface MenuScreenProps {
   guestName: string;
   partySize: number;
   tableCode: string;
+  initialCategories: Category[];
+  initialItems: MenuItem[];
 }
 
 type CartMap = Record<string, number>;
 
-export function MenuScreen({ guestName, partySize, tableCode }: MenuScreenProps) {
+export function MenuScreen({ guestName, partySize, tableCode, initialCategories, initialItems }: MenuScreenProps) {
+  const router = useRouter();
   const [cart, setCart]               = useState<CartMap>({});
-  const [activeCategory, setCategory] = useState<Category | "todos">("todos");
+  const [activeCategory, setCategory] = useState<string>("todos");
   const [drawerOpen, setDrawerOpen]   = useState(false);
+  const [isPending, startTransition]  = useTransition();
+
+  function handleCheckout() {
+    startTransition(async () => {
+      try {
+        const orderItems = Object.entries(cart).map(([id, qty]) => ({
+          menuItemId: id,
+          quantity: qty,
+        }));
+        
+        await submitComensalOrder({
+          tableCode,
+          guestName,
+          pax: partySize,
+          items: orderItems,
+        });
+
+        // Al terminar, ir a pantalla de éxito/cuenta
+        router.push(`/mesa/${encodeURIComponent(tableCode)}/cuenta?guest=${encodeURIComponent(guestName)}&pax=${partySize}`);
+      } catch (err) {
+        console.error("No se pudo enviar la orden", err);
+        alert("Ocurrió un error al enviar la orden. Intenta de nuevo.");
+      }
+    });
+  }
 
   function setQty(id: string, qty: number) {
     setCart(prev => {
@@ -225,19 +230,23 @@ export function MenuScreen({ guestName, partySize, tableCode }: MenuScreenProps)
     });
   }
 
-  const cartItems = MENU.filter(item => (cart[item.id] ?? 0) > 0);
+  const cartItems = initialItems.filter(item => (cart[item.id] ?? 0) > 0);
   const cartCount = Object.values(cart).reduce((s, q) => s + q, 0);
   const cartTotal = cartItems.reduce((s, item) => s + item.price * (cart[item.id] ?? 0), 0);
 
-  const visibleItems = activeCategory === "todos" ? MENU : MENU.filter(i => i.category === activeCategory);
-  const visibleCats  = (["entrada", "plato", "bebida", "postre"] as Category[]).filter(
-    c => visibleItems.some(i => i.category === c)
+  const visibleItems = activeCategory === "todos" ? initialItems : initialItems.filter(i => i.categoryId === activeCategory);
+  
+  // Categorias que tienen al menos un item visible
+  const visibleCats = initialCategories.filter(
+    cat => visibleItems.some(i => i.categoryId === cat.id)
   );
 
   const cartPanelProps = {
     cartItems, cart, cartCount, cartTotal, partySize, tableCode, guestName,
     onRemove: (id: string) => setQty(id, 0),
     onClear:  () => setCart({}),
+    onCheckout: handleCheckout,
+    isSubmitting: isPending,
   } satisfies Omit<CartPanelProps, "onClose" | "scrollable">;
 
   return (
@@ -291,7 +300,7 @@ export function MenuScreen({ guestName, partySize, tableCode }: MenuScreenProps)
               role="tablist"
               aria-label="Categorías del menú"
             >
-              {CATEGORIES.map(({ id, label }) => (
+              {[ { id: "todos", name: "Todo" }, ...initialCategories ].map(({ id, name: label }) => (
                 <button
                   key={id}
                   role="tab"
@@ -311,14 +320,14 @@ export function MenuScreen({ guestName, partySize, tableCode }: MenuScreenProps)
 
             {/* Menu rows */}
             <div role="tabpanel">
-              {visibleCats.map(catId => {
-                const items = visibleItems.filter(i => i.category === catId);
+              {visibleCats.map(cat => {
+                const items = visibleItems.filter(i => i.categoryId === cat.id);
                 if (items.length === 0) return null;
                 return (
-                  <div key={catId}>
+                  <div key={cat.id}>
                     {activeCategory === "todos" && (
                       <p className="pb-4 pt-8 text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim/55">
-                        {CATEGORY_LABELS[catId]}
+                        {cat.name}
                       </p>
                     )}
                     {activeCategory !== "todos" && <div className="pt-6" />}

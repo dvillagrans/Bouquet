@@ -63,6 +63,26 @@ export async function deleteMenuItem(id: string) {
   revalidatePath("/dashboard/menu");
 }
 
+export async function updateMenuItem(id: string, data: {
+  name: string;
+  description?: string;
+  price: number;
+  categoryId: string;
+  isPopular: boolean;
+}) {
+  await prisma.menuItem.update({
+    where: { id },
+    data: {
+      name: data.name,
+      description: data.description,
+      price: data.price,
+      categoryId: data.categoryId,
+      isPopular: data.isPopular,
+    },
+  });
+  revalidatePath("/dashboard/menu");
+}
+
 export async function createMenuItem(data: {
   name: string;
   description?: string;

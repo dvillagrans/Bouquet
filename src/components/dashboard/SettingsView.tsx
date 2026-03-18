@@ -1,106 +1,190 @@
 "use client";
 
-import { Store, Receipt, Image as ImageIcon, Save, Bell, Smartphone } from "lucide-react";
+import { useState } from "react";
+import { Save } from "lucide-react";
 
 export default function SettingsView() {
+  const [allowOrders,    setAllowOrders]    = useState(true);
+  const [notifyWaiters, setNotifyWaiters] = useState(true);
+
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Configuración</h1>
-          <p className="text-gray-400">Personaliza la experiencia de tus comensales y reglas de negocio.</p>
+    <div className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
+
+      {/* ── Header ──────────────────────────────────────────── */}
+      <div className="mb-10 border-b border-wire pb-8" style={{ animation: "reveal-up 0.5s cubic-bezier(0.22,1,0.36,1) both" }}>
+        <p className="mb-2 text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">
+          Sistema
+        </p>
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <h1 className="font-serif text-[clamp(2rem,4vw,3rem)] font-medium leading-[0.92] tracking-[-0.02em] text-light">
+            Configuración
+          </h1>
+          <button className="inline-flex h-10 items-center gap-2 bg-light px-5 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-ink transition-colors hover:bg-light/90 self-start sm:self-auto">
+            <Save className="h-3.5 w-3.5" aria-hidden="true" />
+            Guardar cambios
+          </button>
         </div>
-        <button className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-lg shadow-amber-500/20">
-          <Save className="w-4 h-4" />
-          <span>Guardar Cambios</span>
-        </button>
       </div>
 
-      <div className="space-y-6">
-        
-        {/* Identidad del Restaurante */}
-        <section className="bg-[#111] border border-white/5 rounded-2xl overflow-hidden">
-          <div className="p-5 border-b border-white/5 flex items-center gap-3 bg-white/[0.02]">
-            <Store className="w-5 h-5 text-amber-500" />
-            <h2 className="text-lg font-semibold text-white">Identidad del Restaurante</h2>
+      <div className="flex flex-col gap-12">
+
+        {/* ── 01 · Identidad ──────────────────────────────────── */}
+        <section style={{ animation: "dash-stat-enter 0.4s cubic-bezier(0.22,1,0.36,1) 0.1s both" }}>
+          <div className="mb-7 border-b border-wire pb-4">
+            <p className="text-[0.5rem] font-bold uppercase tracking-[0.38em] text-dim/50">01</p>
+            <h2 className="mt-1 text-[0.95rem] font-semibold tracking-[-0.01em] text-light">
+              Identidad del restaurante
+            </h2>
           </div>
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Nombre Comercial</label>
-                <input type="text" defaultValue="Boulevard Bistro" className="w-full bg-black border border-white/10 rounded-lg px-4 py-2 text-white focus:border-amber-500/50 focus:outline-none" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-2">Mensaje de Bienvenida QR</label>
-                <input type="text" defaultValue="¡Bienvenidos! Escanea para ver el menú." className="w-full bg-black border border-white/10 rounded-lg px-4 py-2 text-white focus:border-amber-500/50 focus:outline-none" />
-              </div>
-            </div>
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">Logotipo</label>
-              <div className="border-2 border-dashed border-white/10 rounded-xl h-32 flex flex-col items-center justify-center gap-2 text-gray-500 hover:border-amber-500/50 hover:text-amber-500 transition-colors cursor-pointer bg-black/50">
-                <ImageIcon className="w-8 h-8" />
-                <span className="text-sm font-medium">Click para subir imagen</span>
+              <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">
+                Nombre comercial
+              </label>
+              <input
+                type="text"
+                defaultValue="Boulevard Bistro"
+                className="h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none transition-colors focus:border-light/30"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">
+                Mensaje de bienvenida QR
+              </label>
+              <input
+                type="text"
+                defaultValue="¡Bienvenidos! Escanea para ver el menú."
+                className="h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none transition-colors focus:border-light/30"
+              />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">
+                Logotipo
+              </label>
+              <div className="flex h-28 cursor-pointer items-center justify-center border border-dashed border-wire transition-colors hover:border-light/20">
+                <p className="text-[0.72rem] font-medium text-dim/40">
+                  Click para subir imagen
+                </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Facturación y Finanzas */}
-        <section className="bg-[#111] border border-white/5 rounded-2xl overflow-hidden">
-          <div className="p-5 border-b border-white/5 flex items-center gap-3 bg-white/[0.02]">
-            <Receipt className="w-5 h-5 text-emerald-500" />
-            <h2 className="text-lg font-semibold text-white">Facturación y Finanzas</h2>
+        {/* ── 02 · Facturación ────────────────────────────────── */}
+        <section style={{ animation: "dash-stat-enter 0.4s cubic-bezier(0.22,1,0.36,1) 0.18s both" }}>
+          <div className="mb-7 border-b border-wire pb-4">
+            <p className="text-[0.5rem] font-bold uppercase tracking-[0.38em] text-dim/50">02</p>
+            <h2 className="mt-1 text-[0.95rem] font-semibold tracking-[-0.01em] text-light">
+              Facturación y finanzas
+            </h2>
           </div>
-          <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">Moneda</label>
-              <select className="w-full bg-black border border-white/10 rounded-lg px-4 py-2 text-white focus:border-amber-500/50 focus:outline-none appearance-none">
-                <option>MXN ($) Peso Mexicano</option>
-                <option>USD ($) US Dollar</option>
-                <option>EUR (€) Euro</option>
+              <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">
+                Moneda
+              </label>
+              <select className="h-10 w-full cursor-pointer appearance-none border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none transition-colors focus:border-light/30">
+                <option className="bg-ink">MXN ($) Peso Mexicano</option>
+                <option className="bg-ink">USD ($) US Dollar</option>
+                <option className="bg-ink">EUR (€) Euro</option>
               </select>
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">Impuesto (IVA) %</label>
-              <input type="number" defaultValue="16" className="w-full bg-black border border-white/10 rounded-lg px-4 py-2 text-white focus:border-amber-500/50 focus:outline-none" />
+              <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">
+                Impuesto IVA (%)
+              </label>
+              <input
+                type="number"
+                defaultValue="16"
+                className="h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none transition-colors focus:border-light/30"
+              />
             </div>
+
             <div>
-              <label className="block text-sm font-medium text-gray-400 mb-2">Propinas Sugeridas</label>
-              <input type="text" defaultValue="10, 15, 20" placeholder="Separadas por comas" className="w-full bg-black border border-white/10 rounded-lg px-4 py-2 text-white focus:border-amber-500/50 focus:outline-none" />
+              <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">
+                Propinas sugeridas
+              </label>
+              <input
+                type="text"
+                defaultValue="10, 15, 20"
+                placeholder="Separadas por comas"
+                className="h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none transition-colors focus:border-light/30 placeholder:text-dim/30"
+              />
             </div>
           </div>
         </section>
 
-        {/* Preferencias de Servicio */}
-        <section className="bg-[#111] border border-white/5 rounded-2xl overflow-hidden">
-          <div className="p-5 border-b border-white/5 flex items-center gap-3 bg-white/[0.02]">
-            <Smartphone className="w-5 h-5 text-blue-500" />
-            <h2 className="text-lg font-semibold text-white">Preferencias de Servicio</h2>
+        {/* ── 03 · Servicio ───────────────────────────────────── */}
+        <section style={{ animation: "dash-stat-enter 0.4s cubic-bezier(0.22,1,0.36,1) 0.26s both" }}>
+          <div className="mb-7 border-b border-wire pb-4">
+            <p className="text-[0.5rem] font-bold uppercase tracking-[0.38em] text-dim/50">03</p>
+            <h2 className="mt-1 text-[0.95rem] font-semibold tracking-[-0.01em] text-light">
+              Preferencias de servicio
+            </h2>
           </div>
-          <div className="p-6 space-y-4">
-            <label className="flex items-center justify-between p-4 bg-black rounded-xl border border-white/5 cursor-pointer">
-              <div>
-                <p className="text-white font-medium">Permitir pedidos directos desde el celular</p>
-                <p className="text-sm text-gray-500">Si se desactiva, el menú QR será solo de lectura.</p>
-              </div>
-              <div className="relative inline-block w-12 h-6 rounded-full bg-amber-500">
-                <span className="absolute left-[26px] top-1 w-4 h-4 bg-white rounded-full transition-all"></span>
-              </div>
-            </label>
-            <label className="flex items-center justify-between p-4 bg-black rounded-xl border border-white/5 cursor-pointer">
-              <div>
-                <p className="text-white font-medium">Notificar a meseros de nuevas órdenes</p>
-                <p className="text-sm text-gray-500">Enviar alerta visual cuando una mesa envía un pedido.</p>
-              </div>
-              <div className="relative inline-block w-12 h-6 rounded-full bg-amber-500">
-                <span className="absolute left-[26px] top-1 w-4 h-4 bg-white rounded-full transition-all"></span>
-              </div>
-            </label>
+
+          <div className="divide-y divide-wire border-t border-wire">
+            <ToggleRow
+              label="Pedidos directos desde el celular"
+              description="Si se desactiva, el menú QR será solo de lectura."
+              checked={allowOrders}
+              onChange={setAllowOrders}
+            />
+            <ToggleRow
+              label="Notificaciones a meseros"
+              description="Enviar alerta visual cuando una mesa envía un pedido."
+              checked={notifyWaiters}
+              onChange={setNotifyWaiters}
+            />
           </div>
         </section>
 
       </div>
+    </div>
+  );
+}
+
+function ToggleRow({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-8 py-5">
+      <div className="min-w-0">
+        <p className="text-[0.82rem] font-semibold text-light">{label}</p>
+        <p className="mt-0.5 text-[0.68rem] font-medium text-dim">{description}</p>
+      </div>
+
+      <button
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={[
+          "relative flex h-6 w-11 shrink-0 items-center border px-0.5 transition-colors duration-200",
+          checked ? "border-sage-deep/60 bg-sage-deep/[0.15]" : "border-wire",
+        ].join(" ")}
+      >
+        <span
+          className={[
+            "h-4 w-4 shrink-0 border transition-all duration-200",
+            checked
+              ? "translate-x-5 border-sage-deep bg-sage-deep"
+              : "border-dim bg-dim/40",
+          ].join(" ")}
+        />
+      </button>
     </div>
   );
 }

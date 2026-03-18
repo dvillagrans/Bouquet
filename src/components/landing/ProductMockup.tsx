@@ -71,7 +71,7 @@ const timeFmt = (m: number) =>
 const pct = (m: number) => Math.min((m / 90) * 100, 100);
 
 export const ProductMockup = () => (
-  <div className="relative w-full overflow-hidden rounded-2xl border border-charcoal/[0.11] bg-cream shadow-[0_28px_72px_-36px_rgba(43,36,30,0.48)]">
+  <div className="relative w-full overflow-hidden border border-charcoal/[0.11] bg-cream">
 
     {/* ── HEADER ─────────────────────────────────────────────── */}
     <div className="flex items-center justify-between gap-4 bg-charcoal px-4 py-3 sm:px-5">

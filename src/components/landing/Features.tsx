@@ -127,7 +127,7 @@ export const Features = () => (
                 {tags.map(tag => (
                   <span
                     key={tag}
-                    className={`rounded-full border px-2.5 py-1 text-[0.57rem] font-bold uppercase tracking-[0.18em] ${accent}`}
+                    className={`border px-2.5 py-1 text-[0.57rem] font-bold uppercase tracking-[0.18em] ${accent}`}
                   >
                     {tag}
                   </span>
@@ -136,7 +136,7 @@ export const Features = () => (
             </div>
 
             {/* Preview panel — decorative mockup UI, hidden on tablet */}
-            <div className="hidden rounded-2xl border border-wire bg-canvas p-5 lg:block lg:p-6" aria-hidden="true">
+            <div className="hidden border border-wire bg-canvas p-5 lg:block lg:p-6" aria-hidden="true">
               {preview}
             </div>
           </div>

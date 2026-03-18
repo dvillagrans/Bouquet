@@ -24,6 +24,12 @@ export const metadata: Metadata = {
     "Gestiona mesas, órdenes y pagos desde una sola plataforma. Pensada para restaurantes que no aceptan el desorden.",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover" as const,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{

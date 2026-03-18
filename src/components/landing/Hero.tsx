@@ -109,7 +109,7 @@ export const Hero = () => (
           <div className="flex shrink-0 items-center gap-5">
             <Link
               href="#contacto"
-              className="group inline-flex items-center gap-2 bg-charcoal px-6 text-[0.79rem] font-bold text-cream shadow-[0_14px_34px_-18px_rgba(43,36,30,0.65)] transition-all duration-300 hover:-translate-y-px hover:shadow-[0_20px_44px_-16px_rgba(43,36,30,0.8)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+              className="group inline-flex items-center gap-2 bg-charcoal px-6 text-[0.79rem] font-bold text-cream transition-all duration-300 hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               style={{ height: "2.75rem" }}
             >
               Solicitar demo

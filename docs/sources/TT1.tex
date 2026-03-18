@@ -963,6 +963,22 @@ El proyecto se clasifica como software; por tanto, no incluye diseño de PCB ni 
 \section{Desarrollo e implementación}
 La implementación se realizó por módulos funcionales para reducir riesgo de integración: acceso a mesa por QR, flujo de órdenes, sincronización de estado por actor, gestión de pagos y visualización administrativa. Entre los retos técnicos principales se encuentran la consistencia transaccional en pagos parciales y la actualización concurrente de estados operativos.
 
+\subsection{Implementación del Flujo del Comensal (Guest Flow)}
+Uno de los módulos principales desarrollados consiste en el trayecto de usuario que experimenta el cliente interaccionando con el sistema directamente desde su dispositivo móvil sin necesidad de intervención del personal:
+
+\begin{enumerate}[leftmargin=*, itemsep=0.35em]
+    \item \textbf{Acceso por QR y Validación (\textit{Table Access}):} Pantalla inicial a la que llega el cliente tras escanear el código QR de la mesa. El sistema valida mediante enrutamiento dinámico (con identificadores \textit{hash}) el formato y la existencia de la mesa. La interfaz utiliza una validación de estado donde se requiere que el comensal ingrese su nombre y especifique el tamaño de su grupo (número de personas) para abrir formalmente la sesión.
+    \item \textbf{Exploración y Pedido (\textit{Menu Grid}):} Tras el registro, el sistema enruta al cliente al menú digital. En esta interfaz, el usuario dispone de categorías (Entradas, Platos principales, Bebidas, Postres) y una tarjeta de navegación sincronizada. El cliente puede ir añadiendo ítems, ajustando cantidades y previsualizando un subtotal temporal en un menú lateral adhesivo (\textit{sticky cart}) antes de enviar la orden completa digitalmente hacia la vista de la cocina.
+    \item \textbf{División de Cuenta Dinámica (\textit{Split Bill}):} Una vez que las órdenes han sido despachadas a lo largo de la estancia, los comensales acceden al apartado de pagos. La pantalla de cuenta compartida despliega todos los ítems ordenados en esa mesa en específico. Para posibilitar esquemas colaborativos sin fricción:
+    \begin{itemize}
+        \item Se incluye un identificador visible que indica qué invitado pidió cada artículo.
+        \item Se cuenta con botones de selección múltiple y la acción \textit{``Seleccionar mis pedidos''} para que el sistema marque automáticamente el consumo individual del usuario en turno.
+        \item Posee cálculo de porcentajes de propina configurables ($10\%$, $15\%$, $20\%$) y subtotalización en tiempo real. Esto permite al comensal pagar un fragmento exacto de la cuenta sin requerir cálculos matemáticos manuales ni dividir el número total arbitrariamente entre los asistentes.
+    \end{itemize}
+\end{enumerate}
+
+El diseño de estos componentes fue estandarizado siguiendo una paleta de colores oscuro (\textit{dark mode}), con elementos que minimizan el esfuerzo de compresión cognitiva del cliente, apegándose a buenas prácticas de \textit{frontend} e interfaces enfocadas en la experiencia de usuario (UX).
+
 \section{Manual de pruebas: plan y ejecución}
 \subsection{Plan de pruebas}
 Se definieron pruebas unitarias para reglas críticas de negocio, pruebas de integración para flujos entre módulos (comensal-mesero-cocina-pagos) y pruebas de estrés básico para concurrencia de usuarios por mesa.

@@ -11,6 +11,8 @@ export type MenuItem = {
   category: "entrada" | "plato" | "bebida" | "postre";
   image?: string;
   tags?: string[];
+  isPopular?: boolean;
+  isSoldOut?: boolean;
 };
 
 type MenuGridProps = {
@@ -27,7 +29,8 @@ const MENU_ITEMS: MenuItem[] = [
     description: "Filete de pescado fresco marinado en limón con cebolla y cilantro",
     price: 185,
     category: "entrada",
-    tags: ["pescado", "fresco"],
+    tags: ["pescado", "fresco", "sin gluten"],
+    isPopular: true,
   },
   {
     id: "2",
@@ -52,6 +55,7 @@ const MENU_ITEMS: MenuItem[] = [
     price: 450,
     category: "plato",
     tags: ["res", "premium"],
+    isPopular: true,
   },
   {
     id: "5",
@@ -60,6 +64,7 @@ const MENU_ITEMS: MenuItem[] = [
     price: 320,
     category: "plato",
     tags: ["pescado", "salado"],
+    isSoldOut: true,
   },
   {
     id: "6",
@@ -76,6 +81,7 @@ const MENU_ITEMS: MenuItem[] = [
     price: 45,
     category: "bebida",
     tags: ["fresca", "tradicional"],
+    isPopular: true,
   },
   {
     id: "8",
@@ -103,11 +109,15 @@ const MENU_ITEMS: MenuItem[] = [
   },
 ];
 
-type CartItem = MenuItem & { quantity: number };
+type CartItem = MenuItem & { quantity: number; notes?: string };
+
 
 export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<MenuItem["category"] | "todos">("todos");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [noteModalItem, setNoteModalItem] = useState<CartItem | null>(null);
+  const [noteInput, setNoteInput] = useState("");
 
   const categories = [
     { value: "todos" as const, label: "Todo el menú" },
@@ -117,12 +127,18 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
     { value: "postre" as const, label: "Postres" },
   ];
 
-  const filteredItems =
-    selectedCategory === "todos"
-      ? MENU_ITEMS
-      : MENU_ITEMS.filter((item) => item.category === selectedCategory);
+  const filteredItems = MENU_ITEMS.filter((item) => {
+    const matchesCategory = selectedCategory === "todos" || item.category === selectedCategory;
+    const matchesSearch =
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    return matchesCategory && matchesSearch;
+  });
 
   function addToCart(item: MenuItem) {
+    if (item.isSoldOut) return;
     setCart((prev) => {
       const existing = prev.find((cartItem) => cartItem.id === item.id);
       if (existing) {
@@ -146,6 +162,19 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
     setCart((prev) =>
       prev.map((item) => (item.id === itemId ? { ...item, quantity } : item))
     );
+  }
+
+  function saveNote() {
+    if (!noteModalItem) return;
+    setCart((prev) =>
+      prev.map((item) =>
+        item.id === noteModalItem.id
+          ? { ...item, notes: noteInput.trim() || undefined }
+          : item
+      )
+    );
+    setNoteModalItem(null);
+    setNoteInput("");
   }
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -189,22 +218,46 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         {/* Menú */}
         <div className="space-y-6">
-          {/* Category filter */}
-          <div className="flex flex-wrap gap-2">
-            {categories.map((cat) => (
-              <button
-                key={cat.value}
-                onClick={() => setSelectedCategory(cat.value)}
-                className={[
-                  "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition",
-                  selectedCategory === cat.value
-                    ? "border border-glow bg-glow/15 text-glow"
-                    : "border border-wire bg-canvas text-dim hover:border-glow/40 hover:text-light",
-                ].join(" ")}
-              >
-                {cat.label}
-              </button>
-            ))}
+          {/* Controls: Search & Categories */}
+          <div className="flex flex-col gap-4">
+            <div className="relative">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Buscar platillos, ingredientes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-xl border border-wire bg-panel pl-10 pr-4 py-2.5 text-sm text-light placeholder-dim outline-none transition focus:border-glow focus:ring-1 focus:ring-glow/50"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-dim hover:text-light transition"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Category filter */}
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat.value}
+                  onClick={() => setSelectedCategory(cat.value)}
+                  className={[
+                    "rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] transition",
+                    selectedCategory === cat.value
+                      ? "border border-glow bg-glow/15 text-glow"
+                      : "border border-wire bg-canvas text-dim hover:border-glow/40 hover:text-light",
+                  ].join(" ")}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Product grid */}
@@ -212,17 +265,33 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
             {filteredItems.map((item) => (
               <div
                 key={item.id}
-                className="group relative overflow-hidden rounded-xl border border-wire bg-panel p-4 transition hover:border-glow/40"
+                className={`group relative overflow-hidden rounded-xl border p-4 transition ${
+                  item.isSoldOut ? "border-wire/50 bg-panel/50 opacity-60 grayscale-[0.8]" : "border-wire bg-panel hover:border-glow/40"
+                }`}
               >
                 {/* Image placeholder */}
-                <div className="aspect-square rounded-lg bg-gradient-to-br from-canvas via-panel to-ink mb-4 flex items-center justify-center text-dim text-xs">
+                <div className="relative aspect-square rounded-lg bg-gradient-to-br from-canvas via-panel to-ink mb-4 flex items-center justify-center text-dim text-xs">
                   {item.name[0]}
+                  
+                  {/* Badges */}
+                  <div className="absolute top-2 left-2 flex flex-col gap-1.5">
+                    {item.isPopular && (
+                      <span className="rounded bg-glow px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-wider text-ink shadow-sm">
+                        Popular
+                      </span>
+                    )}
+                    {item.isSoldOut && (
+                      <span className="rounded bg-wire px-2 py-0.5 text-[0.6rem] font-bold uppercase tracking-wider text-dim shadow-sm">
+                        Agotado
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Content */}
                 <div className="space-y-2">
-                  <h3 className="font-serif text-lg leading-tight text-light">{item.name}</h3>
-                  <p className="text-xs leading-relaxed text-light/65">{item.description}</p>
+                  <h3 className={`font-serif text-lg leading-tight ${item.isSoldOut ? "text-dim" : "text-light"}`}>{item.name}</h3>
+                  <p className="text-xs leading-relaxed text-light/65 line-clamp-2">{item.description}</p>
 
                   {/* Tags */}
                   {item.tags && item.tags.length > 0 && (
@@ -241,10 +310,11 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
 
                 {/* Price + Add button */}
                 <div className="mt-4 flex items-center justify-between pt-4 border-t border-wire">
-                  <div className="font-serif text-lg font-semibold text-glow">${item.price}</div>
+                  <div className={`font-serif text-lg font-semibold ${item.isSoldOut ? "text-dim" : "text-glow"}`}>${item.price}</div>
                   <button
                     onClick={() => addToCart(item)}
-                    className="rounded-lg bg-glow px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-ink transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
+                    disabled={item.isSoldOut}
+                    className="rounded-lg bg-glow px-3 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-ink transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     + Agregar
                   </button>
@@ -272,35 +342,65 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
             ) : (
               <>
                 {/* Cart items */}
-                <div className="max-h-96 space-y-3 overflow-y-auto">
+                <div className="max-h-96 space-y-3 overflow-y-auto pr-1">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex items-start justify-between gap-2 pb-3 border-b border-wire/50">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-light truncate">{item.name}</p>
-                        <p className="text-xs text-light/60">${item.price} c/u</p>
+                    <div key={item.id} className="flex flex-col gap-2 pb-3 border-b border-wire/50">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-light truncate">{item.name}</p>
+                          <p className="text-xs text-light/60">${item.price} c/u</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="h-6 w-6 flex items-center justify-center rounded border border-wire bg-canvas text-xs text-light hover:border-glow/40 transition"
+                          >
+                            −
+                          </button>
+                          <span className="w-5 text-center text-xs font-semibold text-light">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="h-6 w-6 flex items-center justify-center rounded border border-wire bg-canvas text-xs text-light hover:border-glow/40 transition"
+                          >
+                            +
+                          </button>
+                          <button
+                            onClick={() => removeFromCart(item.id)}
+                            className="ml-1 text-xs text-light/50 hover:text-light transition"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="h-6 w-6 rounded border border-wire bg-canvas text-xs text-light hover:border-glow/40 transition"
-                        >
-                          −
-                        </button>
-                        <span className="w-6 text-center text-xs font-semibold text-light">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="h-6 w-6 rounded border border-wire bg-canvas text-xs text-light hover:border-glow/40 transition"
-                        >
-                          +
-                        </button>
-                        <button
-                          onClick={() => removeFromCart(item.id)}
-                          className="ml-1 text-xs text-light/50 hover:text-light transition"
-                        >
-                          ✕
-                        </button>
+                      
+                      {/* Notes Section */}
+                      <div className="flex items-center gap-2">
+                        {item.notes ? (
+                          <div
+                            onClick={() => {
+                              setNoteModalItem(item);
+                              setNoteInput(item.notes || "");
+                            }}
+                            className="flex-1 cursor-pointer rounded bg-canvas px-2 py-1.5 text-[0.65rem] text-light/70 hover:bg-wire/50 transition flex items-center gap-1"
+                          >
+                            <svg className="h-3 w-3 shrink-0 text-glow" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                            <span className="truncate">{item.notes}</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setNoteModalItem(item);
+                              setNoteInput("");
+                            }}
+                            className="text-[0.65rem] text-glow hover:underline underline-offset-2 flex items-center gap-1"
+                          >
+                            <span>+ Agregar notas (ej. sin cebolla)</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -318,7 +418,10 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
                   >
                     Enviar orden a cocina
                   </Link>
-                  <button className="w-full rounded-lg border border-wire bg-transparent px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-light/70 transition hover:border-wire hover:text-light">
+                  <button
+                    onClick={() => setCart([])}
+                    className="w-full rounded-lg border border-wire bg-transparent px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-light/70 transition hover:border-wire hover:text-light"
+                  >
                     Limpiar carrito
                   </button>
                 </div>
@@ -327,6 +430,42 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
           </div>
         </div>
       </div>
+
+      {/* Note Modal */}
+      {noteModalItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-[2rem] border border-wire bg-panel p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-serif text-xl text-light">Añadir instrucciones</h3>
+              <button onClick={() => setNoteModalItem(null)} className="text-dim hover:text-light">✕</button>
+            </div>
+            <p className="text-sm text-dim mb-4">
+              ¿Hay algo que debamos saber sobre este platillo: <span className="text-light">{noteModalItem.name}</span>?
+            </p>
+            <textarea
+              autoFocus
+              value={noteInput}
+              onChange={(e) => setNoteInput(e.target.value)}
+              placeholder="Ej: Sin cebolla, extra mayonesa..."
+              className="w-full rounded-xl border border-wire bg-canvas p-3 text-sm text-light outline-none transition focus:border-glow resize-none min-h-[100px]"
+            />
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={() => setNoteModalItem(null)}
+                className="flex-1 rounded-xl border border-wire py-3 text-xs font-semibold uppercase tracking-[0.1em] text-light transition hover:bg-canvas"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={saveNote}
+                className="flex-1 rounded-xl bg-glow py-3 text-xs font-semibold uppercase tracking-[0.1em] text-ink transition hover:brightness-110"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

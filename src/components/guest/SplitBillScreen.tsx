@@ -1,206 +1,338 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
 
-export type OrderedItem = {
-  id: string;
-  name: string;
-  price: number;
-  orderedBy: string;
-  status: "pending" | "paid";
-};
+// ─── Mock bill ───────────────────────────────────────────────────────────────
+// En producción esta información llegaría del servidor / WebSocket
 
-// Mock de ítems ordenados en la mesa
-const getMockItems = (guestName: string): OrderedItem[] => [
-  { id: "1", name: "Ceviche Clásico", price: 185, orderedBy: guestName, status: "pending" },
-  { id: "2", name: "Camarones al Ajillo", price: 220, orderedBy: "Carlos (Mesa)", status: "pending" },
-  { id: "3", name: "Pato Confitado", price: 345, orderedBy: guestName, status: "pending" },
-  { id: "4", name: "Agua Fresca de Horchata", price: 45, orderedBy: "Ana (Mesa)", status: "paid" },
-  { id: "5", name: "Vino Tinto Reserva", price: 95, orderedBy: "Ana (Mesa)", status: "pending" },
-  { id: "6", name: "Vino Tinto Reserva", price: 95, orderedBy: "Carlos (Mesa)", status: "pending" },
-  { id: "7", name: "Flan de Vainilla", price: 85, orderedBy: "Compartido", status: "pending" },
-];
+const BILL_ITEMS = [
+  { id: "1", name: "Ceviche Clásico",     qty: 2, price: 185 },
+  { id: "2", name: "Filete Mignon",       qty: 1, price: 450 },
+  { id: "3", name: "Risotto de Hongos",   qty: 3, price: 210 },
+  { id: "4", name: "Vino Tinto Reserva",  qty: 4, price:  95 },
+  { id: "5", name: "Flan de Vainilla",    qty: 2, price:  85 },
+] as const;
 
-export function SplitBillScreen({ tableCode, guestName }: { tableCode: string; guestName: string }) {
-  const [items] = useState<OrderedItem[]>(() => getMockItems(guestName));
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [tipPercent, setTipPercent] = useState<number>(15);
+const SUBTOTAL = BILL_ITEMS.reduce((s, i) => s + i.price * i.qty, 0); // $2,000
 
-  const toggleSelection = (id: string, status: string) => {
-    if (status === "paid") return;
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+const TIP_OPTIONS = [
+  { label: "Sin propina", rate: 0    },
+  { label: "10%",         rate: 0.10 },
+  { label: "15%",         rate: 0.15 },
+  { label: "18%",         rate: 0.18 },
+] as const;
 
-  const selectMine = () => {
-    const mine = items
-      .filter((i) => i.orderedBy === guestName && i.status === "pending")
-      .map((i) => i.id);
-    setSelectedIds(new Set([...mine]));
-  };
+type TipRate = 0 | 0.10 | 0.15 | 0.18;
+type SplitMode = "equal" | "full";
 
-  // Cálculos
-  const selectedItems = items.filter((i) => selectedIds.has(i.id));
-  const mySubtotal = selectedItems.reduce((acc, i) => acc + i.price, 0);
-  const tipAmount = mySubtotal * (tipPercent / 100);
-  const myTotal = mySubtotal + tipAmount;
+// ─── ConfirmedView ───────────────────────────────────────────────────────────
 
-  const totalTable = items.reduce((acc, i) => acc + i.price, 0);
-  const remainingTable = items.filter((i) => i.status === "pending").reduce((acc, i) => acc + i.price, 0);
-
+function ConfirmedView({
+  tableCode,
+  guestName,
+  amount,
+}: {
+  tableCode: string;
+  guestName: string;
+  amount: number;
+}) {
   return (
-    <div className="space-y-10">
-      {/* HEADER DIV */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-4xl leading-tight text-light lg:text-5xl">
-            La cuenta de la mesa{" "}
-            <span className="bg-gradient-to-r from-glow via-light to-glow bg-clip-text text-transparent">
-              {tableCode}
-            </span>
-          </h1>
-          <p className="mt-3 text-base leading-relaxed text-light/75">
-            Total mesa: <span className="font-semibold text-light">${totalTable.toFixed(2)}</span> ·{" "}
-            Faltan por pagar: <span className="text-glow">${remainingTable.toFixed(2)}</span>
-          </p>
-        </div>
+    <div
+      className="flex min-h-screen flex-col items-center justify-center px-6 text-center"
+      style={{ animation: "reveal-scale 0.45s cubic-bezier(0.22,1,0.36,1) both" }}
+    >
+      <div className="mb-10 flex h-14 w-14 items-center justify-center border border-glow/40">
+        <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-glow" aria-hidden="true">
+          <path d="M5 12l5 5L19 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr] lg:gap-12">
-        {/* LISTA DE ITEMS (Izquierda) */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="font-serif text-2xl text-light">Monto a dividir</h3>
-            <button
-              onClick={selectMine}
-              className="rounded-full border border-glow/30 px-4 py-2 text-[0.65rem] font-bold uppercase tracking-[0.15em] text-glow transition hover:bg-glow/10 md:text-xs"
-            >
-              Seleccionar mis pedidos
-            </button>
-          </div>
+      <p className="text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">Pago registrado</p>
 
-          <div className="space-y-3">
-            {items.map((item) => {
-              const isPaid = item.status === "paid";
-              const isSelected = selectedIds.has(item.id);
+      <p
+        className="mt-4 font-serif font-semibold leading-none text-glow"
+        style={{ fontSize: "clamp(3.5rem,10vw,5.5rem)" }}
+      >
+        ${amount.toLocaleString("es-MX")}
+      </p>
 
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => toggleSelection(item.id, item.status)}
-                  className={`group relative flex items-center justify-between rounded-xl border p-4 transition md:p-5 ${
-                    isPaid
-                      ? "cursor-not-allowed border-wire/30 bg-canvas/40 opacity-50"
-                      : isSelected
-                      ? "cursor-pointer border-glow bg-glow/10 shadow-[0_0_15px_rgba(201,160,84,0.1)]"
-                      : "cursor-pointer border-wire bg-panel hover:border-glow/40 hover:bg-canvas"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    {/* Checkbox custom */}
-                    <div
-                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] border transition md:h-6 md:w-6 ${
-                        isPaid
-                          ? "border-wire/50 bg-transparent text-wire"
-                          : isSelected
-                          ? "border-glow bg-glow text-ink"
-                          : "border-wire bg-canvas group-hover:border-glow/50"
-                      }`}
-                    >
-                      {(isSelected || isPaid) && (
-                        <svg className="h-3 w-3 md:h-3.5 md:w-3.5" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M11.6666 3.5L5.24992 9.91667L2.33325 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </div>
-                    <div>
-                      <p className={`font-serif text-lg leading-tight md:text-xl ${isPaid ? "line-through text-light/60" : "text-light"}`}>
-                        {item.name}
-                      </p>
-                      <p className="mt-0.5 text-[0.7rem] uppercase tracking-wider text-light/50">
-                        {item.orderedBy} {isPaid && "· (Pagado)"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className={`font-serif text-lg font-semibold md:text-xl ${isSelected ? "text-glow" : "text-light/80"}`}>
-                    ${item.price.toFixed(2)}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      <p className="mt-5 text-[0.82rem] font-medium text-dim">Gracias, {guestName}</p>
+
+      <div className="mx-auto mt-10 h-px w-12 bg-wire" />
+
+      <p className="mt-8 max-w-[28ch] text-[0.72rem] font-medium leading-relaxed text-dim/55">
+        Tu parte quedó registrada en la cuenta de la mesa {tableCode}. El mesero confirmará el cierre.
+      </p>
+
+      <Link
+        href={`/mesa/${encodeURIComponent(tableCode)}/menu?guest=${encodeURIComponent(guestName)}`}
+        className="mt-12 border border-wire px-8 py-3 text-[0.65rem] font-bold uppercase tracking-[0.26em] text-dim transition-colors hover:border-light/20 hover:text-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
+      >
+        Volver al menú
+      </Link>
+    </div>
+  );
+}
+
+// ─── SplitBillScreen ─────────────────────────────────────────────────────────
+
+interface SplitBillScreenProps {
+  tableCode: string;
+  guestName: string;
+  partySize: number;
+}
+
+export function SplitBillScreen({ tableCode, guestName, partySize }: SplitBillScreenProps) {
+  const [mode, setMode]             = useState<SplitMode>("equal");
+  const [splitCount, setSplitCount] = useState(partySize);
+  const [tipRate, setTipRate]       = useState<TipRate>(0.15);
+  const [billOpen, setBillOpen]     = useState(false);
+  const [confirmed, setConfirmed]   = useState(false);
+
+  const tip       = Math.round(SUBTOTAL * tipRate);
+  const total     = SUBTOTAL + tip;
+  const perPerson = Math.ceil(total / splitCount);
+  const myShare   = mode === "equal" ? perPerson : total;
+
+  function adjustSplit(delta: number) {
+    setSplitCount(prev => Math.max(1, Math.min(20, prev + delta)));
+  }
+
+  if (confirmed) {
+    return <ConfirmedView tableCode={tableCode} guestName={guestName} amount={myShare} />;
+  }
+
+  return (
+    <div className="relative min-h-screen">
+
+      {/* ── TOP BAR ────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-30 border-b border-wire bg-ink">
+        <div className="mx-auto flex max-w-2xl items-center justify-between px-6 py-4 lg:px-10">
+          <Link
+            href={`/mesa/${encodeURIComponent(tableCode)}/menu?guest=${encodeURIComponent(guestName)}&pax=${partySize}`}
+            className="inline-flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-[0.3em] text-dim transition-colors hover:text-light"
+          >
+            <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3" aria-hidden="true">
+              <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Menú
+          </Link>
+          <span className="text-[0.58rem] font-bold uppercase tracking-[0.32em] text-dim">
+            Cuenta · {tableCode}
+          </span>
+        </div>
+      </header>
+
+      {/* ── BODY ───────────────────────────────────────────────────── */}
+      <div className="mx-auto max-w-2xl px-6 pb-24 lg:px-10">
+
+        {/* Heading */}
+        <div className="border-b border-wire pb-8 pt-10">
+          <p className="text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">Pago de mesa</p>
+          <h1 className="mt-3 font-serif text-[clamp(2.2rem,6vw,3.2rem)] font-medium leading-[0.9] tracking-[-0.02em] text-light">
+            La cuenta
+          </h1>
+          <p className="mt-3 text-[0.75rem] font-medium text-dim">
+            {guestName} · Mesa {tableCode} · {partySize} comensal{partySize !== 1 ? "es" : ""}
+          </p>
         </div>
 
-        {/* RESUMEN DE PAGO (Derecha Sticky) */}
-        <div className="h-fit lg:sticky lg:top-8">
-          <div className="rounded-[2rem] border border-wire bg-panel p-6 shadow-2xl shadow-ink/50 lg:p-8">
-            <h3 className="font-serif text-2xl text-light mb-6">Tu pago</h3>
-
-            {/* Items a pagar */}
-            <div className="space-y-4 max-h-48 overflow-y-auto pr-2 rounded-xl mb-6">
-              {selectedItems.map((item) => (
-                <div key={item.id} className="flex justify-between text-sm">
-                  <span className="text-light/80 truncate pr-4">{item.name}</span>
-                  <span className="text-light whitespace-nowrap">${item.price.toFixed(2)}</span>
-                </div>
-              ))}
-              {selectedItems.length === 0 && (
-                <p className="text-sm text-dim italic">Aún no has seleccionado qué pagar.</p>
-              )}
+        {/* ── CONSUMO (collapsible) ─────────────────────────────────── */}
+        <div className="border-b border-wire">
+          <button
+            onClick={() => setBillOpen(v => !v)}
+            className="flex w-full items-center justify-between py-6 text-left"
+            aria-expanded={billOpen}
+            aria-controls="bill-detail"
+          >
+            <div>
+              <p className="text-[0.57rem] font-bold uppercase tracking-[0.38em] text-dim">Consumo</p>
+              <p className="mt-1 font-serif text-[1.6rem] font-semibold leading-none text-light">
+                ${SUBTOTAL.toLocaleString("es-MX")}
+              </p>
             </div>
-
-            {/* Totales */}
-            <div className="border-t border-wire pt-6 space-y-5">
-              <div className="flex justify-between items-center text-sm text-light/80">
-                <span>Subtotal</span>
-                <span>${mySubtotal.toFixed(2)}</span>
-              </div>
-
-              {/* Tips */}
-              <div className="space-y-3">
-                <div className="flex justify-between text-xs font-semibold uppercase tracking-widest text-dim">
-                  <span>Propina</span>
-                  <span>${tipAmount.toFixed(2)}</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {[10, 15, 20].map((tip) => (
-                    <button
-                      key={tip}
-                      onClick={() => setTipPercent(tip)}
-                      className={`rounded-lg border py-2.5 text-[0.8rem] font-semibold transition ${
-                        tipPercent === tip
-                          ? "border-glow bg-glow/15 text-glow"
-                          : "border-wire bg-canvas text-dim hover:text-light transition hover:border-glow/40"
-                      }`}
-                    >
-                      {tip}%
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Total final */}
-              <div className="border-t border-wire pt-5 flex justify-between items-end">
-                <span className="font-serif text-lg text-light">Total a pagar</span>
-                <span className="font-serif text-3xl font-medium text-glow leading-none">${myTotal.toFixed(2)}</span>
-              </div>
-
-              <button
-                disabled={selectedItems.length === 0}
-                className="w-full mt-2 rounded-xl bg-glow px-4 py-4 text-xs font-bold uppercase tracking-[0.14em] text-ink transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100"
+            <span className="flex items-center gap-2 text-[0.62rem] font-bold uppercase tracking-[0.24em] text-dim">
+              {BILL_ITEMS.length} platillos
+              <svg
+                viewBox="0 0 16 16" fill="none" className="h-3 w-3 transition-transform duration-200"
+                style={{ transform: billOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                aria-hidden="true"
               >
-                Proceder al pago
-              </button>
-              
-              <p className="text-center text-xs text-dim">Pagos seguros by Stripe</p>
+                <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+          </button>
+
+          {billOpen && (
+            <div id="bill-detail" className="pb-6">
+              <div className="divide-y divide-wire/40">
+                {BILL_ITEMS.map(item => (
+                  <div key={item.id} className="flex items-baseline justify-between gap-4 py-3">
+                    <div className="flex items-baseline gap-3">
+                      <span className="w-5 shrink-0 text-[0.68rem] font-semibold tabular-nums text-dim">
+                        {item.qty}×
+                      </span>
+                      <span className="text-[0.85rem] font-medium text-light">{item.name}</span>
+                    </div>
+                    <span className="shrink-0 font-serif text-[0.88rem] text-light/65">
+                      ${(item.price * item.qty).toLocaleString("es-MX")}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
+
+        {/* ── PROPINA ──────────────────────────────────────────────── */}
+        <div className="border-b border-wire py-8">
+          <p className="mb-5 text-[0.57rem] font-bold uppercase tracking-[0.38em] text-dim">Propina</p>
+          <div className="flex flex-wrap gap-3">
+            {TIP_OPTIONS.map(({ label, rate }) => (
+              <button
+                key={rate}
+                onClick={() => setTipRate(rate as TipRate)}
+                className={[
+                  "px-5 py-2.5 text-[0.65rem] font-bold uppercase tracking-[0.22em] transition-colors duration-150",
+                  tipRate === rate
+                    ? "bg-glow text-ink"
+                    : "border border-wire text-dim hover:border-light/20 hover:text-light",
+                ].join(" ")}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {tip > 0 && (
+            <p className="mt-4 text-[0.68rem] font-medium text-dim">
+              ${tip.toLocaleString("es-MX")} · total con propina ${total.toLocaleString("es-MX")}
+            </p>
+          )}
+        </div>
+
+        {/* ── SPLIT MODE ───────────────────────────────────────────── */}
+        <div className="py-8">
+          <p className="mb-5 text-[0.57rem] font-bold uppercase tracking-[0.38em] text-dim">¿Cómo pagan?</p>
+
+          <div className="flex border-b border-wire">
+            {(["equal", "full"] as SplitMode[]).map(m => (
+              <button
+                key={m}
+                onClick={() => setMode(m)}
+                className={[
+                  "flex-1 pb-4 pt-3 text-[0.63rem] font-bold uppercase tracking-[0.24em] transition-colors duration-150",
+                  mode === m
+                    ? "border-b-[1.5px] border-glow text-glow"
+                    : "text-dim hover:text-light",
+                ].join(" ")}
+              >
+                {m === "equal" ? "Por igual" : "Pago completo"}
+              </button>
+            ))}
+          </div>
+
+          {/* Equal split */}
+          {mode === "equal" && (
+            <div className="mt-8">
+              <p className="mb-5 text-[0.57rem] font-bold uppercase tracking-[0.38em] text-dim">
+                ¿Entre cuántas personas?
+              </p>
+
+              <div className="flex items-center border-b border-wire/50 pb-6">
+                <button
+                  type="button"
+                  onClick={() => adjustSplit(-1)}
+                  disabled={splitCount <= 1}
+                  aria-label="Restar persona"
+                  className="flex h-10 w-10 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light disabled:opacity-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
+                >
+                  <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3" aria-hidden="true">
+                    <path d="M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+                <span className="flex-1 text-center font-serif text-[2.2rem] font-semibold tabular-nums text-light">
+                  {splitCount}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => adjustSplit(1)}
+                  disabled={splitCount >= 20}
+                  aria-label="Agregar persona"
+                  className="flex h-10 w-10 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light disabled:opacity-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
+                >
+                  <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3" aria-hidden="true">
+                    <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mt-8 border-t-2 border-glow pt-6">
+                <p className="text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">Tu parte</p>
+                <p
+                  className="mt-3 font-serif font-semibold leading-none text-glow"
+                  style={{ fontSize: "clamp(3rem,10vw,4.5rem)" }}
+                >
+                  ${perPerson.toLocaleString("es-MX")}
+                </p>
+                <p className="mt-3 text-[0.68rem] font-medium text-dim">
+                  ${total.toLocaleString("es-MX")} ÷ {splitCount} persona{splitCount !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Full payment */}
+          {mode === "full" && (
+            <div className="mt-8">
+              <div className="divide-y divide-wire/40">
+                <div className="flex items-baseline justify-between py-3">
+                  <span className="text-[0.8rem] font-medium text-dim">Consumo</span>
+                  <span className="font-serif text-[0.9rem] text-light">
+                    ${SUBTOTAL.toLocaleString("es-MX")}
+                  </span>
+                </div>
+                {tip > 0 && (
+                  <div className="flex items-baseline justify-between py-3">
+                    <span className="text-[0.8rem] font-medium text-dim">
+                      Propina ({Math.round(tipRate * 100)}%)
+                    </span>
+                    <span className="font-serif text-[0.9rem] text-light">
+                      ${tip.toLocaleString("es-MX")}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6 border-t-2 border-glow pt-6">
+                <p className="text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">Total a pagar</p>
+                <p
+                  className="mt-3 font-serif font-semibold leading-none text-glow"
+                  style={{ fontSize: "clamp(3rem,10vw,4.5rem)" }}
+                >
+                  ${total.toLocaleString("es-MX")}
+                </p>
+                <p className="mt-3 text-[0.68rem] font-medium text-dim">
+                  Cubre el consumo completo de la mesa
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── CONFIRM ──────────────────────────────────────────────── */}
+        <div className="border-t border-wire pb-16 pt-8">
+          <button
+            onClick={() => setConfirmed(true)}
+            className="w-full bg-glow py-5 text-[0.76rem] font-bold uppercase tracking-[0.22em] text-ink transition-all duration-200 hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
+          >
+            Pagar ${myShare.toLocaleString("es-MX")}
+          </button>
+          <p className="mt-4 text-center text-[0.6rem] font-medium text-dim/50">
+            Al confirmar, tu parte queda registrada en el sistema
+          </p>
+        </div>
+
       </div>
     </div>
   );

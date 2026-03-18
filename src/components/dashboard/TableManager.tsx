@@ -1,223 +1,218 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Users, QrCode, Trash2, MoreVertical, Search, CheckCircle2, XCircle } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Plus, Trash2, Search, QrCode } from "lucide-react";
+import { createTable, deleteTable } from "@/actions/tables";
+import { Table, TableStatus } from "@/generated/prisma";
 
-type TableStatus = "disponible" | "ocupada" | "sucia";
-
-type Table = {
-  id: string;
-  number: number;
-  capacity: number;
-  code: string; // El códgio para la URL (ej: MESA-001)
-  status: TableStatus;
+const STATUS_STYLES: Record<TableStatus, string> = {
+  DISPONIBLE: "text-sage-deep border-sage-deep/40",
+  OCUPADA:    "text-glow border-glow/40",
+  SUCIA:      "text-ember border-ember/40",
 };
 
-// Datos simulados iniciales
-const INITIAL_TABLES: Table[] = [
-  { id: "1", number: 1, capacity: 2, code: "X7B9K2", status: "ocupada" },
-  { id: "2", number: 2, capacity: 4, code: "M9P1L4", status: "disponible" },
-  { id: "3", number: 3, capacity: 4, code: "A3C8N5", status: "disponible" },
-  { id: "4", number: 4, capacity: 6, code: "Z5W2Q9", status: "sucia" },
-  { id: "5", number: 5, capacity: 2, code: "J8R4D1", status: "ocupada" },
-];
+const STATUS_DOT: Record<TableStatus, string> = {
+  DISPONIBLE: "bg-sage-deep",
+  OCUPADA:    "bg-glow",
+  SUCIA:      "bg-ember",
+};
 
-export default function TableManager() {
-  const [tables, setTables] = useState<Table[]>(INITIAL_TABLES);
-  const [search, setSearch] = useState("");
-  const [isAdding, setIsAdding] = useState(false);
+export default function TableManager({ initialTables }: { initialTables: Table[] }) {
+  const [tables, setTables]         = useState<Table[]>(initialTables);
+  const [search, setSearch]         = useState("");
+  const [isAdding, setIsAdding]     = useState(false);
   const [newTableCap, setNewTableCap] = useState(4);
+  const [isPending, startTransition] = useTransition();
 
-  // Filtrado de mesas
-  const filteredTables = tables.filter(t => 
-    t.number.toString().includes(search) || t.code.toLowerCase().includes(search.toLowerCase())
+  const filtered = tables.filter(t =>
+    t.number.toString().includes(search) ||
+    t.qrCode.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Generar cadena aleatoria para QR
-  const generateCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
+  function handleCreate() {
+    startTransition(async () => {
+      const newTable = await createTable(newTableCap);
+      setTables(prev => [...prev, newTable]);
+      setIsAdding(false);
+      setNewTableCap(4);
+    });
+  }
 
-  const handleCreateMenu = () => {
-    const nextNumber = tables.length > 0 ? Math.max(...tables.map(t => t.number)) + 1 : 1;
-    const newTable: Table = {
-      id: Date.now().toString(),
-      number: nextNumber,
-      capacity: newTableCap,
-      code: generateCode(),
-      status: "disponible"
-    };
-    setTables([...tables, newTable]);
-    setIsAdding(false);
-    setNewTableCap(4);
-  };
+  function handleDelete(id: string) {
+    startTransition(async () => {
+      await deleteTable(id);
+      setTables(prev => prev.filter(t => t.id !== id));
+    });
+  }
 
-  const handleDelete = (id: string) => {
-    setTables(tables.filter(t => t.id !== id));
-  };
-
-  const getStatusColor = (status: TableStatus) => {
-    switch (status) {
-      case "disponible": return "bg-emerald-500/20 text-emerald-400 border-emerald-500/20";
-      case "ocupada": return "bg-blue-500/20 text-blue-400 border-blue-500/20";
-      case "sucia": return "bg-red-500/20 text-red-400 border-red-500/20";
-    }
-  };
+  const stats = [
+    { label: "Total",       value: tables.length },
+    { label: "Disponibles", value: tables.filter(t => t.status === "DISPONIBLE").length },
+    { label: "Ocupadas",    value: tables.filter(t => t.status === "OCUPADA").length },
+    { label: "Por limpiar", value: tables.filter(t => t.status === "SUCIA").length },
+  ];
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Gestión de Mesas y QR</h1>
-          <p className="text-gray-400">Configura la distribución y genera los accesos para el comensal.</p>
-        </div>
+    <div className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
 
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <div className="relative flex-grow md:w-64">
-            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-            <input 
-              type="text" 
-              placeholder="Buscar mesa o código..." 
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-[#111] border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-amber-500/50 transition-colors"
-            />
+      {/* ── Header ──────────────────────────────────────────── */}
+      <div className="mb-10 border-b border-wire pb-8" style={{ animation: "reveal-up 0.5s cubic-bezier(0.22,1,0.36,1) both" }}>
+        <p className="mb-2 text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">
+          Gestión de mesas
+        </p>
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <h1 className="font-serif text-[clamp(2rem,4vw,3rem)] font-medium leading-[0.92] tracking-[-0.02em] text-light">
+            Mesas & QR
+          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Search */}
+            <div className="relative flex-1 sm:flex-none">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-dim/50" aria-hidden="true" />
+              <input
+                type="text"
+                placeholder="Mesa o código…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="h-10 w-full border border-wire bg-transparent pl-8 pr-4 text-[0.78rem] text-light placeholder:text-dim/40 outline-none transition-colors focus:border-light/20 sm:w-52"
+              />
+            </div>
+            {/* Add */}
+            <button
+              onClick={() => setIsAdding(true)}
+              className="inline-flex h-10 items-center gap-2 border border-wire px-4 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-all duration-200 hover:border-light/20 hover:text-light hover:-translate-y-px active:translate-y-0"
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              Nueva mesa
+            </button>
           </div>
-          <button 
-            onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg font-medium transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Nueva Mesa</span>
-          </button>
         </div>
       </div>
 
-      {/* Stats Quick View */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: "Total Mesas", value: tables.length, color: "text-white" },
-          { label: "Disponibles", value: tables.filter(t => t.status === "disponible").length, color: "text-emerald-400" },
-          { label: "Ocupadas", value: tables.filter(t => t.status === "ocupada").length, color: "text-blue-400" },
-          { label: "Por Limpiar", value: tables.filter(t => t.status === "sucia").length, color: "text-red-400" },
-        ].map((stat, i) => (
-          <div key={i} className="bg-[#111] border border-white/5 rounded-xl p-4">
-            <p className="text-gray-400 text-sm mb-1">{stat.label}</p>
-            <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+      {/* ── Stats strip ─────────────────────────────────────── */}
+      <div className="mb-10 grid grid-cols-2 divide-x divide-y divide-wire border border-wire sm:grid-cols-4 sm:divide-y-0">
+        {stats.map(({ label, value }, i) => (
+          <div key={label} className="px-6 py-5" style={{ animation: `dash-stat-enter 0.4s cubic-bezier(0.22,1,0.36,1) ${0.1 + i * 0.06}s both` }}>
+            <p className="text-[0.56rem] font-bold uppercase tracking-[0.28em] text-dim">{label}</p>
+            <p className="mt-1 font-serif text-[2rem] font-semibold leading-none text-light">{value}</p>
           </div>
         ))}
       </div>
 
-      {/* Modal Agregar Mesa */}
+      {/* ── Modal: nueva mesa ───────────────────────────────── */}
       {isAdding && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-md p-6">
-            <h2 className="text-xl font-bold text-white mb-4">Agregar Nueva Mesa</h2>
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-400 mb-1.5">Capacidad (Personas)</label>
-                <div className="flex items-center gap-3">
-                  {[2, 4, 6, 8, 10].map(cap => (
-                    <button
-                      key={cap}
-                      onClick={() => setNewTableCap(cap)}
-                      className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-all ${
-                        newTableCap === cap 
-                        ? 'bg-amber-500/20 border-amber-500/50 text-amber-500' 
-                        : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'
-                      }`}
-                    >
-                      {cap}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                El código QR de acceso se generará automáticamente.
-              </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-6" style={{ animation: "fade-in 0.2s ease-out both" }}>
+          <div className="w-full max-w-sm border border-wire bg-canvas p-8" style={{ animation: "scale-in 0.3s cubic-bezier(0.22,1,0.36,1) both" }}>
+            <p className="mb-1 text-[0.52rem] font-bold uppercase tracking-[0.44em] text-dim">Nueva mesa</p>
+            <h2 className="mb-8 font-serif text-[1.6rem] font-medium leading-none text-light">
+              Capacidad
+            </h2>
+
+            <div className="flex gap-2">
+              {[2, 4, 6, 8, 10].map(cap => (
+                <button
+                  key={cap}
+                  onClick={() => setNewTableCap(cap)}
+                  className={[
+                    "flex-1 py-3 text-[0.78rem] font-bold transition-colors",
+                    newTableCap === cap
+                      ? "bg-glow text-ink"
+                      : "border border-wire text-dim hover:border-light/20 hover:text-light",
+                  ].join(" ")}
+                >
+                  {cap}
+                </button>
+              ))}
             </div>
-            <div className="flex gap-3">
-              <button 
+
+            <p className="mt-4 text-[0.62rem] font-medium text-dim/50">
+              El código QR se generará automáticamente.
+            </p>
+
+            <div className="mt-8 flex gap-3">
+              <button
                 onClick={() => setIsAdding(false)}
-                className="flex-1 px-4 py-2 rounded-lg font-medium text-gray-400 hover:bg-white/5 transition-colors border border-transparent"
+                className="flex-1 border border-wire py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light"
               >
                 Cancelar
               </button>
-              <button 
-                onClick={handleCreateMenu}
-                className="flex-1 px-4 py-2 rounded-lg font-medium bg-white text-black hover:bg-gray-200 transition-colors"
+              <button
+                onClick={handleCreate}
+                disabled={isPending}
+                className="flex-1 bg-light py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-ink transition-all duration-200 hover:-translate-y-px hover:bg-light/90 active:translate-y-0 disabled:opacity-50"
               >
-                Crear Mesa
+                {isPending ? "Creando..." : "Crear mesa"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Grid de Mesas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredTables.map((table) => (
-          <div key={table.id} className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-5 flex flex-col group hover:border-white/20 transition-all">
-            
-            {/* Cabecera Tarjeta */}
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
-                  <span className="font-bold text-lg text-white">{table.number}</span>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-400">Mesa</h3>
-                  <div className={`px-2 py-0.5 mt-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(table.status)}`}>
-                    {table.status}
-                  </div>
-                </div>
+      {/* ── Table list ──────────────────────────────────────── */}
+      {filtered.length === 0 ? (
+        <div className="border border-dashed border-wire py-16 text-center">
+          <p className="text-[0.8rem] font-medium text-dim">No se encontraron mesas.</p>
+          <button onClick={() => setSearch("")} className="mt-3 text-[0.72rem] font-semibold text-glow underline underline-offset-4">
+            Limpiar búsqueda
+          </button>
+        </div>
+      ) : (
+        <div className="divide-y divide-wire border-t border-wire">
+          {filtered.map((table, i) => (
+            <div
+              key={table.id}
+              className="group flex items-center gap-6 py-4 transition-colors duration-150 hover:bg-ink/40"
+              style={{ animation: `dash-row-enter 0.35s cubic-bezier(0.22,1,0.36,1) ${0.22 + Math.min(i * 0.05, 0.25)}s both` }}
+            >
+              {/* Number */}
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-wire text-[0.9rem] font-bold text-light">
+                {table.number}
               </div>
-              
-              <button onClick={() => handleDelete(table.id)} className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors opacity-0 group-hover:opacity-100">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
 
-            {/* Detalles de la Mesa */}
-            <div className="grid grid-cols-2 gap-4 mb-5 flex-grow">
-              <div className="bg-[#111] rounded-lg p-3 border border-white/5">
-                <div className="flex items-center gap-1.5 text-gray-500 mb-1">
-                  <Users className="w-4 h-4" />
-                  <span className="text-xs font-medium">Asientos</span>
-                </div>
-                <span className="text-lg font-semibold text-white">{table.capacity}</span>
+              {/* Status */}
+              <div className={`flex items-center gap-2 w-32 shrink-0`}>
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[table.status]}`}
+                  aria-hidden="true"
+                  style={table.status === "OCUPADA" ? { animation: "pulse-slow 2.4s ease-in-out infinite" } : undefined}
+                />
+                <span className={`text-[0.65rem] font-bold uppercase tracking-[0.2em] border px-2 py-0.5 ${STATUS_STYLES[table.status]}`}>
+                  {table.status}
+                </span>
               </div>
-              
-              <div className="bg-[#111] rounded-lg p-3 border border-white/5">
-                <div className="flex items-center gap-1.5 text-gray-500 mb-1">
-                  <QrCode className="w-4 h-4" />
-                  <span className="text-xs font-medium">Código</span>
-                </div>
-                <span className="text-lg font-mono font-semibold text-amber-500 truncate">{table.code}</span>
+
+              {/* Capacity */}
+              <div className="hidden w-24 shrink-0 sm:block">
+                <p className="text-[0.55rem] font-bold uppercase tracking-[0.24em] text-dim">Asientos</p>
+                <p className="mt-0.5 font-serif text-[1.1rem] font-semibold text-light">{table.capacity}</p>
+              </div>
+
+              {/* Code */}
+              <div className="flex-1">
+                <p className="text-[0.55rem] font-bold uppercase tracking-[0.24em] text-dim">Código QR</p>
+                <p className="mt-0.5 font-mono text-[0.9rem] font-semibold text-glow">{table.qrCode}</p>
+              </div>
+
+              {/* Actions — always visible on touch, hover-reveal on desktop */}
+              <div className="flex items-center gap-2 opacity-100 transition-opacity duration-150 lg:opacity-0 lg:group-hover:opacity-100">
+                <button
+                  onClick={() => window.open(`/mesa/${table.qrCode}/menu`, "_blank")}
+                  className="inline-flex h-9 items-center gap-2 border border-wire px-3 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
+                >
+                  <QrCode className="h-3.5 w-3.5" aria-hidden="true" />
+                  Ver QR
+                </button>
+                <button
+                  onClick={() => handleDelete(table.id)}
+                  aria-label={`Eliminar mesa ${table.number}`}
+                  className="flex h-9 w-9 items-center justify-center border border-wire text-dim transition-colors hover:border-ember/40 hover:text-ember"
+                >
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
               </div>
             </div>
-
-            {/* Acciones */}
-            <div className="pt-4 border-t border-white/10 flex gap-2">
-              <button 
-                onClick={() => window.open(`/mesa/${table.code}/menu`, "_blank")}
-                className="flex-1 bg-white/5 hover:bg-white/10 text-white py-2 rounded-lg text-sm font-medium transition-colors border border-white/5 flex items-center justify-center gap-2"
-              >
-                <QrCode className="w-4 h-4" />
-                Imprimir QR
-              </button>
-            </div>
-
-          </div>
-        ))}
-        
-        {filteredTables.length === 0 && (
-          <div className="col-span-full py-12 text-center border-2 border-dashed border-white/10 rounded-2xl">
-            <p className="text-gray-400 mb-2">No se encontraron mesas con esos filtros.</p>
-            <button onClick={() => setSearch('')} className="text-amber-500 hover:underline text-sm font-medium">Limpiar búsqueda</button>
-          </div>
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
     </div>
   );

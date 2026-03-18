@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Clock, ChefHat, CheckCircle2, RotateCcw, AlertTriangle, Utensils, Coffee, History } from "lucide-react";
+import { RotateCcw, Utensils, Coffee, History } from "lucide-react";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type OrderItem = {
   id: string;
@@ -22,309 +24,400 @@ type Order = {
   deliveredAt?: Date;
 };
 
-// Datos simulados para iniciar con alertas de tiempo y estaciones
+// ─── Mock data ────────────────────────────────────────────────────────────────
+
 const MOCK_ORDERS: Order[] = [
   {
     id: "ORD-001", tableCode: "Mesa 1", status: "pending",
-    createdAt: new Date(Date.now() - 1000 * 60 * 3), // 3 min
+    createdAt: new Date(Date.now() - 1000 * 60 * 3),
     items: [
-      { id: "item-1", name: "Hamburguesa Clásica", quantity: 2, notes: "Sin cebolla, carne bien cocida", station: "cocina" },
-      { id: "item-2", name: "Limonada de Menta", quantity: 1, station: "barra" }
-    ]
+      { id: "i1", name: "Hamburguesa Clásica", quantity: 2, notes: "Sin cebolla, bien cocida", station: "cocina" },
+      { id: "i2", name: "Limonada de Menta",   quantity: 1, station: "barra" },
+    ],
   },
   {
     id: "ORD-002", tableCode: "Mesa 4", status: "preparing",
-    createdAt: new Date(Date.now() - 1000 * 60 * 18), // 18 min -> Alerta Ámbar
+    createdAt: new Date(Date.now() - 1000 * 60 * 18),
     items: [
-      { id: "item-3", name: "Ensalada César", quantity: 1, station: "cocina" },
-      { id: "item-4", name: "Cerveza Artesanal", quantity: 2, station: "barra" }
-    ]
+      { id: "i3", name: "Ensalada César",    quantity: 1, station: "cocina" },
+      { id: "i4", name: "Cerveza Artesanal", quantity: 2, station: "barra"  },
+    ],
   },
   {
     id: "ORD-004", tableCode: "Mesa 7", status: "pending",
-    createdAt: new Date(Date.now() - 1000 * 60 * 35), // 35 min -> Alerta Roja Crítica
+    createdAt: new Date(Date.now() - 1000 * 60 * 35),
     items: [
-      { id: "item-6", name: "Tacos de Ribeye", quantity: 3, notes: "Urgente, cliente esperando", station: "cocina" }
-    ]
+      { id: "i6", name: "Tacos de Ribeye", quantity: 3, notes: "Urgente, cliente esperando", station: "cocina" },
+    ],
   },
   {
     id: "ORD-003", tableCode: "Mesa 2", status: "ready",
-    createdAt: new Date(Date.now() - 1000 * 60 * 25), 
+    createdAt: new Date(Date.now() - 1000 * 60 * 25),
     items: [
-      { id: "item-5", name: "Mojito Tradicional", quantity: 1, station: "barra" },
-    ]
+      { id: "i5", name: "Mojito Tradicional", quantity: 1, station: "barra" },
+    ],
   },
   {
     id: "ORD-005", tableCode: "Mesa 9", status: "delivered",
     createdAt: new Date(Date.now() - 1000 * 60 * 50),
     deliveredAt: new Date(Date.now() - 1000 * 60 * 10),
     items: [
-      { id: "item-7", name: "Agua Mineral", quantity: 1, station: "barra" }
-    ]
-  }
+      { id: "i7", name: "Agua Mineral", quantity: 1, station: "barra" },
+    ],
+  },
 ];
 
-export default function KDSBoard() {
-  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [view, setView] = useState<"activas" | "historial">("activas");
-  const [stationFilter, setStationFilter] = useState<"todas" | "cocina" | "barra">("todas");
+// ─── Urgency helpers ──────────────────────────────────────────────────────────
 
-  // Actualizar el reloj cada 30 segundos para las alertas
-  useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 30000);
-    return () => clearInterval(interval);
-  }, []);
+type Urgency = "normal" | "warning" | "critical";
 
-  // Mover orden al siguiente estado
-  const advanceOrderState = (orderId: string, currentStatus: OrderStatus) => {
-    const nextStatusMap: Record<OrderStatus, OrderStatus> = {
-      pending: "preparing",
-      preparing: "ready",
-      ready: "delivered",
-      delivered: "delivered",
-    };
+function getUrgency(mins: number, status: OrderStatus): Urgency {
+  if (status === "delivered") return "normal";
+  if (mins >= 30) return "critical";
+  if (mins >= 15) return "warning";
+  return "normal";
+}
 
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId ? { 
-            ...o, 
-            status: nextStatusMap[currentStatus],
-            deliveredAt: nextStatusMap[currentStatus] === "delivered" ? new Date() : o.deliveredAt
-        } : o
-      )
-    );
-  };
+const CARD_BORDER: Record<Urgency, string> = {
+  normal:   "border-wire",
+  warning:  "border-glow/70",
+  critical: "border-ember",
+};
 
-  // Botón "Deshacer"
-  const undoOrderState = (orderId: string, currentStatus: OrderStatus) => {
-    const prevStatusMap: Record<OrderStatus, OrderStatus> = {
-      pending: "pending", 
-      preparing: "pending",
-      ready: "preparing",
-      delivered: "ready",
-    };
-    setOrders((prev) =>
-      prev.map((o) =>
-        o.id === orderId ? { ...o, status: prevStatusMap[currentStatus] } : o
-      )
-    );
-  };
+const TIME_COLOR: Record<Urgency, string> = {
+  normal:   "text-dim",
+  warning:  "text-glow",
+  critical: "text-ember",
+};
 
-  // Lógica de filtrado por estación
-  const getFilteredOrders = (ordersToFilter: Order[]) => {
-    return ordersToFilter.map(order => {
-      if (stationFilter === "todas") return order;
-      // Solo dejamos los items que coinciden con la estación
-      return { ...order, items: order.items.filter(i => i.station === stationFilter) };
-    }).filter(order => order.items.length > 0); // Ocultar orden si no tiene items para esa estación
-  };
+const ADVANCE_BTN: Record<Urgency, string> = {
+  normal:   "border-wire text-dim hover:border-light/30 hover:text-light",
+  warning:  "border-glow/50 text-glow hover:border-glow hover:bg-glow/[0.06]",
+  critical: "border-ember/60 text-ember hover:border-ember hover:bg-ember/[0.06]",
+};
 
-  const activeOrders = getFilteredOrders(orders.filter((o) => o.status !== "delivered"));
-  // Historial ordenado por más reciente primero
-  const historyOrders = getFilteredOrders(orders.filter((o) => o.status === "delivered"))
-                        .sort((a,b) => (b.deliveredAt?.getTime() || 0) - (a.deliveredAt?.getTime() || 0));
+// ─── OrderCard ────────────────────────────────────────────────────────────────
 
-  const pendingOrders = activeOrders.filter((o) => o.status === "pending");
-  const preparingOrders = activeOrders.filter((o) => o.status === "preparing");
-  const readyOrders = activeOrders.filter((o) => o.status === "ready");
+function OrderCard({
+  order,
+  currentTime,
+  onAdvance,
+  onUndo,
+}: {
+  order: Order;
+  currentTime: Date;
+  onAdvance: (id: string, status: OrderStatus) => void;
+  onUndo: (id: string, status: OrderStatus) => void;
+}) {
+  const mins = Math.floor((currentTime.getTime() - order.createdAt.getTime()) / 60000);
+  const urgency = getUrgency(mins, order.status);
 
-  const OrderCard = ({ order, accentColor }: { order: Order, accentColor: string }) => {
-    const mins = Math.floor((currentTime.getTime() - order.createdAt.getTime()) / 60000);
-    
-    // Lógica de criticidad de tiempos
-    let isCritical = false;
-    let isWarning = false;
-    let cardBg = "bg-[#111] border-white/5";
-    
-    if (order.status !== "delivered") {
-        if (mins >= 30) {
-            isCritical = true;
-            cardBg = "bg-red-950/20 border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.15)]";
-        } else if (mins >= 15) {
-            isWarning = true;
-            cardBg = "bg-amber-950/20 border-amber-500/40";
-        }
-    }
-
-    return (
-      <div className={`${cardBg} border rounded-xl p-4 flex flex-col gap-4 transition-all duration-300 relative group`}>
-        {order.status !== "pending" && (
-            <button 
-              onClick={() => undoOrderState(order.id, order.status)}
-              className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-white/10 rounded-md text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
-              title="Deshacer estado (Errores)"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
-        )}
-
-        <div className="flex justify-between items-start border-b border-white/10 pb-3 pr-8">
-          <div>
-            <h3 className={`text-lg font-bold flex items-center gap-2 ${accentColor}`}>
-                {order.tableCode}
-                {isCritical && <AlertTriangle className="w-4 h-4 text-red-500 animate-pulse" />}
-                {!isCritical && isWarning && <AlertTriangle className="w-4 h-4 text-amber-500" />}
-            </h3>
-            <p className="text-sm text-gray-400">#{order.id}</p>
-          </div>
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md ${isCritical ? 'bg-red-500/20 text-red-400' : isWarning ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-gray-300'}`}>
-            <Clock className="w-4 h-4" />
-            <span className="text-sm font-medium">{mins} min</span>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 flex-grow">
-          {order.items.map((item) => (
-            <div key={item.id} className="flex flex-col gap-1">
-              <div className="flex items-start gap-3 text-gray-200">
-                <span className="font-bold border border-white/20 px-2 py-0.5 rounded text-sm min-w-8 text-center bg-gray-600/20">
-                  {item.quantity}x
-                </span>
-                <div className="flex-1 flex justify-between items-start">
-                    <span className="font-medium text-[15px] mt-0.5">{item.name}</span>
-                    <span title={`Estación: ${item.station}`}>
-                      {item.station === 'cocina' ? <Utensils className="w-3.5 h-3.5 text-gray-500 mt-1" /> : <Coffee className="w-3.5 h-3.5 text-gray-500 mt-1" />}
-                    </span>
-                </div>
-              </div>
-              {item.notes && (
-                <div className="ml-11 text-sm text-amber-500/90 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20 inline-block font-medium">
-                  ⚠️ Nota: {item.notes}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {order.status !== "delivered" ? (
-          <button
-            onClick={() => advanceOrderState(order.id, order.status)}
-            className={`mt-2 w-full font-medium py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 active:scale-95 duration-150 ${isCritical ? 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30' : 'bg-white/5 hover:bg-white/10 text-white border border-white/10'}`}
-          >
-            {order.status === "pending" && <><ChefHat className="w-4 h-4" /> Empezar a Preparar</>}
-            {order.status === "preparing" && <><CheckCircle2 className="w-4 h-4" /> Marcar como Listo</>}
-            {order.status === "ready" && "Entregar a Mesa"}
-          </button>
-        ) : (
-            <div className="mt-2 w-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium py-2.5 rounded-lg flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-4 h-4" /> 
-                Entregada ({Math.floor((currentTime.getTime() - (order.deliveredAt?.getTime() || 0))/60000)} min atrás)
-            </div>
-        )}
-      </div>
-    );
+  const ADVANCE_LABEL: Record<OrderStatus, string> = {
+    pending:   "Empezar",
+    preparing: "Listo para salir",
+    ready:     "Entregar a mesa",
+    delivered: "",
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 sm:p-6 lg:p-8 font-sans">
-      <div className="max-w-7xl mx-auto flex flex-col gap-8 h-[calc(100vh-4rem)]">
-        
-        {/* Header KDS y Controles */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-[#111] border border-white/10 p-5 rounded-2xl gap-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white mb-1 flex items-center gap-3">
-                Kitchen Display System
-                {stationFilter !== 'todas' && (
-                    <span className="text-xs bg-indigo-500/20 text-indigo-400 px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold">
-                        Estación: {stationFilter}
-                    </span>
-                )}
-            </h1>
-            <p className="text-gray-400 text-sm">Monitor de comandos y tiempos en línea</p>
+    <div
+      className={[
+        "flex flex-col border bg-ink transition-colors duration-200",
+        CARD_BORDER[urgency],
+        urgency === "critical" ? "bg-ember/[0.04]" : "",
+      ].join(" ")}
+      style={{ animation: "dash-row-enter 0.3s cubic-bezier(0.22,1,0.36,1) both" }}
+    >
+      {/* Card header */}
+      <div className="flex items-start justify-between border-b border-wire px-4 py-3">
+        <div>
+          <div className="flex items-center gap-2">
+            {urgency === "critical" && (
+              <span
+                className="h-2 w-2 rounded-full bg-ember"
+                aria-hidden="true"
+                style={{ animation: "pulse-slow 1.6s ease-in-out infinite" }}
+              />
+            )}
+            {urgency === "warning" && (
+              <span className="h-2 w-2 rounded-full bg-glow" aria-hidden="true" />
+            )}
+            <span className="text-[0.75rem] font-bold uppercase tracking-[0.22em] text-light">
+              {order.tableCode}
+            </span>
           </div>
-          
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Filtros de Estación */}
-            <div className="flex bg-[#0a0a0a] p-1 rounded-lg border border-white/10">
-                <button onClick={() => setStationFilter('todas')} className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${stationFilter === 'todas' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-gray-200'}`}>
-                    Todas
-                </button>
-                <button onClick={() => setStationFilter('cocina')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all ${stationFilter === 'cocina' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-gray-200'}`}>
-                    <Utensils className="w-4 h-4"/> Cocina
-                </button>
-                <button onClick={() => setStationFilter('barra')} className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-all ${stationFilter === 'barra' ? 'bg-white/10 text-white shadow-sm' : 'text-gray-400 hover:text-gray-200'}`}>
-                    <Coffee className="w-4 h-4"/> Barra
-                </button>
-            </div>
-
-            <div className="w-px h-8 bg-white/10 hidden md:block mx-1"></div>
-
-            {/* Cambiador de Vistas: Activas / Historial */}
-            <div className="flex bg-[#0a0a0a] p-1 rounded-lg border border-white/10">
-                <button onClick={() => setView('activas')} className={`px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${view === 'activas' ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-400 hover:text-gray-200'}`}>
-                    Activas
-                    <span className="bg-black/50 text-white px-2 py-0.5 rounded-full text-xs font-bold border border-white/10">{activeOrders.length}</span>
-                </button>
-                <button onClick={() => setView('historial')} className={`px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2 ${view === 'historial' ? 'bg-indigo-500/20 text-indigo-300' : 'text-gray-400 hover:text-gray-200'}`}>
-                    <History className="w-4 h-4"/> Historial
-                </button>
-            </div>
-          </div>
+          <p className="mt-0.5 text-[0.58rem] font-medium text-dim/50">#{order.id}</p>
         </div>
 
-        {view === 'activas' ? (
-          /* Tableros de Kanban / KDS Activo */
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-grow overflow-hidden">
-            {/* Columna: Pendientes */}
-            <div className="flex flex-col gap-4 bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 overflow-hidden">
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span> Nuevas
-                </h2>
-                <span className="bg-red-500/20 text-red-500 text-xs font-bold px-2 py-1 rounded-full">{pendingOrders.length}</span>
-              </div>
-              <div className="flex flex-col gap-4 overflow-y-auto pb-4 pr-1 scrollbar-hide flex-grow">
-                {pendingOrders.map((order) => <OrderCard key={order.id} order={order} accentColor="text-red-500" />)}
-                {pendingOrders.length === 0 && <p className="text-gray-500 text-sm text-center italic mt-10">No hay órdenes pendientes.</p>}
-              </div>
-            </div>
-
-            {/* Columna: En Preparación */}
-            <div className="flex flex-col gap-4 bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 overflow-hidden">
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span> En Preparación
-                </h2>
-                <span className="bg-amber-500/20 text-amber-500 text-xs font-bold px-2 py-1 rounded-full">{preparingOrders.length}</span>
-              </div>
-              <div className="flex flex-col gap-4 overflow-y-auto pb-4 pr-1 scrollbar-hide flex-grow">
-                {preparingOrders.map((order) => <OrderCard key={order.id} order={order} accentColor="text-amber-500" />)}
-                {preparingOrders.length === 0 && <p className="text-gray-500 text-sm text-center italic mt-10">La estación está libre.</p>}
-              </div>
-            </div>
-
-            {/* Columna: Listos para Entrega */}
-            <div className="flex flex-col gap-4 bg-[#0a0a0a] border border-white/5 rounded-2xl p-4 overflow-hidden">
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Listos
-                </h2>
-                <span className="bg-emerald-500/20 text-emerald-500 text-xs font-bold px-2 py-1 rounded-full">{readyOrders.length}</span>
-              </div>
-              <div className="flex flex-col gap-4 overflow-y-auto pb-4 pr-1 scrollbar-hide flex-grow">
-                {readyOrders.map((order) => <OrderCard key={order.id} order={order} accentColor="text-emerald-500" />)}
-                {readyOrders.length === 0 && <p className="text-gray-500 text-sm text-center italic mt-10">No hay platillos esperando salir.</p>}
-              </div>
-            </div>
+        <div className="flex items-center gap-3">
+          {/* Elapsed time — large and prominent */}
+          <div className={`flex items-baseline gap-1 ${TIME_COLOR[urgency]}`}>
+            <span className="font-serif text-[1.6rem] font-semibold leading-none tabular-nums">
+              {mins}
+            </span>
+            <span className="text-[0.58rem] font-bold uppercase tracking-wider">min</span>
           </div>
+
+          {/* Undo */}
+          {order.status !== "pending" && order.status !== "delivered" && (
+            <button
+              onClick={() => onUndo(order.id, order.status)}
+              aria-label="Deshacer estado"
+              className="flex h-8 w-8 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light"
+            >
+              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Items */}
+      <div className="flex flex-col divide-y divide-wire/50 px-4">
+        {order.items.map(item => (
+          <div key={item.id} className="py-3">
+            <div className="flex items-baseline gap-3">
+              <span className="w-7 shrink-0 text-center text-[0.72rem] font-bold tabular-nums text-dim">
+                {item.quantity}×
+              </span>
+              <span className="flex-1 text-[0.9rem] font-semibold text-light leading-snug">
+                {item.name}
+              </span>
+              <span
+                className="shrink-0 text-dim/40"
+                aria-label={`Estación: ${item.station}`}
+                title={`Estación: ${item.station}`}
+              >
+                {item.station === "cocina"
+                  ? <Utensils className="h-3 w-3" aria-hidden="true" />
+                  : <Coffee className="h-3 w-3" aria-hidden="true" />}
+              </span>
+            </div>
+            {item.notes && (
+              <p className="ml-10 mt-1.5 border-l-2 border-glow/50 pl-2.5 text-[0.68rem] font-medium text-glow/80">
+                {item.notes}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Action */}
+      <div className="mt-auto border-t border-wire p-3">
+        {order.status !== "delivered" ? (
+          <button
+            onClick={() => onAdvance(order.id, order.status)}
+            className={[
+              "flex min-h-[48px] w-full items-center justify-center border",
+              "text-[0.72rem] font-bold uppercase tracking-[0.18em] transition-all duration-150 active:scale-[0.99]",
+              ADVANCE_BTN[urgency],
+            ].join(" ")}
+          >
+            {ADVANCE_LABEL[order.status]}
+          </button>
         ) : (
-          /* Vista: Historial (Órdenes Entregadas) */
-          <div className="bg-[#0a0a0a] border border-white/5 rounded-2xl p-6 flex-grow overflow-y-auto">
-             <h2 className="text-xl font-semibold mb-6 flex items-center gap-2 border-b border-white/10 pb-4">
-               <History className="w-5 h-5 text-indigo-400" />
-               Órdenes Entregadas Recientemente
-             </h2>
-             {historyOrders.length === 0 ? (
-                 <p className="text-gray-500 text-center py-10 italic">No hay historial de órdenes entregadas con los filtros actuales.</p>
-             ) : (
-                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {historyOrders.map(order => <OrderCard key={`hist-${order.id}`} order={order} accentColor="text-gray-400" />)}
-                 </div>
-             )}
+          <div className="flex min-h-[40px] w-full items-center justify-center border border-sage-deep/30 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-sage-deep/70">
+            Entregada · {Math.floor((currentTime.getTime() - (order.deliveredAt?.getTime() ?? 0)) / 60000)} min
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Column ───────────────────────────────────────────────────────────────────
+
+function KDSColumn({
+  label,
+  dot,
+  count,
+  children,
+  empty,
+}: {
+  label: string;
+  dot: string;
+  count: number;
+  children: React.ReactNode;
+  empty: string;
+}) {
+  return (
+    <div className="flex min-h-0 flex-col border border-wire bg-canvas">
+      {/* Column header */}
+      <div className="flex items-center justify-between border-b border-wire px-5 py-4">
+        <div className="flex items-center gap-2.5">
+          <span className={`h-2 w-2 rounded-full ${dot}`} aria-hidden="true" />
+          <span className="text-[0.6rem] font-bold uppercase tracking-[0.32em] text-dim">{label}</span>
+        </div>
+        <span className="font-serif text-[1.1rem] font-semibold leading-none text-light">{count}</span>
+      </div>
+
+      {/* Cards */}
+      <div className="flex flex-col gap-3 overflow-y-auto p-4 scrollbar-hide flex-1">
+        {count === 0
+          ? <p className="mt-8 text-center text-[0.72rem] font-medium text-dim/40 italic">{empty}</p>
+          : children}
+      </div>
+    </div>
+  );
+}
+
+// ─── KDSBoard ─────────────────────────────────────────────────────────────────
+
+type StationFilter = "todas" | "cocina" | "barra";
+type ViewMode = "activas" | "historial";
+
+export default function KDSBoard() {
+  const [orders, setOrders]           = useState<Order[]>(MOCK_ORDERS);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [view, setView]               = useState<ViewMode>("activas");
+  const [station, setStation]         = useState<StationFilter>("todas");
+
+  useEffect(() => {
+    const id = setInterval(() => setCurrentTime(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  function advanceOrderState(orderId: string, currentStatus: OrderStatus) {
+    const next: Record<OrderStatus, OrderStatus> = {
+      pending: "preparing", preparing: "ready", ready: "delivered", delivered: "delivered",
+    };
+    setOrders(prev => prev.map(o =>
+      o.id === orderId
+        ? { ...o, status: next[currentStatus], deliveredAt: next[currentStatus] === "delivered" ? new Date() : o.deliveredAt }
+        : o
+    ));
+  }
+
+  function undoOrderState(orderId: string, currentStatus: OrderStatus) {
+    const prev: Record<OrderStatus, OrderStatus> = {
+      pending: "pending", preparing: "pending", ready: "preparing", delivered: "ready",
+    };
+    setOrders(orders => orders.map(o =>
+      o.id === orderId ? { ...o, status: prev[currentStatus] } : o
+    ));
+  }
+
+  function filterByStation(list: Order[]): Order[] {
+    return list
+      .map(o => station === "todas" ? o : { ...o, items: o.items.filter(i => i.station === station) })
+      .filter(o => o.items.length > 0);
+  }
+
+  const active  = filterByStation(orders.filter(o => o.status !== "delivered"));
+  const history = filterByStation(orders.filter(o => o.status === "delivered"))
+    .sort((a, b) => (b.deliveredAt?.getTime() ?? 0) - (a.deliveredAt?.getTime() ?? 0));
+
+  const pending   = active.filter(o => o.status === "pending");
+  const preparing = active.filter(o => o.status === "preparing");
+  const ready     = active.filter(o => o.status === "ready");
+
+  const STATION_TABS: { label: string; value: StationFilter }[] = [
+    { label: "Todas",  value: "todas"  },
+    { label: "Cocina", value: "cocina" },
+    { label: "Barra",  value: "barra"  },
+  ];
+
+  return (
+    <div className="flex h-screen flex-col bg-ink text-light">
+
+      {/* ── Top bar ─────────────────────────────────────────── */}
+      <header
+        className="shrink-0 border-b border-wire bg-canvas px-6 py-4"
+        style={{ animation: "reveal-up 0.4s cubic-bezier(0.22,1,0.36,1) both" }}
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[0.5rem] font-bold uppercase tracking-[0.44em] text-dim">Monitor de cocina</p>
+            <h1 className="mt-1 font-serif text-[1.6rem] font-medium leading-none tracking-[-0.02em] text-light">
+              Kitchen Display
+            </h1>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Station filter */}
+            <div className="flex border-b border-wire">
+              {STATION_TABS.map(({ label, value }) => (
+                <button
+                  key={value}
+                  onClick={() => setStation(value)}
+                  className={[
+                    "px-4 pb-2.5 pt-1.5 text-[0.62rem] font-bold uppercase tracking-[0.2em] transition-colors duration-150",
+                    station === value
+                      ? "border-b-[1.5px] border-glow text-glow"
+                      : "text-dim hover:text-light",
+                  ].join(" ")}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="h-5 w-px bg-wire" aria-hidden="true" />
+
+            {/* View mode */}
+            <div className="flex border-b border-wire">
+              {([
+                { label: `Activas · ${active.length}`, value: "activas"   as ViewMode },
+                { label: "Historial",                   value: "historial" as ViewMode },
+              ] as const).map(({ label, value }) => (
+                <button
+                  key={value}
+                  onClick={() => setView(value)}
+                  className={[
+                    "flex items-center gap-1.5 px-4 pb-2.5 pt-1.5 text-[0.62rem] font-bold uppercase tracking-[0.2em] transition-colors duration-150",
+                    view === value
+                      ? "border-b-[1.5px] border-glow text-glow"
+                      : "text-dim hover:text-light",
+                  ].join(" ")}
+                >
+                  {value === "historial" && <History className="h-3 w-3" aria-hidden="true" />}
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Board ───────────────────────────────────────────── */}
+      {view === "activas" ? (
+        <div className="grid flex-1 grid-cols-1 gap-px overflow-hidden bg-wire md:grid-cols-3">
+          <KDSColumn label="Nuevas" dot="bg-ember" count={pending.length} empty="Sin órdenes nuevas">
+            {pending.map(o => (
+              <OrderCard key={o.id} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} />
+            ))}
+          </KDSColumn>
+
+          <KDSColumn label="En preparación" dot="bg-glow" count={preparing.length} empty="Estación libre">
+            {preparing.map(o => (
+              <OrderCard key={o.id} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} />
+            ))}
+          </KDSColumn>
+
+          <KDSColumn label="Listos" dot="bg-sage-deep" count={ready.length} empty="Sin platillos esperando salir">
+            {ready.map(o => (
+              <OrderCard key={o.id} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} />
+            ))}
+          </KDSColumn>
+        </div>
+
+      ) : (
+        <div className="flex-1 overflow-y-auto p-6">
+          <p className="mb-6 text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">
+            Historial
+          </p>
+          {history.length === 0 ? (
+            <p className="mt-16 text-center text-[0.8rem] font-medium text-dim/40 italic">
+              No hay órdenes entregadas.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {history.map(o => (
+                <OrderCard key={`h-${o.id}`} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

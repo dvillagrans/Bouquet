@@ -179,6 +179,8 @@ body {
   :where(.sm\:text-\[5\.5rem\]) { font-size: 5.5rem; }
 }
 @media (min-width: 1024px) {
+  .dash-content-offset { margin-left: 16rem; }
+  .dash-main { padding-top: 0; }
   :where(.lg\:px-10) { padding-left: 2.5rem; padding-right: 2.5rem; }
   :where(.lg\:px-12) { padding-left: 3rem;   padding-right: 3rem;   }
   :where(.lg\:py-5)  { padding-top: 1.25rem; padding-bottom: 1.25rem; }
@@ -320,4 +322,15 @@ a {
 @keyframes ticker {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
+}
+
+/* ─── Dashboard — row / cell entrance ───────────────────────────── */
+@keyframes dash-row-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+
+@keyframes dash-stat-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
 }

@@ -1,93 +1,114 @@
 "use client";
 
-import { TrendingUp, DollarSign, Users, ShoppingBag, Calendar, Activity } from "lucide-react";
+import { useState } from "react";
+import { TrendingUp, TrendingDown, Activity } from "lucide-react";
+
+const PERIODS = ["Hoy", "Semana", "Mes"] as const;
+type Period = typeof PERIODS[number];
+
+const stats = [
+  { label: "Ventas totales",   value: "$42,500", change: "+12.5%", up: true  },
+  { label: "Ticket promedio",  value: "$450",    change: "+5.2%",  up: true  },
+  { label: "Mesas atendidas",  value: "98",      change: "−2.1%",  up: false },
+  { label: "Platos vendidos",  value: "312",     change: "+8.4%",  up: true  },
+];
+
+const topItems = [
+  { name: "Hamburguesa Clásica", sold: 45, revenue: "$8,100" },
+  { name: "Limonada de Menta",   sold: 32, revenue: "$1,440" },
+  { name: "Tacos de Ribeye",     sold: 28, revenue: "$7,000" },
+  { name: "Ensalada César",      sold: 18, revenue: "$2,160" },
+];
 
 export default function ReportsView() {
-  const stats = [
-    { title: "Ventas Totales", value: "$42,500.00", change: "+12.5%", isPositive: true, icon: DollarSign },
-    { title: "Ticket Promedio", value: "$450.00", change: "+5.2%", isPositive: true, icon: Activity },
-    { title: "Mesas Atendidas", value: "98", change: "-2.1%", isPositive: false, icon: Users },
-    { title: "Platos Vendidos", value: "312", change: "+8.4%", isPositive: true, icon: ShoppingBag },
-  ];
+  const [period, setPeriod] = useState<Period>("Hoy");
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Reportes y Analíticas</h1>
-          <p className="text-gray-400">Rendimiento en tiempo real de tu restaurante.</p>
-        </div>
-        <div className="flex bg-[#111] border border-white/10 rounded-lg p-1">
-          <button className="px-4 py-1.5 text-sm font-medium bg-white/10 text-white rounded-md">Hoy</button>
-          <button className="px-4 py-1.5 text-sm font-medium text-gray-400 hover:text-white">Semana</button>
-          <button className="px-4 py-1.5 text-sm font-medium text-gray-400 hover:text-white">Mes</button>
-          <button className="px-4 py-1.5 text-sm font-medium text-gray-400 hover:text-white flex items-center gap-2">
-            <Calendar className="w-4 h-4" /> Custom
-          </button>
+    <div className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
+
+      {/* ── Header ──────────────────────────────────────────── */}
+      <div className="mb-10 border-b border-wire pb-8" style={{ animation: "reveal-up 0.5s cubic-bezier(0.22,1,0.36,1) both" }}>
+        <p className="mb-2 text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">
+          Analíticas
+        </p>
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <h1 className="font-serif text-[clamp(2rem,4vw,3rem)] font-medium leading-[0.92] tracking-[-0.02em] text-light">
+            Reportes
+          </h1>
+
+          {/* Period tabs */}
+          <div className="flex border-b border-wire">
+            {PERIODS.map(p => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={[
+                  "px-5 pb-3 pt-2 text-[0.65rem] font-bold uppercase tracking-[0.22em] transition-colors",
+                  period === p
+                    ? "border-b-[1.5px] border-glow text-glow"
+                    : "text-dim hover:text-light",
+                ].join(" ")}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, i) => (
-          <div key={i} className="bg-[#111] border border-white/5 p-5 rounded-2xl flex flex-col gap-4">
-            <div className="flex justify-between items-start">
-              <div className="p-2 bg-white/5 rounded-lg border border-white/10">
-                <stat.icon className="w-5 h-5 text-amber-500" />
-              </div>
-              <span className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
-                stat.isPositive ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'
-              }`}>
-                {stat.isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingUp className="w-3 h-3 rotate-180" />}
-                {stat.change}
-              </span>
-            </div>
-            <div>
-              <p className="text-sm text-gray-400 mb-1">{stat.title}</p>
-              <p className="text-2xl font-bold text-white">{stat.value}</p>
-            </div>
+      {/* ── Stats strip ─────────────────────────────────────── */}
+      <div className="mb-10 grid grid-cols-2 divide-x divide-y divide-wire border border-wire sm:grid-cols-4 sm:divide-y-0">
+        {stats.map(({ label, value, change, up }, i) => (
+          <div key={label} className="px-6 py-5" style={{ animation: `dash-stat-enter 0.4s cubic-bezier(0.22,1,0.36,1) ${0.1 + i * 0.06}s both` }}>
+            <p className="text-[0.56rem] font-bold uppercase tracking-[0.28em] text-dim">{label}</p>
+            <p className="mt-1 font-serif text-[2rem] font-semibold leading-none text-light">{value}</p>
+            <p className={`mt-2 flex items-center gap-1 text-[0.62rem] font-semibold ${up ? "text-sage-deep" : "text-ember"}`}>
+              {up
+                ? <TrendingUp className="h-3 w-3" aria-hidden="true" />
+                : <TrendingDown className="h-3 w-3" aria-hidden="true" />}
+              {change}
+            </p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Gráfica Placeholder */}
-        <div className="lg:col-span-2 bg-[#111] border border-white/5 rounded-2xl p-6 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-bold text-white">Ingresos por Hora</h2>
-          </div>
-          <div className="flex-grow min-h-[300px] border-2 border-dashed border-white/5 rounded-xl flex items-center justify-center text-gray-500 flex-col gap-2">
-            <Activity className="w-8 h-8 opacity-50" />
-            <p className="text-sm font-medium">Gráfica Interactiva (Recharts / Chart.js)</p>
+      {/* ── Charts row ──────────────────────────────────────── */}
+      <div className="grid gap-6 lg:grid-cols-[1fr_280px]" style={{ animation: "reveal-up 0.45s cubic-bezier(0.22,1,0.36,1) 0.35s both" }}>
+
+        {/* Chart placeholder */}
+        <div className="border border-wire p-6">
+          <p className="mb-6 text-[0.56rem] font-bold uppercase tracking-[0.28em] text-dim">
+            Ingresos por hora
+          </p>
+          <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 border border-dashed border-wire/50">
+            <Activity className="h-6 w-6 text-dim/30" aria-hidden="true" />
+            <p className="text-[0.72rem] font-medium text-dim/40">Recharts · próximamente</p>
           </div>
         </div>
 
-        {/* Top Platillos */}
-        <div className="bg-[#111] border border-white/5 rounded-2xl p-6">
-          <h2 className="text-lg font-bold text-white mb-6">Platillos Top</h2>
-          <div className="space-y-4">
-            {[ 
-              { name: "Hamburguesa Clásica", sold: 45, revenue: "$8,100" },
-              { name: "Limonada de Menta", sold: 32, revenue: "$1,440" },
-              { name: "Tacos de Ribeye", sold: 28, revenue: "$7,000" },
-              { name: "Ensalada César", sold: 18, revenue: "$2,160" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group hover:border-amber-500/30 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center font-bold text-xs text-amber-500 border border-white/10">
-                    {i + 1}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-white">{item.name}</p>
-                    <p className="text-xs text-gray-400">{item.sold} vendidos</p>
-                  </div>
+        {/* Top dishes */}
+        <div className="border border-wire p-6">
+          <p className="mb-6 text-[0.56rem] font-bold uppercase tracking-[0.28em] text-dim">
+            Platillos top
+          </p>
+          <div className="divide-y divide-wire">
+            {topItems.map(({ name, sold, revenue }, i) => (
+              <div key={name} className="flex items-center gap-4 py-3">
+                <span className="w-5 shrink-0 font-serif text-[0.9rem] font-semibold tabular-nums text-dim">
+                  {i + 1}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="truncate text-[0.78rem] font-semibold text-light">{name}</p>
+                  <p className="text-[0.62rem] font-medium text-dim">{sold} vendidos</p>
                 </div>
-                <p className="text-sm text-emerald-400 font-medium">{item.revenue}</p>
+                <span className="shrink-0 font-serif text-[0.85rem] font-semibold text-sage-deep">
+                  {revenue}
+                </span>
               </div>
             ))}
           </div>
         </div>
+
       </div>
     </div>
   );

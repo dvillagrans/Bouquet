@@ -2,10 +2,179 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// ------------------------------------
+// 1. Restaurante y Configuración
+// ------------------------------------
+model Restaurant {
+  id                  String  @id @default(uuid())
+  name                String
+  logoUrl             String?
+  welcomeMessage      String?
+  currency            String  @default("MXN")
+  taxRate             Float   @default(16.0)
+  suggestedTips       String  @default("10,15,20") // guardado como csv "10,15,20"
+  allowMobileOrdering Boolean @default(true)
+
+  tables     Table[]
+  menuItems  MenuItem[]
+  categories Category[]
+  staff      Staff[]
+  orders     Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ------------------------------------
+// 2. Mesas
+// ------------------------------------
+enum TableStatus {
+  DISPONIBLE
+  OCUPADA
+  SUCIA
+}
+
+model Table {
+  id           String      @id @default(uuid())
+  restaurantId String
+  number       Int
+  capacity     Int
+  qrCode       String      @unique // Ej. X7B9K2
+  status       TableStatus @default(DISPONIBLE)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  sessions   Session[] // Sesiones activas de usuarios en esta mesa
+  orders     Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ------------------------------------
+// 3. Menú Digital
+// ------------------------------------
+model Category {
+  id           String @id @default(uuid())
+  restaurantId String
+  name         String // Ej. "Entradas", "Bebidas"
+  order        Int    @default(0) // Para ordenar categorias en UI
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  items      MenuItem[]
+
+  createdAt DateTime @default(now())
+}
+
+model MenuItem {
+  id           String  @id @default(uuid())
+  restaurantId String
+  categoryId   String
+  name         String
+  description  String?
+  price        Float
+  imageUrl     String?
+  isPopular    Boolean @default(false)
+  isSoldOut    Boolean @default(false)
+  station      Station @default(COCINA) // Para el KDS
+
+  restaurant Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  category   Category    @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ------------------------------------
+// 4. Personal (Staff)
+// ------------------------------------
+enum Role {
+  ADMIN
+  MESERO
+  COCINA
+  BARRA
+}
+
+model Staff {
+  id           String  @id @default(uuid())
+  restaurantId String
+  name         String
+  role         Role
+  pin          String // código para desbloquear su pantalla local
+  isActive     Boolean @default(true)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+// ------------------------------------
+// 5. Flujo del Comensal & Órdenes (Operación)
+// ------------------------------------
+// Sesión se crea cuando un cliente escanea la mesa y pone su nombre
+model Session {
+  id        String  @id @default(uuid())
+  tableId   String
+  guestName String
+  pax       Int
+  isActive  Boolean @default(true)
+
+  table      Table       @relation(fields: [tableId], references: [id])
+  orderItems OrderItem[] // Para saber qué pidió cada persona en la cuenta dividida
+
+  createdAt DateTime  @default(now())
+  closedAt  DateTime?
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  DELIVERED
+}
+
+enum Station {
+  COCINA
+  BARRA
+}
+
+// Una Orden (Comanda) que se manda al mismo tiempo al KDS
+model Order {
+  id           String      @id @default(uuid())
+  restaurantId String
+  tableId      String
+  status       OrderStatus @default(PENDING)
+
+  restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
+  table      Table       @relation(fields: [tableId], references: [id])
+  items      OrderItem[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deliveredAt DateTime?
+}
+
+// Elementos individuales dentro de la Orden
+model OrderItem {
+  id          String  @id @default(uuid())
+  orderId     String
+  menuItemId  String
+  sessionId   String // Asociado a quien lo pidió de la mesa
+  quantity    Int     @default(1)
+  notes       String? // Ej: "Sin cebolla"
+  priceAtTime Float // Precio histórico
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+  session  Session  @relation(fields: [sessionId], references: [id])
+
+  createdAt DateTime @default(now())
 }

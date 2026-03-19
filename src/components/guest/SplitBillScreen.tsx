@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { requestBillAndPay } from "@/actions/comensal";
 
 
 const TIP_OPTIONS = [
@@ -90,7 +91,19 @@ export function SplitBillScreen({ tableCode, guestName, partySize, initialBill }
   const [tipRate, setTipRate]       = useState<TipRate>(0.15);
   const [billOpen, setBillOpen]     = useState(false);
   const [confirmed, setConfirmed]   = useState(false);
+  const [isPending, startTransition] = useTransition();
 
+  function handlePay() {
+    startTransition(async () => {
+      try {
+        await requestBillAndPay(tableCode);
+        setConfirmed(true);
+      } catch (err) {
+        console.error(err);
+        alert("Ocurrio un error al registrar el pago.");
+      }
+    });
+  }
   const tip       = Math.round(subtotal * tipRate);
   const total     = subtotal + tip;
   const perPerson = Math.ceil(total / splitCount);
@@ -324,7 +337,7 @@ export function SplitBillScreen({ tableCode, guestName, partySize, initialBill }
         {/* ── CONFIRM ──────────────────────────────────────────────── */}
         <div className="border-t border-wire pt-8" style={{ paddingBottom: "max(4rem, env(safe-area-inset-bottom, 4rem))" }}>
           <button
-            onClick={() => setConfirmed(true)}
+            onClick={handlePay} disabled={isPending}
             className="w-full bg-glow py-5 text-[0.76rem] font-bold uppercase tracking-[0.22em] text-ink transition-all duration-200 hover:-translate-y-px focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
           >
             Pagar ${myShare.toLocaleString("es-MX")}

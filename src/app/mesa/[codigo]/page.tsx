@@ -1,6 +1,8 @@
 import { TableAccessScreen } from "@/components/guest/TableAccessScreen";
 import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 type TablePageProps = {
   params: Promise<{
@@ -12,11 +14,33 @@ export default async function TableAccessPage({ params }: TablePageProps) {
   const { codigo } = await params;
   const decodedCode = decodeURIComponent(codigo);
 
+  // Check if they already have an active session for this table
+  const cookieStore = await cookies();
+  const sessionId = cookieStore.get(`bq_session_${decodedCode}`)?.value;
+  const guestName = cookieStore.get(`bq_guest_${decodedCode}`)?.value;
+
+  if (sessionId && guestName) {
+    const activeSession = await prisma.session.findUnique({
+      where: { id: sessionId },
+      select: { isActive: true, pax: true }
+    });
+
+    if (activeSession?.isActive) {
+      // Direct pass
+      const query = new URLSearchParams({
+        guest: guestName,
+        pax: String(activeSession.pax),
+        from: "qr",
+      });
+      redirect(`/mesa/${encodeURIComponent(decodedCode)}/menu?${query.toString()}`);
+    }
+  }
+
   const table = await prisma.table.findUnique({
     where: { qrCode: decodedCode }
   });
 
-  return <TableAccessScreen tableCode={decodedCode} isLikelyValid={!!table} tableNumber={table?.number} />;
+  return <TableAccessScreen tableCode={decodedCode} isLikelyValid={!!table && table.status !== "SUCIA"} tableNumber={table?.number} />;
 }
 
 export async function generateMetadata({ params }: TablePageProps): Promise<Metadata> {

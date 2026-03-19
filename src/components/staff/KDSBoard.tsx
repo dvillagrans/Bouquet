@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { RotateCcw, Utensils, Coffee, History } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -244,9 +245,35 @@ type ViewMode = "activas" | "historial";
 
 import { useTransition } from "react";
 import { advanceOrderStatus, undoOrderStatus } from "@/actions/orders";
+import { createClient } from "@/lib/supabase/client";
 
 export default function KDSBoard({ initialOrders, defaultStation = "todas" }: { initialOrders: Order[], defaultStation?: "todas" | "cocina" | "barra" }) {
+    const router = useRouter();
   const [orders, setOrders]           = useState<Order[]>(initialOrders);
+  useEffect(() => setOrders(initialOrders), [initialOrders]);
+  useEffect(() => setOrders(initialOrders), [initialOrders]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("realtime-orders")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "Order" },
+        () => {
+          // Simplest wait: just reload the page or trigger a server action fetching orders
+          // But actually we want the server to push new UI or we just fetch again.
+          // Since we are in client, let's just refresh the router
+          setTimeout(() => router.refresh(), 500); 
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const [, startTransition]          = useTransition();
 
   const [currentTime, setCurrentTime] = useState(new Date());

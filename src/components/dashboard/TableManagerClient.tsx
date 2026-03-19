@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Plus, Trash2, Search, QrCode, Users, Map, LayoutGrid } from "lucide-react";
+import { Plus, Trash2, Search, QrCode, Users, Map, LayoutGrid, Download, X } from "lucide-react";
 import { createTable, deleteTable } from "@/actions/tables";
 import { Table, TableStatus } from "@/generated/prisma";
 import FloorMapClient from "./FloorMapClient";
+import { QRCodeSVG } from "qrcode.react";
+import { createClient } from "@/lib/supabase/client";
 
 type Tab = "mapa" | "lista";
 
@@ -46,7 +48,38 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
   const [search, setSearch] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [newTableCap, setNewTableCap] = useState(4);
+  const [selectedQRTable, setSelectedQRTable] = useState<Table | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Supabase real-time
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("realtime-tables")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "Table" },
+        (payload) => {
+          setTables((prev) => {
+            const index = prev.findIndex((t) => t.id === (payload.new as any)?.id || t.id === (payload.old as any)?.id);
+            if (payload.eventType === "INSERT") return [...prev, payload.new as Table];
+            if (payload.eventType === "DELETE") return prev.filter((t) => t.id !== (payload.old as any).id);
+            if (payload.eventType === "UPDATE") {
+              if (index === -1) return [...prev, payload.new as Table];
+              const copy = [...prev];
+              copy[index] = payload.new as Table;
+              return copy;
+            }
+            return prev;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Detectar móvil para "ahorrar" recursos: evitar montar Konva automáticamente.
   useEffect(() => {
@@ -96,6 +129,24 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
       await deleteTable(id);
       setTables((prev) => prev.filter((t) => t.id !== id));
     });
+  }
+
+  function handleDownloadQR() {
+    if (!selectedQRTable) return;
+    const svg = document.getElementById("qr-svg-" + selectedQRTable.id);
+    if (!svg) return;
+    
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `mesa-${selectedQRTable.number}-qr.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   const stats = useMemo(() => {
@@ -305,11 +356,17 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
                 {/* Hover action bar */}
                 <div className="absolute inset-x-0 bottom-0 flex translate-y-full items-center justify-between border-t border-wire bg-canvas/95 px-4 py-3 backdrop-blur-sm transition-transform duration-200 group-hover:translate-y-0">
                   <button
-                    onClick={() => window.open(`/mesa/${table.qrCode}/menu`, "_blank")}
+                    onClick={() => setSelectedQRTable(table)}
                     className="flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:text-light"
                   >
                     <QrCode className="h-3.5 w-3.5" aria-hidden="true" />
-                    Ver menú
+                    QR
+                  </button>
+                  <button
+                    onClick={() => window.open(`/mesa/${table.qrCode}`, "_blank")}
+                    className="flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:text-light"
+                  >
+                    Mesa
                   </button>
                   <button
                     onClick={() => handleDelete(table.id)}
@@ -323,6 +380,54 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
             ))}
           </div>
         ))}
+        
+      {/* ── Modal: QR code ────────────────────────────────── */}
+      {selectedQRTable && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/80 p-6 backdrop-blur-sm"
+          style={{ animation: "fade-in 0.2s ease-out both" }}
+        >
+          <div
+            className="w-full max-w-sm border border-wire bg-canvas p-8 relative"
+            style={{ animation: "scale-in 0.3s cubic-bezier(0.22,1,0.36,1) both" }}
+          >
+            <button
+              onClick={() => setSelectedQRTable(null)}
+              className="absolute right-4 top-4 text-dim hover:text-light"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <p className="mb-1 text-center text-[0.52rem] font-bold uppercase tracking-[0.44em] text-dim">
+              Mesa {selectedQRTable.number}
+            </p>
+            <h2 className="mb-8 text-center font-serif text-[1.6rem] font-medium leading-none text-light">
+              Código de Acceso
+            </h2>
+
+            <div className="flex justify-center bg-white p-6 rounded-md mb-6 relative">
+              <QRCodeSVG
+                id={"qr-svg-" + selectedQRTable.id}
+                value={typeof window !== "undefined" ? `${window.location.origin}/mesa/${selectedQRTable.qrCode}` : `/mesa/${selectedQRTable.qrCode}`}
+                size={220}
+                level={"H"}
+                includeMargin={true}
+                fgColor={"#000000"}
+                bgColor={"#ffffff"}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleDownloadQR}
+                className="flex flex-1 items-center justify-center gap-2 bg-light py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-ink transition-all duration-200 hover:-translate-y-px hover:bg-light/90 active:translate-y-0"
+              >
+                <Download className="h-4 w-4" />
+                Descargar SVG
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

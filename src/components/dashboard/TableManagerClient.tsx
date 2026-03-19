@@ -42,16 +42,35 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
   const [tables, setTables] = useState<Table[]>(initialTables);
   const [tab, setTab] = useState<Tab>("mapa");
   const [showMap, setShowMap] = useState(false);
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
   const [search, setSearch] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [newTableCap, setNewTableCap] = useState(4);
   const [isPending, startTransition] = useTransition();
 
-  // Renderizar el mapa después del primer paint para mejorar LCP.
+  // Detectar móvil para "ahorrar" recursos: evitar montar Konva automáticamente.
   useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", update);
+      return () => mq.removeEventListener("change", update);
+    }
+
+    // Fallback legacy (Safari/older).
+    mq.addListener(update);
+    return () => mq.removeListener(update);
+  }, []);
+
+  // En escritorio: renderizar el mapa tras el primer paint para mejorar LCP.
+  useEffect(() => {
+    if (isMobile !== false) return;
+
     const id = requestAnimationFrame(() => setShowMap(true));
     return () => cancelAnimationFrame(id);
-  }, []);
+  }, [isMobile]);
 
   const filtered = tables.filter(
     (t) => t.number.toString().includes(search) || t.qrCode.toLowerCase().includes(search.toLowerCase()),
@@ -150,7 +169,17 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
             </div>
           ) : (
             <div className="flex min-h-[400px] items-center justify-center border border-wire bg-canvas">
-              <p className="text-[0.72rem] font-medium text-dim/50">Cargando mapa…</p>
+              <div className="flex flex-col items-center gap-3 px-6 text-center">
+                <p className="text-[0.72rem] font-medium text-dim/50">Cargando mapa…</p>
+                {isMobile ? (
+                  <button
+                    onClick={() => setShowMap(true)}
+                    className="inline-flex h-9 items-center justify-center border border-wire px-4 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light"
+                  >
+                    Cargar mapa
+                  </button>
+                ) : null}
+              </div>
             </div>
           )}
         </>

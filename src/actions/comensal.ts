@@ -83,3 +83,55 @@ export async function submitComensalOrder({
 
   return newOrder.id;
 }
+
+export async function getTableBill(tableCode: string) {
+  const table = await prisma.table.findUnique({
+    where: { qrCode: tableCode },
+    include: {
+      orders: {
+        include: {
+          items: {
+            include: {
+              menuItem: true
+            }
+          }
+        }
+      }
+    }
+  });
+
+  if (!table) throw new Error("Mesa no encontrada");
+
+  const activeSession = await prisma.session.findFirst({
+    where: { tableId: table.id, isActive: true },
+    orderBy: { createdAt: "desc" }
+  });
+
+  if (!activeSession) {
+    return { items: [], total: 0 };
+  }
+
+  const items = await prisma.orderItem.findMany({
+    where: { sessionId: activeSession.id },
+    include: { menuItem: true }
+  });
+
+  const aggregated = items.reduce((acc, item) => {
+    const existing = acc.find(i => i.id === item.menuItemId);
+    if (existing) {
+      existing.qty += item.quantity;
+    } else {
+      acc.push({
+        id: item.menuItemId,
+        name: item.menuItem.name,
+        qty: item.quantity,
+        price: item.priceAtTime,
+      });
+    }
+    return acc;
+  }, [] as { id: string; name: string; qty: number; price: number }[]);
+
+  const total = aggregated.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+  return { items: aggregated, total };
+}

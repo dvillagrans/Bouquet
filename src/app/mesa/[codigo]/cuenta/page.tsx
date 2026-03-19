@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SplitBillScreen } from "@/components/guest/SplitBillScreen";
+import { getTableBill } from "@/actions/comensal";
 
 type CuentaPageProps = {
   params: Promise<{ codigo: string }>;
@@ -24,9 +25,11 @@ export default async function CuentaPage({ params, searchParams }: CuentaPagePro
   const guestName = decodeURIComponent(guest?.trim() || "Invitado");
   const partySize = Math.max(1, Math.min(20, Number(pax) || 2));
 
+  const bill = await getTableBill(tableCode);
+
   return (
     <div className="min-h-screen bg-ink text-light">
-      <SplitBillScreen tableCode={tableCode} guestName={guestName} partySize={partySize} />
+      <SplitBillScreen tableCode={tableCode} guestName={guestName} partySize={partySize} initialBill={bill} />
     </div>
   );
 }

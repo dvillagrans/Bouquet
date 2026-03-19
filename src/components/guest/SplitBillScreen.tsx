@@ -3,18 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 
-// ─── Mock bill ───────────────────────────────────────────────────────────────
-// En producción esta información llegaría del servidor / WebSocket
-
-const BILL_ITEMS = [
-  { id: "1", name: "Ceviche Clásico",     qty: 2, price: 185 },
-  { id: "2", name: "Filete Mignon",       qty: 1, price: 450 },
-  { id: "3", name: "Risotto de Hongos",   qty: 3, price: 210 },
-  { id: "4", name: "Vino Tinto Reserva",  qty: 4, price:  95 },
-  { id: "5", name: "Flan de Vainilla",    qty: 2, price:  85 },
-] as const;
-
-const SUBTOTAL = BILL_ITEMS.reduce((s, i) => s + i.price * i.qty, 0); // $2,000
 
 const TIP_OPTIONS = [
   { label: "Sin propina", rate: 0    },
@@ -77,21 +65,34 @@ function ConfirmedView({
 
 // ─── SplitBillScreen ─────────────────────────────────────────────────────────
 
+interface BillItem {
+  id: string;
+  name: string;
+  qty: number;
+  price: number;
+}
+
 interface SplitBillScreenProps {
   tableCode: string;
   guestName: string;
   partySize: number;
+  initialBill: {
+    items: BillItem[];
+    total: number;
+  };
 }
 
-export function SplitBillScreen({ tableCode, guestName, partySize }: SplitBillScreenProps) {
+export function SplitBillScreen({ tableCode, guestName, partySize, initialBill }: SplitBillScreenProps) {
+  const billItems = initialBill.items;
+  const subtotal = initialBill.total;
   const [mode, setMode]             = useState<SplitMode>("equal");
   const [splitCount, setSplitCount] = useState(partySize);
   const [tipRate, setTipRate]       = useState<TipRate>(0.15);
   const [billOpen, setBillOpen]     = useState(false);
   const [confirmed, setConfirmed]   = useState(false);
 
-  const tip       = Math.round(SUBTOTAL * tipRate);
-  const total     = SUBTOTAL + tip;
+  const tip       = Math.round(subtotal * tipRate);
+  const total     = subtotal + tip;
   const perPerson = Math.ceil(total / splitCount);
   const myShare   = mode === "equal" ? perPerson : total;
 
@@ -149,11 +150,11 @@ export function SplitBillScreen({ tableCode, guestName, partySize }: SplitBillSc
             <div>
               <p className="text-[0.57rem] font-bold uppercase tracking-[0.38em] text-dim">Consumo</p>
               <p className="mt-1 font-serif text-[1.6rem] font-semibold leading-none text-light">
-                ${SUBTOTAL.toLocaleString("es-MX")}
+                ${subtotal.toLocaleString("es-MX")}
               </p>
             </div>
             <span className="flex items-center gap-2 text-[0.62rem] font-bold uppercase tracking-[0.24em] text-dim">
-              {BILL_ITEMS.length} platillos
+              {billItems.length} platillos
               <svg
                 viewBox="0 0 16 16" fill="none" className="h-3 w-3 transition-transform duration-200"
                 style={{ transform: billOpen ? "rotate(180deg)" : "rotate(0deg)" }}
@@ -167,7 +168,7 @@ export function SplitBillScreen({ tableCode, guestName, partySize }: SplitBillSc
           {billOpen && (
             <div id="bill-detail" className="pb-6">
               <div className="divide-y divide-wire/40">
-                {BILL_ITEMS.map(item => (
+                {billItems.map(item => (
                   <div key={item.id} className="flex items-baseline justify-between gap-4 py-3">
                     <div className="flex items-baseline gap-3">
                       <span className="w-5 shrink-0 text-[0.68rem] font-semibold tabular-nums text-dim">
@@ -289,7 +290,7 @@ export function SplitBillScreen({ tableCode, guestName, partySize }: SplitBillSc
                 <div className="flex items-baseline justify-between py-3">
                   <span className="text-[0.8rem] font-medium text-dim">Consumo</span>
                   <span className="font-serif text-[0.9rem] text-light">
-                    ${SUBTOTAL.toLocaleString("es-MX")}
+                    ${subtotal.toLocaleString("es-MX")}
                   </span>
                 </div>
                 {tip > 0 && (

@@ -46,6 +46,30 @@ export async function getMenuData() {
   return { categories, items: allItems };
 }
 
+export async function createCategory(name: string) {
+  const restaurant = await getDefaultRestaurant();
+  const normalizedName = name.trim();
+
+  // Evita duplicar categorías con el mismo nombre en el mismo restaurante.
+  const existing = await prisma.category.findFirst({
+    where: { restaurantId: restaurant.id, name: normalizedName },
+  });
+  if (existing) {
+    revalidatePath("/dashboard/menu");
+    return { id: existing.id, name: existing.name };
+  }
+
+  const last = await prisma.category.findFirst({
+    where: { restaurantId: restaurant.id },
+    orderBy: { order: "desc" },
+  });
+  const cat = await prisma.category.create({
+    data: { name: normalizedName, order: (last?.order ?? -1) + 1, restaurantId: restaurant.id },
+  });
+  revalidatePath("/dashboard/menu");
+  return { id: cat.id, name: cat.name };
+}
+
 export async function toggleItemSoldOut(id: string, currentStatus: boolean) {
   await prisma.menuItem.update({
     where: { id },

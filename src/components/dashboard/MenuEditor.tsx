@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Plus, Search, Edit2, Trash2 } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, ChefHat, GlassWater, Star } from "lucide-react";
 import { toggleItemSoldOut, deleteMenuItem } from "@/actions/menu";
 
+/* ── Types ──────────────────────────────────────────────────────── */
 type MenuItemDB = {
   id: string;
   name: string;
@@ -12,6 +13,7 @@ type MenuItemDB = {
   categoryName: string;
   isPopular: boolean;
   isSoldOut: boolean;
+  station: "COCINA" | "BARRA";
 };
 
 type CategoryDB = {
@@ -19,6 +21,12 @@ type CategoryDB = {
   name: string;
 };
 
+/* ── Shared form classes ─────────────────────────────────────────── */
+const inputCls  = "h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none transition-colors focus:border-light/30";
+const selectCls = "h-10 w-full cursor-pointer appearance-none border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none transition-colors focus:border-light/30";
+const labelCls  = "mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim";
+
+/* ── Main component ──────────────────────────────────────────────── */
 export default function MenuEditor({
   initialCategories,
   initialItems,
@@ -26,26 +34,43 @@ export default function MenuEditor({
   initialCategories: CategoryDB[];
   initialItems: MenuItemDB[];
 }) {
-  const [items, setItems]                   = useState<MenuItemDB[]>(initialItems);
-  const [search, setSearch]                 = useState("");
-  const [activeCategory, setActiveCategory] = useState<string>("Todas");
-  const [isPending, startTransition]        = useTransition();
+  const [items, setItems]                     = useState<MenuItemDB[]>(initialItems);
+  const [categories, setCategories]           = useState<CategoryDB[]>(initialCategories);
+  const [search, setSearch]                   = useState("");
+  const [activeCategory, setActiveCategory]   = useState<string>("Todas");
+  const [isPending, startTransition]          = useTransition();
 
-  const [isAdding, setIsAdding]             = useState(false);
-  const [newItem, setNewItem]               = useState({
+  /* form states */
+  const [isAdding, setIsAdding]               = useState(false);
+  const [newItem, setNewItem]                 = useState({
     name: "", description: "", price: "", categoryId: "",
     isPopular: false, station: "COCINA" as "COCINA" | "BARRA",
   });
-  const [editingItem, setEditingItem] = useState<MenuItemDB | null>(null);
-  const [editForm, setEditForm]       = useState({
+  const [editingItem, setEditingItem]         = useState<MenuItemDB | null>(null);
+  const [editForm, setEditForm]               = useState({
     name: "", description: "", price: "", categoryId: "", isPopular: false,
   });
+  const [isAddingCat, setIsAddingCat]         = useState(false);
+  const [newCatName, setNewCatName]           = useState("");
 
-  const CATEGORIES = useMemo(
-    () => ["Todas", ...initialCategories.map(c => c.name)],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+  /* ── Derived data ────────────────────────────────────────────── */
+  type CategoryTab = { id: string; label: string; value: string };
+
+  const CATEGORY_TABS = useMemo<CategoryTab[]>(
+    () => [
+      { id: "Todas", label: "Todas", value: "Todas" },
+      ...categories.map(c => ({ id: c.id, label: c.name, value: c.name })),
+    ],
+    [categories],
   );
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = { Todas: items.length };
+    for (const item of items) {
+      counts[item.categoryName] = (counts[item.categoryName] ?? 0) + 1;
+    }
+    return counts;
+  }, [items]);
 
   const filtered = useMemo(
     () =>
@@ -57,22 +82,35 @@ export default function MenuEditor({
     [items, activeCategory, search],
   );
 
+  const stats = useMemo(() => {
+    let disponibles = 0, agotados = 0, populares = 0;
+    for (const item of items) {
+      if (item.isSoldOut) agotados++; else disponibles++;
+      if (item.isPopular) populares++;
+    }
+    return [
+      { label: "Total",      value: items.length },
+      { label: "Disponibles",value: disponibles  },
+      { label: "Agotados",   value: agotados     },
+      { label: "Populares",  value: populares    },
+    ];
+  }, [items]);
+
+  /* ── Handlers ────────────────────────────────────────────────── */
   function handleCreateItem(e: React.FormEvent) {
     e.preventDefault();
     if (!newItem.name || !newItem.price || !newItem.categoryId) return;
-
     startTransition(async () => {
       const { createMenuItem } = await import("@/actions/menu");
       const created = await createMenuItem({
-        name: newItem.name,
+        name:        newItem.name,
         description: newItem.description || undefined,
-        price: parseFloat(newItem.price),
-        categoryId: newItem.categoryId,
-        isPopular: newItem.isPopular,
-        station: newItem.station,
+        price:       parseFloat(newItem.price),
+        categoryId:  newItem.categoryId,
+        isPopular:   newItem.isPopular,
+        station:     newItem.station,
       });
-
-      const catName = initialCategories.find(c => c.id === newItem.categoryId)?.name || "";
+      const catName = categories.find(c => c.id === newItem.categoryId)?.name || "";
       setItems(prev => [...prev, { ...created, categoryName: catName }]);
       setIsAdding(false);
       setNewItem({ name: "", description: "", price: "", categoryId: "", isPopular: false, station: "COCINA" });
@@ -82,20 +120,18 @@ export default function MenuEditor({
   function openEdit(item: MenuItemDB) {
     setEditingItem(item);
     setEditForm({
-      name: item.name,
-      description: item.description || "",
-      price: item.price.toString(),
-      categoryId: initialCategories.find(c => c.name === item.categoryName)?.id || "",
-      isPopular: item.isPopular,
+      name:       item.name,
+      description:item.description || "",
+      price:      item.price.toString(),
+      categoryId: categories.find(c => c.name === item.categoryName)?.id || "",
+      isPopular:  item.isPopular,
     });
   }
 
   function handleEditItem(e: React.FormEvent) {
     e.preventDefault();
     if (!editingItem || !editForm.name || !editForm.price || !editForm.categoryId) return;
-
-    const catName = initialCategories.find(c => c.id === editForm.categoryId)?.name || editingItem.categoryName;
-
+    const catName = categories.find(c => c.id === editForm.categoryId)?.name || editingItem.categoryName;
     setItems(prev => prev.map(item =>
       item.id === editingItem.id
         ? { ...item, name: editForm.name, description: editForm.description || null,
@@ -103,15 +139,14 @@ export default function MenuEditor({
         : item
     ));
     setEditingItem(null);
-
     startTransition(async () => {
       const { updateMenuItem } = await import("@/actions/menu");
       await updateMenuItem(editingItem.id, {
-        name: editForm.name,
+        name:        editForm.name,
         description: editForm.description || undefined,
-        price: parseFloat(editForm.price),
-        categoryId: editForm.categoryId,
-        isPopular: editForm.isPopular,
+        price:       parseFloat(editForm.price),
+        categoryId:  editForm.categoryId,
+        isPopular:   editForm.isPopular,
       });
     });
   }
@@ -126,13 +161,22 @@ export default function MenuEditor({
     startTransition(async () => { await deleteMenuItem(id); });
   }
 
-  /* ── Shared form field classes ── */
-  const inputCls = "h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30";
-  const selectCls = "h-10 w-full cursor-pointer appearance-none border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30";
-  const labelCls = "mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim";
+  function handleCreateCategory(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    const name = newCatName.trim();
+    setIsAddingCat(false);
+    setNewCatName("");
+    startTransition(async () => {
+      const { createCategory } = await import("@/actions/menu");
+      const cat = await createCategory(name);
+      setCategories(prev => [...prev, cat]);
+    });
+  }
 
+  /* ─────────────────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
+    <div className="min-h-screen px-4 py-6 sm:px-6 sm:py-8 lg:px-12 lg:py-12">
 
       {/* ── Header ────────────────────────────────────────────── */}
       <div
@@ -142,33 +186,44 @@ export default function MenuEditor({
         <p className="mb-2 text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">
           Gestión de menú
         </p>
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <h1 className="font-serif text-[clamp(2rem,4vw,3rem)] font-medium leading-[0.92] tracking-[-0.02em] text-light">
             Menú digital
           </h1>
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search
-                className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-dim/50"
-                aria-hidden="true"
-              />
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-dim/50" aria-hidden="true" />
               <input
                 type="text"
                 placeholder="Buscar platillo…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="h-10 w-52 border border-wire bg-transparent pl-8 pr-4 text-[0.78rem] text-light placeholder:text-dim/40 outline-none transition-colors focus:border-light/20"
+                className="h-11 w-52 border border-wire bg-transparent pl-8 pr-4 text-[0.78rem] text-light placeholder:text-dim/40 outline-none transition-colors focus:border-light/20"
               />
             </div>
             <button
               onClick={() => setIsAdding(true)}
-              className="inline-flex h-10 items-center gap-2 border border-wire px-4 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light"
+              className="inline-flex min-h-[44px] items-center gap-2 border border-wire px-4 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-all hover:border-light/20 hover:text-light hover:-translate-y-px active:translate-y-0"
             >
               <Plus className="h-3.5 w-3.5" aria-hidden="true" />
               Nuevo platillo
             </button>
           </div>
         </div>
+      </div>
+
+      {/* ── Stats strip ───────────────────────────────────────── */}
+      <div className="mb-10 grid grid-cols-2 divide-x divide-y divide-wire border border-wire sm:grid-cols-4 sm:divide-y-0">
+        {stats.map(({ label, value }, i) => (
+          <div
+            key={label}
+            className="px-6 py-5"
+            style={{ animation: `dash-stat-enter 0.4s cubic-bezier(0.22,1,0.36,1) ${0.08 + i * 0.06}s both` }}
+          >
+            <p className="text-[0.56rem] font-bold uppercase tracking-[0.28em] text-dim">{label}</p>
+            <p className="mt-1 font-serif text-[2rem] font-semibold leading-none text-light">{value}</p>
+          </div>
+        ))}
       </div>
 
       {/* ── Modal: Nuevo platillo ─────────────────────────────── */}
@@ -179,27 +234,26 @@ export default function MenuEditor({
             style={{ animation: "scale-in 0.3s cubic-bezier(0.22,1,0.36,1) both" }}
           >
             <p className="mb-1 text-[0.52rem] font-bold uppercase tracking-[0.44em] text-dim">Registro</p>
-            <h2 className="mb-8 font-serif text-[1.6rem] font-medium leading-none text-light">Nuevo Platillo</h2>
-
+            <h2 className="mb-8 font-serif text-[1.6rem] font-medium leading-none text-light">Nuevo platillo</h2>
             <form onSubmit={handleCreateItem} className="flex flex-col gap-5">
               <div>
                 <label className={labelCls}>Nombre</label>
-                <input required type="text" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className={inputCls} />
+                <input required type="text" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className={inputCls} placeholder="Ej. Tacos de ribey" />
               </div>
               <div>
                 <label className={labelCls}>Descripción</label>
-                <textarea rows={2} value={newItem.description} onChange={e => setNewItem({ ...newItem, description: e.target.value })} className="w-full resize-none border border-wire bg-transparent p-3 text-[0.8rem] text-light outline-none focus:border-light/30" />
+                <textarea rows={2} value={newItem.description} onChange={e => setNewItem({ ...newItem, description: e.target.value })} className="w-full resize-none border border-wire bg-transparent p-3 text-[0.8rem] text-light outline-none transition-colors focus:border-light/30" placeholder="Ingredientes, preparación…" />
               </div>
               <div className="flex gap-4">
                 <div className="flex-1">
                   <label className={labelCls}>Precio</label>
-                  <input required type="number" min="0" step="0.01" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} className={inputCls} />
+                  <input required type="number" min="0" step="0.01" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} className={inputCls} placeholder="0.00" />
                 </div>
                 <div className="flex-1">
                   <label className={labelCls}>Categoría</label>
                   <select required value={newItem.categoryId} onChange={e => setNewItem({ ...newItem, categoryId: e.target.value })} className={selectCls}>
                     <option value="" className="bg-ink text-dim">Seleccionar</option>
-                    {initialCategories.map(c => (
+                    {categories.map(c => (
                       <option key={c.id} value={c.id} className="bg-ink">{c.name}</option>
                     ))}
                   </select>
@@ -207,16 +261,16 @@ export default function MenuEditor({
               </div>
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className={labelCls}>KDS Estación</label>
-                  <select required value={newItem.station} onChange={e => setNewItem({ ...newItem, station: e.target.value as "COCINA" | "BARRA" })} className={selectCls}>
+                  <label className={labelCls}>Estación KDS</label>
+                  <select value={newItem.station} onChange={e => setNewItem({ ...newItem, station: e.target.value as "COCINA" | "BARRA" })} className={selectCls}>
                     <option value="COCINA" className="bg-ink">Cocina</option>
-                    <option value="BARRA" className="bg-ink">Barra</option>
+                    <option value="BARRA"  className="bg-ink">Barra</option>
                   </select>
                 </div>
                 <div className="flex flex-1 items-end pb-2">
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <input type="checkbox" checked={newItem.isPopular} onChange={e => setNewItem({ ...newItem, isPopular: e.target.checked })} className="accent-glow" />
-                    <span className="text-[0.7rem] text-light">Es Platillo Top</span>
+                  <label className="flex cursor-pointer items-center gap-2.5">
+                    <input type="checkbox" checked={newItem.isPopular} onChange={e => setNewItem({ ...newItem, isPopular: e.target.checked })} className="accent-glow h-4 w-4" />
+                    <span className="text-[0.72rem] font-medium text-light">Platillo popular</span>
                   </label>
                 </div>
               </div>
@@ -224,8 +278,8 @@ export default function MenuEditor({
                 <button type="button" onClick={() => setIsAdding(false)} className="flex-1 border border-wire py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light">
                   Cancelar
                 </button>
-                <button type="submit" disabled={isPending} className="flex-1 bg-light py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-ink transition-colors hover:bg-light/90 disabled:opacity-50">
-                  {isPending ? "Guardando..." : "Guardar"}
+                <button type="submit" disabled={isPending} className="flex-1 bg-light py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-ink transition-all hover:-translate-y-px hover:bg-light/90 disabled:opacity-50">
+                  {isPending ? "Guardando…" : "Guardar"}
                 </button>
               </div>
             </form>
@@ -242,7 +296,6 @@ export default function MenuEditor({
           >
             <p className="mb-1 text-[0.52rem] font-bold uppercase tracking-[0.44em] text-dim">Edición</p>
             <h2 className="mb-8 font-serif text-[1.6rem] font-medium leading-none text-light">Editar platillo</h2>
-
             <form onSubmit={handleEditItem} className="flex flex-col gap-5">
               <div>
                 <label className={labelCls}>Nombre</label>
@@ -250,7 +303,7 @@ export default function MenuEditor({
               </div>
               <div>
                 <label className={labelCls}>Descripción</label>
-                <textarea rows={2} value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="w-full resize-none border border-wire bg-transparent p-3 text-[0.8rem] text-light outline-none focus:border-light/30" />
+                <textarea rows={2} value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="w-full resize-none border border-wire bg-transparent p-3 text-[0.8rem] text-light outline-none transition-colors focus:border-light/30" />
               </div>
               <div className="flex gap-4">
                 <div className="flex-1">
@@ -261,24 +314,32 @@ export default function MenuEditor({
                   <label className={labelCls}>Categoría</label>
                   <select required value={editForm.categoryId} onChange={e => setEditForm({ ...editForm, categoryId: e.target.value })} className={selectCls}>
                     <option value="" className="bg-ink text-dim">Seleccionar</option>
-                    {initialCategories.map(c => (
+                    {categories.map(c => (
                       <option key={c.id} value={c.id} className="bg-ink">{c.name}</option>
                     ))}
                   </select>
                 </div>
               </div>
-              <div className="flex items-center gap-2 pt-1">
-                <label className="flex cursor-pointer items-center gap-2">
-                  <input type="checkbox" checked={editForm.isPopular} onChange={e => setEditForm({ ...editForm, isPopular: e.target.checked })} className="accent-glow" />
-                  <span className="text-[0.7rem] text-light">Es Platillo Top</span>
+              <div className="flex items-center gap-2.5 pt-1">
+                <label className="flex cursor-pointer items-center gap-2.5">
+                  <input type="checkbox" checked={editForm.isPopular} onChange={e => setEditForm({ ...editForm, isPopular: e.target.checked })} className="accent-glow h-4 w-4" />
+                  <span className="text-[0.72rem] font-medium text-light">Platillo popular</span>
                 </label>
               </div>
               <div className="mt-2 flex gap-3 border-t border-wire/50 pt-5">
-                <button type="button" onClick={() => setEditingItem(null)} className="flex-1 border border-wire py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light">
+                <button
+                  type="button"
+                  onClick={() => setEditingItem(null)}
+                  className="flex-1 min-h-[44px] border border-wire py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light"
+                >
                   Cancelar
                 </button>
-                <button type="submit" disabled={isPending} className="flex-1 bg-light py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-ink transition-colors hover:bg-light/90 disabled:opacity-50">
-                  {isPending ? "Guardando..." : "Guardar cambios"}
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="flex-1 min-h-[44px] bg-light py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-ink transition-all hover:-translate-y-px hover:bg-light/90 disabled:opacity-50"
+                >
+                  {isPending ? "Guardando…" : "Guardar cambios"}
                 </button>
               </div>
             </form>
@@ -286,30 +347,77 @@ export default function MenuEditor({
         </div>
       )}
 
-      {/* ── Category tabs ─────────────────────────────────────── */}
+      {/* ── Category tabs + "agregar categoría" ───────────────── */}
       <div
-        className="mb-8 flex overflow-x-auto border-b border-wire scrollbar-hide"
+        className="mb-8 flex items-end gap-0 border-b border-wire"
         style={{ animation: "fade-in 0.4s ease-out 0.15s both" }}
       >
-        {CATEGORIES.map(cat => (
-          <button
-            key={cat}
-            onClick={() => setActiveCategory(cat)}
-            className={[
-              "shrink-0 whitespace-nowrap px-5 pb-3 pt-2 text-[0.65rem] font-bold uppercase tracking-[0.22em] transition-colors",
-              activeCategory === cat
-                ? "border-b-[1.5px] border-glow text-glow"
-                : "text-dim hover:text-light",
-            ].join(" ")}
-          >
-            {cat}
-          </button>
-        ))}
+        {/* Tabs */}
+        <div className="flex flex-1 overflow-x-auto scrollbar-hide">
+          {CATEGORY_TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveCategory(tab.value)}
+              className={[
+                "group shrink-0 whitespace-nowrap px-4 pb-3 pt-2 min-h-[44px] transition-colors",
+                activeCategory === tab.value
+                  ? "border-b-[1.5px] border-glow text-glow"
+                  : "text-dim hover:text-light",
+              ].join(" ")}
+            >
+              <span className="text-[0.65rem] font-bold uppercase tracking-[0.22em]">{tab.label}</span>
+              <span className={[
+                "ml-1.5 text-[0.55rem] font-semibold tabular-nums",
+                activeCategory === tab.value ? "text-glow/60" : "text-dim/40",
+              ].join(" ")}>
+                {categoryCounts[tab.value] ?? 0}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* Add category */}
+        <div className="shrink-0 pb-2 pl-3">
+          {isAddingCat ? (
+            <form onSubmit={handleCreateCategory} className="flex items-center gap-1.5">
+              <input
+                type="text"
+                value={newCatName}
+                onChange={e => setNewCatName(e.target.value)}
+                placeholder="Nombre…"
+                autoFocus
+                className="h-11 w-32 border border-glow/40 bg-transparent px-2.5 text-[0.72rem] text-light outline-none focus:border-glow"
+              />
+              <button
+                type="submit"
+                disabled={isPending || !newCatName.trim()}
+                className="h-11 border border-glow/40 px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-glow transition-colors hover:bg-glow/10 disabled:opacity-40"
+              >
+                OK
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsAddingCat(false); setNewCatName(""); }}
+                className="flex h-11 w-11 items-center justify-center text-dim transition-colors hover:text-light"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </form>
+          ) : (
+            <button
+              onClick={() => setIsAddingCat(true)}
+              className="flex h-11 items-center gap-1.5 border border-wire px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
+            >
+              <Plus className="h-3 w-3" />
+              Categoría
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Items grid ────────────────────────────────────────── */}
       {filtered.length === 0 ? (
-        <div className="border border-dashed border-wire py-20 text-center">
+        <div className="flex flex-col items-center justify-center border border-dashed border-wire py-20">
           <p className="text-[0.8rem] font-medium text-dim">No se encontraron platillos.</p>
           <button
             onClick={() => { setSearch(""); setActiveCategory("Todas"); }}
@@ -323,60 +431,96 @@ export default function MenuEditor({
           {filtered.map((item, i) => (
             <div
               key={item.id}
-              className="group flex flex-col border border-wire bg-canvas transition-all duration-200 hover:border-light/20"
+              className={[
+                "group flex flex-col border transition-all duration-200",
+                item.isSoldOut
+                  ? "border-wire/60 bg-canvas/60 opacity-70"
+                  : item.isPopular
+                    ? "border-glow/25 bg-canvas hover:border-glow/50"
+                    : "border-wire bg-canvas hover:border-light/20",
+              ].join(" ")}
               style={{
-                animation: `dash-row-enter 0.35s cubic-bezier(0.22,1,0.36,1) ${0.18 + Math.min(i * 0.04, 0.28)}s both`,
+                animation: `dash-row-enter 0.35s cubic-bezier(0.22,1,0.36,1) ${0.12 + Math.min(i * 0.035, 0.28)}s both`,
               }}
             >
+              {/* Popular accent line */}
+              {item.isPopular && !item.isSoldOut && (
+                <div className="h-[2px] w-full bg-gradient-to-r from-glow/70 via-glow/30 to-transparent" />
+              )}
+
               {/* Card body */}
               <div className="flex flex-1 flex-col p-5">
 
-                {/* Name + badges */}
-                <div className="mb-3">
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <p className="text-[0.88rem] font-semibold leading-tight text-light">
-                      {item.name}
-                    </p>
-                    {item.isPopular && (
-                      <span className="border border-glow/40 px-1.5 py-0.5 text-[0.5rem] font-bold uppercase tracking-[0.18em] text-glow">
-                        Top
-                      </span>
-                    )}
-                  </div>
-                  {item.description && (
-                    <p className="mt-1.5 line-clamp-2 text-[0.68rem] font-medium leading-relaxed text-dim">
-                      {item.description}
-                    </p>
+                {/* Top row: badges */}
+                <div className="mb-3 flex items-center gap-2">
+                  {/* Station badge */}
+                  <span className={[
+                    "flex items-center gap-1 border px-1.5 py-0.5 text-[0.48rem] font-bold uppercase tracking-[0.18em]",
+                    item.station === "COCINA"
+                      ? "border-sage-deep/30 text-sage-deep/70"
+                      : "border-glow/30 text-glow/70",
+                  ].join(" ")}>
+                    {item.station === "COCINA"
+                      ? <ChefHat   className="h-2.5 w-2.5" aria-hidden="true" />
+                      : <GlassWater className="h-2.5 w-2.5" aria-hidden="true" />}
+                    {item.station === "COCINA" ? "Cocina" : "Barra"}
+                  </span>
+
+                  {item.isPopular && (
+                    <span className="flex items-center gap-1 border border-glow/40 px-1.5 py-0.5 text-[0.48rem] font-bold uppercase tracking-[0.18em] text-glow">
+                      <Star className="h-2.5 w-2.5" aria-hidden="true" />
+                      Popular
+                    </span>
                   )}
                 </div>
 
-                {/* Category pill */}
-                <p className="text-[0.54rem] font-bold uppercase tracking-[0.26em] text-dim/50">
+                {/* Name */}
+                <p className={[
+                  "text-[0.9rem] font-semibold leading-tight",
+                  item.isSoldOut ? "text-dim line-through decoration-dim/50" : "text-light",
+                ].join(" ")}>
+                  {item.name}
+                </p>
+
+                {/* Description */}
+                {item.description && (
+                  <p className="mt-1.5 line-clamp-2 text-[0.68rem] font-medium leading-relaxed text-dim">
+                    {item.description}
+                  </p>
+                )}
+
+                {/* Category */}
+                <p className="mt-auto pt-4 text-[0.52rem] font-bold uppercase tracking-[0.28em] text-dim/40">
                   {item.categoryName}
                 </p>
               </div>
 
               {/* Card footer */}
-              <div className="flex items-center justify-between gap-3 border-t border-wire px-5 py-3">
+              <div className="flex items-center justify-between gap-2 border-t border-wire px-5 py-3">
                 {/* Price */}
-                <p className="font-serif text-[1.15rem] font-semibold text-light">
+                <p className={[
+                  "font-serif text-[1.2rem] font-semibold tabular-nums",
+                  item.isSoldOut ? "text-dim/60" : "text-light",
+                ].join(" ")}>
                   ${item.price.toFixed(0)}
                 </p>
 
-                {/* Status + actions */}
-                <div className="flex items-center gap-2">
+                {/* Actions */}
+                <div className="flex items-center gap-1.5">
+                  {/* Sold-out toggle */}
                   <button
                     onClick={() => handleToggleSoldOut(item.id, item.isSoldOut)}
                     disabled={isPending}
                     className={[
-                      "flex items-center gap-1.5 border px-2.5 py-1 text-[0.58rem] font-bold uppercase tracking-[0.2em] transition-colors disabled:opacity-50",
+                      "min-h-[44px] flex items-center gap-1.5 border px-3 py-2 text-[0.56rem] font-bold uppercase tracking-[0.2em] transition-all disabled:opacity-50",
                       item.isSoldOut
-                        ? "border-ember/40 text-ember hover:border-ember hover:bg-ember/10"
-                        : "border-sage-deep/40 text-sage-deep hover:border-sage-deep hover:bg-sage-deep/10",
+                        ? "border-wire text-dim hover:border-sage-deep/40 hover:text-sage-deep"
+                        : "border-sage-deep/30 text-sage-deep hover:border-ember/40 hover:text-ember",
                     ].join(" ")}
+                    title={item.isSoldOut ? "Marcar disponible" : "Marcar agotado"}
                   >
                     <span
-                      className={`h-1.5 w-1.5 rounded-full ${item.isSoldOut ? "bg-ember" : "bg-sage-deep"}`}
+                      className={`h-1.5 w-1.5 rounded-full ${item.isSoldOut ? "bg-dim" : "bg-sage-deep"}`}
                       aria-hidden="true"
                     />
                     {item.isSoldOut ? "Agotado" : "Disponible"}
@@ -385,7 +529,7 @@ export default function MenuEditor({
                   <button
                     onClick={() => openEdit(item)}
                     aria-label={`Editar ${item.name}`}
-                    className="flex h-8 w-8 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light"
+                    className="flex h-11 w-11 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light"
                   >
                     <Edit2 className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
@@ -394,7 +538,7 @@ export default function MenuEditor({
                     onClick={() => handleDelete(item.id)}
                     disabled={isPending}
                     aria-label={`Eliminar ${item.name}`}
-                    className="flex h-8 w-8 items-center justify-center border border-wire text-dim transition-colors hover:border-ember/40 hover:text-ember disabled:opacity-50"
+                    className="flex h-11 w-11 items-center justify-center border border-wire text-dim transition-colors hover:border-ember/40 hover:text-ember disabled:opacity-50"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>

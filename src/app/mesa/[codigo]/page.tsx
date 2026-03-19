@@ -1,4 +1,5 @@
 import { TableAccessScreen } from "@/components/guest/TableAccessScreen";
+import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 
 type TablePageProps = {
@@ -7,19 +8,15 @@ type TablePageProps = {
   }>;
 };
 
-function looksLikeTableCode(rawCode: string) {
-  const code = rawCode.trim();
-
-  // Accepts common QR table formats like MESA-12A, TBL7, QR-MESA-001.
-  return /^[A-Za-z0-9_-]{4,32}$/.test(code);
-}
-
 export default async function TableAccessPage({ params }: TablePageProps) {
   const { codigo } = await params;
   const decodedCode = decodeURIComponent(codigo);
-  const isLikelyValid = looksLikeTableCode(decodedCode);
 
-  return <TableAccessScreen tableCode={decodedCode} isLikelyValid={isLikelyValid} />;
+  const table = await prisma.table.findUnique({
+    where: { qrCode: decodedCode }
+  });
+
+  return <TableAccessScreen tableCode={decodedCode} isLikelyValid={!!table} tableNumber={table?.number} />;
 }
 
 export async function generateMetadata({ params }: TablePageProps): Promise<Metadata> {

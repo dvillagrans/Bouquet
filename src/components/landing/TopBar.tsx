@@ -61,6 +61,7 @@ export const TopBar = () => {
         </nav>
 
         <div className="flex items-center gap-3">
+          <Link href="/scan" className="mr-2 text-[0.8rem] font-semibold text-dim hover:text-light transition-colors">App Comensal</Link>
           {/* Desktop CTA — no id="contacto" here (belongs on the section) */}
           <Link
             href="#contacto"

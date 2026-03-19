@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { Plus, Trash2, Search, QrCode, Users, Map, LayoutGrid } from "lucide-react";
 import { createTable, deleteTable } from "@/actions/tables";
 import { Table, TableStatus } from "@/generated/prisma";
@@ -72,8 +72,14 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
     return () => cancelAnimationFrame(id);
   }, [isMobile]);
 
-  const filtered = tables.filter(
-    (t) => t.number.toString().includes(search) || t.qrCode.toLowerCase().includes(search.toLowerCase()),
+  const filtered = useMemo(
+    () =>
+      tables.filter(
+        (t) =>
+          t.number.toString().includes(search) ||
+          t.qrCode.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [tables, search],
   );
 
   function handleCreate() {
@@ -92,12 +98,20 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
     });
   }
 
-  const stats = [
-    { label: "Total", value: tables.length },
-    { label: "Disponibles", value: tables.filter((t) => t.status === "DISPONIBLE").length },
-    { label: "Ocupadas", value: tables.filter((t) => t.status === "OCUPADA").length },
-    { label: "Por limpiar", value: tables.filter((t) => t.status === "SUCIA").length },
-  ];
+  const stats = useMemo(() => {
+    let disponibles = 0, ocupadas = 0, sucias = 0;
+    for (const t of tables) {
+      if (t.status === "DISPONIBLE") disponibles++;
+      else if (t.status === "OCUPADA") ocupadas++;
+      else sucias++;
+    }
+    return [
+      { label: "Total",       value: tables.length },
+      { label: "Disponibles", value: disponibles    },
+      { label: "Ocupadas",    value: ocupadas       },
+      { label: "Por limpiar", value: sucias         },
+    ];
+  }, [tables]);
 
   return (
     <>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { Plus, Search, Edit2, Trash2 } from "lucide-react";
 import { toggleItemSoldOut, deleteMenuItem } from "@/actions/menu";
 
@@ -30,6 +30,7 @@ export default function MenuEditor({
   const [search, setSearch]                 = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("Todas");
   const [isPending, startTransition]        = useTransition();
+
   const [isAdding, setIsAdding]             = useState(false);
   const [newItem, setNewItem]               = useState({
     name: "", description: "", price: "", categoryId: "",
@@ -40,11 +41,20 @@ export default function MenuEditor({
     name: "", description: "", price: "", categoryId: "", isPopular: false,
   });
 
-  const CATEGORIES = ["Todas", ...initialCategories.map(c => c.name)];
+  const CATEGORIES = useMemo(
+    () => ["Todas", ...initialCategories.map(c => c.name)],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
-  const filtered = items.filter(item =>
-    (activeCategory === "Todas" || item.categoryName === activeCategory) &&
-    item.name.toLowerCase().includes(search.toLowerCase())
+  const filtered = useMemo(
+    () =>
+      items.filter(
+        item =>
+          (activeCategory === "Todas" || item.categoryName === activeCategory) &&
+          item.name.toLowerCase().includes(search.toLowerCase()),
+      ),
+    [items, activeCategory, search],
   );
 
   function handleCreateItem(e: React.FormEvent) {

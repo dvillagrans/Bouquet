@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Html5Qrcode } from "html5-qrcode";
 import { ScanLine, X, AlertCircle } from "lucide-react";
@@ -10,6 +10,27 @@ export default function ScannerScreen() {
   const [error, setError] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(true);
   const scannerRef = useRef<Html5Qrcode | null>(null);
+
+  const handleScan = useCallback((decodedText: string) => {
+    if (!isScanning) return;
+    setIsScanning(false);
+    if (scannerRef.current?.isScanning) {
+      scannerRef.current.stop().catch(console.error);
+    }
+    
+    try {
+      let tableCode = decodedText;
+      if (decodedText.includes('/mesa/')) {
+         const url = new URL(decodedText);
+         const parts = url.pathname.split('/');
+         tableCode = parts[parts.length - 1]; // usually the last part
+      }
+      
+      router.push(`/mesa/${tableCode}`);
+    } catch {
+      router.push(`/mesa/${decodedText}`);
+    }
+  }, [isScanning, router]);
 
   useEffect(() => {
     let mounted = true;
@@ -33,16 +54,15 @@ export default function ScannerScreen() {
                 handleScan(decodedText);
               }
             },
-            (errorMessage) => {
+            () => {
               // Ignore standard scanning frame errors
             }
           );
         } else {
-          setError("No se encontraron cámaras en este dispositivo.");
+          if (mounted) setError("No se encontraron cámaras en este dispositivo.");
         }
-      } catch (err: any) {
-        if (mounted) setError(err.message || 
-"No se pudo acceder a la cámara. Asegúrate de dar los permisos necesarios.");
+      } catch (err: unknown) {
+        if (mounted) setError((err as Error).message || "No se pudo acceder a la cámara. Asegúrate de dar los permisos necesarios.");
       }
     }
 
@@ -54,31 +74,7 @@ export default function ScannerScreen() {
         scannerRef.current.stop().catch(console.error);
       }
     };
-  }, []);
-
-  function handleScan(decodedText: string) {
-    if (!isScanning) return;
-    setIsScanning(false);
-    if (scannerRef.current?.isScanning) {
-      scannerRef.current.stop().catch(console.error);
-    }
-    
-    try {
-      // The QR code could be a full URL (https://domain.com/mesa/X7B9K2) 
-      // or just the raw layout ID
-      let tableCode = decodedText;
-      if (decodedText.includes('/mesa/')) {
-         const url = new URL(decodedText);
-         const parts = url.pathname.split('/');
-         tableCode = parts[parts.length - 1]; // usually the last part
-      }
-      
-      router.push(`/mesa/${tableCode}`);
-    } catch {
-      // For fallback if it's not a URL but raw string
-      router.push(`/mesa/${decodedText}`);
-    }
-  }
+  }, [handleScan]);
 
   return (
     <main className="relative flex min-h-[100dvh] flex-col items-center justify-center bg-ink overflow-hidden text-light">

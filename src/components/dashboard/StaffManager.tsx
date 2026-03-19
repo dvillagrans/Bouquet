@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { UserPlus, Trash2 } from "lucide-react";
 import { createStaffMember, deleteStaffMember, toggleStaffStatus } from "@/actions/staff";
 import { Staff } from "@/generated/prisma";
@@ -72,6 +72,18 @@ export default function StaffManager({ initialStaff }: { initialStaff: Staff[] }
       });
   }
 
+  const staffStats = useMemo(() => {
+    let activos = 0, inactivos = 0;
+    for (const s of staff) {
+      if (s.isActive) activos++; else inactivos++;
+    }
+    return [
+      { label: "Total",     value: staff.length },
+      { label: "Activos",   value: activos      },
+      { label: "Inactivos", value: inactivos    },
+    ];
+  }, [staff]);
+
   return (
     <div className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
 
@@ -96,11 +108,7 @@ export default function StaffManager({ initialStaff }: { initialStaff: Staff[] }
 
       {/* ── Stats strip ─────────────────────────────────────── */}
       <div className="mb-10 grid grid-cols-3 divide-x divide-wire border border-wire">
-        {[
-          { label: "Total",    value: staff.length                          },
-          { label: "Activos",  value: staff.filter(s => s.isActive).length    },
-          { label: "Inactivos",value: staff.filter(s => !s.isActive).length   },
-        ].map(({ label, value }, i) => (
+        {staffStats.map(({ label, value }, i) => (
           <div key={label} className="px-6 py-5" style={{ animation: `dash-stat-enter 0.4s cubic-bezier(0.22,1,0.36,1) ${0.1 + i * 0.06}s both` }}>
             <p className="text-[0.56rem] font-bold uppercase tracking-[0.28em] text-dim">{label}</p>
             <p className="mt-1 font-serif text-[2rem] font-semibold leading-none text-light">{value}</p>

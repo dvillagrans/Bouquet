@@ -20,17 +20,20 @@ export async function getStaffData() {
       { name: "El Chef",         role: roles[2], pin: "2222", active: true },
     ];
 
-    for (const d of defaults) {
-      await prisma.staff.create({
-        data: {
-          restaurantId: restaurant.id,
-          name: d.name,
-          role: d.role,
-          pin: d.pin,
-          isActive: d.active,
-        }
-      });
-    }
+    // Create all defaults in parallel — independent operations
+    await Promise.all(
+      defaults.map(d =>
+        prisma.staff.create({
+          data: {
+            restaurantId: restaurant.id,
+            name: d.name,
+            role: d.role,
+            pin: d.pin,
+            isActive: d.active,
+          },
+        })
+      )
+    );
 
     return await prisma.staff.findMany({
       where: { restaurantId: restaurant.id },

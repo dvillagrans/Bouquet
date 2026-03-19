@@ -19,21 +19,19 @@ export async function getMenuData() {
 
   // Crearlas si el usuario recién inicia
   if (categories.length === 0) {
-    for (let i = 0; i < DEFAULT_CATEGORIES.length; i++) {
-        await prisma.category.create({
-            data: {
-                name: DEFAULT_CATEGORIES[i],
-                order: i,
-                restaurantId: restaurant.id
-            }
-        });
-    }
+    // Create all default categories in parallel — independent operations
+    await Promise.all(
+      DEFAULT_CATEGORIES.map((name, i) =>
+        prisma.category.create({
+          data: { name, order: i, restaurantId: restaurant.id },
+        })
+      )
+    );
 
-    // Consultamos otra vez
     categories = await prisma.category.findMany({
-        where: { restaurantId: restaurant.id },
-        orderBy: { order: 'asc' },
-        include: { items: true }
+      where: { restaurantId: restaurant.id },
+      orderBy: { order: "asc" },
+      include: { items: true },
     });
   }
 

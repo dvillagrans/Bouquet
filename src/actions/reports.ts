@@ -19,25 +19,23 @@ export async function getDashboardReports(): Promise<DashboardReportData> {
 
   // Helper to fetch data for a specific period
   async function fetchPeriodData(startDate: Date, endDate: Date) {
-    const orders = await prisma.order.findMany({
-      where: {
-        restaurantId: restId,
-        createdAt: { gte: startDate, lte: endDate },
-        status: { in: ["READY", "DELIVERED"] }
-      },
-      include: {
-        items: {
-          include: { menuItem: true }
-        }
-      }
-    });
-
-    const sessions = await prisma.session.findMany({
-      where: {
-        table: { restaurantId: restId },
-        createdAt: { gte: startDate, lte: endDate }
-      }
-    });
+    // Fetch orders and sessions in parallel — independent queries
+    const [orders, sessions] = await Promise.all([
+      prisma.order.findMany({
+        where: {
+          restaurantId: restId,
+          createdAt: { gte: startDate, lte: endDate },
+          status: { in: ["READY", "DELIVERED"] },
+        },
+        include: { items: { include: { menuItem: true } } },
+      }),
+      prisma.session.findMany({
+        where: {
+          table: { restaurantId: restId },
+          createdAt: { gte: startDate, lte: endDate },
+        },
+      }),
+    ]);
 
     let totalVentas = 0;
     let totalPlatos = 0;
@@ -81,9 +79,12 @@ export async function getDashboardReports(): Promise<DashboardReportData> {
     };
   }
 
-  const hoyData = await fetchPeriodData(startOfDay(now), endOfDay(now));
-  const semanaData = await fetchPeriodData(startOfWeek(now, { weekStartsOn: 1 }), endOfDay(now));
-  const mesData = await fetchPeriodData(startOfMonth(now), endOfDay(now));
+  // Fetch all three periods in parallel — fully independent
+  const [hoyData, semanaData, mesData] = await Promise.all([
+    fetchPeriodData(startOfDay(now), endOfDay(now)),
+    fetchPeriodData(startOfWeek(now, { weekStartsOn: 1 }), endOfDay(now)),
+    fetchPeriodData(startOfMonth(now), endOfDay(now)),
+  ]);
 
   return {
     stats: {

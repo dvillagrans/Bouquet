@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 type TableAccessScreenProps = {
   tableCode: string;
   isLikelyValid: boolean;
+  tableNumber?: number;
 };
 
 export function TableAccessScreen({ tableCode, isLikelyValid }: TableAccessScreenProps) {

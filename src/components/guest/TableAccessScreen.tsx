@@ -10,7 +10,7 @@ type TableAccessScreenProps = {
   tableNumber?: number;
 };
 
-export function TableAccessScreen({ tableCode, isLikelyValid }: TableAccessScreenProps) {
+export function TableAccessScreen({ tableCode, isLikelyValid, tableNumber }: TableAccessScreenProps) {
   const router = useRouter();
   const [guestName, setGuestName] = useState("");
   const [partySize, setPartySize] = useState(2);

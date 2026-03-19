@@ -193,8 +193,9 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
   const [activeCategory, setCategory] = useState<string>("todos");
   const [drawerOpen, setDrawerOpen]   = useState(false);
   const [isPending, startTransition]  = useTransition();
+  const [orderSuccess, setOrderSuccess] = useState(false);
 
-  function handleCheckout() {
+      function handleCheckout() {
     startTransition(async () => {
       try {
         const orderItems = Object.entries(cart).map(([id, qty]) => ({
@@ -209,14 +210,19 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
           items: orderItems,
         });
 
-        // Al terminar, ir a pantalla de éxito/cuenta
-        router.push(`/mesa/${encodeURIComponent(tableCode)}/cuenta?guest=${encodeURIComponent(guestName)}&pax=${partySize}`);
+        // En lugar de ir a pagar, vaciamos carrito, cerramos cajon y avisamos que se mando a la cocina
+        setCart({});
+        setDrawerOpen(false);
+        setOrderSuccess(true);
+        setTimeout(() => setOrderSuccess(false), 3000);
       } catch (err) {
         console.error("No se pudo enviar la orden", err);
         alert("Ocurrió un error al enviar la orden. Intenta de nuevo.");
       }
     });
   }
+
+
 
   function setQty(id: string, qty: number) {
     setCart(prev => {

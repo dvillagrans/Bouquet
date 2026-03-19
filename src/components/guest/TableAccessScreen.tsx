@@ -6,15 +6,16 @@ import { useRouter } from "next/navigation";
 import { guestJoinTable } from "@/actions/comensal";
 
 type TableAccessScreenProps = {
+  existingPax?: number;
   tableCode: string;
   isLikelyValid: boolean;
   tableNumber?: number;
 };
 
-export function TableAccessScreen({ tableCode, isLikelyValid, tableNumber }: TableAccessScreenProps) {
+export function TableAccessScreen({ tableCode, isLikelyValid, tableNumber, existingPax }: TableAccessScreenProps) {
   const router = useRouter();
   const [guestName, setGuestName] = useState("");
-  const [partySize, setPartySize] = useState(2);
+  const [partySize, setPartySize] = useState(existingPax ?? 2);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -22,7 +23,7 @@ export function TableAccessScreen({ tableCode, isLikelyValid, tableNumber }: Tab
   const canContinue = isLikelyValid && guestName.trim().length >= 2 && partySize >= 1;
 
   function adjustParty(delta: number) {
-    setPartySize((prev) => Math.min(20, Math.max(1, prev + delta)));
+    setPartySize((prev: number) => Math.min(20, Math.max(1, prev + delta)));
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -163,65 +164,67 @@ export function TableAccessScreen({ tableCode, isLikelyValid, tableNumber }: Tab
             </div>
 
             {/* Party size — escribir número o usar +/− (1–20) */}
-            <div>
-              <label
-                htmlFor="party-size-input"
-                className="mb-3 sm:mb-5 block text-xs font-bold uppercase tracking-[0.34em] text-charcoal/30 sm:text-[0.57rem]"
-              >
-                Comensales
-              </label>
-              <div
-                className="flex items-center gap-3 border-b border-charcoal/14 pb-4 sm:pb-5"
-                role="group"
-                aria-label={`Comensales: ${partySize}. Escribe el número o usa los botones para cambiar.`}
-              >
-                <button
-                  type="button"
-                  onClick={() => adjustParty(-1)}
-                  disabled={partySize <= 1}
-                  aria-label="Restar comensal"
-                  className="flex h-11 min-w-11 shrink-0 items-center justify-center border border-charcoal/10 text-charcoal/40 transition-[color,background-color,transform] duration-100 ease-[cubic-bezier(0.25,1,0.5,1)] hover:border-charcoal/20 hover:text-charcoal active:scale-[0.98] active:bg-charcoal/5 disabled:opacity-20 touch-manipulation"
+            {existingPax ? null : (
+              <div>
+                <label
+                  htmlFor="party-size-input"
+                  className="mb-3 sm:mb-5 block text-xs font-bold uppercase tracking-[0.34em] text-charcoal/30 sm:text-[0.57rem]"
                 >
-                  <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
-                    <path d="M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
-                </button>
-
-                <input
-                  id="party-size-input"
-                  type="number"
-                  min={1}
-                  max={20}
-                  inputMode="numeric"
-                  value={partySize}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    if (v === "") {
-                      setPartySize(1);
-                      return;
-                    }
-                    const n = parseInt(v, 10);
-                    if (!Number.isNaN(n)) {
-                      setPartySize(Math.min(20, Math.max(1, n)));
-                    }
-                  }}
-                  aria-label="Cantidad de comensales"
-                  className="w-14 flex-1 min-w-0 border-0 bg-transparent text-center text-[1.5rem] font-semibold tabular-nums text-charcoal outline-none transition-opacity duration-150 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none sm:text-[1.6rem]"
-                />
-
-                <button
-                  type="button"
-                  onClick={() => adjustParty(1)}
-                  disabled={partySize >= 20}
-                  aria-label="Sumar comensal"
-                  className="flex h-11 min-w-11 shrink-0 items-center justify-center border border-charcoal/10 text-charcoal/40 transition-[color,background-color,transform] duration-100 ease-[cubic-bezier(0.25,1,0.5,1)] hover:border-charcoal/20 hover:text-charcoal active:scale-[0.98] active:bg-charcoal/5 disabled:opacity-20 touch-manipulation"
+                  Comensales
+                </label>
+                <div
+                  className="flex items-center gap-3 border-b border-charcoal/14 pb-4 sm:pb-5"
+                  role="group"
+                  aria-label={`Comensales: ${partySize}. Escribe el número o usa los botones para cambiar.`}
                 >
-                  <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
-                    <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => adjustParty(-1)}
+                    disabled={partySize <= 1}
+                    aria-label="Restar comensal"
+                    className="flex h-11 min-w-11 shrink-0 items-center justify-center border border-charcoal/10 text-charcoal/40 transition-[color,background-color,transform] duration-100 ease-[cubic-bezier(0.25,1,0.5,1)] hover:border-charcoal/20 hover:text-charcoal active:scale-[0.98] active:bg-charcoal/5 disabled:opacity-20 touch-manipulation"
+                  >
+                    <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
+                      <path d="M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </button>
+
+                  <input
+                    id="party-size-input"
+                    type="number"
+                    min={1}
+                    max={20}
+                    inputMode="numeric"
+                    value={partySize}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "") {
+                        setPartySize(1);
+                        return;
+                      }
+                      const n = parseInt(v, 10);
+                      if (!Number.isNaN(n)) {
+                        setPartySize(Math.min(20, Math.max(1, n)));
+                      }
+                    }}
+                    aria-label="Cantidad de comensales"
+                    className="w-14 flex-1 min-w-0 border-0 bg-transparent text-center text-[1.5rem] font-semibold tabular-nums text-charcoal outline-none transition-opacity duration-150 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none sm:text-[1.6rem]"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => adjustParty(1)}
+                    disabled={partySize >= 20}
+                    aria-label="Sumar comensal"
+                    className="flex h-11 min-w-11 shrink-0 items-center justify-center border border-charcoal/10 text-charcoal/40 transition-[color,background-color,transform] duration-100 ease-[cubic-bezier(0.25,1,0.5,1)] hover:border-charcoal/20 hover:text-charcoal active:scale-[0.98] active:bg-charcoal/5 disabled:opacity-20 touch-manipulation"
+                  >
+                    <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
+                      <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {submitError && (
               <p

@@ -36,11 +36,20 @@ export default async function TableAccessPage({ params }: TablePageProps) {
     }
   }
 
+  // Revisamos si la mesa YA tiene una sesion activa
+  const existingSessionForTable = await prisma.session.findFirst({
+    where: { 
+      table: { qrCode: decodedCode }, 
+      isActive: true 
+    },
+    select: { pax: true }
+  });
+
   const table = await prisma.table.findUnique({
     where: { qrCode: decodedCode }
   });
 
-  return <TableAccessScreen tableCode={decodedCode} isLikelyValid={!!table && table.status !== "SUCIA"} tableNumber={table?.number} />;
+  return <TableAccessScreen tableCode={decodedCode} isLikelyValid={!!table && table.status !== "SUCIA"} tableNumber={table?.number} existingPax={existingSessionForTable?.pax} />;
 }
 
 export async function generateMetadata({ params }: TablePageProps): Promise<Metadata> {

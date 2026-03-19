@@ -2,100 +2,147 @@
 
 import { prisma } from "@/lib/prisma";
 import { getDefaultRestaurant } from "./restaurant";
-import { OrderStatus } from "@/generated/prisma";
-import { startOfDay, startOfWeek, startOfMonth, subDays, subWeeks, subMonths, endOfDay } from "date-fns";
+import {
+  startOfDay, startOfWeek, startOfMonth,
+  subDays, subWeeks, subMonths, endOfDay,
+} from "date-fns";
 
 export type Period = "Hoy" | "Semana" | "Mes";
 
 export interface DashboardReportData {
-  stats: Record<Period, { label: string; value: string; change: string; up: boolean; }[]>;
-  topItems: Record<Period, { name: string; sold: number; revenue: string }[]>;
+  stats:     Record<Period, { label: string; value: string; change: string; up: boolean }[]>;
+  topItems:  Record<Period, { name: string; sold: number; revenue: string; maxSold: number }[]>;
+  chartData: Record<Period, { label: string; value: number }[]>;
+}
+
+interface PeriodRaw {
+  totalVentas:    number;
+  ticketPromedio: number;
+  mesasAtendidas: number;
+  totalPlatos:    number;
+  topItems:       { name: string; sold: number; revenue: number }[];
+  chartData:      { label: string; value: number }[];
+}
+
+const DAY_LABELS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+async function fetchPeriodData(
+  restId:    string,
+  startDate: Date,
+  endDate:   Date,
+  mode:      "hoy" | "semana" | "mes",
+): Promise<PeriodRaw> {
+  const [orders, sessions] = await Promise.all([
+    prisma.order.findMany({
+      where: {
+        restaurantId: restId,
+        createdAt:    { gte: startDate, lte: endDate },
+        status:       { in: ["READY", "DELIVERED"] },
+      },
+      include: { items: { include: { menuItem: true } } },
+    }),
+    prisma.session.findMany({
+      where: { table: { restaurantId: restId }, createdAt: { gte: startDate, lte: endDate } },
+    }),
+  ]);
+
+  let totalVentas = 0;
+  let totalPlatos = 0;
+  const itemMap:  Record<string, { name: string; sold: number; revenue: number }> = {};
+  const timeMap:  Record<string, number> = {};
+
+  for (const o of orders) {
+    const d = new Date(o.createdAt);
+    let timeKey: string;
+    if      (mode === "hoy")    timeKey = String(d.getHours());
+    else if (mode === "semana") timeKey = String(d.getDay());
+    else                        timeKey = String(Math.floor((d.getDate() - 1) / 7));
+
+    for (const i of o.items) {
+      const line = i.quantity * i.priceAtTime;
+      totalVentas += line;
+      totalPlatos += i.quantity;
+      timeMap[timeKey] = (timeMap[timeKey] ?? 0) + line;
+
+      const key = i.menuItem.name;
+      if (!itemMap[key]) itemMap[key] = { name: key, sold: 0, revenue: 0 };
+      itemMap[key].sold    += i.quantity;
+      itemMap[key].revenue += line;
+    }
+  }
+
+  const mesasAtendidas = sessions.length;
+  const ticketPromedio = mesasAtendidas > 0 ? totalVentas / mesasAtendidas : 0;
+  const topItems = Object.values(itemMap).sort((a, b) => b.sold - a.sold).slice(0, 5);
+
+  let chartData: { label: string; value: number }[];
+  if (mode === "hoy") {
+    chartData = Array.from({ length: 14 }, (_, i) => {
+      const h = i + 9;
+      return { label: `${h}h`, value: timeMap[String(h)] ?? 0 };
+    });
+  } else if (mode === "semana") {
+    chartData = [1, 2, 3, 4, 5, 6, 0].map(dayIdx => ({
+      label: DAY_LABELS[dayIdx],
+      value: timeMap[String(dayIdx)] ?? 0,
+    }));
+  } else {
+    chartData = Array.from({ length: 5 }, (_, i) => ({
+      label: `Sem ${i + 1}`,
+      value: timeMap[String(i)] ?? 0,
+    }));
+  }
+
+  return { totalVentas, ticketPromedio, mesasAtendidas, totalPlatos, topItems, chartData };
+}
+
+function fmtCurrency(n: number) {
+  return `$${n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+}
+
+function calcChange(curr: number, prev: number): { change: string; up: boolean } {
+  if (prev === 0) return { change: "—", up: true };
+  const pct = ((curr - prev) / prev) * 100;
+  return { change: `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`, up: pct >= 0 };
+}
+
+function buildStats(curr: PeriodRaw, prev: PeriodRaw) {
+  return [
+    { label: "Ventas totales",  value: fmtCurrency(curr.totalVentas),    ...calcChange(curr.totalVentas,    prev.totalVentas)    },
+    { label: "Ticket promedio", value: fmtCurrency(curr.ticketPromedio),  ...calcChange(curr.ticketPromedio, prev.ticketPromedio)  },
+    { label: "Mesas atendidas", value: `${curr.mesasAtendidas}`,          ...calcChange(curr.mesasAtendidas, prev.mesasAtendidas)  },
+    { label: "Platos vendidos", value: `${curr.totalPlatos}`,             ...calcChange(curr.totalPlatos,    prev.totalPlatos)     },
+  ];
+}
+
+function buildTopItems(raw: PeriodRaw) {
+  const maxSold = raw.topItems[0]?.sold ?? 1;
+  return raw.topItems.map(item => ({
+    name:    item.name,
+    sold:    item.sold,
+    revenue: fmtCurrency(item.revenue),
+    maxSold,
+  }));
 }
 
 export async function getDashboardReports(): Promise<DashboardReportData> {
   const restaurant = await getDefaultRestaurant();
-  const restId = restaurant.id;
-  const now = new Date();
+  const restId     = restaurant.id;
+  const now        = new Date();
 
-  // Helper to fetch data for a specific period
-  async function fetchPeriodData(startDate: Date, endDate: Date) {
-    // Fetch orders and sessions in parallel — independent queries
-    const [orders, sessions] = await Promise.all([
-      prisma.order.findMany({
-        where: {
-          restaurantId: restId,
-          createdAt: { gte: startDate, lte: endDate },
-          status: { in: ["READY", "DELIVERED"] },
-        },
-        include: { items: { include: { menuItem: true } } },
-      }),
-      prisma.session.findMany({
-        where: {
-          table: { restaurantId: restId },
-          createdAt: { gte: startDate, lte: endDate },
-        },
-      }),
-    ]);
-
-    let totalVentas = 0;
-    let totalPlatos = 0;
-    const itemSoldCount: Record<string, { name: string, sold: number, revenue: number }> = {};
-
-    for (const o of orders) {
-      for (const i of o.items) {
-        const lineTotal = i.quantity * i.priceAtTime;
-        totalVentas += lineTotal;
-        totalPlatos += i.quantity;
-
-        const itemName = i.menuItem.name;
-        if (!itemSoldCount[itemName]) {
-          itemSoldCount[itemName] = { name: itemName, sold: 0, revenue: 0 };
-        }
-        itemSoldCount[itemName].sold += i.quantity;
-        itemSoldCount[itemName].revenue += lineTotal;
-      }
-    }
-
-    const mesasAtendidas = sessions.length;
-    const ticketPromedio = mesasAtendidas > 0 ? totalVentas / mesasAtendidas : 0;
-
-    const topItemsArray = Object.values(itemSoldCount)
-      .sort((a, b) => b.sold - a.sold)
-      .slice(0, 5)
-      .map(item => ({
-        name: item.name,
-        sold: item.sold,
-        revenue: `$${item.revenue.toFixed(2)}`
-      }));
-
-    return {
-      stats: [
-        { label: "Ventas totales", value: `${totalVentas.toFixed(2)}`, change: "--", up: true },
-        { label: "Ticket promedio", value: `${ticketPromedio.toFixed(2)}`, change: "--", up: true },
-        { label: "Mesas atendidas", value: `${mesasAtendidas}`, change: "--", up: true },
-        { label: "Platos vendidos", value: `${totalPlatos}`, change: "--", up: true }
-      ],
-      topItems: topItemsArray
-    };
-  }
-
-  // Fetch all three periods in parallel — fully independent
-  const [hoyData, semanaData, mesData] = await Promise.all([
-    fetchPeriodData(startOfDay(now), endOfDay(now)),
-    fetchPeriodData(startOfWeek(now, { weekStartsOn: 1 }), endOfDay(now)),
-    fetchPeriodData(startOfMonth(now), endOfDay(now)),
+  // 6 parallel fetches: current + comparison period for each of Hoy / Semana / Mes
+  const [hoy, semana, mes, hoyPrev, semanaPrev, mesPrev] = await Promise.all([
+    fetchPeriodData(restId, startOfDay(now),                              endOfDay(now),                              "hoy"),
+    fetchPeriodData(restId, startOfWeek(now, { weekStartsOn: 1 }),        endOfDay(now),                              "semana"),
+    fetchPeriodData(restId, startOfMonth(now),                            endOfDay(now),                              "mes"),
+    fetchPeriodData(restId, startOfDay(subDays(now, 1)),                  endOfDay(subDays(now, 1)),                  "hoy"),
+    fetchPeriodData(restId, startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 }), endOfDay(subWeeks(now, 1)),           "semana"),
+    fetchPeriodData(restId, startOfMonth(subMonths(now, 1)),              endOfDay(subMonths(now, 1)),                "mes"),
   ]);
 
   return {
-    stats: {
-      Hoy: hoyData.stats,
-      Semana: semanaData.stats,
-      Mes: mesData.stats,
-    },
-    topItems: {
-      Hoy: hoyData.topItems,
-      Semana: semanaData.topItems,
-      Mes: mesData.topItems,
-    }
+    stats:    { Hoy: buildStats(hoy, hoyPrev),       Semana: buildStats(semana, semanaPrev),       Mes: buildStats(mes, mesPrev)       },
+    topItems: { Hoy: buildTopItems(hoy),              Semana: buildTopItems(semana),                Mes: buildTopItems(mes)              },
+    chartData:{ Hoy: hoy.chartData,                   Semana: semana.chartData,                     Mes: mes.chartData                   },
   };
 }

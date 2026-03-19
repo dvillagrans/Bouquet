@@ -25,7 +25,6 @@ export async function submitComensalOrder({
 
   if (!table) throw new Error("Mesa no encontrada: " + tableCode);
   if (table.status === "SUCIA") throw new Error("La mesa esta siendo limpiada, pide al personal que la habilite.");
-  if (table.status === "SUCIA") throw new Error("La mesa esta siendo limpiada, pide al personal que la habilite.");
 
   // Buscar o crear la sesión del comensal (simplificado: siempre creamos una o reusamos la de esta mesa hoy)
   let session = await prisma.session.findFirst({

@@ -251,7 +251,7 @@ export default function KDSBoard({ initialOrders }: { initialOrders: Order[] }) 
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [view, setView]               = useState<ViewMode>("activas");
-  const [station, setStation]         = useState<StationFilter>("todas");
+  const [station, setStation]         = useState<StationFilter>(defaultStation);
 
   useEffect(() => {
     const id = setInterval(() => setCurrentTime(new Date()), 60000);

@@ -19,17 +19,24 @@ type CategoryDB = {
   name: string;
 };
 
-export default function MenuEditor({ initialCategories, initialItems }: { initialCategories: CategoryDB[], initialItems: MenuItemDB[] }) {
-  const [items, setItems]               = useState<MenuItemDB[]>(initialItems);
-  const [search, setSearch]             = useState("");
+export default function MenuEditor({
+  initialCategories,
+  initialItems,
+}: {
+  initialCategories: CategoryDB[];
+  initialItems: MenuItemDB[];
+}) {
+  const [items, setItems]                   = useState<MenuItemDB[]>(initialItems);
+  const [search, setSearch]                 = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("Todas");
-  const [isPending, startTransition] = useTransition();
-  const [isAdding, setIsAdding] = useState(false);
-  const [newItem, setNewItem] = useState({
-    name: "", description: "", price: "", categoryId: "", isPopular: false, station: "COCINA" as "COCINA" | "BARRA"
+  const [isPending, startTransition]        = useTransition();
+  const [isAdding, setIsAdding]             = useState(false);
+  const [newItem, setNewItem]               = useState({
+    name: "", description: "", price: "", categoryId: "",
+    isPopular: false, station: "COCINA" as "COCINA" | "BARRA",
   });
   const [editingItem, setEditingItem] = useState<MenuItemDB | null>(null);
-  const [editForm, setEditForm] = useState({
+  const [editForm, setEditForm]       = useState({
     name: "", description: "", price: "", categoryId: "", isPopular: false,
   });
 
@@ -52,11 +59,10 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
         price: parseFloat(newItem.price),
         categoryId: newItem.categoryId,
         isPopular: newItem.isPopular,
-        station: newItem.station
+        station: newItem.station,
       });
 
       const catName = initialCategories.find(c => c.id === newItem.categoryId)?.name || "";
-      
       setItems(prev => [...prev, { ...created, categoryName: catName }]);
       setIsAdding(false);
       setNewItem({ name: "", description: "", price: "", categoryId: "", isPopular: false, station: "COCINA" });
@@ -80,14 +86,12 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
 
     const catName = initialCategories.find(c => c.id === editForm.categoryId)?.name || editingItem.categoryName;
 
-    setItems(prev => prev.map(item => item.id === editingItem.id ? {
-      ...item,
-      name: editForm.name,
-      description: editForm.description || null,
-      price: parseFloat(editForm.price),
-      categoryName: catName,
-      isPopular: editForm.isPopular,
-    } : item));
+    setItems(prev => prev.map(item =>
+      item.id === editingItem.id
+        ? { ...item, name: editForm.name, description: editForm.description || null,
+            price: parseFloat(editForm.price), categoryName: catName, isPopular: editForm.isPopular }
+        : item
+    ));
     setEditingItem(null);
 
     startTransition(async () => {
@@ -103,25 +107,28 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
   }
 
   function handleToggleSoldOut(id: string, currentStatus: boolean) {
-    // Optimistic update
     setItems(items.map(item => item.id === id ? { ...item, isSoldOut: !currentStatus } : item));
-    startTransition(async () => {
-      await toggleItemSoldOut(id, currentStatus);
-    });
+    startTransition(async () => { await toggleItemSoldOut(id, currentStatus); });
   }
 
   function handleDelete(id: string) {
     setItems(items.filter(item => item.id !== id));
-    startTransition(async () => {
-      await deleteMenuItem(id);
-    });
+    startTransition(async () => { await deleteMenuItem(id); });
   }
+
+  /* ── Shared form field classes ── */
+  const inputCls = "h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30";
+  const selectCls = "h-10 w-full cursor-pointer appearance-none border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30";
+  const labelCls = "mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim";
 
   return (
     <div className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
 
-      {/* ── Header ──────────────────────────────────────────── */}
-      <div className="mb-10 border-b border-wire pb-8" style={{ animation: "reveal-up 0.5s cubic-bezier(0.22,1,0.36,1) both" }}>
+      {/* ── Header ────────────────────────────────────────────── */}
+      <div
+        className="mb-10 border-b border-wire pb-8"
+        style={{ animation: "reveal-up 0.5s cubic-bezier(0.22,1,0.36,1) both" }}
+      >
         <p className="mb-2 text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">
           Gestión de menú
         </p>
@@ -131,7 +138,10 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
           </h1>
           <div className="flex items-center gap-3">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-dim/50" aria-hidden="true" />
+              <Search
+                className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-dim/50"
+                aria-hidden="true"
+              />
               <input
                 type="text"
                 placeholder="Buscar platillo…"
@@ -140,7 +150,7 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
                 className="h-10 w-52 border border-wire bg-transparent pl-8 pr-4 text-[0.78rem] text-light placeholder:text-dim/40 outline-none transition-colors focus:border-light/20"
               />
             </div>
-            <button 
+            <button
               onClick={() => setIsAdding(true)}
               className="inline-flex h-10 items-center gap-2 border border-wire px-4 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light"
             >
@@ -151,32 +161,33 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
         </div>
       </div>
 
-      {/* ── Modal: Formulario Nuevo Platillo ───────────────── */}
+      {/* ── Modal: Nuevo platillo ─────────────────────────────── */}
       {isAdding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-6 backdrop-blur-sm">
-          <div className="w-full max-w-md border border-wire bg-canvas p-8">
+          <div
+            className="w-full max-w-md border border-wire bg-canvas p-8"
+            style={{ animation: "scale-in 0.3s cubic-bezier(0.22,1,0.36,1) both" }}
+          >
             <p className="mb-1 text-[0.52rem] font-bold uppercase tracking-[0.44em] text-dim">Registro</p>
             <h2 className="mb-8 font-serif text-[1.6rem] font-medium leading-none text-light">Nuevo Platillo</h2>
 
             <form onSubmit={handleCreateItem} className="flex flex-col gap-5">
               <div>
-                <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">Nombre</label>
-                <input required type="text" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className="h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30" />
+                <label className={labelCls}>Nombre</label>
+                <input required type="text" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className={inputCls} />
               </div>
-
               <div>
-                <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">Descripción</label>
+                <label className={labelCls}>Descripción</label>
                 <textarea rows={2} value={newItem.description} onChange={e => setNewItem({ ...newItem, description: e.target.value })} className="w-full resize-none border border-wire bg-transparent p-3 text-[0.8rem] text-light outline-none focus:border-light/30" />
               </div>
-
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">Precio</label>
-                  <input required type="number" min="0" step="0.01" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} className="h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30" />
+                  <label className={labelCls}>Precio</label>
+                  <input required type="number" min="0" step="0.01" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} className={inputCls} />
                 </div>
                 <div className="flex-1">
-                  <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">Categoría</label>
-                  <select required value={newItem.categoryId} onChange={e => setNewItem({ ...newItem, categoryId: e.target.value })} className="h-10 w-full cursor-pointer appearance-none border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30">
+                  <label className={labelCls}>Categoría</label>
+                  <select required value={newItem.categoryId} onChange={e => setNewItem({ ...newItem, categoryId: e.target.value })} className={selectCls}>
                     <option value="" className="bg-ink text-dim">Seleccionar</option>
                     {initialCategories.map(c => (
                       <option key={c.id} value={c.id} className="bg-ink">{c.name}</option>
@@ -184,11 +195,10 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
                   </select>
                 </div>
               </div>
-
               <div className="flex gap-4">
-                 <div className="flex-1">
-                  <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">KDS Estación</label>
-                  <select required value={newItem.station} onChange={e => setNewItem({ ...newItem, station: e.target.value as "COCINA"|"BARRA" })} className="h-10 w-full cursor-pointer appearance-none border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30">
+                <div className="flex-1">
+                  <label className={labelCls}>KDS Estación</label>
+                  <select required value={newItem.station} onChange={e => setNewItem({ ...newItem, station: e.target.value as "COCINA" | "BARRA" })} className={selectCls}>
                     <option value="COCINA" className="bg-ink">Cocina</option>
                     <option value="BARRA" className="bg-ink">Barra</option>
                   </select>
@@ -200,8 +210,7 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
                   </label>
                 </div>
               </div>
-
-              <div className="mt-4 flex gap-3 pt-4 border-t border-wire/50">
+              <div className="mt-2 flex gap-3 border-t border-wire/50 pt-5">
                 <button type="button" onClick={() => setIsAdding(false)} className="flex-1 border border-wire py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light">
                   Cancelar
                 </button>
@@ -214,32 +223,33 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
         </div>
       )}
 
-      {/* ── Modal: Editar Platillo ──────────────────────────── */}
+      {/* ── Modal: Editar platillo ────────────────────────────── */}
       {editingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-6 backdrop-blur-sm">
-          <div className="w-full max-w-md border border-wire bg-canvas p-8">
+          <div
+            className="w-full max-w-md border border-wire bg-canvas p-8"
+            style={{ animation: "scale-in 0.3s cubic-bezier(0.22,1,0.36,1) both" }}
+          >
             <p className="mb-1 text-[0.52rem] font-bold uppercase tracking-[0.44em] text-dim">Edición</p>
             <h2 className="mb-8 font-serif text-[1.6rem] font-medium leading-none text-light">Editar platillo</h2>
 
             <form onSubmit={handleEditItem} className="flex flex-col gap-5">
               <div>
-                <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">Nombre</label>
-                <input required type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30" />
+                <label className={labelCls}>Nombre</label>
+                <input required type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className={inputCls} />
               </div>
-
               <div>
-                <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">Descripción</label>
+                <label className={labelCls}>Descripción</label>
                 <textarea rows={2} value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="w-full resize-none border border-wire bg-transparent p-3 text-[0.8rem] text-light outline-none focus:border-light/30" />
               </div>
-
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">Precio</label>
-                  <input required type="number" min="0" step="0.01" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })} className="h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30" />
+                  <label className={labelCls}>Precio</label>
+                  <input required type="number" min="0" step="0.01" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })} className={inputCls} />
                 </div>
                 <div className="flex-1">
-                  <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">Categoría</label>
-                  <select required value={editForm.categoryId} onChange={e => setEditForm({ ...editForm, categoryId: e.target.value })} className="h-10 w-full cursor-pointer appearance-none border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none focus:border-light/30">
+                  <label className={labelCls}>Categoría</label>
+                  <select required value={editForm.categoryId} onChange={e => setEditForm({ ...editForm, categoryId: e.target.value })} className={selectCls}>
                     <option value="" className="bg-ink text-dim">Seleccionar</option>
                     {initialCategories.map(c => (
                       <option key={c.id} value={c.id} className="bg-ink">{c.name}</option>
@@ -247,15 +257,13 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
                   </select>
                 </div>
               </div>
-
               <div className="flex items-center gap-2 pt-1">
                 <label className="flex cursor-pointer items-center gap-2">
                   <input type="checkbox" checked={editForm.isPopular} onChange={e => setEditForm({ ...editForm, isPopular: e.target.checked })} className="accent-glow" />
                   <span className="text-[0.7rem] text-light">Es Platillo Top</span>
                 </label>
               </div>
-
-              <div className="mt-4 flex gap-3 border-t border-wire/50 pt-4">
+              <div className="mt-2 flex gap-3 border-t border-wire/50 pt-5">
                 <button type="button" onClick={() => setEditingItem(null)} className="flex-1 border border-wire py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light">
                   Cancelar
                 </button>
@@ -268,14 +276,17 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
         </div>
       )}
 
-      {/* ── Category tabs ───────────────────────────────────── */}
-      <div className="mb-8 flex border-b border-wire overflow-x-auto scrollbar-hide" style={{ animation: "fade-in 0.4s ease-out 0.15s both" }}>
+      {/* ── Category tabs ─────────────────────────────────────── */}
+      <div
+        className="mb-8 flex overflow-x-auto border-b border-wire scrollbar-hide"
+        style={{ animation: "fade-in 0.4s ease-out 0.15s both" }}
+      >
         {CATEGORIES.map(cat => (
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
             className={[
-              "shrink-0 px-5 pb-3 pt-2 text-[0.65rem] font-bold uppercase tracking-[0.22em] transition-colors whitespace-nowrap",
+              "shrink-0 whitespace-nowrap px-5 pb-3 pt-2 text-[0.65rem] font-bold uppercase tracking-[0.22em] transition-colors",
               activeCategory === cat
                 ? "border-b-[1.5px] border-glow text-glow"
                 : "text-dim hover:text-light",
@@ -286,9 +297,9 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
         ))}
       </div>
 
-      {/* ── Items list ──────────────────────────────────────── */}
+      {/* ── Items grid ────────────────────────────────────────── */}
       {filtered.length === 0 ? (
-        <div className="border border-dashed border-wire py-16 text-center">
+        <div className="border border-dashed border-wire py-20 text-center">
           <p className="text-[0.8rem] font-medium text-dim">No se encontraron platillos.</p>
           <button
             onClick={() => { setSearch(""); setActiveCategory("Todas"); }}
@@ -298,79 +309,91 @@ export default function MenuEditor({ initialCategories, initialItems }: { initia
           </button>
         </div>
       ) : (
-        <div className="divide-y divide-wire border-t border-wire">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((item, i) => (
-            <div key={item.id} className="group flex flex-wrap items-center gap-4 py-4 transition-colors duration-150 hover:bg-ink/40 sm:flex-nowrap sm:gap-5" style={{ animation: `dash-row-enter 0.35s cubic-bezier(0.22,1,0.36,1) ${0.25 + Math.min(i * 0.05, 0.25)}s both` }}>
+            <div
+              key={item.id}
+              className="group flex flex-col border border-wire bg-canvas transition-all duration-200 hover:border-light/20"
+              style={{
+                animation: `dash-row-enter 0.35s cubic-bezier(0.22,1,0.36,1) ${0.18 + Math.min(i * 0.04, 0.28)}s both`,
+              }}
+            >
+              {/* Card body */}
+              <div className="flex flex-1 flex-col p-5">
 
-              {/* Name + desc */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-baseline gap-2">
-                  <p className="text-[0.85rem] font-semibold text-light">{item.name}</p>
-                  {item.isPopular && (
-                    <span className="border border-glow/40 px-1.5 py-0.5 text-[0.52rem] font-bold uppercase tracking-[0.18em] text-glow">
-                      Top
-                    </span>
+                {/* Name + badges */}
+                <div className="mb-3">
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    <p className="text-[0.88rem] font-semibold leading-tight text-light">
+                      {item.name}
+                    </p>
+                    {item.isPopular && (
+                      <span className="border border-glow/40 px-1.5 py-0.5 text-[0.5rem] font-bold uppercase tracking-[0.18em] text-glow">
+                        Top
+                      </span>
+                    )}
+                  </div>
+                  {item.description && (
+                    <p className="mt-1.5 line-clamp-2 text-[0.68rem] font-medium leading-relaxed text-dim">
+                      {item.description}
+                    </p>
                   )}
                 </div>
-                <p className="mt-0.5 truncate text-[0.7rem] font-medium text-dim max-w-xs">
-                  {item.description}
+
+                {/* Category pill */}
+                <p className="text-[0.54rem] font-bold uppercase tracking-[0.26em] text-dim/50">
+                  {item.categoryName}
                 </p>
               </div>
 
-              {/* Category */}
-              <div className="hidden w-36 shrink-0 md:block">
-                <p className="text-[0.55rem] font-bold uppercase tracking-[0.24em] text-dim">Categoría</p>
-                <p className="mt-0.5 text-[0.75rem] font-medium text-light">{item.categoryName}</p>
-              </div>
-
-              {/* Price */}
-              <div className="w-20 shrink-0 text-right">
-                <p className="font-serif text-[1rem] font-semibold text-light">
+              {/* Card footer */}
+              <div className="flex items-center justify-between gap-3 border-t border-wire px-5 py-3">
+                {/* Price */}
+                <p className="font-serif text-[1.15rem] font-semibold text-light">
                   ${item.price.toFixed(0)}
                 </p>
-              </div>
 
-              {/* Status toggle */}
-              <div className="w-28 shrink-0">
-                <button
-                  onClick={() => handleToggleSoldOut(item.id, item.isSoldOut)}
-                  disabled={isPending}
-                  className={[
-                    "inline-flex items-center gap-1.5 border px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.2em] transition-colors disabled:opacity-50",
-                    item.isSoldOut
-                      ? "border-ember/40 text-ember hover:border-ember hover:bg-ember/10"
-                      : "border-sage-deep/40 text-sage-deep hover:border-sage-deep hover:bg-sage-deep/10",
-                  ].join(" ")}
-                >
-                  <span className={`h-1.5 w-1.5 rounded-full ${item.isSoldOut ? "bg-ember" : "bg-sage-deep"}`} aria-hidden="true" />
-                  {item.isSoldOut ? "Agotado" : "Disponible"}
-                </button>
-              </div>
+                {/* Status + actions */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleToggleSoldOut(item.id, item.isSoldOut)}
+                    disabled={isPending}
+                    className={[
+                      "flex items-center gap-1.5 border px-2.5 py-1 text-[0.58rem] font-bold uppercase tracking-[0.2em] transition-colors disabled:opacity-50",
+                      item.isSoldOut
+                        ? "border-ember/40 text-ember hover:border-ember hover:bg-ember/10"
+                        : "border-sage-deep/40 text-sage-deep hover:border-sage-deep hover:bg-sage-deep/10",
+                    ].join(" ")}
+                  >
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${item.isSoldOut ? "bg-ember" : "bg-sage-deep"}`}
+                      aria-hidden="true"
+                    />
+                    {item.isSoldOut ? "Agotado" : "Disponible"}
+                  </button>
 
-              {/* Actions */}
-              <div className="flex items-center gap-2 opacity-100 transition-opacity duration-150 lg:opacity-0 lg:group-hover:opacity-100">
-                <button
-                  onClick={() => openEdit(item)}
-                  aria-label={`Editar ${item.name}`}
-                  className="flex h-9 w-9 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light"
-                >
-                  <Edit2 className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  disabled={isPending}
-                  aria-label={`Eliminar ${item.name}`}
-                  className="flex h-9 w-9 items-center justify-center border border-wire text-dim transition-colors hover:border-ember/40 hover:text-ember disabled:opacity-50"
-                >
-                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-              </div>
+                  <button
+                    onClick={() => openEdit(item)}
+                    aria-label={`Editar ${item.name}`}
+                    className="flex h-8 w-8 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
 
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    disabled={isPending}
+                    aria-label={`Eliminar ${item.name}`}
+                    className="flex h-8 w-8 items-center justify-center border border-wire text-dim transition-colors hover:border-ember/40 hover:text-ember disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
             </div>
           ))}
         </div>
       )}
-
     </div>
   );
 }

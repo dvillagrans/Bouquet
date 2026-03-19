@@ -96,7 +96,16 @@ export function SplitBillScreen({ tableCode, guestName, partySize, initialBill }
   function handlePay() {
     startTransition(async () => {
       try {
-        await requestBillAndPay(tableCode);
+        await requestBillAndPay({
+          tableCode,
+          splitMode: mode === "equal" ? "EQUAL" : "FULL",
+          splitCount,
+          tipRate,
+          tipAmount: tip,
+          totalAmount: total,
+          amountPaid: myShare,
+          paymentMethod: "CARD",
+        });
         setConfirmed(true);
       } catch (err) {
         console.error(err);

@@ -177,8 +177,22 @@ export async function guestJoinTable(tableCode: string, guestName: string, pax: 
   return true;
 }
 
-export async function requestBillAndPay(tableCode: string) {
-  const table = await prisma.table.findUnique({ where: { qrCode: tableCode } });
+interface RequestBillAndPayInput {
+  tableCode: string;
+  splitMode?: "EQUAL" | "FULL";
+  splitCount?: number;
+  tipRate?: number;
+  tipAmount?: number;
+  totalAmount?: number;
+  amountPaid?: number;
+  paymentMethod?: "CASH" | "CARD" | "TRANSFER" | "OTHER";
+}
+
+export async function requestBillAndPay(input: RequestBillAndPayInput) {
+  const table = await prisma.table.findUnique({
+    where: { qrCode: input.tableCode },
+    include: { restaurant: true }
+  });
   if (!table) throw new Error("Mesa no encontrada");
 
   const session = await prisma.session.findFirst({
@@ -188,19 +202,66 @@ export async function requestBillAndPay(tableCode: string) {
 
   if (!session) throw new Error("No hay sesion activa");
 
-  await prisma.session.update({
-    where: { id: session.id },
-    data: { isActive: false }
+  const billItems = await prisma.orderItem.findMany({
+    where: { sessionId: session.id },
+    select: { quantity: true, priceAtTime: true }
   });
 
-  await prisma.table.update({
-    where: { id: table.id },
-    data: { status: "SUCIA" }
+  const subtotal = billItems.reduce((sum, item) => sum + (item.quantity * item.priceAtTime), 0);
+  const tipRate = typeof input.tipRate === "number" ? Math.max(0, input.tipRate) : 0;
+  const computedTipAmount = Math.round(subtotal * tipRate);
+  const tipAmount = typeof input.tipAmount === "number" ? Math.max(0, input.tipAmount) : computedTipAmount;
+  const totalAmount = typeof input.totalAmount === "number" ? Math.max(0, input.totalAmount) : subtotal + tipAmount;
+  const splitMode = input.splitMode === "EQUAL" ? "EQUAL" : "FULL";
+  const splitCount = Math.max(1, Math.min(20, input.splitCount ?? 1));
+  const paxPaid = splitMode === "EQUAL" ? splitCount : 1;
+  const amountPaid = typeof input.amountPaid === "number"
+    ? Math.max(0, input.amountPaid)
+    : (splitMode === "EQUAL" ? Math.ceil(totalAmount / splitCount) : totalAmount);
+  const paymentMethod = input.paymentMethod ?? "CARD";
+
+  await prisma.$transaction(async tx => {
+    await tx.payment.create({
+      data: {
+        restaurantId: table.restaurantId,
+        tableId: table.id,
+        sessionId: session.id,
+        status: "PAID",
+        method: paymentMethod,
+        splitMode,
+        splitCount,
+        paxPaid,
+        currency: table.restaurant.currency,
+        subtotal,
+        tipRate,
+        tipAmount,
+        totalAmount,
+        amountPaid,
+        paidAt: new Date(),
+        allocations: {
+          create: {
+            sessionId: session.id,
+            guestName: session.guestName,
+            amount: amountPaid,
+          }
+        }
+      }
+    });
+
+    await tx.session.update({
+      where: { id: session.id },
+      data: { isActive: false, closedAt: new Date() }
+    });
+
+    await tx.table.update({
+      where: { id: table.id },
+      data: { status: "SUCIA" }
+    });
   });
 
   const cookieStore = await cookies();
-  cookieStore.delete(`bq_session_${tableCode}`);
-  cookieStore.delete(`bq_guest_${tableCode}`);
+  cookieStore.delete(`bq_session_${input.tableCode}`);
+  cookieStore.delete(`bq_guest_${input.tableCode}`);
 
   revalidatePath("/dashboard/mesas");
   return true;

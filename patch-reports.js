@@ -3,17 +3,16 @@ const path = require('path');
 const file = path.join(__dirname, 'src/components/dashboard/ReportsView.tsx');
 let content = fs.readFileSync(file, 'utf8');
 
-// The original signature is `export default function ReportsView() {`
+// Use this to dynamically calculate changes if we want, but for now we just map the hardcoded stats with server data
 content = content.replace(
   /export default function ReportsView\(\) \{/,
-  `export default function ReportsView({ reportData }: { reportData: import("@/actions/reports").DashboardReportData }) {`
+  `export default function ReportsView({ reportData }: { reportData?: import("@/actions/reports").DashboardReportData }) {`
 );
 
-// Delete the STATS_BY_PERIOD and TOP_ITEMS_BY_PERIOD from the component file since we get it from props
-content = content.replace(/const STATS_BY_PERIOD[\s\S]*?(?=export default function ReportsView)/g, '');
+let replaceStats = `const stats     = reportData ? reportData.stats[period] : STATS_BY_PERIOD[period];`;
+let replaceTop = `const topItems  = reportData ? reportData.topItems[period] : TOP_ITEMS_BY_PERIOD[period];`;
 
-// Update variable access inside the component
-content = content.replace(/const stats = STATS_BY_PERIOD\[period\];/g, 'const stats = reportData.stats[period];');
-content = content.replace(/const topItems = TOP_ITEMS_BY_PERIOD\[period\];/g, 'const topItems = reportData.topItems[period];');
+content = content.replace(/const stats     = STATS_BY_PERIOD\[period\];/g, replaceStats);
+content = content.replace(/const topItems  = TOP_ITEMS_BY_PERIOD\[period\];/g, replaceTop);
 
 fs.writeFileSync(file, content);

@@ -22,6 +22,9 @@ export default async function WaiterPage() {
     capacity: t.capacity,
     qrCode: t.qrCode,
     status: t.status,
+    posX: t.posX,
+    posY: t.posY,
+    shape: t.shape,
     createdAt: t.createdAt,
     updatedAt: t.updatedAt,
     activeSession: t.sessions[0] ? {

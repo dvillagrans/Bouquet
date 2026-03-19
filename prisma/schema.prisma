@@ -49,6 +49,9 @@ model Table {
   capacity     Int
   qrCode       String      @unique // Ej. X7B9K2
   status       TableStatus @default(DISPONIBLE)
+  posX         Float       @default(80)
+  posY         Float       @default(80)
+  shape        String      @default("rect") // "rect" | "round"
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   sessions   Session[] // Sesiones activas de usuarios en esta mesa

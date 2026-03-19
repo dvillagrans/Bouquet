@@ -8,7 +8,7 @@ import { startOfDay, startOfWeek, startOfMonth, subDays, subWeeks, subMonths, en
 export type Period = "Hoy" | "Semana" | "Mes";
 
 export interface DashboardReportData {
-  stats: Record<Period, { label: string; value: string; }[]>;
+  stats: Record<Period, { label: string; value: string; change: string; up: boolean; }[]>;
   topItems: Record<Period, { name: string; sold: number; revenue: string }[]>;
 }
 
@@ -72,10 +72,10 @@ export async function getDashboardReports(): Promise<DashboardReportData> {
 
     return {
       stats: [
-        { label: "Ventas totales", value: `$${totalVentas.toFixed(2)}` },
-        { label: "Ticket promedio", value: `$${ticketPromedio.toFixed(2)}` },
-        { label: "Mesas atendidas", value: `${mesasAtendidas}` },
-        { label: "Platos vendidos", value: `${totalPlatos}` }
+        { label: "Ventas totales", value: `${totalVentas.toFixed(2)}`, change: "--", up: true },
+        { label: "Ticket promedio", value: `${ticketPromedio.toFixed(2)}`, change: "--", up: true },
+        { label: "Mesas atendidas", value: `${mesasAtendidas}`, change: "--", up: true },
+        { label: "Platos vendidos", value: `${totalPlatos}`, change: "--", up: true }
       ],
       topItems: topItemsArray
     };

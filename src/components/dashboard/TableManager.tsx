@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Trash2, Search, QrCode, Users } from "lucide-react";
+import { Plus, Trash2, Search, QrCode, Users, Map, LayoutGrid } from "lucide-react";
 import { createTable, deleteTable } from "@/actions/tables";
 import { Table, TableStatus } from "@/generated/prisma";
+import FloorMapClient from "./FloorMapClient";
+
+type Tab = "mapa" | "lista";
 
 const STATUS_DOT: Record<TableStatus, string> = {
   DISPONIBLE: "bg-sage-deep",
@@ -37,6 +40,7 @@ const CARD_BG: Record<TableStatus, string> = {
 
 export default function TableManager({ initialTables }: { initialTables: Table[] }) {
   const [tables, setTables]           = useState<Table[]>(initialTables);
+  const [tab, setTab]                 = useState<Tab>("mapa");
   const [search, setSearch]           = useState("");
   const [isAdding, setIsAdding]       = useState(false);
   const [newTableCap, setNewTableCap] = useState(4);
@@ -96,7 +100,8 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
                 placeholder="Mesa o código…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="h-10 w-full border border-wire bg-transparent pl-8 pr-4 text-[0.78rem] text-light placeholder:text-dim/40 outline-none transition-colors focus:border-light/20 sm:w-52"
+                aria-label="Buscar mesas por número o código"
+                className="h-10 w-full rounded-xl border border-wire/70 bg-canvas/60 pl-9 pr-4 text-[0.82rem] text-light placeholder:text-dim/60 outline-none transition-colors focus-visible:border-light/35 focus-visible:ring-2 focus-visible:ring-glow/20 sm:w-52"
               />
             </div>
             <button
@@ -123,6 +128,41 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
           </div>
         ))}
       </div>
+
+      {/* ── View tabs ─────────────────────────────────────────── */}
+      <div className="mb-8 flex border-b border-wire" style={{ animation: "fade-in 0.4s ease-out 0.2s both" }}>
+        <button
+          onClick={() => setTab("mapa")}
+          className={[
+            "flex items-center gap-2 px-5 pb-3 pt-2 text-[0.65rem] font-bold uppercase tracking-[0.22em] transition-colors",
+            tab === "mapa"
+              ? "border-b-[1.5px] border-glow text-glow"
+              : "text-dim hover:text-light",
+          ].join(" ")}
+        >
+          <Map className="h-3.5 w-3.5" />
+          Mapa del local
+        </button>
+        <button
+          onClick={() => setTab("lista")}
+          className={[
+            "flex items-center gap-2 px-5 pb-3 pt-2 text-[0.65rem] font-bold uppercase tracking-[0.22em] transition-colors",
+            tab === "lista"
+              ? "border-b-[1.5px] border-glow text-glow"
+              : "text-dim hover:text-light",
+          ].join(" ")}
+        >
+          <LayoutGrid className="h-3.5 w-3.5" />
+          Lista de mesas
+        </button>
+      </div>
+
+      {/* ── Floor map ──────────────────────────────────────────── */}
+      {tab === "mapa" && (
+        <div style={{ animation: "fade-in 0.35s ease-out both" }}>
+          <FloorMapClient tables={tables} />
+        </div>
+      )}
 
       {/* ── Modal: nueva mesa ─────────────────────────────────── */}
       {isAdding && (
@@ -179,8 +219,8 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
         </div>
       )}
 
-      {/* ── Floor grid ────────────────────────────────────────── */}
-      {filtered.length === 0 ? (
+      {/* ── Lista de tarjetas ─────────────────────────────────── */}
+      {tab === "lista" && (filtered.length === 0 ? (
         <div className="border border-dashed border-wire py-20 text-center">
           <p className="text-[0.8rem] font-medium text-dim">No se encontraron mesas.</p>
           <button
@@ -259,7 +299,7 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
             </div>
           ))}
         </div>
-      )}
+      ))}
     </div>
   );
 }

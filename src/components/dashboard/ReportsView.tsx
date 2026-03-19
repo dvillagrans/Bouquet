@@ -168,10 +168,10 @@ function BarChart({ data }: { data: BarDatum[] }) {
 }
 
 /* ─── Main component ─────────────────────────────────────────────── */
-export default function ReportsView() {
+export default function ReportsView({ reportData }: { reportData?: import("@/actions/reports").DashboardReportData }) {
   const [period, setPeriod] = useState<Period>("Hoy");
-  const stats     = STATS_BY_PERIOD[period];
-  const topItems  = TOP_ITEMS_BY_PERIOD[period];
+  const stats     = reportData ? reportData.stats[period] : STATS_BY_PERIOD[period];
+  const topItems  = reportData ? reportData.topItems[period] : TOP_ITEMS_BY_PERIOD[period];
   const chartData = CHART_DATA_BY_PERIOD[period];
 
   const chartTitle: Record<Period, string> = {

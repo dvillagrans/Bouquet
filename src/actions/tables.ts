@@ -19,15 +19,21 @@ function generateCode() {
 
 export async function createTable(capacity: number) {
   const restaurant = await getDefaultRestaurant();
-  
-  // Buscar el numero siguiente de mesa
+
   const existingTables = await prisma.table.findMany({
     where: { restaurantId: restaurant.id },
     orderBy: { number: 'desc' },
-    take: 1
   });
-  
+
   const nextNumber = existingTables.length > 0 ? existingTables[0].number + 1 : 1;
+
+  // Auto-position: grid layout starting at (80,80), step 140px
+  const COLS = 5;
+  const STEP = 140;
+  const MARGIN = 80;
+  const idx = existingTables.length;
+  const posX = MARGIN + (idx % COLS) * STEP;
+  const posY = MARGIN + Math.floor(idx / COLS) * STEP;
 
   const newTable = await prisma.table.create({
     data: {
@@ -36,6 +42,8 @@ export async function createTable(capacity: number) {
       capacity,
       qrCode: generateCode(),
       status: "DISPONIBLE",
+      posX,
+      posY,
     }
   });
 
@@ -55,5 +63,19 @@ export async function updateTableStatus(id: string, status: TableStatus) {
 
 export async function deleteTable(id: string) {
   await prisma.table.delete({ where: { id } });
+  revalidatePath("/dashboard/mesas");
+}
+
+export async function updateTablePositions(
+  positions: { id: string; posX: number; posY: number; shape?: string }[]
+) {
+  await Promise.all(
+    positions.map(({ id, posX, posY, shape }) =>
+      prisma.table.update({
+        where: { id },
+        data: { posX, posY, ...(shape ? { shape } : {}) },
+      })
+    )
+  );
   revalidatePath("/dashboard/mesas");
 }

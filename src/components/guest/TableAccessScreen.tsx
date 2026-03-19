@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { guestJoinTable } from "@/actions/comensal";
 
 type TableAccessScreenProps = {
   tableCode: string;
@@ -35,6 +36,7 @@ export function TableAccessScreen({ tableCode, isLikelyValid, tableNumber }: Tab
       from: "qr",
     });
     try {
+      await guestJoinTable(tableCode, guestName.trim(), partySize);
       await router.push(`/mesa/${encodeURIComponent(tableCode)}/menu?${query.toString()}`);
     } catch {
       setSubmitError("No pudimos continuar. Intenta nuevamente.");

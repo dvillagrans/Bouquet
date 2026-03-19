@@ -135,3 +135,31 @@ export async function getTableBill(tableCode: string) {
 
   return { items: aggregated, total };
 }
+
+export async function guestJoinTable(tableCode: string, guestName: string, pax: number) {
+  const table = await prisma.table.findUnique({ where: { qrCode: tableCode } });
+  if (!table) return false;
+
+  // Mark table as OCUPADA
+  if (table.status !== "OCUPADA") {
+    await prisma.table.update({
+      where: { id: table.id },
+      data: { status: "OCUPADA" }
+    });
+    revalidatePath("/dashboard/mesas");
+  }
+
+  // Option: also create session here
+  let session = await prisma.session.findFirst({
+    where: { tableId: table.id, isActive: true },
+    orderBy: { createdAt: "desc" }
+  });
+
+  if (!session) {
+    await prisma.session.create({
+      data: { tableId: table.id, guestName, pax, isActive: true }
+    });
+  }
+
+  return true;
+}

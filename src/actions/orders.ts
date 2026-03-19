@@ -61,6 +61,8 @@ export async function advanceOrderStatus(orderId: string, currentStatus: string)
   });
 
   revalidatePath("/cocina");
+  revalidatePath("/mesa/[codigo]/menu", "page");
+
 }
 
 export async function undoOrderStatus(orderId: string, currentStatus: string) {
@@ -78,4 +80,26 @@ export async function undoOrderStatus(orderId: string, currentStatus: string) {
   });
 
   revalidatePath("/cocina");
+  revalidatePath("/mesa/[codigo]/menu", "page");
+
+}
+
+export async function moveOrderToStatus(
+  orderId: string,
+  targetStatus: "pending" | "preparing" | "ready"
+) {
+  const STATUS_MAP = {
+    pending:   "PENDING",
+    preparing: "PREPARING",
+    ready:     "READY",
+  } as const;
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data:  { status: STATUS_MAP[targetStatus] as OrderStatus },
+  });
+
+  revalidatePath("/cocina");
+  revalidatePath("/mesa/[codigo]/menu", "page");
+
 }

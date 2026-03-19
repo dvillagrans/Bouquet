@@ -1,8 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { RotateCcw, Utensils, Coffee, History } from "lucide-react";
+import { RotateCcw, Utensils, Coffee, History, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  useDraggable,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { advanceOrderStatus, undoOrderStatus, moveOrderToStatus, getLiveOrders } from "@/actions/orders";
+import { createClient } from "@/lib/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,6 +29,7 @@ type OrderItem = {
 };
 
 type OrderStatus = "pending" | "preparing" | "ready" | "delivered";
+type ColumnId    = "pending" | "preparing" | "ready";
 
 type Order = {
   id: string;
@@ -24,26 +39,6 @@ type Order = {
   createdAt: Date;
   deliveredAt?: Date;
 };
-
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-
-// ─── Live clock ───────────────────────────────────────────────────────────────
-
-function LiveClock() {
-  const [time, setTime] = useState(() => new Date());
-
-  useEffect(() => {
-    const id = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  return (
-    <span className="font-mono text-[0.9rem] font-semibold tabular-nums text-light/70">
-      {time.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
-    </span>
-  );
-}
 
 // ─── Urgency helpers ──────────────────────────────────────────────────────────
 
@@ -74,6 +69,21 @@ const ADVANCE_BTN: Record<Urgency, string> = {
   critical: "border-ember/60 text-ember hover:border-ember hover:bg-ember/[0.06]",
 };
 
+// ─── Live clock ───────────────────────────────────────────────────────────────
+
+function LiveClock() {
+  const [time, setTime] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <span className="font-mono text-[0.9rem] font-semibold tabular-nums text-light/70">
+      {time.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
+    </span>
+  );
+}
+
 // ─── OrderCard ────────────────────────────────────────────────────────────────
 
 function OrderCard({
@@ -81,14 +91,18 @@ function OrderCard({
   currentTime,
   onAdvance,
   onUndo,
+  isDragging = false,
 }: {
   order: Order;
   currentTime: Date;
   onAdvance: (id: string, status: OrderStatus) => void;
-  onUndo: (id: string, status: OrderStatus) => void;
+  onUndo:    (id: string, status: OrderStatus) => void;
+  isDragging?: boolean;
 }) {
-  const mins = Math.floor((currentTime.getTime() - order.createdAt.getTime()) / 60000);
+  const mins    = Math.floor((currentTime.getTime() - order.createdAt.getTime()) / 60000);
   const urgency = getUrgency(mins, order.status);
+
+  const { attributes, listeners, setNodeRef } = useDraggable({ id: order.id });
 
   const ADVANCE_LABEL: Record<OrderStatus, string> = {
     pending:   "Empezar",
@@ -99,15 +113,21 @@ function OrderCard({
 
   return (
     <div
+      ref={setNodeRef}
       className={[
-        "flex flex-col border bg-ink transition-colors duration-200",
+        "flex flex-col border bg-ink transition-all duration-200 select-none",
         CARD_BORDER[urgency],
         urgency === "critical" ? "bg-ember/[0.04]" : "",
+        isDragging ? "opacity-30 border-dashed" : "",
       ].join(" ")}
-      style={{ animation: "dash-row-enter 0.3s cubic-bezier(0.22,1,0.36,1) both" }}
+      style={isDragging ? undefined : { animation: "dash-row-enter 0.3s cubic-bezier(0.22,1,0.36,1) both" }}
     >
-      {/* Card header */}
-      <div className="flex items-start justify-between border-b border-wire px-4 py-3">
+      {/* Card header — drag handle */}
+      <div
+        className="flex items-start justify-between border-b border-wire px-4 py-3 cursor-grab active:cursor-grabbing touch-none"
+        {...listeners}
+        {...attributes}
+      >
         <div>
           <div className="flex items-center gap-2">
             {urgency === "critical" && (
@@ -124,11 +144,10 @@ function OrderCard({
               {order.tableCode}
             </span>
           </div>
-          <p className="mt-0.5 text-[0.58rem] font-medium text-dim/50">#{order.id}</p>
+          <p className="mt-0.5 text-[0.58rem] font-medium text-dim/50">#{order.id.slice(-6)}</p>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Elapsed time — large and prominent */}
           <div className={`flex items-baseline gap-1 ${TIME_COLOR[urgency]}`}>
             <span className="font-serif text-[1.6rem] font-semibold leading-none tabular-nums">
               {mins}
@@ -136,9 +155,9 @@ function OrderCard({
             <span className="text-[0.58rem] font-bold uppercase tracking-wider">min</span>
           </div>
 
-          {/* Undo */}
           {order.status !== "pending" && order.status !== "delivered" && (
             <button
+              onPointerDown={e => e.stopPropagation()}
               onClick={() => onUndo(order.id, order.status)}
               aria-label="Deshacer estado"
               className="flex h-8 w-8 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light"
@@ -146,10 +165,12 @@ function OrderCard({
               <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
             </button>
           )}
+
+          <GripVertical className="h-4 w-4 text-dim/20 shrink-0" aria-hidden="true" />
         </div>
       </div>
 
-      {/* Items */}
+      {/* Items list */}
       <div className="flex flex-col divide-y divide-wire/50 px-4">
         {order.items.map(item => (
           <div key={item.id} className="py-3">
@@ -160,14 +181,10 @@ function OrderCard({
               <span className="flex-1 text-[0.9rem] font-semibold text-light leading-snug">
                 {item.name}
               </span>
-              <span
-                className="shrink-0 text-dim/40"
-                aria-label={`Estación: ${item.station}`}
-                title={`Estación: ${item.station}`}
-              >
+              <span className="shrink-0 text-dim/40" title={`Estación: ${item.station}`}>
                 {item.station === "cocina"
                   ? <Utensils className="h-3 w-3" aria-hidden="true" />
-                  : <Coffee className="h-3 w-3" aria-hidden="true" />}
+                  : <Coffee   className="h-3 w-3" aria-hidden="true" />}
               </span>
             </div>
             {item.notes && (
@@ -179,10 +196,11 @@ function OrderCard({
         ))}
       </div>
 
-      {/* Action */}
+      {/* Action button */}
       <div className="mt-auto border-t border-wire p-3">
         {order.status !== "delivered" ? (
           <button
+            onPointerDown={e => e.stopPropagation()}
             onClick={() => onAdvance(order.id, order.status)}
             className={[
               "flex min-h-[48px] w-full items-center justify-center border",
@@ -202,23 +220,56 @@ function OrderCard({
   );
 }
 
-// ─── Column ───────────────────────────────────────────────────────────────────
+// ─── Drag overlay ghost ───────────────────────────────────────────────────────
+
+function GhostCard({ order }: { order: Order }) {
+  return (
+    <div className="flex flex-col border border-glow/60 bg-ink shadow-2xl -rotate-1 w-72 pointer-events-none">
+      <div className="border-b border-wire px-4 py-3">
+        <span className="text-[0.75rem] font-bold uppercase tracking-[0.22em] text-light">
+          {order.tableCode}
+        </span>
+        <p className="mt-0.5 text-[0.6rem] text-dim">
+          {order.items.length} platillo{order.items.length !== 1 ? "s" : ""}
+        </p>
+      </div>
+      <div className="px-4 py-2">
+        <p className="text-[0.72rem] font-medium text-dim/70 truncate">
+          {order.items.slice(0, 2).map(i => `${i.quantity}× ${i.name}`).join(", ")}
+          {order.items.length > 2 ? ` +${order.items.length - 2}` : ""}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Droppable column ─────────────────────────────────────────────────────────
 
 function KDSColumn({
+  columnId,
   label,
   dot,
   count,
   children,
   empty,
 }: {
+  columnId?: ColumnId;
   label: string;
   dot: string;
   count: number;
   children: React.ReactNode;
   empty: string;
 }) {
+  const droppable = columnId ? useDroppable({ id: columnId }) : null; // eslint-disable-line react-hooks/rules-of-hooks
+
   return (
-    <div className="flex min-h-0 flex-col border border-wire bg-canvas">
+    <div
+      ref={droppable?.setNodeRef}
+      className={[
+        "flex min-h-0 flex-col border border-wire bg-canvas transition-all duration-150",
+        droppable?.isOver ? "border-glow/50 bg-glow/[0.025] ring-1 ring-glow/20 ring-inset" : "",
+      ].join(" ")}
+    >
       {/* Column header */}
       <div className="flex items-center justify-between border-b border-wire px-5 py-4">
         <div className="flex items-center gap-2.5">
@@ -229,7 +280,7 @@ function KDSColumn({
       </div>
 
       {/* Cards */}
-      <div className="flex flex-col gap-3 overflow-y-auto p-4 scrollbar-hide flex-1">
+      <div className="flex flex-col gap-3 overflow-y-auto p-4 flex-1">
         {count === 0
           ? <p className="mt-8 text-center text-[0.72rem] font-medium text-dim/40 italic">{empty}</p>
           : children}
@@ -241,74 +292,96 @@ function KDSColumn({
 // ─── KDSBoard ─────────────────────────────────────────────────────────────────
 
 type StationFilter = "todas" | "cocina" | "barra";
-type ViewMode = "activas" | "historial";
+type ViewMode      = "activas" | "historial";
 
-import { useTransition } from "react";
-import { advanceOrderStatus, undoOrderStatus } from "@/actions/orders";
-import { createClient } from "@/lib/supabase/client";
+export default function KDSBoard({
+  initialOrders,
+  defaultStation = "todas",
+}: {
+  initialOrders: Order[];
+  defaultStation?: "todas" | "cocina" | "barra";
+}) {
+  const router = useRouter();
+  const [orders, setOrders]             = useState<Order[]>(initialOrders);
+  const [activeId, setActiveId]         = useState<string | null>(null);
+  const [, startTransition]             = useTransition();
+  const [currentTime, setCurrentTime]   = useState(new Date());
+  const [view, setView]                 = useState<ViewMode>("activas");
+  const [station, setStation]           = useState<StationFilter>(defaultStation);
 
-export default function KDSBoard({ initialOrders, defaultStation = "todas" }: { initialOrders: Order[], defaultStation?: "todas" | "cocina" | "barra" }) {
-    const router = useRouter();
-  const [orders, setOrders]           = useState<Order[]>(initialOrders);
-  useEffect(() => setOrders(initialOrders), [initialOrders]);
-  useEffect(() => setOrders(initialOrders), [initialOrders]);
+  useEffect(() => { setOrders(initialOrders); }, [initialOrders]);
 
+  // Realtime subscription
   useEffect(() => {
     const supabase = createClient();
-    const channel = supabase
+    const channel  = supabase
       .channel("realtime-orders")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "Order" },
-        () => {
-          // Simplest wait: just reload the page or trigger a server action fetching orders
-          // But actually we want the server to push new UI or we just fetch again.
-          // Since we are in client, let's just refresh the router
-          setTimeout(() => router.refresh(), 500); 
+      .on("postgres_changes", { event: "*", schema: "public", table: "Order" }, async () => {
+        try {
+          const freshOrders = await getLiveOrders();
+          setOrders(freshOrders);
+        } catch(e) {
+          console.error(e);
         }
-      )
+      })
       .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [router]);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  const [, startTransition]          = useTransition();
-
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [view, setView]               = useState<ViewMode>("activas");
-  const [station, setStation]         = useState<StationFilter>(defaultStation);
-
+  // Tick every minute for urgency timer
   useEffect(() => {
     const id = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(id);
   }, []);
 
-  function advanceOrderState(orderId: string, currentStatus: OrderStatus) {
-    // Optimistic Update
+  // ── DnD sensors ──────────────────────────────────────────────────────────────
+  const sensors = useSensors(
+    useSensor(MouseSensor,  { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor,  { activationConstraint: { delay: 200, tolerance: 8 } }),
+  );
 
-    const next: Record<OrderStatus, OrderStatus> = {
-      pending: "preparing", preparing: "ready", ready: "delivered", delivered: "delivered",
-    };
-    const optimisticNextStatus = next[currentStatus];
-    setOrders(prev => prev.map(o =>
-      o.id === orderId
-        ? { ...o, status: optimisticNextStatus, deliveredAt: optimisticNextStatus === "delivered" ? new Date() : o.deliveredAt }
-        : o
-    ));
+  function handleDragStart({ active }: DragStartEvent) {
+    setActiveId(active.id as string);
+  }
+
+  function handleDragEnd({ active, over }: DragEndEvent) {
+    setActiveId(null);
+    if (!over) return;
+
+    const orderId      = active.id as string;
+    const targetColumn = over.id as ColumnId;
+    const order        = orders.find(o => o.id === orderId);
+
+    if (!order || order.status === targetColumn || order.status === "delivered") return;
+
+    // Optimistic update
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: targetColumn } : o));
 
     startTransition(async () => {
       try {
+        await moveOrderToStatus(orderId, targetColumn);
+      } catch {
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: order.status } : o));
+      }
+    });
+  }
+
+  // ── Advance / undo (button clicks) ───────────────────────────────────────────
+  function advanceOrderState(orderId: string, currentStatus: OrderStatus) {
+    const next: Record<OrderStatus, OrderStatus> = {
+      pending: "preparing", preparing: "ready", ready: "delivered", delivered: "delivered",
+    };
+    const nextStatus = next[currentStatus];
+    setOrders(prev => prev.map(o =>
+      o.id === orderId
+        ? { ...o, status: nextStatus, deliveredAt: nextStatus === "delivered" ? new Date() : o.deliveredAt }
+        : o
+    ));
+    startTransition(async () => {
+      try {
         await advanceOrderStatus(orderId, currentStatus);
-      } catch (err) {
-        console.error("Failed to advance order", err);
-        // revert on error
-        setOrders(prev => prev.map(o =>
-          o.id === orderId
-            ? { ...o, status: currentStatus }
-            : o
-        ));
+      } catch {
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: currentStatus } : o));
       }
     });
   }
@@ -317,25 +390,18 @@ export default function KDSBoard({ initialOrders, defaultStation = "todas" }: { 
     const prev: Record<OrderStatus, OrderStatus> = {
       pending: "pending", preparing: "pending", ready: "preparing", delivered: "ready",
     };
-    
-    const optimisticPrevStatus = prev[currentStatus];
-    setOrders(orders => orders.map(o =>
-      o.id === orderId ? { ...o, status: optimisticPrevStatus } : o
-    ));
-
+    const prevStatus = prev[currentStatus];
+    setOrders(orders => orders.map(o => o.id === orderId ? { ...o, status: prevStatus } : o));
     startTransition(async () => {
       try {
         await undoOrderStatus(orderId, currentStatus);
-      } catch (err) {
-        console.error("Failed to undo order", err);
-        // revert on error
-        setOrders(orders => orders.map(o =>
-          o.id === orderId ? { ...o, status: currentStatus } : o
-        ));
+      } catch {
+        setOrders(orders => orders.map(o => o.id === orderId ? { ...o, status: currentStatus } : o));
       }
     });
   }
 
+  // ── Filters ──────────────────────────────────────────────────────────────────
   function filterByStation(list: Order[]): Order[] {
     return list
       .map(o => station === "todas" ? o : { ...o, items: o.items.filter(i => i.station === station) })
@@ -349,6 +415,8 @@ export default function KDSBoard({ initialOrders, defaultStation = "todas" }: { 
   const pending   = active.filter(o => o.status === "pending");
   const preparing = active.filter(o => o.status === "preparing");
   const ready     = active.filter(o => o.status === "ready");
+
+  const activeOrder = activeId ? orders.find(o => o.id === activeId) : null;
 
   const STATION_TABS: { label: string; value: StationFilter }[] = [
     { label: "Todas",  value: "todas"  },
@@ -386,9 +454,7 @@ export default function KDSBoard({ initialOrders, defaultStation = "todas" }: { 
                   onClick={() => setStation(value)}
                   className={[
                     "px-4 pb-2.5 pt-1.5 text-[0.62rem] font-bold uppercase tracking-[0.2em] transition-colors duration-150",
-                    station === value
-                      ? "border-b-[1.5px] border-glow text-glow"
-                      : "text-dim hover:text-light",
+                    station === value ? "border-b-[1.5px] border-glow text-glow" : "text-dim hover:text-light",
                   ].join(" ")}
                 >
                   {label}
@@ -409,9 +475,7 @@ export default function KDSBoard({ initialOrders, defaultStation = "todas" }: { 
                   onClick={() => setView(value)}
                   className={[
                     "flex items-center gap-1.5 px-4 pb-2.5 pt-1.5 text-[0.62rem] font-bold uppercase tracking-[0.2em] transition-colors duration-150",
-                    view === value
-                      ? "border-b-[1.5px] border-glow text-glow"
-                      : "text-dim hover:text-light",
+                    view === value ? "border-b-[1.5px] border-glow text-glow" : "text-dim hover:text-light",
                   ].join(" ")}
                 >
                   {value === "historial" && <History className="h-3 w-3" aria-hidden="true" />}
@@ -425,25 +489,36 @@ export default function KDSBoard({ initialOrders, defaultStation = "todas" }: { 
 
       {/* ── Board ───────────────────────────────────────────── */}
       {view === "activas" ? (
-        <div className="grid flex-1 grid-cols-1 gap-px overflow-hidden bg-wire md:grid-cols-3">
-          <KDSColumn label="Nuevas" dot="bg-ember" count={pending.length} empty="Sin órdenes nuevas">
-            {pending.map(o => (
-              <OrderCard key={o.id} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} />
-            ))}
-          </KDSColumn>
+        <DndContext
+          sensors={sensors}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setActiveId(null)}
+        >
+          <div className="grid flex-1 grid-cols-1 gap-px overflow-hidden bg-wire md:grid-cols-3">
+            <KDSColumn columnId="pending" label="Nuevas" dot="bg-ember" count={pending.length} empty="Sin órdenes nuevas">
+              {pending.map(o => (
+                <OrderCard key={o.id} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} isDragging={o.id === activeId} />
+              ))}
+            </KDSColumn>
 
-          <KDSColumn label="En preparación" dot="bg-glow" count={preparing.length} empty="Estación libre">
-            {preparing.map(o => (
-              <OrderCard key={o.id} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} />
-            ))}
-          </KDSColumn>
+            <KDSColumn columnId="preparing" label="En preparación" dot="bg-glow" count={preparing.length} empty="Estación libre">
+              {preparing.map(o => (
+                <OrderCard key={o.id} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} isDragging={o.id === activeId} />
+              ))}
+            </KDSColumn>
 
-          <KDSColumn label="Listos" dot="bg-sage-deep" count={ready.length} empty="Sin platillos esperando salir">
-            {ready.map(o => (
-              <OrderCard key={o.id} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} />
-            ))}
-          </KDSColumn>
-        </div>
+            <KDSColumn columnId="ready" label="Listos" dot="bg-sage-deep" count={ready.length} empty="Sin platillos esperando salir">
+              {ready.map(o => (
+                <OrderCard key={o.id} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} isDragging={o.id === activeId} />
+              ))}
+            </KDSColumn>
+          </div>
+
+          <DragOverlay dropAnimation={null}>
+            {activeOrder && <GhostCard order={activeOrder} />}
+          </DragOverlay>
+        </DndContext>
 
       ) : (
         <div className="flex-1 overflow-y-auto p-6">

@@ -205,3 +205,27 @@ export async function requestBillAndPay(tableCode: string) {
   revalidatePath("/dashboard/mesas");
   return true;
 }
+
+export async function getGuestOrders(tableCode: string) {
+  const table = await prisma.table.findUnique({ where: { qrCode: tableCode } });
+  if (!table) return [];
+
+  const session = await prisma.session.findFirst({
+    where: { tableId: table.id, isActive: true },
+    orderBy: { createdAt: "desc" }
+  });
+
+  if (!session) return [];
+
+  const orders = await prisma.order.findMany({
+    where: { items: { some: { sessionId: session.id } } },
+    include: {
+      items: {
+        include: { menuItem: true }
+      }
+    },
+    orderBy: { createdAt: "asc" }
+  });
+
+  return orders;
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MenuScreen } from "@/components/guest/MenuScreen";
 import { getMenuData } from "@/actions/menu";
+import { getGuestOrders } from "@/actions/comensal";
 
 type MenuPageProps = {
   params: Promise<{ codigo: string }>;
@@ -26,10 +27,13 @@ export default async function MesaMenuPage({ params, searchParams }: MenuPagePro
   const partySize = Math.max(1, Math.min(20, Number(pax) || 1));
 
   const { categories, items } = await getMenuData();
+  const initialOrders = await getGuestOrders(tableCode);
 
   return (
     <div className="min-h-screen bg-ink text-light">
-      <MenuScreen guestName={guestName} partySize={partySize} tableCode={tableCode} initialCategories={categories} initialItems={items} />
+      <MenuScreen guestName={guestName} partySize={partySize} tableCode={tableCode} initialCategories={categories} initialItems={items}
+        initialOrders={initialOrders}
+      />
     </div>
   );
 }

@@ -245,7 +245,7 @@ type ViewMode = "activas" | "historial";
 import { useTransition } from "react";
 import { advanceOrderStatus, undoOrderStatus } from "@/actions/orders";
 
-export default function KDSBoard({ initialOrders }: { initialOrders: Order[] }) {
+export default function KDSBoard({ initialOrders, defaultStation = "todas" }: { initialOrders: Order[], defaultStation?: "todas" | "cocina" | "barra" }) {
   const [orders, setOrders]           = useState<Order[]>(initialOrders);
   const [, startTransition]          = useTransition();
 

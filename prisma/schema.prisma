@@ -62,6 +62,7 @@ model Table {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([restaurantId, number])
   @@index([restaurantId])
 }
 
@@ -78,6 +79,7 @@ model Category {
   items      MenuItem[]
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([restaurantId])
 }
@@ -126,6 +128,7 @@ model Staff {
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([restaurantId])
 }
@@ -147,6 +150,7 @@ model Session {
   allocations PaymentAllocation[]
 
   createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   closedAt  DateTime?
 
   @@index([tableId])
@@ -182,6 +186,7 @@ model Order {
   deliveredAt DateTime?
 
   @@index([restaurantId])
+  @@index([restaurantId, createdAt])
   @@index([tableId])
   @@index([status, createdAt])
 }
@@ -201,6 +206,7 @@ model OrderItem {
   session  Session  @relation(fields: [sessionId], references: [id])
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([orderId])
   @@index([sessionId])
@@ -255,6 +261,7 @@ model Payment {
   allocations PaymentAllocation[]
 
   createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   paidAt    DateTime?
 
   @@index([restaurantId, createdAt])
@@ -274,6 +281,7 @@ model PaymentAllocation {
   session Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([paymentId])
   @@index([sessionId])

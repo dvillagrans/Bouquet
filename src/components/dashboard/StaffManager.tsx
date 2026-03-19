@@ -200,7 +200,7 @@ export default function StaffManager({ initialStaff }: { initialStaff: Staff[] }
     const optimistic: Staff = {
       id: fakeId, restaurantId: "",
       name: newName.trim(), role: newRole, pin: newPin,
-      isActive: true, createdAt: new Date(),
+      isActive: true, createdAt: new Date(), updatedAt: new Date(),
     };
 
     setStaff(prev => [...prev, optimistic]);

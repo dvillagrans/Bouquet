@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { Stage, Layer, Rect, Circle, Text, Group, Line } from "react-konva";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { Stage, Layer, Rect, Circle, Text, Group } from "react-konva";
 import type Konva from "konva";
 import { Save, Edit3, Eye, Move, Circle as CircleIcon, Square } from "lucide-react";
-import { updateTablePositions } from "@/actions/tables";
 import type { Table, TableStatus } from "@/generated/prisma";
 
 /* ── Design tokens (mirrors CSS vars) ─────────────────────────── */
@@ -53,12 +52,14 @@ function DotGrid() {
   for (let x = 0; x <= GRID_W; x += SNAP) {
     for (let y = 0; y <= GRID_H; y += SNAP) {
       dots.push(
-        <Circle key={`${x}-${y}`} x={x} y={y} radius={1} fill={C.wire} />
+        <Circle key={`${x}-${y}`} x={x} y={y} radius={1} fill={C.wire} listening={false} />
       );
     }
   }
   return <>{dots}</>;
 }
+
+const DotGridMemo = memo(DotGrid);
 
 /* ── Single table node ─────────────────────────────────────────── */
 interface TableNodeProps {
@@ -75,6 +76,7 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd }: TableNode
   const stroke = STATUS_STROKE[table.status];
   const isRound = table.shape === "round";
   const half = TABLE_W / 2;
+  const seatCount = Math.min(table.capacity, 8);
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     const x = snap(e.target.x());
@@ -104,6 +106,7 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd }: TableNode
             strokeWidth={2}
             opacity={0.4}
             dash={[4, 4]}
+            listening={false}
           />
         ) : (
           <Rect
@@ -115,6 +118,7 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd }: TableNode
             opacity={0.4}
             dash={[4, 4]}
             cornerRadius={4}
+            listening={false}
           />
         )
       )}
@@ -140,8 +144,8 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd }: TableNode
       )}
 
       {/* Seat indicators (small dots around the table) */}
-      {Array.from({ length: Math.min(table.capacity, 8) }).map((_, i) => {
-        const angle = (i / Math.min(table.capacity, 8)) * Math.PI * 2 - Math.PI / 2;
+      {Array.from({ length: seatCount }).map((_, i) => {
+        const angle = (i / seatCount) * Math.PI * 2 - Math.PI / 2;
         const r = half + 11;
         return (
           <Circle
@@ -152,6 +156,7 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd }: TableNode
             fill={fill + "60"}
             stroke={stroke}
             strokeWidth={1}
+            listening={false}
           />
         );
       })}
@@ -183,6 +188,20 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd }: TableNode
   );
 }
 
+const MemoizedTableNode = memo(
+  TableNode,
+  (prev, next) => {
+    if (prev.table !== next.table) return false;
+    if (prev.editMode !== next.editMode) return false;
+    if (prev.onSelect !== next.onSelect) return false;
+    if (prev.onDragEnd !== next.onDragEnd) return false;
+
+    const prevIsSelected = prev.selected === prev.table.id;
+    const nextIsSelected = next.selected === next.table.id;
+    return prevIsSelected === nextIsSelected;
+  }
+);
+
 /* ── Legend bar ────────────────────────────────────────────────── */
 function Legend() {
   const items = [
@@ -206,7 +225,7 @@ function Legend() {
 }
 
 /* ── Main component ────────────────────────────────────────────── */
-export interface FloorMapTable extends Table {}
+export type FloorMapTable = Table;
 
 interface FloorMapProps {
   tables: FloorMapTable[];
@@ -252,6 +271,8 @@ export default function FloorMap({ tables: initialTables }: FloorMapProps) {
     const positions = Array.from(pendingRef.current.entries()).map(
       ([id, pos]) => ({ id, ...pos })
     );
+    // Defer importing the (server action) until the user saves.
+    const { updateTablePositions } = await import("@/actions/tables");
     await updateTablePositions(positions);
     pendingRef.current.clear();
     setSaving(false);
@@ -262,13 +283,17 @@ export default function FloorMap({ tables: initialTables }: FloorMapProps) {
 
   const handleShapeToggle = async (id: string, currentShape: string) => {
     const newShape = currentShape === "round" ? "rect" : "round";
+    const current = tables.find(t => t.id === id);
+    if (!current) return;
+
     setTables(prev =>
       prev.map(t => t.id === id ? { ...t, shape: newShape } : t)
     );
+    const { updateTablePositions } = await import("@/actions/tables");
     await updateTablePositions([{
       id,
-      posX: tables.find(t => t.id === id)!.posX,
-      posY: tables.find(t => t.id === id)!.posY,
+      posX: current.posX,
+      posY: current.posY,
       shape: newShape,
     }]);
   };
@@ -338,10 +363,15 @@ export default function FloorMap({ tables: initialTables }: FloorMapProps) {
         >
           <Layer>
             {/* Background */}
-            <Rect width={GRID_W} height={GRID_H} fill={C.canvas} />
+            <Rect
+              width={GRID_W}
+              height={GRID_H}
+              fill={C.canvas}
+              listening={false}
+            />
 
             {/* Dot grid */}
-            <DotGrid />
+            <DotGridMemo />
 
             {/* Room border */}
             <Rect
@@ -352,11 +382,12 @@ export default function FloorMap({ tables: initialTables }: FloorMapProps) {
               strokeWidth={2}
               fill="transparent"
               dash={[8, 6]}
+              listening={false}
             />
 
             {/* Tables */}
             {tables.map(table => (
-              <TableNode
+              <MemoizedTableNode
                 key={table.id}
                 table={table}
                 editMode={editMode}

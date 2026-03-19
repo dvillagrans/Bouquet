@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TrendingUp, TrendingDown, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown } from "lucide-react";
 
 const PERIODS = ["Hoy", "Semana", "Mes"] as const;
 type Period = typeof PERIODS[number];
@@ -31,16 +31,16 @@ const STATS_BY_PERIOD: Record<string, Stat[]> = {
 
 const TOP_ITEMS_BY_PERIOD: Record<string, { name: string; sold: number; revenue: string }[]> = {
   "Hoy": [
-    { name: "Hamburguesa Clásica", sold: 9,  revenue: "$1,620" },
-    { name: "Tacos de Ribeye",     sold: 7,  revenue: "$1,750" },
-    { name: "Limonada de Menta",   sold: 6,  revenue: "$270"   },
-    { name: "Ensalada César",      sold: 4,  revenue: "$480"   },
+    { name: "Hamburguesa Clásica", sold: 9,   revenue: "$1,620" },
+    { name: "Tacos de Ribeye",     sold: 7,   revenue: "$1,750" },
+    { name: "Limonada de Menta",   sold: 6,   revenue: "$270"   },
+    { name: "Ensalada César",      sold: 4,   revenue: "$480"   },
   ],
   "Semana": [
-    { name: "Hamburguesa Clásica", sold: 45, revenue: "$8,100" },
-    { name: "Limonada de Menta",   sold: 32, revenue: "$1,440" },
-    { name: "Tacos de Ribeye",     sold: 28, revenue: "$7,000" },
-    { name: "Ensalada César",      sold: 18, revenue: "$2,160" },
+    { name: "Hamburguesa Clásica", sold: 45,  revenue: "$8,100" },
+    { name: "Limonada de Menta",   sold: 32,  revenue: "$1,440" },
+    { name: "Tacos de Ribeye",     sold: 28,  revenue: "$7,000" },
+    { name: "Ensalada César",      sold: 18,  revenue: "$2,160" },
   ],
   "Mes": [
     { name: "Hamburguesa Clásica", sold: 178, revenue: "$32,040" },
@@ -50,16 +50,144 @@ const TOP_ITEMS_BY_PERIOD: Record<string, { name: string; sold: number; revenue:
   ],
 };
 
+type BarDatum = { label: string; value: number };
+
+const CHART_DATA_BY_PERIOD: Record<string, BarDatum[]> = {
+  "Hoy": [
+    { label: "12h", value: 580  },
+    { label: "13h", value: 1240 },
+    { label: "14h", value: 1580 },
+    { label: "15h", value: 720  },
+    { label: "16h", value: 320  },
+    { label: "17h", value: 280  },
+    { label: "18h", value: 510  },
+    { label: "19h", value: 980  },
+    { label: "20h", value: 1320 },
+    { label: "21h", value: 780  },
+    { label: "22h", value: 140  },
+  ],
+  "Semana": [
+    { label: "Lun", value: 4200 },
+    { label: "Mar", value: 5800 },
+    { label: "Mié", value: 6300 },
+    { label: "Jue", value: 5900 },
+    { label: "Vie", value: 8500 },
+    { label: "Sáb", value: 9200 },
+    { label: "Dom", value: 2600 },
+  ],
+  "Mes": [
+    { label: "Sem 1", value: 38200 },
+    { label: "Sem 2", value: 42100 },
+    { label: "Sem 3", value: 45600 },
+    { label: "Sem 4", value: 42300 },
+  ],
+};
+
+/* ─── SVG Bar Chart ──────────────────────────────────────────────── */
+function BarChart({ data }: { data: BarDatum[] }) {
+  const chartH  = 160;
+  const labelH  = 22;
+  const barW    = 32;
+  const gap     = 10;
+  const totalW  = data.length * (barW + gap) - gap;
+  const totalH  = chartH + labelH;
+  const maxVal  = Math.max(...data.map(d => d.value));
+
+  const gridRatios = [0.25, 0.5, 0.75, 1];
+
+  return (
+    <svg
+      width="100%"
+      viewBox={`0 0 ${totalW} ${totalH}`}
+      preserveAspectRatio="xMidYMax meet"
+      aria-hidden="true"
+    >
+      {/* Grid lines */}
+      {gridRatios.map(ratio => {
+        const y = chartH * (1 - ratio);
+        return (
+          <line
+            key={ratio}
+            x1={0} x2={totalW}
+            y1={y} y2={y}
+            stroke="var(--color-wire)"
+            strokeWidth="0.75"
+          />
+        );
+      })}
+
+      {/* Bars + labels */}
+      {data.map(({ label, value }, i) => {
+        const barH = Math.max(2, (value / maxVal) * chartH);
+        const x    = i * (barW + gap);
+        const y    = chartH - barH;
+
+        return (
+          <g
+            key={label}
+            style={{ animation: `fade-in 0.35s ease-out ${0.05 + i * 0.04}s both` }}
+          >
+            {/* Bar shadow / depth */}
+            <rect
+              x={x + 1} y={y + 2}
+              width={barW} height={barH}
+              fill="var(--color-glow)"
+              opacity="0.08"
+            />
+            {/* Main bar */}
+            <rect
+              x={x} y={y}
+              width={barW} height={barH}
+              fill="var(--color-glow)"
+              opacity="0.65"
+            />
+            {/* Top highlight */}
+            <rect
+              x={x} y={y}
+              width={barW} height={2}
+              fill="var(--color-glow)"
+              opacity="0.9"
+            />
+            {/* Label */}
+            <text
+              x={x + barW / 2}
+              y={chartH + labelH - 2}
+              textAnchor="middle"
+              fill="var(--color-dim)"
+              fontSize="9"
+              fontWeight="600"
+              fontFamily="var(--font-sans, sans-serif)"
+            >
+              {label}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/* ─── Main component ─────────────────────────────────────────────── */
 export default function ReportsView() {
   const [period, setPeriod] = useState<Period>("Hoy");
-  const stats    = STATS_BY_PERIOD[period];
-  const topItems = TOP_ITEMS_BY_PERIOD[period];
+  const stats     = STATS_BY_PERIOD[period];
+  const topItems  = TOP_ITEMS_BY_PERIOD[period];
+  const chartData = CHART_DATA_BY_PERIOD[period];
+
+  const chartTitle: Record<Period, string> = {
+    "Hoy":    "Ingresos por hora",
+    "Semana": "Ingresos por día",
+    "Mes":    "Ingresos por semana",
+  };
 
   return (
     <div className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
 
-      {/* ── Header ──────────────────────────────────────────── */}
-      <div className="mb-10 border-b border-wire pb-8" style={{ animation: "reveal-up 0.5s cubic-bezier(0.22,1,0.36,1) both" }}>
+      {/* ── Header ────────────────────────────────────────────── */}
+      <div
+        className="mb-10 border-b border-wire pb-8"
+        style={{ animation: "reveal-up 0.5s cubic-bezier(0.22,1,0.36,1) both" }}
+      >
         <p className="mb-2 text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">
           Analíticas
         </p>
@@ -88,15 +216,19 @@ export default function ReportsView() {
         </div>
       </div>
 
-      {/* ── Stats strip ─────────────────────────────────────── */}
+      {/* ── Stats strip ───────────────────────────────────────── */}
       <div className="mb-10 grid grid-cols-2 divide-x divide-y divide-wire border border-wire sm:grid-cols-4 sm:divide-y-0">
         {stats.map(({ label, value, change, up }, i) => (
-          <div key={label} className="px-6 py-5" style={{ animation: `dash-stat-enter 0.4s cubic-bezier(0.22,1,0.36,1) ${0.1 + i * 0.06}s both` }}>
+          <div
+            key={label}
+            className="px-6 py-5"
+            style={{ animation: `dash-stat-enter 0.4s cubic-bezier(0.22,1,0.36,1) ${0.1 + i * 0.06}s both` }}
+          >
             <p className="text-[0.56rem] font-bold uppercase tracking-[0.28em] text-dim">{label}</p>
             <p className="mt-1 font-serif text-[2rem] font-semibold leading-none text-light">{value}</p>
             <p className={`mt-2 flex items-center gap-1 text-[0.62rem] font-semibold ${up ? "text-sage-deep" : "text-ember"}`}>
               {up
-                ? <TrendingUp className="h-3 w-3" aria-hidden="true" />
+                ? <TrendingUp  className="h-3 w-3" aria-hidden="true" />
                 : <TrendingDown className="h-3 w-3" aria-hidden="true" />}
               {change}
             </p>
@@ -104,17 +236,18 @@ export default function ReportsView() {
         ))}
       </div>
 
-      {/* ── Charts row ──────────────────────────────────────── */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_280px]" style={{ animation: "reveal-up 0.45s cubic-bezier(0.22,1,0.36,1) 0.35s both" }}>
-
-        {/* Chart placeholder */}
+      {/* ── Charts row ────────────────────────────────────────── */}
+      <div
+        className="grid gap-6 lg:grid-cols-[1fr_280px]"
+        style={{ animation: "reveal-up 0.45s cubic-bezier(0.22,1,0.36,1) 0.35s both" }}
+      >
+        {/* Bar chart */}
         <div className="border border-wire p-6">
           <p className="mb-6 text-[0.56rem] font-bold uppercase tracking-[0.28em] text-dim">
-            Ingresos por hora
+            {chartTitle[period]}
           </p>
-          <div className="flex min-h-[280px] flex-col items-center justify-center gap-3 border border-dashed border-wire/50">
-            <Activity className="h-6 w-6 text-dim/30" aria-hidden="true" />
-            <p className="text-[0.72rem] font-medium text-dim/40">Recharts · próximamente</p>
+          <div className="min-h-[200px] w-full">
+            <BarChart data={chartData} />
           </div>
         </div>
 
@@ -140,7 +273,6 @@ export default function ReportsView() {
             ))}
           </div>
         </div>
-
       </div>
     </div>
   );

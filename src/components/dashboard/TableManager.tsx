@@ -1,14 +1,20 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Trash2, Search, QrCode } from "lucide-react";
+import { Plus, Trash2, Search, QrCode, Users } from "lucide-react";
 import { createTable, deleteTable } from "@/actions/tables";
 import { Table, TableStatus } from "@/generated/prisma";
 
-const STATUS_STYLES: Record<TableStatus, string> = {
-  DISPONIBLE: "text-sage-deep border-sage-deep/40",
-  OCUPADA:    "text-glow border-glow/40",
-  SUCIA:      "text-ember border-ember/40",
+const STATUS_DOT: Record<TableStatus, string> = {
+  DISPONIBLE: "bg-sage-deep",
+  OCUPADA:    "bg-glow",
+  SUCIA:      "bg-ember",
+};
+
+const STATUS_TEXT: Record<TableStatus, string> = {
+  DISPONIBLE: "text-sage-deep",
+  OCUPADA:    "text-glow",
+  SUCIA:      "text-ember",
 };
 
 const STATUS_LABEL: Record<TableStatus, string> = {
@@ -17,18 +23,24 @@ const STATUS_LABEL: Record<TableStatus, string> = {
   SUCIA:      "Por limpiar",
 };
 
-const STATUS_DOT: Record<TableStatus, string> = {
-  DISPONIBLE: "bg-sage-deep",
-  OCUPADA:    "bg-glow",
-  SUCIA:      "bg-ember",
+const CARD_BORDER: Record<TableStatus, string> = {
+  DISPONIBLE: "border-wire hover:border-sage-deep/40",
+  OCUPADA:    "border-glow/30 hover:border-glow/60",
+  SUCIA:      "border-ember/30 hover:border-ember/60",
+};
+
+const CARD_BG: Record<TableStatus, string> = {
+  DISPONIBLE: "",
+  OCUPADA:    "bg-glow/[0.025]",
+  SUCIA:      "bg-ember/[0.025]",
 };
 
 export default function TableManager({ initialTables }: { initialTables: Table[] }) {
-  const [tables, setTables]         = useState<Table[]>(initialTables);
-  const [search, setSearch]         = useState("");
-  const [isAdding, setIsAdding]     = useState(false);
+  const [tables, setTables]           = useState<Table[]>(initialTables);
+  const [search, setSearch]           = useState("");
+  const [isAdding, setIsAdding]       = useState(false);
   const [newTableCap, setNewTableCap] = useState(4);
-  const [isPending, startTransition] = useTransition();
+  const [isPending, startTransition]  = useTransition();
 
   const filtered = tables.filter(t =>
     t.number.toString().includes(search) ||
@@ -61,8 +73,11 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
   return (
     <div className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
 
-      {/* ── Header ──────────────────────────────────────────── */}
-      <div className="mb-10 border-b border-wire pb-8" style={{ animation: "reveal-up 0.5s cubic-bezier(0.22,1,0.36,1) both" }}>
+      {/* ── Header ────────────────────────────────────────────── */}
+      <div
+        className="mb-10 border-b border-wire pb-8"
+        style={{ animation: "reveal-up 0.5s cubic-bezier(0.22,1,0.36,1) both" }}
+      >
         <p className="mb-2 text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">
           Gestión de mesas
         </p>
@@ -71,9 +86,11 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
             Mesas & QR
           </h1>
           <div className="flex flex-wrap items-center gap-3">
-            {/* Search */}
             <div className="relative flex-1 sm:flex-none">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-dim/50" aria-hidden="true" />
+              <Search
+                className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-dim/50"
+                aria-hidden="true"
+              />
               <input
                 type="text"
                 placeholder="Mesa o código…"
@@ -82,7 +99,6 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
                 className="h-10 w-full border border-wire bg-transparent pl-8 pr-4 text-[0.78rem] text-light placeholder:text-dim/40 outline-none transition-colors focus:border-light/20 sm:w-52"
               />
             </div>
-            {/* Add */}
             <button
               onClick={() => setIsAdding(true)}
               className="inline-flex h-10 items-center gap-2 border border-wire px-4 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-all duration-200 hover:border-light/20 hover:text-light hover:-translate-y-px active:translate-y-0"
@@ -94,20 +110,30 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
         </div>
       </div>
 
-      {/* ── Stats strip ─────────────────────────────────────── */}
+      {/* ── Stats strip ───────────────────────────────────────── */}
       <div className="mb-10 grid grid-cols-2 divide-x divide-y divide-wire border border-wire sm:grid-cols-4 sm:divide-y-0">
         {stats.map(({ label, value }, i) => (
-          <div key={label} className="px-6 py-5" style={{ animation: `dash-stat-enter 0.4s cubic-bezier(0.22,1,0.36,1) ${0.1 + i * 0.06}s both` }}>
+          <div
+            key={label}
+            className="px-6 py-5"
+            style={{ animation: `dash-stat-enter 0.4s cubic-bezier(0.22,1,0.36,1) ${0.1 + i * 0.06}s both` }}
+          >
             <p className="text-[0.56rem] font-bold uppercase tracking-[0.28em] text-dim">{label}</p>
             <p className="mt-1 font-serif text-[2rem] font-semibold leading-none text-light">{value}</p>
           </div>
         ))}
       </div>
 
-      {/* ── Modal: nueva mesa ───────────────────────────────── */}
+      {/* ── Modal: nueva mesa ─────────────────────────────────── */}
       {isAdding && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-6" style={{ animation: "fade-in 0.2s ease-out both" }}>
-          <div className="w-full max-w-sm border border-wire bg-canvas p-8" style={{ animation: "scale-in 0.3s cubic-bezier(0.22,1,0.36,1) both" }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-6"
+          style={{ animation: "fade-in 0.2s ease-out both" }}
+        >
+          <div
+            className="w-full max-w-sm border border-wire bg-canvas p-8"
+            style={{ animation: "scale-in 0.3s cubic-bezier(0.22,1,0.36,1) both" }}
+          >
             <p className="mb-1 text-[0.52rem] font-bold uppercase tracking-[0.44em] text-dim">Nueva mesa</p>
             <h2 className="mb-8 font-serif text-[1.6rem] font-medium leading-none text-light">
               Capacidad
@@ -153,56 +179,71 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
         </div>
       )}
 
-      {/* ── Table list ──────────────────────────────────────── */}
+      {/* ── Floor grid ────────────────────────────────────────── */}
       {filtered.length === 0 ? (
-        <div className="border border-dashed border-wire py-16 text-center">
+        <div className="border border-dashed border-wire py-20 text-center">
           <p className="text-[0.8rem] font-medium text-dim">No se encontraron mesas.</p>
-          <button onClick={() => setSearch("")} className="mt-3 text-[0.72rem] font-semibold text-glow underline underline-offset-4">
+          <button
+            onClick={() => setSearch("")}
+            className="mt-3 text-[0.72rem] font-semibold text-glow underline underline-offset-4"
+          >
             Limpiar búsqueda
           </button>
         </div>
       ) : (
-        <div className="divide-y divide-wire border-t border-wire">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
           {filtered.map((table, i) => (
             <div
               key={table.id}
-              className="group flex items-center gap-6 py-4 transition-colors duration-150 hover:bg-ink/40"
-              style={{ animation: `dash-row-enter 0.35s cubic-bezier(0.22,1,0.36,1) ${0.22 + Math.min(i * 0.05, 0.25)}s both` }}
+              className={[
+                "group relative flex min-h-[172px] flex-col overflow-hidden border transition-all duration-200",
+                CARD_BORDER[table.status],
+                CARD_BG[table.status],
+              ].join(" ")}
+              style={{
+                animation: `dash-row-enter 0.35s cubic-bezier(0.22,1,0.36,1) ${0.2 + Math.min(i * 0.04, 0.3)}s both`,
+              }}
             >
-              {/* Number */}
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-wire text-[0.9rem] font-bold text-light">
-                {table.number}
+              {/* Card content */}
+              <div className="flex flex-1 flex-col p-5">
+
+                {/* Status row */}
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[table.status]}`}
+                    aria-hidden="true"
+                    style={
+                      table.status === "OCUPADA"
+                        ? { animation: "pulse-slow 2.4s ease-in-out infinite" }
+                        : undefined
+                    }
+                  />
+                  <span className={`text-[0.58rem] font-bold uppercase tracking-[0.2em] ${STATUS_TEXT[table.status]}`}>
+                    {STATUS_LABEL[table.status]}
+                  </span>
+                </div>
+
+                {/* Table number */}
+                <div className="flex flex-1 items-center justify-center py-3">
+                  <p className="font-serif text-[3.5rem] font-semibold leading-none tracking-tight text-light">
+                    {table.number}
+                  </p>
+                </div>
+
+                {/* Capacity */}
+                <div className="flex items-center gap-1.5 transition-opacity duration-200 group-hover:opacity-0">
+                  <Users className="h-3 w-3 text-dim/50" aria-hidden="true" />
+                  <p className="text-[0.62rem] font-medium text-dim">
+                    {table.capacity} asientos
+                  </p>
+                </div>
               </div>
 
-              {/* Status */}
-              <div className={`flex items-center gap-2 w-32 shrink-0`}>
-                <span
-                  className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[table.status]}`}
-                  aria-hidden="true"
-                  style={table.status === "OCUPADA" ? { animation: "pulse-slow 2.4s ease-in-out infinite" } : undefined}
-                />
-                <span className={`text-[0.65rem] font-bold uppercase tracking-[0.2em] border px-2 py-0.5 ${STATUS_STYLES[table.status]}`}>
-                  {STATUS_LABEL[table.status]}
-                </span>
-              </div>
-
-              {/* Capacity */}
-              <div className="hidden w-24 shrink-0 sm:block">
-                <p className="text-[0.55rem] font-bold uppercase tracking-[0.24em] text-dim">Asientos</p>
-                <p className="mt-0.5 font-serif text-[1.1rem] font-semibold text-light">{table.capacity}</p>
-              </div>
-
-              {/* Code */}
-              <div className="flex-1">
-                <p className="text-[0.55rem] font-bold uppercase tracking-[0.24em] text-dim">Código QR</p>
-                <p className="mt-0.5 font-mono text-[0.9rem] font-semibold text-light/60">{table.qrCode}</p>
-              </div>
-
-              {/* Actions — always visible on touch, hover-reveal on desktop */}
-              <div className="flex items-center gap-2 opacity-100 transition-opacity duration-150 lg:opacity-0 lg:group-hover:opacity-100">
+              {/* Hover action bar */}
+              <div className="absolute inset-x-0 bottom-0 flex translate-y-full items-center justify-between border-t border-wire bg-canvas/95 px-4 py-3 backdrop-blur-sm transition-transform duration-200 group-hover:translate-y-0">
                 <button
                   onClick={() => window.open(`/mesa/${table.qrCode}/menu`, "_blank")}
-                  className="inline-flex h-9 items-center gap-2 border border-wire px-3 text-[0.65rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
+                  className="flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:text-light"
                 >
                   <QrCode className="h-3.5 w-3.5" aria-hidden="true" />
                   Ver menú
@@ -210,7 +251,7 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
                 <button
                   onClick={() => handleDelete(table.id)}
                   aria-label={`Eliminar mesa ${table.number}`}
-                  className="flex h-9 w-9 items-center justify-center border border-wire text-dim transition-colors hover:border-ember/40 hover:text-ember"
+                  className="flex h-7 w-7 items-center justify-center text-dim/50 transition-colors hover:text-ember"
                 >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
@@ -219,7 +260,6 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
           ))}
         </div>
       )}
-
     </div>
   );
 }

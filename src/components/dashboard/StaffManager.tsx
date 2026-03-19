@@ -1,30 +1,75 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { UserPlus, Trash2 } from "lucide-react";
+import { createStaffMember, deleteStaffMember, toggleStaffStatus } from "@/actions/staff";
+import { Staff } from "@/generated/prisma";
 
-type Role = "Administrador" | "Mesero" | "Cocina" | "Barra";
+export default function StaffManager({ initialStaff }: { initialStaff: Staff[] }) {
+  const [staff, setStaff] = useState<Staff[]>(initialStaff);
+  const [isPending, startTransition] = useTransition();
 
-type StaffMember = {
-  id: string;
-  name: string;
-  role: Role;
-  pin: string;
-  active: boolean;
-};
-
-const MOCK_STAFF: StaffMember[] = [
-  { id: "1", name: "Carlos Dueñas", role: "Administrador", pin: "••••", active: true  },
-  { id: "2", name: "Ana López",     role: "Mesero",        pin: "1234", active: true  },
-  { id: "3", name: "Miguel Chef",   role: "Cocina",        pin: "5678", active: true  },
-  { id: "4", name: "Luis Barman",   role: "Barra",         pin: "9012", active: false },
-];
-
-export default function StaffManager() {
-  const [staff, setStaff] = useState<StaffMember[]>(MOCK_STAFF);
+  // Create form state
+  const [isCreating, setIsCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newRole, setNewRole] = useState<"ADMIN" | "MESERO" | "COCINA" | "BARRA">("MESERO");
+  const [newPin, setNewPin] = useState("");
 
   function handleDelete(id: string) {
+    const backup = [...staff];
     setStaff(staff.filter(s => s.id !== id));
+    
+    startTransition(async () => {
+        try {
+            await deleteStaffMember(id);
+        } catch {
+            setStaff(backup);
+        }
+    });
+  }
+  
+  function handleToggleStatus(id: string, currentStatus: boolean) {
+      const backup = [...staff];
+      setStaff(staff.map(s => s.id === id ? { ...s, isActive: !currentStatus } : s));
+      
+      startTransition(async () => {
+          try {
+              await toggleStaffStatus(id, currentStatus);
+          } catch {
+              setStaff(backup);
+          }
+      });
+  }
+  
+  function handleCreate(e: React.FormEvent) {
+      e.preventDefault();
+      if (!newName || !newPin) return;
+      
+      // Fake optimistic object
+      const fakeId = "optimistic-" + Date.now();
+      const optimisticObj: Staff = {
+          id: fakeId,
+          restaurantId: "",
+          name: newName,
+          role: newRole,
+          pin: newPin,
+          isActive: true,
+          createdAt: new Date(),
+      };
+      
+      setStaff([...staff, optimisticObj]);
+      setIsCreating(false);
+      setNewName("");
+      setNewPin("");
+      
+      startTransition(async () => {
+          try {
+              const created = await createStaffMember({ name: optimisticObj.name, role: optimisticObj.role as "MESERO" | "COCINA" | "BARRA" | "ADMIN", pin: optimisticObj.pin });
+              setStaff(prev => prev.map(s => s.id === fakeId ? created : s));
+          } catch {
+              setStaff(prev => prev.filter(s => s.id !== fakeId));
+          }
+      });
   }
 
   return (
@@ -39,7 +84,10 @@ export default function StaffManager() {
           <h1 className="font-serif text-[clamp(2rem,4vw,3rem)] font-medium leading-[0.92] tracking-[-0.02em] text-light">
             Personal & accesos
           </h1>
-          <button className="inline-flex h-10 items-center gap-2 border border-wire px-4 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light self-start sm:self-auto">
+          <button 
+            onClick={() => setIsCreating(true)}
+            className="inline-flex h-10 items-center gap-2 border border-wire px-4 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light self-start sm:self-auto"
+          >
             <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
             Agregar empleado
           </button>
@@ -50,8 +98,8 @@ export default function StaffManager() {
       <div className="mb-10 grid grid-cols-3 divide-x divide-wire border border-wire">
         {[
           { label: "Total",    value: staff.length                          },
-          { label: "Activos",  value: staff.filter(s => s.active).length    },
-          { label: "Inactivos",value: staff.filter(s => !s.active).length   },
+          { label: "Activos",  value: staff.filter(s => s.isActive).length    },
+          { label: "Inactivos",value: staff.filter(s => !s.isActive).length   },
         ].map(({ label, value }, i) => (
           <div key={label} className="px-6 py-5" style={{ animation: `dash-stat-enter 0.4s cubic-bezier(0.22,1,0.36,1) ${0.1 + i * 0.06}s both` }}>
             <p className="text-[0.56rem] font-bold uppercase tracking-[0.28em] text-dim">{label}</p>
@@ -60,6 +108,55 @@ export default function StaffManager() {
         ))}
       </div>
 
+      {/* ── Create Form ─────────────────────────────────────── */}
+      {isCreating && (
+        <form onSubmit={handleCreate} className="mb-10 border border-wire p-6" style={{ animation: "reveal-up 0.4s cubic-bezier(0.22,1,0.36,1) both" }}>
+            <p className="mb-6 text-[0.6rem] font-bold uppercase tracking-[0.3em] text-light">Nuevo empleado</p>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                <div>
+                    <label className="mb-2 block text-[0.6rem] font-bold uppercase tracking-[0.2em] text-dim">Nombre</label>
+                    <input 
+                        type="text" 
+                        value={newName} 
+                        onChange={e => setNewName(e.target.value)} 
+                        required 
+                        className="w-full border-b border-wire bg-transparent pb-2 text-[0.85rem] text-light outline-none focus:border-glow focus:text-glow" 
+                        placeholder="Ej: Jose Pérez"
+                    />
+                </div>
+                <div>
+                    <label className="mb-2 block text-[0.6rem] font-bold uppercase tracking-[0.2em] text-dim">Rol</label>
+                    <select 
+                        value={newRole} 
+                        onChange={e => setNewRole(e.target.value as "MESERO" | "COCINA" | "BARRA" | "ADMIN")} 
+                        className="w-full border-b border-wire bg-transparent pb-2 text-[0.85rem] text-light outline-none focus:border-glow focus:text-glow"
+                    >
+                        <option value="MESERO" className="bg-ink text-light">Mesero</option>
+                        <option value="COCINA" className="bg-ink text-light">Cocina</option>
+                        <option value="BARRA" className="bg-ink text-light">Barra</option>
+                        <option value="ADMIN" className="bg-ink text-light">Administrador</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="mb-2 block text-[0.6rem] font-bold uppercase tracking-[0.2em] text-dim">PIN (4 dígitos)</label>
+                    <input 
+                        type="text" 
+                        value={newPin} 
+                        onChange={e => setNewPin(e.target.value)} 
+                        required 
+                        maxLength={4}
+                        className="w-full border-b border-wire bg-transparent pb-2 font-mono text-[0.85rem] text-light outline-none focus:border-glow focus:text-glow" 
+                        placeholder="1234"
+                    />
+                </div>
+            </div>
+            <div className="mt-8 flex justify-end gap-4">
+                <button type="button" onClick={() => setIsCreating(false)} className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-dim hover:text-light">Cancelar</button>
+                <button type="submit" disabled={isPending} className="border border-wire px-6 py-2 text-[0.65rem] font-bold uppercase tracking-[0.2em] text-light hover:border-light/30 disabled:opacity-50">Guardar</button>
+            </div>
+        </form>
+      )}
+      
       {/* ── Staff list ──────────────────────────────────────── */}
       <div className="divide-y divide-wire border-t border-wire">
         {staff.map((member, i) => (
@@ -88,12 +185,12 @@ export default function StaffManager() {
             <div className="w-24 shrink-0">
               <span className={[
                 "inline-flex items-center gap-1.5 border px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-[0.2em]",
-                member.active
+                member.isActive
                   ? "border-sage-deep/40 text-sage-deep"
                   : "border-wire text-dim",
               ].join(" ")}>
-                <span className={`h-1.5 w-1.5 rounded-full ${member.active ? "bg-sage-deep" : "bg-dim"}`} aria-hidden="true" />
-                {member.active ? "Activo" : "Inactivo"}
+                <span className={`h-1.5 w-1.5 rounded-full ${member.isActive ? "bg-sage-deep" : "bg-dim"}`} aria-hidden="true" />
+                <button onClick={() => handleToggleStatus(member.id, member.isActive)} className="hover:underline">{member.isActive ? "Activo" : "Inactivo"}</button>
               </span>
             </div>
 

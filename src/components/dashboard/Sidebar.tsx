@@ -2,28 +2,34 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X } from "lucide-react";
+import {
+  X, LayoutGrid, BookOpen, ChefHat,
+  BarChart3, Users, Settings2,
+  type LucideIcon,
+} from "lucide-react";
 
-const groups = [
+type NavItem = { label: string; href: string; icon: LucideIcon };
+
+const groups: { label: string; items: NavItem[] }[] = [
   {
     label: "Operaciones",
     items: [
-      { label: "Mesas & QR",     href: "/dashboard/mesas" },
-      { label: "Menú digital",   href: "/dashboard/menu"  },
-      { label: "Monitor cocina", href: "/cocina"          },
+      { label: "Mesas & QR",     href: "/dashboard/mesas",   icon: LayoutGrid },
+      { label: "Menú digital",   href: "/dashboard/menu",    icon: BookOpen   },
+      { label: "Monitor cocina", href: "/cocina",             icon: ChefHat    },
     ],
   },
   {
     label: "Análisis",
     items: [
-      { label: "Reportes", href: "/dashboard/reportes" },
+      { label: "Reportes", href: "/dashboard/reportes", icon: BarChart3 },
     ],
   },
   {
     label: "Equipo",
     items: [
-      { label: "Personal",      href: "/dashboard/staff"    },
-      { label: "Configuración", href: "/dashboard/settings" },
+      { label: "Personal",      href: "/dashboard/staff",    icon: Users     },
+      { label: "Configuración", href: "/dashboard/settings", icon: Settings2 },
     ],
   },
 ];
@@ -45,20 +51,21 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         open ? "translate-x-0" : "-translate-x-full",
       ].join(" ")}
     >
-
-      {/* Logo */}
+      {/* ── Logo ── */}
       <div
         className="flex items-center justify-between border-b border-wire px-7 py-6"
         style={{ animation: "fade-in 0.4s ease-out both" }}
       >
-        <Link href="/" className="inline-flex items-baseline gap-2 transition-opacity duration-200 hover:opacity-60">
+        <Link
+          href="/"
+          className="inline-flex items-baseline gap-2 transition-opacity duration-200 hover:opacity-60"
+        >
           <span className="font-serif text-[1.5rem] font-semibold italic tracking-tight text-light">
             bouquet
           </span>
           <span className="text-[0.46rem] font-bold uppercase tracking-[0.34em] text-dim">ops</span>
         </Link>
 
-        {/* Mobile close button */}
         {onClose && (
           <button
             onClick={onClose}
@@ -70,7 +77,7 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         )}
       </div>
 
-      {/* Subtitle — desktop only */}
+      {/* ── Subtitle ── */}
       <div
         className="hidden border-b border-wire px-7 py-3 lg:block"
         style={{ animation: "fade-in 0.4s ease-out 0.05s both" }}
@@ -80,35 +87,46 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         </p>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-4 py-5" aria-label="Navegación principal">
+      {/* ── Nav ── */}
+      <nav
+        className="flex-1 overflow-y-auto px-3 py-5"
+        aria-label="Navegación principal"
+      >
         {groups.map(({ label: groupLabel, items }, gi) => (
           <div
             key={groupLabel}
-            className="mb-6"
+            className="mb-5"
             style={{ animation: `fade-in 0.35s ease-out ${0.12 + gi * 0.08}s both` }}
           >
-            <p className="mb-2 px-3 text-[0.5rem] font-bold uppercase tracking-[0.38em] text-dim/35">
+            <p className="mb-1 px-3 text-[0.48rem] font-bold uppercase tracking-[0.38em] text-dim/35">
               {groupLabel}
             </p>
-            {items.map(({ label, href }, ii) => {
-              const active = pathname === href || pathname.startsWith(href + "/");
+
+            {items.map(({ label, href, icon: Icon }, ii) => {
+              const active =
+                pathname === href || pathname.startsWith(href + "/");
               return (
                 <Link
                   key={href}
                   href={href}
                   onClick={onClose}
                   className={[
-                    "relative mb-0.5 flex min-h-[44px] items-center px-3 text-[0.78rem] font-semibold",
+                    "relative mb-0.5 flex min-h-[42px] items-center gap-3 px-3 text-[0.78rem] font-semibold",
                     "transition-[color,background-color] duration-150",
                     active
-                      ? "bg-glow/[0.07] text-light before:absolute before:left-0 before:top-0 before:h-full before:w-[2px] before:bg-glow"
+                      ? "bg-glow/[0.08] text-light before:absolute before:left-0 before:top-0 before:h-full before:w-[2px] before:bg-glow"
                       : "text-dim hover:bg-white/[0.03] hover:text-light",
                   ].join(" ")}
                   style={{
                     animation: `fade-in 0.3s ease-out ${0.18 + gi * 0.08 + ii * 0.05}s both`,
                   }}
                 >
+                  <Icon
+                    className={`h-4 w-4 shrink-0 transition-colors ${
+                      active ? "text-glow" : "text-dim/60"
+                    }`}
+                    aria-hidden="true"
+                  />
                   {label}
                 </Link>
               );
@@ -117,22 +135,21 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
         ))}
       </nav>
 
-      {/* User */}
+      {/* ── User ── */}
       <div
-        className="border-t border-wire px-7 py-5"
+        className="border-t border-wire px-6 py-5"
         style={{ animation: "fade-in 0.35s ease-out 0.5s both" }}
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-wire text-[0.65rem] font-bold uppercase text-dim">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-glow/30 bg-glow/10 text-[0.65rem] font-bold uppercase text-glow">
             D
           </div>
-          <div>
-            <p className="text-[0.75rem] font-semibold text-light">Dueño</p>
+          <div className="min-w-0">
+            <p className="truncate text-[0.75rem] font-semibold text-light">Dueño</p>
             <p className="text-[0.58rem] font-medium text-dim/50">Administrador</p>
           </div>
         </div>
       </div>
-
     </aside>
   );
 }

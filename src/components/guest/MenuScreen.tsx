@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { submitComensalOrder, getGuestOrders } from "@/actions/comensal";
 import { createClient } from "@/lib/supabase/client";
-import { useEffect } from "react";
+import { ChevronDown } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -177,6 +177,208 @@ function CartPanel({
   );
 }
 
+// ─── OrderTracker ────────────────────────────────────────────────────────────
+
+const STATUS_LABEL: Record<string, string> = {
+  PENDING:   "En espera",
+  PREPARING: "Preparando",
+  READY:     "Lista ·",
+  DELIVERED: "Entregada",
+};
+
+const STATUS_BADGE: Record<string, string> = {
+  PENDING:   "border-wire text-dim/60",
+  PREPARING: "border-glow/40 bg-glow/[0.06] text-glow",
+  READY:     "border-sage-deep/50 bg-sage-deep/[0.07] text-sage-deep",
+  DELIVERED: "border-wire/40 text-dim/35",
+};
+
+function OrderTracker({
+  orders,
+  tableCode,
+  guestName,
+  partySize,
+}: {
+  orders: any[];
+  tableCode: string;
+  guestName: string;
+  partySize: number;
+}) {
+  const active    = orders.filter(o => o.status !== "DELIVERED");
+  const delivered = orders.filter(o => o.status === "DELIVERED");
+
+  const cuentaHref = `/mesa/${encodeURIComponent(tableCode)}/cuenta?guest=${encodeURIComponent(guestName)}&pax=${partySize}`;
+
+  const [open, setOpen] = useState(active.length > 0);
+
+  // Auto-expand whenever a new active order appears
+  const prevActiveLen = useRef(active.length);
+  useEffect(() => {
+    if (active.length > prevActiveLen.current) setOpen(true);
+    prevActiveLen.current = active.length;
+  }, [active.length]);
+
+  // Summary badge counts (only non-delivered)
+  const counts = {
+    PENDING:   active.filter(o => o.status === "PENDING").length,
+    PREPARING: active.filter(o => o.status === "PREPARING").length,
+    READY:     active.filter(o => o.status === "READY").length,
+  };
+
+  const summaryBadges = (
+    [
+      ["READY",     counts.READY,     "border-sage-deep/50 text-sage-deep"],
+      ["PREPARING", counts.PREPARING, "border-glow/40 text-glow"],
+      ["PENDING",   counts.PENDING,   "border-wire text-dim/50"],
+    ] as [string, number, string][]
+  ).filter(([, n]) => n > 0);
+
+  return (
+    <div className="border-b border-wire">
+      {/* Summary bar — always visible */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="flex w-full items-center justify-between gap-4 py-4 text-left"
+        aria-expanded={open}
+      >
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <span className="shrink-0 text-[0.56rem] font-bold uppercase tracking-[0.28em] text-dim">
+            Tus pedidos
+          </span>
+          <span className="shrink-0 font-serif text-[0.82rem] font-semibold text-dim/50">
+            ({orders.length})
+          </span>
+
+          {active.length === 0 ? (
+            <span className="text-[0.6rem] font-medium text-sage-deep/70">
+              · todos entregados ✓
+            </span>
+          ) : (
+            summaryBadges.map(([status, count, cls]) => (
+              <span
+                key={status}
+                className={`inline-flex items-center gap-1 border px-2 py-0.5 text-[0.56rem] font-bold uppercase tracking-[0.14em] ${cls}`}
+              >
+                {status === "READY" && (
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-sage-deep"
+                    style={{ animation: "pulse-slow 1.8s ease-in-out infinite" }}
+                    aria-hidden="true"
+                  />
+                )}
+                {count} {STATUS_LABEL[status]}
+              </span>
+            ))
+          )}
+        </div>
+
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 text-dim/40 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+          aria-hidden="true"
+        />
+      </button>
+
+      {/* Expandable list */}
+      {open && (
+        <div
+          className="pb-4"
+          style={{ animation: "fade-in 0.18s ease-out both" }}
+        >
+          {/* Scrollable orders */}
+          <div className="max-h-52 overflow-y-auto">
+            {/* Active orders */}
+            {active.length > 0 && (
+              <div className="flex flex-col gap-2">
+                {active.map(o => (
+                  <OrderRow key={o.id} order={o} />
+                ))}
+              </div>
+            )}
+
+            {/* Delivered — dimmed separator */}
+            {delivered.length > 0 && (
+              <>
+                {active.length > 0 && (
+                  <div className="my-3 flex items-center gap-3">
+                    <div className="h-px flex-1 bg-wire/40" />
+                    <span className="text-[0.52rem] font-bold uppercase tracking-[0.24em] text-dim/30">
+                      {delivered.length} entregada{delivered.length !== 1 ? "s" : ""}
+                    </span>
+                    <div className="h-px flex-1 bg-wire/40" />
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  {delivered.map(o => (
+                    <OrderRow key={o.id} order={o} />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Pedir la cuenta CTA */}
+          <div className="mt-4">
+            {active.length === 0 ? (
+              /* All delivered → prominent gold button */
+              <Link
+                href={cuentaHref}
+                className="flex w-full items-center justify-center gap-2 bg-glow py-3.5 text-[0.72rem] font-bold uppercase tracking-[0.22em] text-ink transition-all active:scale-[0.99]"
+                style={{ animation: "scale-in 0.25s cubic-bezier(0.22,1,0.36,1) both" }}
+              >
+                <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
+                  <path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                </svg>
+                Pedir la cuenta
+              </Link>
+            ) : (
+              /* Still active → secondary ghost link */
+              <Link
+                href={cuentaHref}
+                className="flex w-full items-center justify-center gap-2 border border-wire py-3 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-dim transition-colors hover:border-light/20 hover:text-light"
+              >
+                <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3" aria-hidden="true">
+                  <path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+                </svg>
+                Pedir la cuenta
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrderRow({ order }: { order: any }) {
+  const summary = (order.items as any[])
+    .slice(0, 2)
+    .map((i: any) => `${i.quantity}× ${i.menuItem?.name ?? "—"}`)
+    .join(", ")
+    + (order.items.length > 2 ? ` +${order.items.length - 2}` : "");
+
+  return (
+    <div
+      className={[
+        "flex items-center justify-between gap-3 px-1",
+        order.status === "DELIVERED" ? "opacity-40" : "",
+      ].join(" ")}
+    >
+      <div className="min-w-0">
+        <span className="font-mono text-[0.58rem] text-dim/40">#{order.id.slice(-4)}</span>
+        <p className="truncate text-[0.72rem] font-medium text-light">{summary}</p>
+      </div>
+      <span
+        className={[
+          "shrink-0 border px-2 py-0.5 text-[0.54rem] font-bold uppercase tracking-[0.14em]",
+          STATUS_BADGE[order.status] ?? "border-wire text-dim",
+        ].join(" ")}
+      >
+        {STATUS_LABEL[order.status] ?? order.status}
+      </span>
+    </div>
+  );
+}
+
 // ─── MenuScreen ──────────────────────────────────────────────────────────────
 
 interface MenuScreenProps {
@@ -326,31 +528,7 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
             
             {/* TRACING DE ORDENES ACTIVAS */}
             {orders && orders.length > 0 && (
-              <div className="py-8 border-b border-wire mb-4">
-                <h3 className="text-[0.62rem] font-bold uppercase tracking-[0.2em] text-glow mb-4">Estado de tus órdenes ({orders.length})</h3>
-                <div className="flex flex-col gap-3">
-                  {orders.map(o => (
-                    <div key={o.id} className="border border-wire p-4 flex items-center justify-between">
-                      <div>
-                        <p className="text-[0.8rem] text-light mb-1">Orden <span className="font-mono text-dim">#{o.id.slice(-4)}</span></p>
-                        <ul className="text-[0.65rem] text-dim flex flex-wrap gap-x-2 gap-y-1">
-                          {o.items.map((item: any, idx: number) => (
-                            <li key={idx} className="bg-wire/20 px-1.5 py-0.5 whitespace-nowrap">
-                              {item.quantity}x {item.menuItem?.name}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="ml-4 flex-shrink-0">
-                        {o.status === 'PENDING' && <span className="text-[0.6rem] font-bold tracking-widest text-dim border border-wire px-2 py-1">EN ESPERA</span>}
-                        {o.status === 'PREPARING' && <span className="text-[0.6rem] font-bold tracking-widest text-glow border border-glow/30 bg-glow/5 px-2 py-1">PREPARANDO</span>}
-                        {o.status === 'READY' && <span className="text-[0.6rem] font-bold tracking-widest text-green-400 border border-green-500/30 bg-green-500/5 px-2 py-1">LISTA</span>}
-                        {o.status === 'DELIVERED' && <span className="text-[0.6rem] font-bold tracking-widest text-sage-deep border border-sage-deep/30 px-2 py-1">ENTREGADA</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <OrderTracker orders={orders} tableCode={tableCode} guestName={guestName} partySize={partySize} />
             )}
 
             {/* Category tabs */}

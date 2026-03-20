@@ -229,12 +229,19 @@ export type FloorMapTable = Table;
 
 interface FloorMapProps {
   tables: FloorMapTable[];
+  readOnly?: boolean;
+  onTableClick?: (tableId: string) => void;
 }
 
-export default function FloorMap({ tables: initialTables }: FloorMapProps) {
+export default function FloorMap({ tables: initialTables, readOnly = false, onTableClick }: FloorMapProps) {
   const [tables, setTables]     = useState<FloorMapTable[]>(initialTables);
   const [editMode, setEditMode] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+
+  // Sync when parent refreshes table data (e.g. waiter polling)
+  useEffect(() => {
+    setTables(initialTables);
+  }, [initialTables]);
   const [saving, setSaving]     = useState(false);
   const [saved, setSaved]       = useState(false);
   const containerRef            = useRef<HTMLDivElement>(null);
@@ -300,11 +307,19 @@ export default function FloorMap({ tables: initialTables }: FloorMapProps) {
 
   const selectedTable = selected ? tables.find(t => t.id === selected) : null;
 
+  const handleTableSelect = (id: string | null) => {
+    if (readOnly) {
+      if (id && onTableClick) onTableClick(id);
+      return;
+    }
+    setSelected(id);
+  };
+
   return (
     <div className="flex flex-col gap-4">
 
       {/* ── Toolbar ────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between border border-wire px-5 py-3">
+      {!readOnly && <div className="flex items-center justify-between border border-wire px-5 py-3">
         <Legend />
 
         <div className="flex items-center gap-3">
@@ -343,7 +358,14 @@ export default function FloorMap({ tables: initialTables }: FloorMapProps) {
             }
           </button>
         </div>
-      </div>
+      </div>}
+
+      {/* ── Legend (read-only mode) ─────────────────────────────── */}
+      {readOnly && (
+        <div className="flex items-center border border-wire px-5 py-3">
+          <Legend />
+        </div>
+      )}
 
       {/* ── Canvas ─────────────────────────────────────────────── */}
       <div
@@ -390,9 +412,9 @@ export default function FloorMap({ tables: initialTables }: FloorMapProps) {
               <MemoizedTableNode
                 key={table.id}
                 table={table}
-                editMode={editMode}
+                editMode={!readOnly && editMode}
                 selected={selected}
-                onSelect={setSelected}
+                onSelect={handleTableSelect}
                 onDragEnd={handleDragEnd}
               />
             ))}

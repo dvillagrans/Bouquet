@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronDown, Plus, Receipt, Lock, Clock } from "lucide-react";
 import { getTableDetail, closeTable } from "@/actions/waiter";
 import WaiterTakeOrder from "./WaiterTakeOrder";
@@ -45,8 +45,7 @@ export default function WaiterTableDetail({
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
-  // Load table details on mount
-  const loadTableDetail = async () => {
+  const loadTableDetail = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getTableDetail(tableId);
@@ -56,12 +55,11 @@ export default function WaiterTableDetail({
     } finally {
       setLoading(false);
     }
-  };
+  }, [tableId]);
 
-  // Initial load
-  if (!tableData && loading) {
+  useEffect(() => {
     loadTableDetail();
-  }
+  }, [loadTableDetail]);
 
   const handleAddItems = async () => {
     setActiveTab("add-items");

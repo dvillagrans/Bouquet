@@ -1,11 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, ChefHat, Clock, TrendingUp, RefreshCw, Sparkles } from "lucide-react";
+import { Users, ChefHat, Clock, RefreshCw, Sparkles, LayoutGrid, Map } from "lucide-react";
 import { getWaiterTablesSummary, updateTableStatus } from "@/actions/waiter";
+import { getTables } from "@/actions/tables";
 import WaiterTableDetail from "./WaiterTableDetail";
+import FloorMapClient from "@/components/dashboard/FloorMapClient";
+import type { FloorMapTable } from "@/components/dashboard/FloorMap";
 
 type FilterType = "todas" | "ocupadas" | "pendientes" | "listas" | "sucias";
+type ViewType = "lista" | "mapa";
 
 interface TableSummary {
   id: string;
@@ -21,15 +25,21 @@ interface TableSummary {
 
 export default function WaiterDashboard() {
   const [tables, setTables] = useState<TableSummary[]>([]);
+  const [mapTables, setMapTables] = useState<FloorMapTable[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("todas");
+  const [view, setView] = useState<ViewType>("lista");
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
 
   const loadTables = async () => {
     try {
       setLoading(true);
-      const data = await getWaiterTablesSummary();
-      setTables(data);
+      const [summary, full] = await Promise.all([
+        getWaiterTablesSummary(),
+        getTables(),
+      ]);
+      setTables(summary);
+      setMapTables(full);
     } catch (error) {
       console.error("Error loading tables:", error);
     } finally {
@@ -135,11 +145,34 @@ export default function WaiterDashboard() {
         </div>
       </div>
 
-      {/* Filters and Refresh */}
+      {/* Filters, View Toggle and Refresh */}
       <div className="border-b border-wire bg-panel p-4">
         <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-4">
           <div className="flex gap-2 flex-wrap">
-            {(["todas", "ocupadas", "pendientes", "listas", "sucias"] as const).map((f) => (
+            {/* View toggle */}
+            <div className="flex border border-wire rounded overflow-hidden mr-2">
+              <button
+                onClick={() => setView("lista")}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-bold uppercase transition-all ${
+                  view === "lista" ? "bg-glow text-canvas" : "text-dim hover:text-light"
+                }`}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                Lista
+              </button>
+              <button
+                onClick={() => setView("mapa")}
+                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-bold uppercase transition-all border-l border-wire ${
+                  view === "mapa" ? "bg-glow text-canvas" : "text-dim hover:text-light"
+                }`}
+              >
+                <Map className="h-3.5 w-3.5" />
+                Mapa
+              </button>
+            </div>
+
+            {/* Filters (only in list view) */}
+            {view === "lista" && (["todas", "ocupadas", "pendientes", "listas", "sucias"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
@@ -172,8 +205,27 @@ export default function WaiterDashboard() {
         </div>
       </div>
 
+      {/* Floor Map View */}
+      {view === "mapa" && (
+        <div className="p-6">
+          <div className="mx-auto max-w-7xl">
+            {loading && mapTables.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <p className="text-dim">Cargando mapa...</p>
+              </div>
+            ) : (
+              <FloorMapClient
+                tables={mapTables}
+                readOnly
+                onTableClick={(id) => setSelectedTable(id)}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Table Grid */}
-      <div className="p-6">
+      {view === "lista" && <div className="p-6">
         <div className="mx-auto max-w-7xl">
           {loading && tables.length === 0 ? (
             <div className="flex items-center justify-center py-12">
@@ -281,7 +333,7 @@ export default function WaiterDashboard() {
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* Table Detail Modal */}
       {selectedTable && (

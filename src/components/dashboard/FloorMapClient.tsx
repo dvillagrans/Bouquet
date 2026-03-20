@@ -13,6 +13,12 @@ const FloorMap = dynamic(() => import("./FloorMap"), {
   ),
 });
 
-export default function FloorMapClient({ tables }: { tables: FloorMapTable[] }) {
-  return <FloorMap tables={tables} />;
+interface FloorMapClientProps {
+  tables: FloorMapTable[];
+  readOnly?: boolean;
+  onTableClick?: (tableId: string) => void;
+}
+
+export default function FloorMapClient({ tables, readOnly, onTableClick }: FloorMapClientProps) {
+  return <FloorMap tables={tables} readOnly={readOnly} onTableClick={onTableClick} />;
 }

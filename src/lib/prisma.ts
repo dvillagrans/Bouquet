@@ -28,8 +28,16 @@ function getDatabaseConnectionString() {
   return connectionString;
 }
 
+/** Node `pg` v8+ maps `sslmode=require` to verify-full; Supabase + algunos entornos necesitan semántica libpq. */
+function withPgLibpqCompat(connectionString: string) {
+  if (/[?&]uselibpqcompat=/.test(connectionString)) return connectionString;
+  return connectionString.includes("?")
+    ? `${connectionString}&uselibpqcompat=true`
+    : `${connectionString}?uselibpqcompat=true`;
+}
+
 function createPrismaClient() {
-  const connectionString = getDatabaseConnectionString();
+  const connectionString = withPgLibpqCompat(getDatabaseConnectionString());
   // Pass a PoolConfig instead of a Pool instance to avoid type mismatches
   // between different `pg`/`@types/pg` copies.
   const adapter = new PrismaPg({ connectionString });

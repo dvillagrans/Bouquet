@@ -38,8 +38,9 @@ model Zone {
   chainId String
   name    String // "Norte", "CDMX", "Occidente"
 
-  chain       Chain      @relation(fields: [chainId], references: [id], onDelete: Cascade)
-  restaurants Restaurant[]
+  chain              Chain              @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  restaurants        Restaurant[]
+  zoneMenuOverrides  ZoneMenuOverride[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

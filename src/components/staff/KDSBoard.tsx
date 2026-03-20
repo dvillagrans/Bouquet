@@ -25,6 +25,7 @@ type OrderItem = {
   name: string;
   quantity: number;
   notes?: string;
+  variantName?: string | null;
   station: "cocina" | "barra";
 };
 
@@ -174,14 +175,19 @@ function OrderCard({
       <div className="flex flex-col divide-y divide-wire/50 px-4">
         {order.items.map(item => (
           <div key={item.id} className="py-3">
-            <div className="flex items-baseline gap-3">
-              <span className="w-7 shrink-0 text-center text-[0.72rem] font-bold tabular-nums text-dim">
+            <div className="flex items-start gap-3">
+              <span className="w-7 shrink-0 pt-0.5 text-center text-[0.72rem] font-bold tabular-nums text-dim">
                 {item.quantity}×
               </span>
-              <span className="flex-1 text-[0.9rem] font-semibold text-light leading-snug">
-                {item.name}
-              </span>
-              <span className="shrink-0 text-dim/40" title={`Estación: ${item.station}`}>
+              <div className="min-w-0 flex-1">
+                <p className="text-[0.9rem] font-semibold text-light leading-snug">{item.name}</p>
+                {item.variantName && (
+                  <p className="mt-0.5 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-glow/75">
+                    {item.variantName}
+                  </p>
+                )}
+              </div>
+              <span className="shrink-0 pt-0.5 text-dim/40" title={`Estación: ${item.station}`}>
                 {item.station === "cocina"
                   ? <Utensils className="h-3 w-3" aria-hidden="true" />
                   : <Coffee   className="h-3 w-3" aria-hidden="true" />}
@@ -235,7 +241,9 @@ function GhostCard({ order }: { order: Order }) {
       </div>
       <div className="px-4 py-2">
         <p className="text-[0.72rem] font-medium text-dim/70 truncate">
-          {order.items.slice(0, 2).map(i => `${i.quantity}× ${i.name}`).join(", ")}
+          {order.items.slice(0, 2).map(i =>
+            `${i.quantity}× ${i.name}${i.variantName ? ` (${i.variantName})` : ""}`
+          ).join(", ")}
           {order.items.length > 2 ? ` +${order.items.length - 2}` : ""}
         </p>
       </div>

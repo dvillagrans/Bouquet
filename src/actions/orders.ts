@@ -37,6 +37,7 @@ export async function getLiveOrders() {
       name: item.menuItem.name,
       quantity: item.quantity,
       notes: item.notes || undefined,
+      variantName: item.variantName ?? undefined,
       station: item.menuItem.station.toLowerCase() as "cocina" | "barra"
     }))
   }));

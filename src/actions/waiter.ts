@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getDefaultRestaurant } from "./restaurant";
 
 /**
  * Update the status of a table
@@ -41,4 +42,218 @@ export async function closeTable(tableId: string) {
 
   revalidatePath("/mesero");
   revalidatePath("/dashboard/mesas");
+}
+
+/**
+ * Get summary of waiter dashboard: all tables with active sessions and order counts
+ */
+export async function getWaiterTablesSummary() {
+  const restaurant = await getDefaultRestaurant();
+
+  const tables = await prisma.table.findMany({
+    where: { restaurantId: restaurant.id },
+    orderBy: { number: "asc" },
+    include: {
+      sessions: {
+        where: { isActive: true },
+        take: 1,
+        select: {
+          id: true,
+          guestName: true,
+          pax: true,
+          createdAt: true,
+        },
+      },
+      orders: {
+        where: {
+          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+        },
+        select: {
+          id: true,
+          status: true,
+          items: {
+            select: { priceAtTime: true, quantity: true },
+          },
+        },
+      },
+    },
+  });
+
+  // Transform and aggregate data
+  return tables.map((table) => {
+    const activeSession = table.sessions[0] || null;
+    const billTotal = table.orders.reduce(
+      (sum, order) =>
+        sum + order.items.reduce((orderSum, item) => orderSum + item.priceAtTime * item.quantity, 0),
+      0
+    );
+    const pendingOrders = table.orders.filter((o) => o.status === "PENDING").length;
+    const readyOrders = table.orders.filter((o) => o.status === "READY").length;
+
+    return {
+      id: table.id,
+      number: table.number,
+      capacity: table.capacity,
+      status: table.status,
+      activeSession,
+      orderCount: table.orders.length,
+      pendingCount: pendingOrders,
+      readyCount: readyOrders,
+      billTotal,
+    };
+  });
+}
+
+/**
+ * Get detailed info for a specific table
+ */
+export async function getTableDetail(tableId: string) {
+  const table = await prisma.table.findUnique({
+    where: { id: tableId },
+    include: {
+      sessions: {
+        where: { isActive: true },
+        take: 1,
+        include: {
+          orderItems: {
+            select: { id: true, quantity: true, notes: true, priceAtTime: true },
+          },
+        },
+      },
+      orders: {
+        where: {
+          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+        },
+        include: {
+          items: {
+            include: { menuItem: true, session: { select: { guestName: true } } },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  });
+
+  if (!table) throw new Error("Tabla no encontrada");
+
+  const activeSession = table.sessions[0] || null;
+
+  // Calculate bill from active session
+  let billTotal = 0;
+  if (activeSession) {
+    billTotal = activeSession.orderItems.reduce(
+      (sum, item) => sum + item.priceAtTime * item.quantity,
+      0
+    );
+  }
+
+  return {
+    table: {
+      id: table.id,
+      number: table.number,
+      capacity: table.capacity,
+      status: table.status,
+      qrCode: table.qrCode,
+    },
+    session: activeSession
+      ? {
+        id: activeSession.id,
+        guestName: activeSession.guestName,
+        pax: activeSession.pax,
+        createdAt: activeSession.createdAt,
+      }
+      : null,
+    orders: table.orders.map((order) => ({
+      id: order.id,
+      status: order.status,
+      createdAt: order.createdAt,
+      items: order.items.map((item) => ({
+        id: item.id,
+        name: item.menuItem.name,
+        quantity: item.quantity,
+        notes: item.notes,
+        price: item.priceAtTime,
+        totalPrice: item.priceAtTime * item.quantity,
+      })),
+    })),
+    billTotal,
+  };
+}
+
+/**
+ * Create an order as waiter (for a seated table)
+ */
+export async function waiterCreateOrder(
+  tableId: string,
+  items: Array<{ menuItemId: string; quantity: number; notes?: string }>
+) {
+  // 1. Validate table exists and is occupied
+  const table = await prisma.table.findUnique({
+    where: { id: tableId },
+  });
+
+  if (!table) throw new Error("Tabla no encontrada");
+  if (table.status !== "OCUPADA") throw new Error("La mesa no está ocupada");
+
+  // 2. Get active session for table
+  let session = await prisma.session.findFirst({
+    where: { tableId, isActive: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!session) throw new Error("No hay sesión activa en esta mesa");
+
+  // 3. Get menu item prices
+  const dbItems = await prisma.menuItem.findMany({
+    where: { id: { in: items.map((i) => i.menuItemId) } },
+  });
+
+  // 4. Create order
+  const newOrder = await prisma.order.create({
+    data: {
+      restaurantId: table.restaurantId,
+      tableId,
+      status: "PENDING",
+      items: {
+        create: items.map((cartItem) => {
+          const dbItem = dbItems.find((i) => i.id === cartItem.menuItemId);
+          return {
+            menuItemId: cartItem.menuItemId,
+            quantity: cartItem.quantity,
+            notes: cartItem.notes || null,
+            priceAtTime: dbItem?.price || 0,
+            sessionId: session!.id,
+          };
+        }),
+      },
+    },
+  });
+
+  revalidatePath("/mesero");
+  revalidatePath("/cocina");
+
+  return { orderId: newOrder.id, status: "success" };
+}
+
+/**
+ * Get menu data for waiter ordering
+ */
+export async function getMenuForOrdering() {
+  const restaurant = await getDefaultRestaurant();
+
+  const [categories, items] = await Promise.all([
+    prisma.category.findMany({
+      where: { restaurantId: restaurant.id },
+      orderBy: { order: "asc" },
+    }),
+    prisma.menuItem.findMany({
+      where: { restaurantId: restaurant.id, isSoldOut: false },
+      include: { category: true },
+    }),
+  ]);
+
+  return {
+    categories,
+    items,
+  };
 }

@@ -1,15 +1,18 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Plus, Search, Edit2, Trash2, X, ChefHat, GlassWater, Star } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, ChefHat, GlassWater, Star, Layers } from "lucide-react";
 import { toggleItemSoldOut, deleteMenuItem } from "@/actions/menu";
 
 /* ── Types ──────────────────────────────────────────────────────── */
+type Variant = { name: string; price: number };
+
 type MenuItemDB = {
   id: string;
   name: string;
   description: string | null;
   price: number;
+  variants: Variant[];
   categoryName: string;
   isPopular: boolean;
   isSoldOut: boolean;
@@ -25,6 +28,68 @@ type CategoryDB = {
 const inputCls  = "h-10 w-full border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none transition-colors focus:border-light/30";
 const selectCls = "h-10 w-full cursor-pointer appearance-none border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none transition-colors focus:border-light/30";
 const labelCls  = "mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim";
+
+/* ── Variants editor sub-component ─────────────────────────────── */
+function VariantsEditor({
+  variants,
+  onChange,
+}: {
+  variants: Variant[];
+  onChange: (v: Variant[]) => void;
+}) {
+  function addRow() {
+    onChange([...variants, { name: "", price: 0 }]);
+  }
+  function updateRow(i: number, field: keyof Variant, value: string) {
+    const updated = variants.map((v, idx) =>
+      idx === i ? { ...v, [field]: field === "price" ? parseFloat(value) || 0 : value } : v
+    );
+    onChange(updated);
+  }
+  function removeRow(i: number) {
+    onChange(variants.filter((_, idx) => idx !== i));
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {variants.map((v, i) => (
+        <div key={i} className="flex items-center gap-2">
+          <input
+            type="text"
+            placeholder="Nombre (Chico, Mediano…)"
+            value={v.name}
+            onChange={e => updateRow(i, "name", e.target.value)}
+            className="h-9 flex-1 border border-wire bg-transparent px-2.5 text-[0.78rem] text-light outline-none focus:border-light/30"
+          />
+          <input
+            type="number"
+            placeholder="Precio"
+            min="0"
+            step="0.01"
+            value={v.price || ""}
+            onChange={e => updateRow(i, "price", e.target.value)}
+            className="h-9 w-24 border border-wire bg-transparent px-2.5 text-[0.78rem] text-light outline-none focus:border-light/30"
+          />
+          <button
+            type="button"
+            onClick={() => removeRow(i)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center border border-wire text-dim hover:border-ember/40 hover:text-ember transition-colors"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={addRow}
+        className="flex items-center gap-1.5 border border-dashed border-wire px-3 py-2 text-[0.62rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light"
+      >
+        <Plus className="h-3 w-3" />
+        Agregar tamaño
+      </button>
+    </div>
+  );
+}
 
 /* ── Main component ──────────────────────────────────────────────── */
 export default function MenuEditor({
@@ -46,10 +111,12 @@ export default function MenuEditor({
     name: "", description: "", price: "", categoryId: "",
     isPopular: false, station: "COCINA" as "COCINA" | "BARRA",
   });
+  const [newVariants, setNewVariants]         = useState<Variant[]>([]);
   const [editingItem, setEditingItem]         = useState<MenuItemDB | null>(null);
   const [editForm, setEditForm]               = useState({
     name: "", description: "", price: "", categoryId: "", isPopular: false,
   });
+  const [editVariants, setEditVariants]       = useState<Variant[]>([]);
   const [isAddingCat, setIsAddingCat]         = useState(false);
   const [newCatName, setNewCatName]           = useState("");
 
@@ -99,21 +166,29 @@ export default function MenuEditor({
   /* ── Handlers ────────────────────────────────────────────────── */
   function handleCreateItem(e: React.FormEvent) {
     e.preventDefault();
-    if (!newItem.name || !newItem.price || !newItem.categoryId) return;
+    const hasVariants = newVariants.length > 0;
+    if (!newItem.name || !newItem.categoryId) return;
+    if (!hasVariants && !newItem.price) return;
+    // When variants exist, use the lowest variant price as base price
+    const basePrice = hasVariants
+      ? Math.min(...newVariants.map(v => v.price))
+      : parseFloat(newItem.price);
     startTransition(async () => {
       const { createMenuItem } = await import("@/actions/menu");
       const created = await createMenuItem({
         name:        newItem.name,
         description: newItem.description || undefined,
-        price:       parseFloat(newItem.price),
+        price:       basePrice,
         categoryId:  newItem.categoryId,
         isPopular:   newItem.isPopular,
         station:     newItem.station,
+        variants:    newVariants,
       });
       const catName = categories.find(c => c.id === newItem.categoryId)?.name || "";
-      setItems(prev => [...prev, { ...created, categoryName: catName }]);
+      setItems(prev => [...prev, { ...created, categoryName: catName, variants: newVariants }]);
       setIsAdding(false);
       setNewItem({ name: "", description: "", price: "", categoryId: "", isPopular: false, station: "COCINA" });
+      setNewVariants([]);
     });
   }
 
@@ -126,16 +201,23 @@ export default function MenuEditor({
       categoryId: categories.find(c => c.name === item.categoryName)?.id || "",
       isPopular:  item.isPopular,
     });
+    setEditVariants(item.variants ?? []);
   }
 
   function handleEditItem(e: React.FormEvent) {
     e.preventDefault();
-    if (!editingItem || !editForm.name || !editForm.price || !editForm.categoryId) return;
+    if (!editingItem || !editForm.name || !editForm.categoryId) return;
+    const hasVariants = editVariants.length > 0;
+    if (!hasVariants && !editForm.price) return;
+    const basePrice = hasVariants
+      ? Math.min(...editVariants.map(v => v.price))
+      : parseFloat(editForm.price);
     const catName = categories.find(c => c.id === editForm.categoryId)?.name || editingItem.categoryName;
     setItems(prev => prev.map(item =>
       item.id === editingItem.id
         ? { ...item, name: editForm.name, description: editForm.description || null,
-            price: parseFloat(editForm.price), categoryName: catName, isPopular: editForm.isPopular }
+            price: basePrice, categoryName: catName, isPopular: editForm.isPopular,
+            variants: editVariants }
         : item
     ));
     setEditingItem(null);
@@ -144,9 +226,10 @@ export default function MenuEditor({
       await updateMenuItem(editingItem.id, {
         name:        editForm.name,
         description: editForm.description || undefined,
-        price:       parseFloat(editForm.price),
+        price:       basePrice,
         categoryId:  editForm.categoryId,
         isPopular:   editForm.isPopular,
+        variants:    editVariants,
       });
     });
   }
@@ -170,7 +253,8 @@ export default function MenuEditor({
     startTransition(async () => {
       const { createCategory } = await import("@/actions/menu");
       const cat = await createCategory(name);
-      setCategories(prev => [...prev, cat]);
+      if (!cat.id) return;
+      setCategories(prev => (prev.some(c => c.id === cat.id) ? prev : [...prev, cat]));
     });
   }
 
@@ -246,8 +330,18 @@ export default function MenuEditor({
               </div>
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className={labelCls}>Precio</label>
-                  <input required type="number" min="0" step="0.01" value={newItem.price} onChange={e => setNewItem({ ...newItem, price: e.target.value })} className={inputCls} placeholder="0.00" />
+                  <label className={labelCls}>
+                    {newVariants.length > 0 ? "Precio base (auto)" : "Precio"}
+                  </label>
+                  <input
+                    type="number" min="0" step="0.01"
+                    value={newVariants.length > 0 ? Math.min(...newVariants.map(v => v.price)) || "" : newItem.price}
+                    onChange={e => setNewItem({ ...newItem, price: e.target.value })}
+                    className={`${inputCls} ${newVariants.length > 0 ? "opacity-40 pointer-events-none" : ""}`}
+                    placeholder="0.00"
+                    required={newVariants.length === 0}
+                    readOnly={newVariants.length > 0}
+                  />
                 </div>
                 <div className="flex-1">
                   <label className={labelCls}>Categoría</label>
@@ -258,6 +352,19 @@ export default function MenuEditor({
                     ))}
                   </select>
                 </div>
+              </div>
+              {/* Variants / Tamaños */}
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className={labelCls + " mb-0 flex items-center gap-1.5"}>
+                    <Layers className="h-3 w-3" />
+                    Tamaños
+                  </label>
+                  {newVariants.length === 0 && (
+                    <span className="text-[0.58rem] text-dim/50">Opcional — Chico, Mediano, Grande…</span>
+                  )}
+                </div>
+                <VariantsEditor variants={newVariants} onChange={setNewVariants} />
               </div>
               <div className="flex gap-4">
                 <div className="flex-1">
@@ -307,8 +414,17 @@ export default function MenuEditor({
               </div>
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className={labelCls}>Precio</label>
-                  <input required type="number" min="0" step="0.01" value={editForm.price} onChange={e => setEditForm({ ...editForm, price: e.target.value })} className={inputCls} />
+                  <label className={labelCls}>
+                    {editVariants.length > 0 ? "Precio base (auto)" : "Precio"}
+                  </label>
+                  <input
+                    type="number" min="0" step="0.01"
+                    value={editVariants.length > 0 ? Math.min(...editVariants.map(v => v.price)) || "" : editForm.price}
+                    onChange={e => setEditForm({ ...editForm, price: e.target.value })}
+                    className={`${inputCls} ${editVariants.length > 0 ? "opacity-40 pointer-events-none" : ""}`}
+                    required={editVariants.length === 0}
+                    readOnly={editVariants.length > 0}
+                  />
                 </div>
                 <div className="flex-1">
                   <label className={labelCls}>Categoría</label>
@@ -319,6 +435,19 @@ export default function MenuEditor({
                     ))}
                   </select>
                 </div>
+              </div>
+              {/* Variants / Tamaños */}
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className={labelCls + " mb-0 flex items-center gap-1.5"}>
+                    <Layers className="h-3 w-3" />
+                    Tamaños
+                  </label>
+                  {editVariants.length === 0 && (
+                    <span className="text-[0.58rem] text-dim/50">Opcional — Chico, Mediano, Grande…</span>
+                  )}
+                </div>
+                <VariantsEditor variants={editVariants} onChange={setEditVariants} />
               </div>
               <div className="flex items-center gap-2.5 pt-1">
                 <label className="flex cursor-pointer items-center gap-2.5">
@@ -497,13 +626,29 @@ export default function MenuEditor({
 
               {/* Card footer */}
               <div className="flex items-center justify-between gap-2 border-t border-wire px-5 py-3">
-                {/* Price */}
-                <p className={[
-                  "font-serif text-[1.2rem] font-semibold tabular-nums",
-                  item.isSoldOut ? "text-dim/60" : "text-light",
-                ].join(" ")}>
-                  ${item.price.toFixed(0)}
-                </p>
+                {/* Price / Variants */}
+                {item.variants && item.variants.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {item.variants.map((v) => (
+                      <span
+                        key={v.name}
+                        className={[
+                          "border px-2 py-0.5 text-[0.6rem] font-semibold",
+                          item.isSoldOut ? "border-wire/40 text-dim/50" : "border-wire text-dim",
+                        ].join(" ")}
+                      >
+                        {v.name} <span className="text-light/70">${v.price.toFixed(0)}</span>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={[
+                    "font-serif text-[1.2rem] font-semibold tabular-nums",
+                    item.isSoldOut ? "text-dim/60" : "text-light",
+                  ].join(" ")}>
+                    ${item.price.toFixed(0)}
+                  </p>
+                )}
 
                 {/* Actions */}
                 <div className="flex items-center gap-1.5">

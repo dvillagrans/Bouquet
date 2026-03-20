@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { ChevronDown, Plus, Receipt, Lock, Clock } from "lucide-react";
+import { Plus, Receipt, Lock } from "lucide-react";
 import { getTableDetail, closeTable } from "@/actions/waiter";
 import WaiterTakeOrder from "./WaiterTakeOrder";
 import WaiterPayment from "./WaiterPayment";
@@ -43,7 +43,6 @@ export default function WaiterTableDetail({
   const [activeTab, setActiveTab] = useState<TabType>("orders");
   const [tableData, setTableData] = useState<TableDetailData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   const loadTableDetail = useCallback(async () => {
     try {
@@ -171,7 +170,7 @@ export default function WaiterTableDetail({
                 orders.map((order) => (
                   <div
                     key={order.id}
-                    className={`border rounded p-4 cursor-pointer transition-all ${
+                    className={`border rounded p-4 ${
                       order.status === "PENDING"
                         ? "border-glow/40 bg-glow/5"
                         : order.status === "PREPARING"
@@ -180,66 +179,50 @@ export default function WaiterTableDetail({
                         ? "border-sage-deep/40 bg-sage-deep/5"
                         : "border-wire/40 bg-wire/5"
                     }`}
-                    onClick={() =>
-                      setExpandedOrder(expandedOrder === order.id ? null : order.id)
-                    }
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded ${
-                              order.status === "PENDING"
-                                ? "bg-glow/20 text-glow"
-                                : order.status === "PREPARING"
-                                ? "bg-glow/10 text-glow"
-                                : order.status === "READY"
-                                ? "bg-sage-deep/20 text-sage-deep"
-                                : "bg-wire/20 text-dim"
-                            }`}
-                          >
-                            {order.status === "PENDING"
-                              ? "Pendiente"
-                              : order.status === "PREPARING"
-                              ? "Preparando"
-                              : order.status === "READY"
-                              ? "Listo"
-                              : "Entregado"}
-                          </span>
-                          <span className="text-xs text-dim">
-                            {new Date(order.createdAt).toLocaleTimeString("es-MX", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </div>
-                        <p className="text-sm text-light mt-2">
-                          {order.items.length} item{order.items.length !== 1 ? "s" : ""}
-                        </p>
-                      </div>
-                      <ChevronDown
-                        className={`h-4 w-4 text-dim transition-transform ${
-                          expandedOrder === order.id ? "rotate-180" : ""
+                    {/* Order header */}
+                    <div className="flex items-center gap-2 mb-3">
+                      <span
+                        className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded ${
+                          order.status === "PENDING"
+                            ? "bg-glow/20 text-glow"
+                            : order.status === "PREPARING"
+                            ? "bg-glow/10 text-glow"
+                            : order.status === "READY"
+                            ? "bg-sage-deep/20 text-sage-deep"
+                            : "bg-wire/20 text-dim"
                         }`}
-                      />
+                      >
+                        {order.status === "PENDING"
+                          ? "Pendiente"
+                          : order.status === "PREPARING"
+                          ? "Preparando"
+                          : order.status === "READY"
+                          ? "Listo"
+                          : "Entregado"}
+                      </span>
+                      <span className="text-xs text-dim">
+                        {new Date(order.createdAt).toLocaleTimeString("es-MX", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
                     </div>
 
-                    {/* Expanded Item List */}
-                    {expandedOrder === order.id && (
-                      <div className="mt-3 pt-3 border-t border-wire/30 space-y-2">
-                        {order.items.map((item) => (
-                          <div key={item.id} className="flex justify-between text-sm">
-                            <div>
-                              <p className="text-light">
-                                {item.quantity}x {item.name}
-                              </p>
-                              {item.notes && <p className="text-xs text-dim italic">{item.notes}</p>}
-                            </div>
-                            <p className="text-light font-mono">${item.totalPrice.toFixed(2)}</p>
+                    {/* Items always visible */}
+                    <div className="space-y-2">
+                      {order.items.map((item) => (
+                        <div key={item.id} className="flex justify-between text-sm">
+                          <div>
+                            <p className="text-light">
+                              {item.quantity}x {item.name}
+                            </p>
+                            {item.notes && <p className="text-xs text-dim italic">{item.notes}</p>}
                           </div>
-                        ))}
-                      </div>
-                    )}
+                          <p className="text-light font-mono">${item.totalPrice.toFixed(2)}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))
               )}

@@ -7,6 +7,10 @@ import { revalidatePath } from "next/cache";
 // Las categorias por default que podemos crear si esta vacio
 const DEFAULT_CATEGORIES = ["Entradas", "Platos principales", "Bebidas", "Postres"];
 
+function normalizeCategoryName(name: string) {
+  return name.trim().replace(/\s+/g, " ");
+}
+
 export async function getMenuData() {
   const restaurant = await getDefaultRestaurant();
   
@@ -17,16 +21,21 @@ export async function getMenuData() {
     include: { items: true } // Traemos los items de una vez
   });
 
-  // Crearlas si el usuario recién inicia
+  // Crearlas si el usuario recién inicia (upsert secuencial: evita duplicados por requests paralelas)
   if (categories.length === 0) {
-    // Create all default categories in parallel — independent operations
-    await Promise.all(
-      DEFAULT_CATEGORIES.map((name, i) =>
-        prisma.category.create({
-          data: { name, order: i, restaurantId: restaurant.id },
-        })
-      )
-    );
+    for (let i = 0; i < DEFAULT_CATEGORIES.length; i++) {
+      const name = DEFAULT_CATEGORIES[i];
+      await prisma.category.upsert({
+        where: {
+          restaurantId_name: {
+            restaurantId: restaurant.id,
+            name,
+          },
+        },
+        create: { name, order: i, restaurantId: restaurant.id },
+        update: {},
+      });
+    }
 
     categories = await prisma.category.findMany({
       where: { restaurantId: restaurant.id },
@@ -48,23 +57,31 @@ export async function getMenuData() {
 
 export async function createCategory(name: string) {
   const restaurant = await getDefaultRestaurant();
-  const normalizedName = name.trim();
-
-  // Evita duplicar categorías con el mismo nombre en el mismo restaurante.
-  const existing = await prisma.category.findFirst({
-    where: { restaurantId: restaurant.id, name: normalizedName },
-  });
-  if (existing) {
+  const normalizedName = normalizeCategoryName(name);
+  if (!normalizedName) {
     revalidatePath("/dashboard/menu");
-    return { id: existing.id, name: existing.name };
+    return { id: "", name: "" };
   }
 
   const last = await prisma.category.findFirst({
     where: { restaurantId: restaurant.id },
     orderBy: { order: "desc" },
   });
-  const cat = await prisma.category.create({
-    data: { name: normalizedName, order: (last?.order ?? -1) + 1, restaurantId: restaurant.id },
+  const nextOrder = (last?.order ?? -1) + 1;
+
+  const cat = await prisma.category.upsert({
+    where: {
+      restaurantId_name: {
+        restaurantId: restaurant.id,
+        name: normalizedName,
+      },
+    },
+    create: {
+      name: normalizedName,
+      order: nextOrder,
+      restaurantId: restaurant.id,
+    },
+    update: {},
   });
   revalidatePath("/dashboard/menu");
   return { id: cat.id, name: cat.name };
@@ -91,6 +108,7 @@ export async function updateMenuItem(id: string, data: {
   price: number;
   categoryId: string;
   isPopular: boolean;
+  variants?: Array<{ name: string; price: number }>;
 }) {
   await prisma.menuItem.update({
     where: { id },
@@ -100,6 +118,7 @@ export async function updateMenuItem(id: string, data: {
       price: data.price,
       categoryId: data.categoryId,
       isPopular: data.isPopular,
+      variants: data.variants ?? [],
     },
   });
   revalidatePath("/dashboard/menu");
@@ -112,16 +131,18 @@ export async function createMenuItem(data: {
   categoryId: string;
   isPopular: boolean;
   station: "COCINA" | "BARRA";
+  variants?: Array<{ name: string; price: number }>;
 }) {
   const restaurant = await getDefaultRestaurant();
-  
+
   const newItem = await prisma.menuItem.create({
     data: {
       ...data,
-      restaurantId: restaurant.id
+      variants: data.variants ?? [],
+      restaurantId: restaurant.id,
     }
   });
-  
+
   revalidatePath("/dashboard/menu");
   return newItem;
 }

@@ -261,6 +261,7 @@ model Category {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([restaurantId, name])
   @@index([restaurantId])
 }
 
@@ -271,6 +272,7 @@ model MenuItem {
   name         String
   description  String?
   price        Float
+  variants     Json    @default("[]") // [{"name":"Chico","price":80},...]
   imageUrl     String?
   isPopular    Boolean @default(false)
   isSoldOut    Boolean @default(false)
@@ -376,6 +378,7 @@ model OrderItem {
   sessionId   String
   quantity    Int     @default(1)
   notes       String?
+  variantName String? // "Chico", "Mediano", "Grande" — null si no tiene variantes
   priceAtTime Float
 
   order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)

@@ -29,6 +29,52 @@ const inputCls  = "h-10 w-full border border-wire bg-transparent px-3 text-[0.8r
 const selectCls = "h-10 w-full cursor-pointer appearance-none border border-wire bg-transparent px-3 text-[0.8rem] text-light outline-none transition-colors focus:border-light/30";
 const labelCls  = "mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim";
 
+const priceSpinNone =
+  "[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+
+/** Campo de precio con prefijo $ (MXN). */
+function PriceInputWithPrefix({
+  value,
+  onChange,
+  readOnly,
+  required,
+  placeholder = "0.00",
+  className = "",
+  compact = false,
+}: {
+  value: string | number;
+  onChange: (v: string) => void;
+  readOnly?: boolean;
+  required?: boolean;
+  placeholder?: string;
+  className?: string;
+  /** Filas de VariantsEditor (más bajo y estrecho). */
+  compact?: boolean;
+}) {
+  return (
+    <div
+      className={`flex w-full items-stretch border border-wire bg-transparent transition-colors focus-within:border-light/30 ${compact ? "h-9" : "h-10"} ${readOnly ? "opacity-40 pointer-events-none" : ""} ${className}`}
+    >
+      <span
+        className={`flex flex-none items-center border-r border-wire/40 font-medium tabular-nums text-dim ${compact ? "px-2 text-[0.7rem]" : "px-2.5 text-[0.72rem]"}`}
+      >
+        $
+      </span>
+      <input
+        type="number"
+        min={0}
+        step={0.01}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        readOnly={readOnly}
+        required={required}
+        placeholder={placeholder}
+        className={`min-w-0 flex-1 border-0 bg-transparent text-light outline-none ${priceSpinNone} ${compact ? "px-2 text-[0.78rem]" : "px-3 text-[0.8rem]"}`}
+      />
+    </div>
+  );
+}
+
 /* ── Variants editor sub-component ─────────────────────────────── */
 function VariantsEditor({
   variants,
@@ -61,15 +107,14 @@ function VariantsEditor({
             onChange={e => updateRow(i, "name", e.target.value)}
             className="h-9 flex-1 border border-wire bg-transparent px-2.5 text-[0.78rem] text-light outline-none focus:border-light/30"
           />
-          <input
-            type="number"
-            placeholder="Precio"
-            min="0"
-            step="0.01"
-            value={v.price || ""}
-            onChange={e => updateRow(i, "price", e.target.value)}
-            className="h-9 w-24 border border-wire bg-transparent px-2.5 text-[0.78rem] text-light outline-none focus:border-light/30"
-          />
+          <div className="w-[6.75rem] shrink-0">
+            <PriceInputWithPrefix
+              compact
+              value={v.price || ""}
+              onChange={val => updateRow(i, "price", val)}
+              placeholder="0"
+            />
+          </div>
           <button
             type="button"
             onClick={() => removeRow(i)}
@@ -333,14 +378,11 @@ export default function MenuEditor({
                   <label className={labelCls}>
                     {newVariants.length > 0 ? "Precio base (auto)" : "Precio"}
                   </label>
-                  <input
-                    type="number" min="0" step="0.01"
+                  <PriceInputWithPrefix
                     value={newVariants.length > 0 ? Math.min(...newVariants.map(v => v.price)) || "" : newItem.price}
-                    onChange={e => setNewItem({ ...newItem, price: e.target.value })}
-                    className={`${inputCls} ${newVariants.length > 0 ? "opacity-40 pointer-events-none" : ""}`}
-                    placeholder="0.00"
-                    required={newVariants.length === 0}
+                    onChange={v => setNewItem({ ...newItem, price: v })}
                     readOnly={newVariants.length > 0}
+                    required={newVariants.length === 0}
                   />
                 </div>
                 <div className="flex-1">
@@ -417,13 +459,11 @@ export default function MenuEditor({
                   <label className={labelCls}>
                     {editVariants.length > 0 ? "Precio base (auto)" : "Precio"}
                   </label>
-                  <input
-                    type="number" min="0" step="0.01"
+                  <PriceInputWithPrefix
                     value={editVariants.length > 0 ? Math.min(...editVariants.map(v => v.price)) || "" : editForm.price}
-                    onChange={e => setEditForm({ ...editForm, price: e.target.value })}
-                    className={`${inputCls} ${editVariants.length > 0 ? "opacity-40 pointer-events-none" : ""}`}
-                    required={editVariants.length === 0}
+                    onChange={v => setEditForm({ ...editForm, price: v })}
                     readOnly={editVariants.length > 0}
+                    required={editVariants.length === 0}
                   />
                 </div>
                 <div className="flex-1">

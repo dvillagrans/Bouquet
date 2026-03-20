@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { parseVariantsJson } from "@/lib/menu-variants";
 import { getDefaultRestaurant } from "./restaurant";
 import { revalidatePath } from "next/cache";
 
@@ -45,10 +46,11 @@ export async function getMenuData() {
   }
 
   // Devolvemos las categorias puras y una lista plana de todos los items concatenados (para que sea mas facil en el state actual del UI)
-  const allItems = categories.flatMap(cat => 
+  const allItems = categories.flatMap(cat =>
     cat.items.map(item => ({
       ...item,
-      categoryName: cat.name
+      categoryName: cat.name,
+      variants: parseVariantsJson(item.variants),
     }))
   );
 

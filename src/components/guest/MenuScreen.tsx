@@ -1,12 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useTransition, useEffect, useRef, useMemo } from "react";
 import { submitComensalOrder, getGuestOrders } from "@/actions/comensal";
 import { createClient } from "@/lib/supabase/client";
 import { ChevronDown } from "lucide-react";
-
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface Category {
@@ -22,6 +20,25 @@ interface MenuItem {
   categoryId: string;
   categoryName?: string;
   note?: string;
+  variants: { name: string; price: number }[];
+}
+
+/** Clave de línea en el carrito: id suelto o JSON { m, v } si hay tamaño. */
+function encodeLineKey(menuItemId: string, variantName: string | null): string {
+  if (variantName == null || variantName === "") return menuItemId;
+  return JSON.stringify({ m: menuItemId, v: variantName });
+}
+
+function decodeLineKey(key: string): { menuItemId: string; variantName: string | null } {
+  if (key.startsWith("{")) {
+    try {
+      const o = JSON.parse(key) as { m: string; v: string };
+      return { menuItemId: o.m, variantName: o.v ?? null };
+    } catch {
+      return { menuItemId: key, variantName: null };
+    }
+  }
+  return { menuItemId: key, variantName: null };
 }
 
 // ─── QtyControl ──────────────────────────────────────────────────────────────
@@ -81,15 +98,22 @@ function QtyControl({
 
 // ─── CartPanel ───────────────────────────────────────────────────────────────
 
+type CartLine = {
+  key: string;
+  item: MenuItem;
+  variantName: string | null;
+  qty: number;
+  unitPrice: number;
+};
+
 interface CartPanelProps {
-  cartItems: MenuItem[];
-  cart: Record<string, number>;
+  cartLines: CartLine[];
   cartCount: number;
   cartTotal: number;
   partySize: number;
   tableCode: string;
   scrollable?: boolean;
-  onRemove: (id: string) => void;
+  onRemove: (lineKey: string) => void;
   onClear: () => void;
   onClose?: () => void;
   onCheckout: () => void;
@@ -97,7 +121,7 @@ interface CartPanelProps {
 }
 
 function CartPanel({
-  cartItems, cart, cartCount, cartTotal, partySize, tableCode,
+  cartLines, cartCount, cartTotal, partySize, tableCode,
   scrollable, onRemove, onClear, onClose, onCheckout, isSubmitting
 }: CartPanelProps) {
   return (
@@ -127,17 +151,20 @@ function CartPanel({
       ) : (
         <>
           <div className={`mt-4 divide-y divide-wire/50 ${scrollable ? "max-h-[38vh] overflow-y-auto" : ""}`}>
-            {cartItems.map(item => (
-              <div key={item.id} className="flex items-start justify-between gap-4 py-4">
+            {cartLines.map(line => (
+              <div key={line.key} className="flex items-start justify-between gap-4 py-4">
                 <div className="flex-1 min-w-0">
-                  <p className="text-[0.82rem] font-medium leading-snug text-light">{item.name}</p>
+                  <p className="text-[0.82rem] font-medium leading-snug text-light">{line.item.name}</p>
+                  {line.variantName && (
+                    <p className="mt-0.5 text-[0.62rem] font-medium text-glow/80">{line.variantName}</p>
+                  )}
                   <p className="mt-1 text-[0.65rem] text-dim">
-                    {cart[item.id]}× · ${(item.price * (cart[item.id] ?? 0)).toLocaleString("es-MX")}
+                    {line.qty}× · ${(line.unitPrice * line.qty).toLocaleString("es-MX")}
                   </p>
                 </div>
                 <button
-                  onClick={() => onRemove(item.id)}
-                  aria-label={`Eliminar ${item.name}`}
+                  onClick={() => onRemove(line.key)}
+                  aria-label={`Eliminar ${line.item.name}${line.variantName ? ` (${line.variantName})` : ""}`}
                   className="mt-0.5 shrink-0 text-[0.62rem] text-dim/50 transition-colors hover:text-dim"
                 >
                   ✕
@@ -352,7 +379,10 @@ function OrderTracker({
 function OrderRow({ order }: { order: any }) {
   const summary = (order.items as any[])
     .slice(0, 2)
-    .map((i: any) => `${i.quantity}× ${i.menuItem?.name ?? "—"}`)
+    .map((i: any) => {
+      const base = `${i.quantity}× ${i.menuItem?.name ?? "—"}`;
+      return i.variantName ? `${base} (${i.variantName})` : base;
+    })
     .join(", ")
     + (order.items.length > 2 ? ` +${order.items.length - 2}` : "");
 
@@ -393,8 +423,9 @@ interface MenuScreenProps {
 type CartMap = Record<string, number>;
 
 export function MenuScreen({ guestName, partySize, tableCode, initialCategories, initialItems, initialOrders = [] }: MenuScreenProps) {
-    const router = useRouter();
   const [cart, setCart]               = useState<CartMap>({});
+  /** Tamaño elegido por platillo (solo ítems con variantes). */
+  const [variantChoice, setVariantChoice] = useState<Record<string, string>>({});
   const [orders, setOrders]           = useState(initialOrders);
 
   // Escuchar si sus ordenes cambian de estatus
@@ -424,10 +455,14 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
       function handleCheckout() {
     startTransition(async () => {
       try {
-        const orderItems = Object.entries(cart).map(([id, qty]) => ({
-          menuItemId: id,
-          quantity: qty,
-        }));
+        const orderItems = Object.entries(cart).map(([key, qty]) => {
+          const { menuItemId, variantName } = decodeLineKey(key);
+          return {
+            menuItemId,
+            quantity: qty,
+            variantName: variantName ?? undefined,
+          };
+        });
         
         await submitComensalOrder({
           tableCode,
@@ -450,20 +485,35 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
 
 
 
-  function setQty(id: string, qty: number) {
+  function setQty(lineKey: string, qty: number) {
     setCart(prev => {
       if (qty <= 0) {
         const next = { ...prev };
-        delete next[id];
+        delete next[lineKey];
         return next;
       }
-      return { ...prev, [id]: qty };
+      return { ...prev, [lineKey]: qty };
     });
   }
 
-  const cartItems = initialItems.filter(item => (cart[item.id] ?? 0) > 0);
-  const cartCount = Object.values(cart).reduce((s, q) => s + q, 0);
-  const cartTotal = cartItems.reduce((s, item) => s + item.price * (cart[item.id] ?? 0), 0);
+  const cartLines: CartLine[] = useMemo(() => {
+    return Object.entries(cart)
+      .map(([key, qty]) => {
+        const { menuItemId, variantName } = decodeLineKey(key);
+        const item = initialItems.find(i => i.id === menuItemId);
+        if (!item || qty <= 0) return null;
+        let unitPrice = item.price;
+        if (variantName && item.variants?.length) {
+          const v = item.variants.find(x => x.name === variantName);
+          if (v) unitPrice = v.price;
+        }
+        return { key, item, variantName, qty, unitPrice };
+      })
+      .filter((x): x is CartLine => x != null);
+  }, [cart, initialItems]);
+
+  const cartCount = cartLines.reduce((s, l) => s + l.qty, 0);
+  const cartTotal = cartLines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
 
   const visibleItems = activeCategory === "todos" ? initialItems : initialItems.filter(i => i.categoryId === activeCategory);
   
@@ -473,8 +523,8 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
   );
 
   const cartPanelProps = {
-    cartItems, cart, cartCount, cartTotal, partySize, tableCode,
-    onRemove: (id: string) => setQty(id, 0),
+    cartLines, cartCount, cartTotal, partySize, tableCode,
+    onRemove: (lineKey: string) => setQty(lineKey, 0),
     onClear:  () => setCart({}),
     onCheckout: handleCheckout,
     isSubmitting: isPending,
@@ -570,7 +620,18 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
                     {activeCategory !== "todos" && <div className="pt-6" />}
                     <div className="divide-y divide-wire/40">
                       {items.map(item => {
-                        const qty = cart[item.id] ?? 0;
+                        const hasVariants = item.variants && item.variants.length > 0;
+                        const selectedVariantName = hasVariants
+                          ? (variantChoice[item.id] ?? item.variants[0]!.name)
+                          : null;
+                        const lineKey = encodeLineKey(item.id, selectedVariantName);
+                        const qty = cart[lineKey] ?? 0;
+                        const unitPrice = hasVariants
+                          ? item.variants.find(v => v.name === selectedVariantName)?.price ?? item.price
+                          : item.price;
+                        const qtyLabel = hasVariants && selectedVariantName
+                          ? `${item.name} (${selectedVariantName})`
+                          : item.name;
                         return (
                           <div key={item.id} className="flex items-start justify-between gap-6 py-5">
                             <div className="flex-1 min-w-0">
@@ -580,6 +641,34 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
                               <p className="mt-2 text-[0.73rem] font-medium leading-relaxed text-dim">
                                 {item.description}
                               </p>
+                              {hasVariants && (
+                                <div
+                                  className="mt-3 flex flex-wrap gap-1.5"
+                                  role="group"
+                                  aria-label="Tamaño o presentación"
+                                >
+                                  {item.variants.map(v => {
+                                    const active = selectedVariantName === v.name;
+                                    return (
+                                      <button
+                                        key={v.name}
+                                        type="button"
+                                        onClick={() =>
+                                          setVariantChoice(prev => ({ ...prev, [item.id]: v.name }))
+                                        }
+                                        className={[
+                                          "rounded-full border px-3 py-1.5 text-[0.62rem] font-bold uppercase tracking-[0.12em] transition-colors",
+                                          active
+                                            ? "border-glow bg-glow/[0.12] text-glow"
+                                            : "border-wire/60 text-dim hover:border-light/25 hover:text-light",
+                                        ].join(" ")}
+                                      >
+                                        {v.name} · ${v.price.toLocaleString("es-MX")}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
                               {item.note && (
                                 <p className="mt-2 text-[0.57rem] font-bold uppercase tracking-[0.22em] text-glow/65">
                                   {item.note}
@@ -588,14 +677,14 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
                             </div>
                             <div className="flex shrink-0 flex-col items-end gap-3">
                               <span className="font-serif text-[0.95rem] font-semibold text-light/80">
-                                ${item.price.toLocaleString("es-MX")}
+                                ${unitPrice.toLocaleString("es-MX")}
                               </span>
                               <QtyControl
                                 qty={qty}
-                                name={item.name}
-                                onAdd={() => setQty(item.id, 1)}
-                                onInc={() => setQty(item.id, qty + 1)}
-                                onDec={() => setQty(item.id, qty - 1)}
+                                name={qtyLabel}
+                                onAdd={() => setQty(lineKey, 1)}
+                                onInc={() => setQty(lineKey, qty + 1)}
+                                onDec={() => setQty(lineKey, qty - 1)}
                               />
                             </div>
                           </div>

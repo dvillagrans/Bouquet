@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { parseVariantsJson } from "@/lib/menu-variants";
 import { revalidatePath } from "next/cache";
 import { getDefaultRestaurant } from "./restaurant";
 
@@ -185,7 +186,12 @@ export async function getTableDetail(tableId: string) {
  */
 export async function waiterCreateOrder(
   tableId: string,
-  items: Array<{ menuItemId: string; quantity: number; notes?: string }>
+  items: Array<{
+    menuItemId: string;
+    quantity: number;
+    notes?: string;
+    variantName?: string | null;
+  }>
 ) {
   // 1. Validate table exists and is occupied
   const table = await prisma.table.findUnique({
@@ -208,6 +214,25 @@ export async function waiterCreateOrder(
     where: { id: { in: items.map((i) => i.menuItemId) } },
   });
 
+  function priceAtTimeForItem(
+    dbItem: (typeof dbItems)[0],
+    variantName: string | null | undefined
+  ): number {
+    const raw = dbItem.variants;
+    const arr = Array.isArray(raw) ? raw : [];
+    if (variantName && arr.length > 0) {
+      const found = arr.find(
+        (x: unknown) =>
+          x &&
+          typeof x === "object" &&
+          (x as { name?: string }).name === variantName &&
+          typeof (x as { price?: unknown }).price === "number"
+      ) as { price: number } | undefined;
+      if (found) return found.price;
+    }
+    return dbItem.price;
+  }
+
   // 4. Create order
   const newOrder = await prisma.order.create({
     data: {
@@ -217,11 +242,13 @@ export async function waiterCreateOrder(
       items: {
         create: items.map((cartItem) => {
           const dbItem = dbItems.find((i) => i.id === cartItem.menuItemId);
+          const vn = cartItem.variantName?.trim() || null;
           return {
             menuItemId: cartItem.menuItemId,
             quantity: cartItem.quantity,
             notes: cartItem.notes || null,
-            priceAtTime: dbItem?.price || 0,
+            variantName: vn,
+            priceAtTime: dbItem ? priceAtTimeForItem(dbItem, vn) : 0,
             sessionId: session!.id,
           };
         }),
@@ -252,8 +279,13 @@ export async function getMenuForOrdering() {
     }),
   ]);
 
+  const itemsWithVariants = items.map((item) => ({
+    ...item,
+    variants: parseVariantsJson(item.variants),
+  }));
+
   return {
     categories,
-    items,
+    items: itemsWithVariants,
   };
 }

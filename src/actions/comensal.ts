@@ -14,7 +14,7 @@ export async function submitComensalOrder({
   tableCode: string;
   guestName: string;
   pax: number;
-  items: { menuItemId: string; quantity: number }[];
+  items: { menuItemId: string; quantity: number; variantName?: string | null }[];
 }) {
   const restaurant = await getDefaultRestaurant();
 
@@ -61,6 +61,25 @@ export async function submitComensalOrder({
     where: { id: { in: itemIds } }
   });
 
+  function priceAtTimeForItem(
+    dbItem: (typeof dbItems)[0],
+    variantName: string | null | undefined
+  ): number {
+    const raw = dbItem.variants;
+    const arr = Array.isArray(raw) ? raw : [];
+    if (variantName && arr.length > 0) {
+      const found = arr.find(
+        (x: unknown) =>
+          x &&
+          typeof x === "object" &&
+          (x as { name?: string }).name === variantName &&
+          typeof (x as { price?: unknown }).price === "number"
+      ) as { price: number } | undefined;
+      if (found) return found.price;
+    }
+    return dbItem.price;
+  }
+
   // Crear la Orden
   const newOrder = await prisma.order.create({
     data: {
@@ -70,10 +89,12 @@ export async function submitComensalOrder({
       items: {
         create: items.map(cartItem => {
           const dbItem = dbItems.find(i => i.id === cartItem.menuItemId);
+          const vn = cartItem.variantName?.trim() || null;
           return {
             menuItemId: cartItem.menuItemId,
             quantity: cartItem.quantity,
-            priceAtTime: dbItem?.price || 0,
+            variantName: vn,
+            priceAtTime: dbItem ? priceAtTimeForItem(dbItem, vn) : 0,
             sessionId: session!.id,
           };
         })

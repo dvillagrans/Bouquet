@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getDefaultRestaurant } from "./restaurant";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { broadcastGuestOrdersRefresh } from "@/lib/supabase/broadcast-guest-orders";
 
 export async function submitComensalOrder({
   tableCode,
@@ -101,6 +102,8 @@ export async function submitComensalOrder({
       }
     }
   });
+
+  await broadcastGuestOrdersRefresh(tableCode);
 
   revalidatePath("/cocina"); // Despertar el KDS!
 

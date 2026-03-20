@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { parseVariantsJson } from "@/lib/menu-variants";
+import { broadcastGuestOrdersRefresh } from "@/lib/supabase/broadcast-guest-orders";
 import { revalidatePath } from "next/cache";
 import { getDefaultRestaurant } from "./restaurant";
 
@@ -255,6 +256,12 @@ export async function waiterCreateOrder(
       },
     },
   });
+
+  const tableRow = await prisma.table.findUnique({
+    where: { id: tableId },
+    select: { qrCode: true },
+  });
+  if (tableRow) await broadcastGuestOrdersRefresh(tableRow.qrCode);
 
   revalidatePath("/mesero");
   revalidatePath("/cocina");

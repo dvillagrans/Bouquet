@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition, useEffect, useRef, useMemo } from "react";
+import { useState, useTransition, useEffect, useRef, useMemo, useCallback } from "react";
 import { submitComensalOrder, getGuestOrders } from "@/actions/comensal";
 import { createClient } from "@/lib/supabase/client";
 import { ChevronDown } from "lucide-react";
@@ -428,25 +428,52 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
   const [variantChoice, setVariantChoice] = useState<Record<string, string>>({});
   const [orders, setOrders]           = useState(initialOrders);
 
-  // Escuchar si sus ordenes cambian de estatus
+  const refreshOrders = useCallback(async () => {
+    try {
+      const fresh = await getGuestOrders(tableCode);
+      setOrders(fresh);
+    } catch (err) {
+      console.error("Error al refrescar pedidos", err);
+    }
+  }, [tableCode]);
+
   useEffect(() => {
+    setOrders(initialOrders);
+  }, [tableCode, initialOrders]);
+
+  /**
+   * Estado de pedidos en tiempo casi real:
+   * - Broadcast desde cocina/mesero (SUPABASE_SERVICE_ROLE_KEY en servidor)
+   * - Sondeo cada 5s si la pestaña está visible (respaldo y sin service role)
+   * postgres_changes con anon no recibe Order por RLS (solo authenticated).
+   */
+  useEffect(() => {
+    void refreshOrders();
+
     const supabase = createClient();
-    const channel = supabase.channel("table_orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "Order" }, async () => {
-         // Opcion robusta: fetchear directamente con una server action para evitar el Router Cache de Next.js
-         try {
-           const freshOrders = await getGuestOrders(tableCode);
-           setOrders(freshOrders);
-         } catch(err) {
-           console.error("Error al refrescar ordenes", err);
-         }
+    const channelName = `guest-orders:${encodeURIComponent(tableCode)}`;
+    const channel = supabase
+      .channel(channelName)
+      .on("broadcast", { event: "refresh" }, () => {
+        void refreshOrders();
       })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [tableCode]);
-  
-  // Sincronizar initialOrders si cambia el prop
-  useEffect(() => setOrders(initialOrders), [initialOrders]);
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") void refreshOrders();
+    }, 5000);
+
+    const onVis = () => {
+      if (document.visibilityState === "visible") void refreshOrders();
+    };
+    document.addEventListener("visibilitychange", onVis);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVis);
+      void supabase.removeChannel(channel);
+    };
+  }, [tableCode, refreshOrders]);
   const [activeCategory, setCategory] = useState<string>("todos");
   const [drawerOpen, setDrawerOpen]   = useState(false);
   const [isPending, startTransition]  = useTransition();
@@ -470,6 +497,8 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
           pax: partySize,
           items: orderItems,
         });
+
+        await refreshOrders();
 
         // En lugar de ir a pagar, vaciamos carrito, cerramos cajon y avisamos que se mando a la cocina
         setCart({});

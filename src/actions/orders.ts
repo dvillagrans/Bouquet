@@ -4,6 +4,15 @@ import { prisma } from "@/lib/prisma";
 import { getDefaultRestaurant } from "./restaurant";
 import { OrderStatus } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
+import { broadcastGuestOrdersRefresh } from "@/lib/supabase/broadcast-guest-orders";
+
+async function notifyGuestMenuOrderUpdated(orderId: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { table: { select: { qrCode: true } } },
+  });
+  if (order?.table) await broadcastGuestOrdersRefresh(order.table.qrCode);
+}
 
 export async function getLiveOrders() {
   const restaurant = await getDefaultRestaurant();
@@ -61,6 +70,8 @@ export async function advanceOrderStatus(orderId: string, currentStatus: string)
     }
   });
 
+  await notifyGuestMenuOrderUpdated(orderId);
+
   revalidatePath("/cocina");
   revalidatePath("/mesa/[codigo]/menu", "page");
 
@@ -79,6 +90,8 @@ export async function undoOrderStatus(orderId: string, currentStatus: string) {
     where: { id: orderId },
     data: { status: prevStatus as OrderStatus }
   });
+
+  await notifyGuestMenuOrderUpdated(orderId);
 
   revalidatePath("/cocina");
   revalidatePath("/mesa/[codigo]/menu", "page");
@@ -99,6 +112,8 @@ export async function moveOrderToStatus(
     where: { id: orderId },
     data:  { status: STATUS_MAP[targetStatus] as OrderStatus },
   });
+
+  await notifyGuestMenuOrderUpdated(orderId);
 
   revalidatePath("/cocina");
   revalidatePath("/mesa/[codigo]/menu", "page");

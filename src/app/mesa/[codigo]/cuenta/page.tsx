@@ -23,13 +23,18 @@ export default async function CuentaPage({ params, searchParams }: CuentaPagePro
 
   const tableCode = decodeURIComponent(codigo);
   const guestName = decodeURIComponent(guest?.trim() || "Invitado");
-  const partySize = Math.max(1, Math.min(20, Number(pax) || 2));
 
   const bill = await getTableBill(tableCode);
+  const partySize = bill.guestCount > 0 ? bill.guestCount : Math.max(1, Math.min(20, Number(pax) || 2));
 
   return (
     <div className="min-h-screen bg-ink text-light">
-      <SplitBillScreen tableCode={tableCode} guestName={guestName} partySize={partySize} initialBill={bill} />
+      <SplitBillScreen
+        tableCode={tableCode}
+        guestName={guestName}
+        partySize={partySize}
+        initialBill={bill}
+      />
     </div>
   );
 }

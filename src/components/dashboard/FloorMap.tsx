@@ -17,24 +17,29 @@ const C = {
   glow:     "#C9A054",
   sage:     "#6E8B6A",
   ember:    "#A8562A",
+  gold:     "#B7925D",
+  goldHi:   "#C9A876",
 };
 
 const STATUS_FILL: Record<TableStatus, string> = {
   DISPONIBLE: C.sage,
   OCUPADA:    C.glow,
   SUCIA:      C.ember,
+  CERRANDO:   C.gold,
 };
 
 const STATUS_STROKE: Record<TableStatus, string> = {
   DISPONIBLE: "#8BB887",
   OCUPADA:    "#D4AA5F",
   SUCIA:      "#B85E2A",
+  CERRANDO:   C.goldHi,
 };
 
 const STATUS_LABEL: Record<TableStatus, string> = {
   DISPONIBLE: "Libre",
   OCUPADA:    "Ocupada",
   SUCIA:      "Sucia",
+  CERRANDO:   "Cuenta",
 };
 
 const SNAP = 40;      // snap-to-grid resolution

@@ -1,10 +1,11 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(find /c/Users/dvill/Downloads/Bouquet -type f -name *menu*)",
+      "Bash(npx prisma:*)"
+    ],
     "additionalDirectories": [
       "c:\\Users\\dvill\\Downloads\\Bouquet\\src\\app"
-    ],
-    "allow": [
-      "Bash(find /c/Users/dvill/Downloads/Bouquet -type f -name *menu*)"
     ]
   },
   "enableAllProjectMcpServers": true,

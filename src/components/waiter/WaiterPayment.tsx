@@ -36,9 +36,18 @@ export default function WaiterPayment({
     const loadBill = async () => {
       try {
         setLoading(true);
-        const { items, total } = await getTableBill(tableCode);
+        const bill = await getTableBill(tableCode);
+        const multiGuest = bill.guests.length > 1;
+        const items: BillItem[] = bill.guests.flatMap((g) =>
+          g.items.map((i) => ({
+            id: i.key,
+            name: multiGuest ? `${i.name} (${g.guestName})` : i.name,
+            qty: i.qty,
+            price: i.price,
+          }))
+        );
         setBillItems(items);
-        setBillTotal(total);
+        setBillTotal(bill.total);
       } catch (error) {
         console.error("Error loading bill:", error);
         alert("Error cargando la cuenta");

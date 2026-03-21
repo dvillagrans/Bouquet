@@ -7,6 +7,7 @@ import { getTables } from "@/actions/tables";
 import WaiterTableDetail from "./WaiterTableDetail";
 import FloorMapClient from "@/components/dashboard/FloorMapClient";
 import type { FloorMapTable } from "@/components/dashboard/FloorMap";
+import type { TableStatus } from "@/generated/prisma";
 
 type FilterType = "todas" | "ocupadas" | "pendientes" | "listas" | "sucias";
 type ViewType = "lista" | "mapa";
@@ -15,12 +16,16 @@ interface TableSummary {
   id: string;
   number: number;
   capacity: number;
-  status: "DISPONIBLE" | "OCUPADA" | "SUCIA";
+  status: TableStatus;
   activeSession: { guestName: string; pax: number; createdAt: Date } | null;
   orderCount: number;
   pendingCount: number;
   readyCount: number;
   billTotal: number;
+}
+
+function isTableBusy(status: TableStatus) {
+  return status === "OCUPADA" || status === "CERRANDO";
 }
 
 export default function WaiterDashboard() {
@@ -66,7 +71,7 @@ export default function WaiterDashboard() {
 
   // Filter tables
   const filteredTables = tables.filter((t) => {
-    if (filter === "ocupadas") return t.status === "OCUPADA";
+    if (filter === "ocupadas") return isTableBusy(t.status);
     if (filter === "pendientes") return t.pendingCount > 0;
     if (filter === "listas") return t.readyCount > 0;
     if (filter === "sucias") return t.status === "SUCIA";
@@ -75,7 +80,7 @@ export default function WaiterDashboard() {
 
   // Calculate stats
   const stats = {
-    occupied: tables.filter((t) => t.status === "OCUPADA").length,
+    occupied: tables.filter((t) => isTableBusy(t.status)).length,
     pending: tables.reduce((sum, t) => sum + t.pendingCount, 0),
     ready: tables.reduce((sum, t) => sum + t.readyCount, 0),
     dirty: tables.filter((t) => t.status === "SUCIA").length,
@@ -240,12 +245,14 @@ export default function WaiterDashboard() {
               {filteredTables.map((table) => (
                 <div
                   key={table.id}
-                  onClick={() => table.status === "OCUPADA" && setSelectedTable(table.id)}
+                  onClick={() => isTableBusy(table.status) && setSelectedTable(table.id)}
                   className={`group relative flex flex-col items-center justify-between rounded-lg border p-4 transition-all duration-300 cursor-pointer aspect-square ${
                     table.status === "DISPONIBLE"
                       ? "border-sage/40 bg-sage/5 hover:border-sage"
                       : table.status === "OCUPADA"
                       ? "border-glow/40 bg-glow/5 hover:border-glow"
+                      : table.status === "CERRANDO"
+                      ? "border-gold/40 bg-gold/5 hover:border-gold"
                       : "border-ember/40 bg-ember/5 hover:border-ember"
                   }`}
                 >
@@ -257,12 +264,20 @@ export default function WaiterDashboard() {
                           ? "bg-sage/20 text-sage"
                           : table.status === "OCUPADA"
                           ? "bg-glow/20 text-glow"
+                          : table.status === "CERRANDO"
+                          ? "bg-gold/20 text-gold"
                           : "bg-ember/20 text-ember"
                       }`}
                     >
-                      {table.status === "DISPONIBLE" ? "Libre" : table.status === "OCUPADA" ? "Ocupada" : "Sucia"}
+                      {table.status === "DISPONIBLE"
+                        ? "Libre"
+                        : table.status === "OCUPADA"
+                          ? "Ocupada"
+                          : table.status === "CERRANDO"
+                            ? "Cuenta"
+                            : "Sucia"}
                     </span>
-                    {table.status === "OCUPADA" && (
+                    {isTableBusy(table.status) && (
                       <div className="flex items-center gap-1 text-[0.55rem] text-light">
                         <Users className="h-3 w-3" />
                         {table.activeSession?.pax}
@@ -297,7 +312,7 @@ export default function WaiterDashboard() {
                   )}
 
                   {/* Hover Overlay Info */}
-                  {table.status === "OCUPADA" && (
+                  {isTableBusy(table.status) && (
                     <div className="absolute inset-0 bg-canvas/95 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
                       <div className="text-center space-y-2">
                         <p className="text-sm font-bold text-light">

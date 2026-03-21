@@ -21,6 +21,8 @@ interface MenuItem {
   categoryName?: string;
   note?: string;
   variants: { name: string; price: number }[];
+  isSoldOut?: boolean;
+  isPopular?: boolean;
 }
 
 /** Clave de línea en el carrito: id suelto o JSON { m, v } si hay tamaño. */
@@ -478,6 +480,7 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
   const [drawerOpen, setDrawerOpen]   = useState(false);
   const [isPending, startTransition]  = useTransition();
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderError, setOrderError]   = useState<string | null>(null);
 
       function handleCheckout() {
     startTransition(async () => {
@@ -507,7 +510,8 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
         setTimeout(() => setOrderSuccess(false), 3000);
       } catch (err) {
         console.error("No se pudo enviar la orden", err);
-        alert("Ocurrió un error al enviar la orden. Intenta de nuevo.");
+        setOrderError("No se pudo enviar la orden. Intenta de nuevo.");
+        setTimeout(() => setOrderError(null), 4000);
       }
     });
   }
@@ -561,6 +565,38 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
 
   return (
     <div className="relative min-h-screen">
+
+      {/* ── TOASTS ───────────────────────────────────────────────────── */}
+      {orderSuccess && (
+        <div
+          className="fixed inset-x-0 top-4 z-[60] flex justify-center px-4"
+          style={{ animation: "fade-in 0.2s ease-out both" }}
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex items-center gap-3 border border-sage-deep/40 bg-ink px-5 py-3 shadow-lg">
+            <span className="h-1.5 w-1.5 rounded-full bg-sage-deep" aria-hidden="true" />
+            <p className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-sage-deep">
+              Orden enviada a cocina
+            </p>
+          </div>
+        </div>
+      )}
+      {orderError && (
+        <div
+          className="fixed inset-x-0 top-4 z-[60] flex justify-center px-4"
+          style={{ animation: "fade-in 0.2s ease-out both" }}
+          role="alert"
+          aria-live="assertive"
+        >
+          <div className="flex items-center gap-3 border border-red-500/40 bg-ink px-5 py-3 shadow-lg">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500" aria-hidden="true" />
+            <p className="text-[0.72rem] font-bold uppercase tracking-[0.22em] text-red-400">
+              {orderError}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── TOP BAR ──────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 border-b border-wire bg-ink">
@@ -636,6 +672,11 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
 
             {/* Menu rows */}
             <div role="tabpanel">
+              {visibleItems.length === 0 && (
+                <p className="py-16 text-center text-[0.75rem] font-medium text-dim/60">
+                  No hay platillos disponibles en esta categoría.
+                </p>
+              )}
               {visibleCats.map(cat => {
                 const items = visibleItems.filter(i => i.categoryId === cat.id);
                 if (items.length === 0) return null;
@@ -662,11 +703,23 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
                           ? `${item.name} (${selectedVariantName})`
                           : item.name;
                         return (
-                          <div key={item.id} className="flex items-start justify-between gap-6 py-5">
+                          <div key={item.id} className={["flex items-start justify-between gap-6 py-5", item.isSoldOut ? "opacity-50" : ""].join(" ")}>
                             <div className="flex-1 min-w-0">
-                              <p className="font-serif text-[1.05rem] leading-snug text-light">
-                                {item.name}
-                              </p>
+                              <div className="flex flex-wrap items-baseline gap-2">
+                                <p className="font-serif text-[1.05rem] leading-snug text-light">
+                                  {item.name}
+                                </p>
+                                {item.isPopular && !item.isSoldOut && (
+                                  <span className="inline-flex items-center border border-glow/30 bg-glow/[0.07] px-2 py-0.5 text-[0.52rem] font-bold uppercase tracking-[0.18em] text-glow">
+                                    Popular
+                                  </span>
+                                )}
+                                {item.isSoldOut && (
+                                  <span className="inline-flex items-center border border-wire px-2 py-0.5 text-[0.52rem] font-bold uppercase tracking-[0.18em] text-dim/60">
+                                    Agotado
+                                  </span>
+                                )}
+                              </div>
                               <p className="mt-2 text-[0.73rem] font-medium leading-relaxed text-dim">
                                 {item.description}
                               </p>
@@ -708,13 +761,15 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
                               <span className="font-serif text-[0.95rem] font-semibold text-light/80">
                                 ${unitPrice.toLocaleString("es-MX")}
                               </span>
-                              <QtyControl
-                                qty={qty}
-                                name={qtyLabel}
-                                onAdd={() => setQty(lineKey, 1)}
-                                onInc={() => setQty(lineKey, qty + 1)}
-                                onDec={() => setQty(lineKey, qty - 1)}
-                              />
+                              {!item.isSoldOut && (
+                                <QtyControl
+                                  qty={qty}
+                                  name={qtyLabel}
+                                  onAdd={() => setQty(lineKey, 1)}
+                                  onInc={() => setQty(lineKey, qty + 1)}
+                                  onDec={() => setQty(lineKey, qty - 1)}
+                                />
+                              )}
                             </div>
                           </div>
                         );

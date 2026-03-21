@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useTransition, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { submitComensalOrder, getGuestOrders, requestBill, transferHost, getGuestTableState } from "@/actions/comensal";
@@ -442,11 +441,12 @@ interface MenuScreenProps {
   isHost?: boolean;
   initialBillRequested?: boolean;
   initialGuests?: { name: string; isHost: boolean }[];
+  joinCode?: string | null;
 }
 
 type CartMap = Record<string, number>;
 
-export function MenuScreen({ guestName, partySize, tableCode, initialCategories, initialItems, initialOrders = [], isHost = false, initialBillRequested = false, initialGuests = [] }: MenuScreenProps) {
+export function MenuScreen({ guestName, partySize, tableCode, initialCategories, initialItems, initialOrders = [], isHost = false, initialBillRequested = false, initialGuests = [], joinCode }: MenuScreenProps) {
   const router = useRouter();
   const [cart, setCart]               = useState<CartMap>({});
   /** Tamaño elegido por platillo (solo ítems con variantes). */
@@ -645,16 +645,7 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
 
       {/* ── TOP BAR ──────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 border-b border-wire bg-ink">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4 lg:px-10">
-          <Link
-            href={`/mesa/${encodeURIComponent(tableCode)}`}
-            className="inline-flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-[0.3em] text-dim transition-colors hover:text-light"
-          >
-            <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3" aria-hidden="true">
-              <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            {tableCode}
-          </Link>
+        <div className="mx-auto flex max-w-5xl items-center justify-end px-6 py-4 lg:px-10">
           <span className="flex items-center gap-2 text-[0.58rem] font-bold uppercase tracking-[0.32em] text-dim">
             <span
               className="h-1.5 w-1.5 rounded-full bg-sage-deep"
@@ -688,6 +679,23 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
               <p className="mt-3 text-[0.75rem] font-medium text-dim">
                 Mesa {tableCode}
               </p>
+
+              {/* Código de acceso — solo visible para el anfitrión */}
+              {isHost && joinCode && (
+                <div className="mt-5 inline-flex flex-col gap-1" style={{ animation: "fade-in 0.3s ease-out both" }}>
+                  <span className="text-[0.52rem] font-bold uppercase tracking-[0.36em] text-dim/40">
+                    Código de acceso
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-[1.8rem] font-bold tracking-[0.28em] text-glow leading-none">
+                      {joinCode}
+                    </span>
+                    <span className="text-[0.6rem] font-medium text-dim/40 max-w-[14ch] leading-relaxed">
+                      Compártelo con tus compañeros
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Comensales en la mesa */}
               {guests.length > 0 && (

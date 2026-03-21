@@ -124,6 +124,7 @@ model Table {
   number       Int
   capacity     Int
   qrCode       String      @unique // Ej. X7B9K2
+  joinCode     String?               // código 4 chars que el anfitrión comparte; null = mesa vacía
   status       TableStatus @default(DISPONIBLE)
   posX         Float       @default(80)
   posY         Float       @default(80)

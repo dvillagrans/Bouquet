@@ -161,15 +161,34 @@ export async function getTableBill(tableCode: string) {
   return { guests, total, guestCount: activeSessions.length };
 }
 
-export async function guestJoinTable(tableCode: string, guestName: string, pax: number) {
+function generateJoinCode(): string {
+  // 4 chars sin caracteres ambiguos (sin 0/O/1/I/L)
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+}
+
+export async function guestJoinTable(tableCode: string, guestName: string, pax: number, joinCode?: string) {
   const table = await prisma.table.findUnique({ where: { qrCode: tableCode } });
   if (!table) return false;
 
-  if (table.status !== "OCUPADA") {
-    await prisma.table.update({
-      where: { id: table.id },
-      data: { status: "OCUPADA" }
-    });
+  const existingSessions = await prisma.session.count({
+    where: { tableId: table.id, isActive: true }
+  });
+  const isFirstGuest = existingSessions === 0;
+
+  // Si ya hay alguien en la mesa, verificar el código de acceso
+  if (!isFirstGuest) {
+    if (!joinCode || joinCode.toUpperCase().trim() !== table.joinCode) {
+      throw new Error("Código de acceso incorrecto.");
+    }
+  }
+
+  const tableUpdates: { status?: "OCUPADA"; joinCode?: string } = {};
+  if (table.status !== "OCUPADA") tableUpdates.status = "OCUPADA";
+  if (isFirstGuest) tableUpdates.joinCode = generateJoinCode();
+
+  if (Object.keys(tableUpdates).length > 0) {
+    await prisma.table.update({ where: { id: table.id }, data: tableUpdates });
     revalidatePath("/dashboard/mesas");
   }
 
@@ -179,11 +198,8 @@ export async function guestJoinTable(tableCode: string, guestName: string, pax: 
   });
 
   if (!session) {
-    const existingSessions = await prisma.session.count({
-      where: { tableId: table.id, isActive: true }
-    });
     session = await prisma.session.create({
-      data: { tableId: table.id, guestName, pax, isActive: true, isHost: existingSessions === 0 }
+      data: { tableId: table.id, guestName, pax, isActive: true, isHost: isFirstGuest }
     });
   }
 
@@ -337,7 +353,7 @@ export async function requestBill(tableCode: string, guestName: string) {
 
 export async function getGuestTableState(tableCode: string, guestName: string) {
   const table = await prisma.table.findUnique({ where: { qrCode: tableCode } });
-  if (!table) return { isHost: false, billRequested: false, guests: [] as { name: string; isHost: boolean }[] };
+  if (!table) return { isHost: false, billRequested: false, guests: [] as { name: string; isHost: boolean }[], joinCode: null as string | null };
 
   const activeSessions = await prisma.session.findMany({
     where: { tableId: table.id, isActive: true },
@@ -345,11 +361,13 @@ export async function getGuestTableState(tableCode: string, guestName: string) {
   });
 
   const mySession = activeSessions.find(s => s.guestName === guestName);
+  const isHost = mySession?.isHost ?? false;
 
   return {
-    isHost: mySession?.isHost ?? false,
+    isHost,
     billRequested: table.status === "CERRANDO",
     guests: activeSessions.map(s => ({ name: s.guestName, isHost: s.isHost })),
+    joinCode: isHost ? table.joinCode : null, // solo el anfitrión recibe el código
   };
 }
 

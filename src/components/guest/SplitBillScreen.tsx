@@ -111,7 +111,6 @@ function MiniStepper({
 // ─── ConfirmedView ───────────────────────────────────────────────────────────
 
 function ConfirmedView({
-  tableCode,
   guestName,
   amount,
 }: {
@@ -120,33 +119,61 @@ function ConfirmedView({
   amount: number;
 }) {
   return (
-    <div
-      className="flex min-h-screen flex-col items-center justify-center px-6 text-center"
-      style={{ animation: "reveal-scale 0.45s cubic-bezier(0.22,1,0.36,1) both" }}
-    >
-      <div className="mb-10 flex h-14 w-14 items-center justify-center border border-glow/40">
-        <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-glow" aria-hidden="true">
-          <path d="M5 12l5 5L19 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </div>
-      <p className="text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">Pago registrado</p>
+    <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+
+      {/* Marca / wordmark */}
       <p
-        className="mt-4 font-serif font-semibold leading-none text-glow"
-        style={{ fontSize: "clamp(3.5rem,10vw,5.5rem)" }}
+        className="font-serif text-[1.1rem] font-semibold italic tracking-tight text-glow/60"
+        style={{ animation: "fade-in 0.5s ease-out 0.1s both" }}
       >
-        ${amount.toLocaleString("es-MX")}
+        bouquet
       </p>
-      <p className="mt-5 text-[0.82rem] font-medium text-dim">Gracias, {guestName}</p>
-      <div className="mx-auto mt-10 h-px w-12 bg-wire" />
-      <p className="mt-8 max-w-[28ch] text-[0.72rem] font-medium leading-relaxed text-dim/55">
-        Tu parte quedó registrada en la cuenta de la mesa {tableCode}. El mesero confirmará el cierre.
-      </p>
-      <Link
-        href={`/mesa/${encodeURIComponent(tableCode)}/menu?guest=${encodeURIComponent(guestName)}`}
-        className="mt-12 border border-wire px-8 py-3 text-[0.65rem] font-bold uppercase tracking-[0.26em] text-dim transition-colors hover:border-light/20 hover:text-light"
+
+      {/* Importe pagado */}
+      <div
+        className="mt-16"
+        style={{ animation: "reveal-scale 0.55s cubic-bezier(0.22,1,0.36,1) 0.2s both" }}
       >
-        Volver al menú
-      </Link>
+        <p className="text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim/50">
+          Tu parte
+        </p>
+        <p
+          className="mt-3 font-serif font-semibold leading-none text-glow"
+          style={{ fontSize: "clamp(4rem,12vw,6rem)" }}
+        >
+          ${amount.toLocaleString("es-MX")}
+        </p>
+        <p className="mt-3 text-[0.65rem] font-medium text-dim/40 uppercase tracking-[0.2em]">
+          Pago registrado ✓
+        </p>
+      </div>
+
+      {/* Divisor */}
+      <div
+        className="mx-auto mt-14 h-px w-10 bg-wire/40"
+        style={{ animation: "fade-in 0.4s ease-out 0.5s both" }}
+      />
+
+      {/* Mensaje de despedida */}
+      <div
+        className="mt-14"
+        style={{ animation: "fade-in 0.5s ease-out 0.55s both" }}
+      >
+        <h1 className="font-serif text-[clamp(2rem,6vw,2.8rem)] font-medium leading-[0.95] tracking-[-0.02em] text-light">
+          Gracias, {guestName}.
+        </h1>
+        <p className="mt-4 text-[0.78rem] font-medium leading-relaxed text-dim/55">
+          Fue un placer tenerte en la mesa.<br />Esperamos verte pronto.
+        </p>
+      </div>
+
+      {/* Pie */}
+      <p
+        className="absolute bottom-10 text-[0.56rem] font-medium uppercase tracking-[0.3em] text-dim/20"
+        style={{ animation: "fade-in 0.4s ease-out 0.9s both" }}
+      >
+        bouquet · experiencia de mesa
+      </p>
     </div>
   );
 }

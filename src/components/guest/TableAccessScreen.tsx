@@ -10,17 +10,19 @@ type TableAccessScreenProps = {
   tableCode: string;
   isLikelyValid: boolean;
   tableNumber?: number;
+  requiresJoinCode?: boolean;
 };
 
-export function TableAccessScreen({ tableCode, isLikelyValid, tableNumber, existingPax }: TableAccessScreenProps) {
+export function TableAccessScreen({ tableCode, isLikelyValid, tableNumber, existingPax, requiresJoinCode = false }: TableAccessScreenProps) {
   const router = useRouter();
   const [guestName, setGuestName] = useState("");
   const [partySize, setPartySize] = useState(existingPax ?? 2);
+  const [joinCode, setJoinCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const normalizedCode = tableCode.toUpperCase();
-  const canContinue = isLikelyValid && guestName.trim().length >= 2 && partySize >= 1;
+  const canContinue = isLikelyValid && guestName.trim().length >= 2 && partySize >= 1 && (!requiresJoinCode || joinCode.trim().length === 4);
 
   function adjustParty(delta: number) {
     setPartySize((prev: number) => Math.min(20, Math.max(1, prev + delta)));
@@ -37,7 +39,7 @@ export function TableAccessScreen({ tableCode, isLikelyValid, tableNumber, exist
       from: "qr",
     });
     try {
-      await guestJoinTable(tableCode, guestName.trim(), partySize);
+      await guestJoinTable(tableCode, guestName.trim(), partySize, requiresJoinCode ? joinCode.trim().toUpperCase() : undefined);
       await router.push(`/mesa/${encodeURIComponent(tableCode)}/menu?${query.toString()}`);
     } catch {
       setSubmitError("No pudimos continuar. Intenta nuevamente.");
@@ -162,6 +164,35 @@ export function TableAccessScreen({ tableCode, isLikelyValid, tableNumber, exist
                 aria-required="true"
               />
             </div>
+
+            {/* Código de acceso — solo si la mesa ya tiene gente */}
+            {requiresJoinCode && (
+              <div>
+                <label
+                  htmlFor="join-code"
+                  className="mb-3 sm:mb-5 block text-xs font-bold uppercase tracking-[0.34em] text-charcoal/30 sm:text-[0.57rem]"
+                >
+                  Código de acceso
+                </label>
+                <p className="mb-3 text-[0.72rem] text-charcoal/40 leading-relaxed">
+                  Pídele el código al anfitrión de tu mesa.
+                </p>
+                <input
+                  id="join-code"
+                  type="text"
+                  value={joinCode}
+                  onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4))}
+                  placeholder="XXXX"
+                  className="w-full min-h-[48px] border-b border-charcoal/14 bg-transparent pb-4 pt-2 text-center text-[1.8rem] font-bold tracking-[0.3em] text-charcoal outline-none placeholder:text-charcoal/15 transition-colors duration-200 focus:border-charcoal/40"
+                  maxLength={4}
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  inputMode="text"
+                  required
+                />
+              </div>
+            )}
 
             {/* Party size — escribir número o usar +/− (1–20) */}
             {existingPax ? null : (

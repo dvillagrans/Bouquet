@@ -26,7 +26,7 @@ export default async function MesaMenuPage({ params, searchParams }: MenuPagePro
   const guestName = decodeURIComponent(guest?.trim() || "Invitado");
   const partySize = Math.max(1, Math.min(20, Number(pax) || 1));
 
-  const [{ categories, items }, initialOrders, { isHost, billRequested, guests }] = await Promise.all([
+  const [{ categories, items }, initialOrders, { isHost, billRequested, guests, joinCode }] = await Promise.all([
     getMenuData(),
     getGuestOrders(tableCode),
     getGuestTableState(tableCode, guestName),
@@ -44,6 +44,7 @@ export default async function MesaMenuPage({ params, searchParams }: MenuPagePro
         isHost={isHost}
         initialBillRequested={billRequested}
         initialGuests={guests}
+        joinCode={joinCode}
       />
     </div>
   );

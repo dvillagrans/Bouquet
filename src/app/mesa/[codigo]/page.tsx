@@ -49,7 +49,7 @@ export default async function TableAccessPage({ params }: TablePageProps) {
     where: { qrCode: decodedCode }
   });
 
-  return <TableAccessScreen tableCode={decodedCode} isLikelyValid={!!table && table.status !== "SUCIA"} tableNumber={table?.number} existingPax={existingSessionForTable?.pax} />;
+  return <TableAccessScreen tableCode={decodedCode} isLikelyValid={!!table && table.status !== "SUCIA"} tableNumber={table?.number} existingPax={existingSessionForTable?.pax} requiresJoinCode={!!existingSessionForTable} />;
 }
 
 export async function generateMetadata({ params }: TablePageProps): Promise<Metadata> {

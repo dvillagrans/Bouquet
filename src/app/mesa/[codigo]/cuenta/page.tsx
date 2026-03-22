@@ -29,7 +29,12 @@ export default async function CuentaPage({ params, searchParams }: CuentaPagePro
 
   return (
     <div className="min-h-screen bg-ink text-light">
-      <SplitBillScreen tableCode={tableCode} guestName={guestName} partySize={partySize} initialBill={bill} />
+      <SplitBillScreen
+        tableCode={tableCode}
+        guestName={guestName}
+        partySize={partySize}
+        initialBill={bill}
+      />
     </div>
   );
 }

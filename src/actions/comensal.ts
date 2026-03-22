@@ -86,6 +86,7 @@ export async function submitComensalOrder({
     data: {
       restaurantId: restaurant.id,
       tableId: table.id,
+      guestName,
       status: "PENDING",
       items: {
         create: items.map(cartItem => {
@@ -111,21 +112,7 @@ export async function submitComensalOrder({
 }
 
 export async function getTableBill(tableCode: string) {
-  const table = await prisma.table.findUnique({
-    where: { qrCode: tableCode },
-    include: {
-      orders: {
-        include: {
-          items: {
-            include: {
-              menuItem: true
-            }
-          }
-        }
-      }
-    }
-  });
-
+  const table = await prisma.table.findUnique({ where: { qrCode: tableCode } });
   if (!table) throw new Error("Mesa no encontrada");
 
   const activeSession = await prisma.session.findFirst({
@@ -134,32 +121,51 @@ export async function getTableBill(tableCode: string) {
   });
 
   if (!activeSession) {
-    return { items: [], total: 0 };
+    return { guests: [], tableTotal: 0 };
   }
 
-  const items = await prisma.orderItem.findMany({
+  // Traer todos los orderItems de la sesión con su orden (que ya tiene guestName)
+  const orderItems = await prisma.orderItem.findMany({
     where: { sessionId: activeSession.id },
-    include: { menuItem: true }
+    include: {
+      menuItem: true,
+      order: { select: { guestName: true } },
+    },
+    orderBy: { createdAt: "asc" },
   });
 
-  const aggregated = items.reduce((acc, item) => {
-    const existing = acc.find(i => i.id === item.menuItemId);
-    if (existing) {
-      existing.qty += item.quantity;
-    } else {
-      acc.push({
-        id: item.menuItemId,
-        name: item.menuItem.name,
-        qty: item.quantity,
-        price: item.priceAtTime,
-      });
-    }
-    return acc;
-  }, [] as { id: string; name: string; qty: number; price: number }[]);
+  // Agrupar por guest (orden.guestName o "Invitado" si es null)
+  const guestMap = new Map<string, {
+    lineItemId: string;
+    name: string;
+    variantName: string | null;
+    qty: number;
+    unitPrice: number;
+    subtotal: number;
+  }[]>();
 
-  const total = aggregated.reduce((sum, item) => sum + (item.price * item.qty), 0);
+  for (const oi of orderItems) {
+    const guest = oi.order.guestName ?? "Invitado";
+    if (!guestMap.has(guest)) guestMap.set(guest, []);
+    guestMap.get(guest)!.push({
+      lineItemId: oi.id,
+      name: oi.menuItem.name + (oi.variantName ? ` (${oi.variantName})` : ""),
+      variantName: oi.variantName,
+      qty: oi.quantity,
+      unitPrice: oi.priceAtTime,
+      subtotal: oi.priceAtTime * oi.quantity,
+    });
+  }
 
-  return { items: aggregated, total };
+  const guests = Array.from(guestMap.entries()).map(([guestName, items]) => ({
+    guestName,
+    items,
+    subtotal: items.reduce((s, i) => s + i.subtotal, 0),
+  }));
+
+  const tableTotal = guests.reduce((s, g) => s + g.subtotal, 0);
+
+  return { guests, tableTotal };
 }
 
 export async function guestJoinTable(tableCode: string, guestName: string, pax: number) {
@@ -198,6 +204,69 @@ export async function guestJoinTable(tableCode: string, guestName: string, pax: 
     path: "/",
   });
 
+  return true;
+}
+
+// Pago parcial de un comensal sin cerrar la mesa.
+// El mesero confirma el cierre cuando todos hayan pagado.
+export async function payGuestShare(input: {
+  tableCode: string;
+  guestName: string;
+  amountPaid: number;
+  tipRate: number;
+  paymentMethod?: "CASH" | "CARD" | "TRANSFER" | "OTHER";
+}) {
+  const table = await prisma.table.findUnique({
+    where: { qrCode: input.tableCode },
+    include: { restaurant: true },
+  });
+  if (!table) throw new Error("Mesa no encontrada");
+
+  const session = await prisma.session.findFirst({
+    where: { tableId: table.id, isActive: true },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!session) throw new Error("No hay sesión activa");
+
+  // Calcular subtotal de este comensal
+  const myItems = await prisma.orderItem.findMany({
+    where: {
+      sessionId: session.id,
+      order: { guestName: input.guestName },
+    },
+    select: { quantity: true, priceAtTime: true },
+  });
+  const subtotal = myItems.reduce((s, i) => s + i.quantity * i.priceAtTime, 0);
+  const tipAmount = Math.round(subtotal * input.tipRate);
+
+  await prisma.payment.create({
+    data: {
+      restaurantId: table.restaurantId,
+      tableId: table.id,
+      sessionId: session.id,
+      status: "PAID",
+      method: input.paymentMethod ?? "CARD",
+      splitMode: "FULL",
+      splitCount: 1,
+      paxPaid: 1,
+      currency: table.restaurant.currency,
+      subtotal,
+      tipRate: input.tipRate,
+      tipAmount,
+      totalAmount: subtotal + tipAmount,
+      amountPaid: input.amountPaid,
+      paidAt: new Date(),
+      allocations: {
+        create: {
+          sessionId: session.id,
+          guestName: input.guestName,
+          amount: input.amountPaid,
+        },
+      },
+    },
+  });
+
+  revalidatePath("/dashboard/mesas");
   return true;
 }
 

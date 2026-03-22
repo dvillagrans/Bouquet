@@ -354,6 +354,7 @@ model Order {
   id           String      @id @default(uuid())
   restaurantId String
   tableId      String
+  guestName    String?
   status       OrderStatus @default(PENDING)
 
   restaurant Restaurant  @relation(fields: [restaurantId], references: [id])

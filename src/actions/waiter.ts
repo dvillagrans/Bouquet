@@ -1,5 +1,6 @@
 "use server";
 
+import type { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { parseVariantsJson } from "@/lib/menu-variants";
 import { broadcastGuestOrdersRefresh } from "@/lib/supabase/broadcast-guest-orders";
@@ -7,13 +8,24 @@ import { revalidatePath } from "next/cache";
 import { getDefaultRestaurant } from "./restaurant";
 
 /**
- * Update the status of a table
+ * Update the status of a table.
+ * When marking as DISPONIBLE (clean), rotate the QR code so old links stop working.
  */
 export async function updateTableStatus(tableId: string, status: "DISPONIBLE" | "OCUPADA" | "SUCIA") {
-  await prisma.table.update({
-    where: { id: tableId },
-    data: { status }
-  });
+  const data: Prisma.TableUpdateInput = { status };
+
+  if (status === "DISPONIBLE") {
+    // Rotate QR so any previous guests can't rejoin via old link
+    let newCode: string;
+    do {
+      newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+    } while (await prisma.table.findUnique({ where: { qrCode: newCode } }));
+    data.qrCode = newCode;
+    // Clear join code — se generará uno nuevo cuando llegue el próximo anfitrión
+    data.joinCode = null;
+  }
+
+  await prisma.table.update({ where: { id: tableId }, data });
 
   revalidatePath("/mesero");
   revalidatePath("/dashboard/mesas");

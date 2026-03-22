@@ -14,30 +14,35 @@ const STATUS_DOT: Record<TableStatus, string> = {
   DISPONIBLE: "bg-sage-deep",
   OCUPADA: "bg-glow",
   SUCIA: "bg-ember",
+  CERRANDO: "bg-gold",
 };
 
 const STATUS_TEXT: Record<TableStatus, string> = {
   DISPONIBLE: "text-sage-deep",
   OCUPADA: "text-glow",
   SUCIA: "text-ember",
+  CERRANDO: "text-gold",
 };
 
 const STATUS_LABEL: Record<TableStatus, string> = {
   DISPONIBLE: "Disponible",
   OCUPADA: "Ocupada",
   SUCIA: "Por limpiar",
+  CERRANDO: "Cuenta",
 };
 
 const CARD_BORDER: Record<TableStatus, string> = {
   DISPONIBLE: "border-wire hover:border-sage-deep/40",
   OCUPADA: "border-glow/30 hover:border-glow/60",
   SUCIA: "border-ember/30 hover:border-ember/60",
+  CERRANDO: "border-gold/30 hover:border-gold/60",
 };
 
 const CARD_BG: Record<TableStatus, string> = {
   DISPONIBLE: "",
   OCUPADA: "bg-glow/[0.025]",
   SUCIA: "bg-ember/[0.025]",
+  CERRANDO: "bg-gold/[0.025]",
 };
 
 export default function TableManagerClient({ initialTables }: { initialTables: Table[] }) {

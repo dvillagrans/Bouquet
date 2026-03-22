@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useTransition, useEffect, useRef, useMemo, useCallback } from "react";
-import { submitComensalOrder, getGuestOrders } from "@/actions/comensal";
+import { useRouter } from "next/navigation";
+import { submitComensalOrder, getGuestOrders, requestBill, transferHost, getGuestTableState } from "@/actions/comensal";
 import { createClient } from "@/lib/supabase/client";
 import { ChevronDown } from "lucide-react";
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -227,16 +227,29 @@ function OrderTracker({
   tableCode,
   guestName,
   partySize,
+  isHost,
+  billRequested,
 }: {
   orders: any[];
   tableCode: string;
   guestName: string;
   partySize: number;
+  isHost: boolean;
+  billRequested: boolean;
 }) {
+  const router = useRouter();
   const active    = orders.filter(o => o.status !== "DELIVERED");
   const delivered = orders.filter(o => o.status === "DELIVERED");
 
   const cuentaHref = `/mesa/${encodeURIComponent(tableCode)}/cuenta?guest=${encodeURIComponent(guestName)}&pax=${partySize}`;
+  const [isRequestingBill, startBillTransition] = useTransition();
+
+  function handleRequestBill() {
+    startBillTransition(async () => {
+      await requestBill(tableCode, guestName);
+      router.push(cuentaHref);
+    });
+  }
 
   const [open, setOpen] = useState(active.length > 0);
 
@@ -347,29 +360,29 @@ function OrderTracker({
 
           {/* Pedir la cuenta CTA */}
           <div className="mt-4">
-            {active.length === 0 ? (
-              /* All delivered → prominent gold button */
-              <Link
-                href={cuentaHref}
-                className="flex w-full items-center justify-center gap-2 bg-glow py-3.5 text-[0.72rem] font-bold uppercase tracking-[0.22em] text-ink transition-all active:scale-[0.99]"
-                style={{ animation: "scale-in 0.25s cubic-bezier(0.22,1,0.36,1) both" }}
+            {isHost ? (
+              /* Anfitrión: botón real que cierra la mesa */
+              <button
+                onClick={handleRequestBill}
+                disabled={isRequestingBill}
+                className={[
+                  "flex w-full items-center justify-center gap-2 py-3.5 text-[0.72rem] font-bold uppercase tracking-[0.22em] transition-all active:scale-[0.99] disabled:opacity-60",
+                  active.length === 0
+                    ? "bg-glow text-ink"
+                    : "border border-wire text-dim hover:border-light/20 hover:text-light",
+                ].join(" ")}
+                style={active.length === 0 ? { animation: "scale-in 0.25s cubic-bezier(0.22,1,0.36,1) both" } : undefined}
               >
                 <svg viewBox="0 0 16 16" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
                   <path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
                 </svg>
-                Pedir la cuenta
-              </Link>
+                {isRequestingBill ? "Cerrando mesa…" : "Pedir la cuenta"}
+              </button>
             ) : (
-              /* Still active → secondary ghost link */
-              <Link
-                href={cuentaHref}
-                className="flex w-full items-center justify-center gap-2 border border-wire py-3 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-dim transition-colors hover:border-light/20 hover:text-light"
-              >
-                <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3" aria-hidden="true">
-                  <path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-                </svg>
-                Pedir la cuenta
-              </Link>
+              /* No anfitrión: aviso informativo */
+              <p className="text-center text-[0.6rem] font-medium uppercase tracking-[0.2em] text-dim/40">
+                Solo el anfitrión puede pedir la cuenta
+              </p>
             )}
           </div>
         </div>
@@ -396,7 +409,12 @@ function OrderRow({ order }: { order: any }) {
       ].join(" ")}
     >
       <div className="min-w-0">
-        <span className="font-mono text-[0.58rem] text-dim/40">#{order.id.slice(-4)}</span>
+        <div className="flex items-center gap-1.5">
+          <span className="font-mono text-[0.58rem] text-dim/40">#{order.id.slice(-4)}</span>
+          {order.items[0]?.session?.guestName && (
+            <span className="text-[0.58rem] font-medium text-glow/70">{order.items[0].session.guestName}</span>
+          )}
+        </div>
         <p className="truncate text-[0.72rem] font-medium text-light">{summary}</p>
       </div>
       <span
@@ -420,15 +438,26 @@ interface MenuScreenProps {
   initialCategories: Category[];
   initialItems: MenuItem[];
   initialOrders?: any[];
+  isHost?: boolean;
+  initialBillRequested?: boolean;
+  initialGuests?: { name: string; isHost: boolean }[];
+  joinCode?: string | null;
 }
 
 type CartMap = Record<string, number>;
 
-export function MenuScreen({ guestName, partySize, tableCode, initialCategories, initialItems, initialOrders = [] }: MenuScreenProps) {
+export function MenuScreen({ guestName, partySize, tableCode, initialCategories, initialItems, initialOrders = [], isHost = false, initialBillRequested = false, initialGuests = [], joinCode }: MenuScreenProps) {
+  const router = useRouter();
   const [cart, setCart]               = useState<CartMap>({});
   /** Tamaño elegido por platillo (solo ítems con variantes). */
   const [variantChoice, setVariantChoice] = useState<Record<string, string>>({});
   const [orders, setOrders]           = useState(initialOrders);
+  const [billRequested, setBillRequested] = useState(initialBillRequested);
+  const [guests, setGuests]               = useState(initialGuests);
+  const [transferOpen, setTransferOpen]   = useState(false);
+  const [isTransferring, startTransfer]   = useTransition();
+
+  const cuentaHref = `/mesa/${encodeURIComponent(tableCode)}/cuenta?guest=${encodeURIComponent(guestName)}&pax=${partySize}`;
 
   const refreshOrders = useCallback(async () => {
     try {
@@ -449,6 +478,12 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
    * - Sondeo cada 5s si la pestaña está visible (respaldo y sin service role)
    * postgres_changes con anon no recibe Order por RLS (solo authenticated).
    */
+  // Si ya se pidió la cuenta al cargar, redirigir
+  useEffect(() => {
+    if (initialBillRequested) router.replace(cuentaHref);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     void refreshOrders();
 
@@ -458,6 +493,11 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
       .channel(channelName)
       .on("broadcast", { event: "refresh" }, () => {
         void refreshOrders();
+        void getGuestTableState(tableCode, guestName).then(s => setGuests(s.guests));
+      })
+      .on("broadcast", { event: "bill-requested" }, () => {
+        setBillRequested(true);
+        router.push(cuentaHref);
       })
       .subscribe();
 
@@ -482,7 +522,12 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderError, setOrderError]   = useState<string | null>(null);
 
-      function handleCheckout() {
+  function handleCheckout() {
+    if (billRequested) {
+      setOrderError("El anfitrión ya pidió la cuenta. No puedes agregar más órdenes.");
+      setTimeout(() => setOrderError(null), 4000);
+      return;
+    }
     startTransition(async () => {
       try {
         const orderItems = Object.entries(cart).map(([key, qty]) => {
@@ -600,16 +645,7 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
 
       {/* ── TOP BAR ──────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-30 border-b border-wire bg-ink">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4 lg:px-10">
-          <Link
-            href={`/mesa/${encodeURIComponent(tableCode)}`}
-            className="inline-flex items-center gap-2 text-[0.65rem] font-bold uppercase tracking-[0.3em] text-dim transition-colors hover:text-light"
-          >
-            <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3" aria-hidden="true">
-              <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            {tableCode}
-          </Link>
+        <div className="mx-auto flex max-w-5xl items-center justify-end px-6 py-4 lg:px-10">
           <span className="flex items-center gap-2 text-[0.58rem] font-bold uppercase tracking-[0.32em] text-dim">
             <span
               className="h-1.5 w-1.5 rounded-full bg-sage-deep"
@@ -634,16 +670,108 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
               </p>
               <h1 className="mt-3 font-serif text-[clamp(2rem,5vw,3rem)] font-medium leading-[0.92] tracking-[-0.02em] text-light">
                 {guestName}
+                {isHost && (
+                  <span className="ml-3 align-middle text-[0.52rem] font-bold uppercase tracking-[0.28em] text-glow/80">
+                    Anfitrión
+                  </span>
+                )}
               </h1>
               <p className="mt-3 text-[0.75rem] font-medium text-dim">
-                Mesa {tableCode} · {partySize} comensal{partySize !== 1 ? "es" : ""}
+                Mesa {tableCode}
               </p>
+
+              {/* Código de acceso — solo visible para el anfitrión */}
+              {isHost && joinCode && (
+                <div className="mt-5 inline-flex flex-col gap-1" style={{ animation: "fade-in 0.3s ease-out both" }}>
+                  <span className="text-[0.52rem] font-bold uppercase tracking-[0.36em] text-dim/40">
+                    Código de acceso
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-[1.8rem] font-bold tracking-[0.28em] text-glow leading-none">
+                      {joinCode}
+                    </span>
+                    <span className="text-[0.6rem] font-medium text-dim/40 max-w-[14ch] leading-relaxed">
+                      Compártelo con tus compañeros
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Comensales en la mesa */}
+              {guests.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {guests.map(g => (
+                    <span
+                      key={g.name}
+                      className={[
+                        "inline-flex items-center gap-1.5 border px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.16em]",
+                        g.name === guestName
+                          ? "border-light/20 text-light"
+                          : "border-wire/50 text-dim/50",
+                      ].join(" ")}
+                    >
+                      {g.isHost && (
+                        <svg viewBox="0 0 10 10" fill="none" className="h-2 w-2 text-glow shrink-0" aria-hidden="true">
+                          <path d="M5 1l1.2 2.5L9 4.1 7 6l.5 2.9L5 7.5 2.5 8.9 3 6 1 4.1l2.8-.6L5 1z" fill="currentColor"/>
+                        </svg>
+                      )}
+                      {g.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Transferir anfitrión — solo visible para el anfitrión actual */}
+              {isHost && guests.filter(g => g.name !== guestName).length > 0 && (
+                <div className="mt-4">
+                  {!transferOpen ? (
+                    <button
+                      onClick={() => setTransferOpen(true)}
+                      className="text-[0.58rem] font-medium uppercase tracking-[0.2em] text-dim/40 underline-offset-2 hover:text-dim transition-colors"
+                    >
+                      Pasar anfitrión
+                    </button>
+                  ) : (
+                    <div className="flex flex-wrap items-center gap-2" style={{ animation: "fade-in 0.15s ease-out both" }}>
+                      <span className="text-[0.58rem] font-medium uppercase tracking-[0.2em] text-dim/50">
+                        Pasar a:
+                      </span>
+                      {guests
+                        .filter(g => g.name !== guestName)
+                        .map(g => (
+                          <button
+                            key={g.name}
+                            disabled={isTransferring}
+                            onClick={() => {
+                              startTransfer(async () => {
+                                await transferHost(tableCode, guestName, g.name);
+                                setTransferOpen(false);
+                                // Refrescar lista local
+                                const state = await getGuestTableState(tableCode, guestName);
+                                setGuests(state.guests);
+                              });
+                            }}
+                            className="border border-wire px-3 py-1 text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-dim transition-colors hover:border-glow/40 hover:text-glow disabled:opacity-40"
+                          >
+                            {g.name}
+                          </button>
+                        ))}
+                      <button
+                        onClick={() => setTransferOpen(false)}
+                        className="text-[0.58rem] text-dim/30 hover:text-dim transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             
             {/* TRACING DE ORDENES ACTIVAS */}
             {orders && orders.length > 0 && (
-              <OrderTracker orders={orders} tableCode={tableCode} guestName={guestName} partySize={partySize} />
+              <OrderTracker orders={orders} tableCode={tableCode} guestName={guestName} partySize={partySize} isHost={isHost} billRequested={billRequested} />
             )}
 
             {/* Category tabs */}

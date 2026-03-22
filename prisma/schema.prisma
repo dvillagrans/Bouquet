@@ -114,6 +114,7 @@ model Restaurant {
 enum TableStatus {
   DISPONIBLE
   OCUPADA
+  CERRANDO  // cuenta pedida por el anfitrión — no se permiten más órdenes
   SUCIA
 }
 
@@ -123,6 +124,7 @@ model Table {
   number       Int
   capacity     Int
   qrCode       String      @unique // Ej. X7B9K2
+  joinCode     String?               // código 4 chars que el anfitrión comparte; null = mesa vacía
   status       TableStatus @default(DISPONIBLE)
   posX         Float       @default(80)
   posY         Float       @default(80)
@@ -324,6 +326,7 @@ model Session {
   guestName String
   pax       Int
   isActive  Boolean @default(true)
+  isHost    Boolean @default(false)
 
   table       Table               @relation(fields: [tableId], references: [id])
   orderItems  OrderItem[]

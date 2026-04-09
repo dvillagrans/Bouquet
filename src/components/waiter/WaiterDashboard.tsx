@@ -90,10 +90,10 @@ export default function WaiterDashboard() {
   return (
     <div className="min-h-screen bg-ink">
       {/* Header with Stats */}
-      <div className="border-b border-wire bg-canvas p-6">
+      <div className="border-b border-wire bg-canvas p-4 sm:p-6">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold uppercase tracking-[0.2em] text-light">
+          <div className="mb-4 sm:mb-6">
+            <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-[0.2em] text-light">
               Panel del Mesero
             </h1>
             <p className="mt-1 text-sm text-dim uppercase tracking-[0.1em]">
@@ -151,11 +151,12 @@ export default function WaiterDashboard() {
       </div>
 
       {/* Filters, View Toggle and Refresh */}
-      <div className="border-b border-wire bg-panel p-4">
-        <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-4">
-          <div className="flex gap-2 flex-wrap">
+      <div className="border-b border-wire bg-panel py-3 px-4">
+        <div className="mx-auto max-w-7xl flex items-center gap-2">
+          {/* Scrollable filter area */}
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none flex-1 min-w-0 pb-0.5">
             {/* View toggle */}
-            <div className="flex border border-wire rounded overflow-hidden mr-2">
+            <div className="flex border border-wire rounded overflow-hidden shrink-0">
               <button
                 onClick={() => setView("lista")}
                 className={`flex items-center gap-1.5 px-3 py-2 text-sm font-bold uppercase transition-all ${
@@ -163,7 +164,7 @@ export default function WaiterDashboard() {
                 }`}
               >
                 <LayoutGrid className="h-3.5 w-3.5" />
-                Lista
+                <span className="hidden xs:inline">Lista</span>
               </button>
               <button
                 onClick={() => setView("mapa")}
@@ -172,40 +173,46 @@ export default function WaiterDashboard() {
                 }`}
               >
                 <Map className="h-3.5 w-3.5" />
-                Mapa
+                <span className="hidden xs:inline">Mapa</span>
               </button>
             </div>
+
+            {/* Divider */}
+            {view === "lista" && (
+              <div className="w-px h-5 bg-wire/50 shrink-0" />
+            )}
 
             {/* Filters (only in list view) */}
             {view === "lista" && (["todas", "ocupadas", "pendientes", "listas", "sucias"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-2 rounded text-sm font-bold uppercase transition-all ${
+                className={`shrink-0 px-3 py-2 rounded text-sm font-bold uppercase transition-all ${
                   filter === f
                     ? "bg-glow text-canvas"
                     : "border border-wire text-light hover:border-glow"
                 }`}
               >
                 {f === "todas" && "Todas"}
-                {f === "ocupadas" && `Ocupadas (${stats.occupied})`}
-                {f === "pendientes" && `Pendientes (${stats.pending})`}
-                {f === "listas" && `Listas (${stats.ready})`}
-                {f === "sucias" && `Por Limpiar (${stats.dirty})`}
+                {f === "ocupadas" && `Ocupadas${stats.occupied ? ` (${stats.occupied})` : ""}`}
+                {f === "pendientes" && `Pend.${stats.pending ? ` (${stats.pending})` : ""}`}
+                {f === "listas" && `Listas${stats.ready ? ` (${stats.ready})` : ""}`}
+                {f === "sucias" && `Limpiar${stats.dirty ? ` (${stats.dirty})` : ""}`}
               </button>
             ))}
           </div>
 
+          {/* Refresh - always visible, icon-only on mobile */}
           <button
             onClick={() => {
               setLoading(true);
               loadTables();
             }}
             disabled={loading}
-            className="flex items-center gap-2 border border-wire hover:border-glow px-3 py-2 rounded text-sm font-bold uppercase text-dim hover:text-light transition-colors disabled:opacity-50"
+            className="shrink-0 flex items-center gap-2 border border-wire hover:border-glow px-3 py-2 rounded text-sm font-bold uppercase text-dim hover:text-light transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Actualizar
+            <span className="hidden sm:inline">Actualizar</span>
           </button>
         </div>
       </div>
@@ -241,12 +248,12 @@ export default function WaiterDashboard() {
               <p className="text-dim">No hay mesas para este filtro</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {filteredTables.map((table) => (
                 <div
                   key={table.id}
                   onClick={() => isTableBusy(table.status) && setSelectedTable(table.id)}
-                  className={`group relative flex flex-col items-center justify-between rounded-lg border p-4 transition-all duration-300 cursor-pointer aspect-square ${
+                  className={`relative flex flex-col items-center justify-between rounded-lg border p-3 sm:p-4 transition-all duration-200 cursor-pointer aspect-square active:scale-[0.97] ${
                     table.status === "DISPONIBLE"
                       ? "border-sage/40 bg-sage/5 hover:border-sage"
                       : table.status === "OCUPADA"
@@ -256,10 +263,10 @@ export default function WaiterDashboard() {
                       : "border-ember/40 bg-ember/5 hover:border-ember"
                   }`}
                 >
-                  {/* Status Badge */}
-                  <div className="flex w-full items-center justify-between mb-2">
+                  {/* Status Badge + pax */}
+                  <div className="flex w-full items-center justify-between">
                     <span
-                      className={`text-[0.5rem] font-bold uppercase tracking-wider px-2 py-1 rounded ${
+                      className={`text-[0.55rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
                         table.status === "DISPONIBLE"
                           ? "bg-sage/20 text-sage"
                           : table.status === "OCUPADA"
@@ -278,70 +285,57 @@ export default function WaiterDashboard() {
                             : "Sucia"}
                     </span>
                     {isTableBusy(table.status) && (
-                      <div className="flex items-center gap-1 text-[0.55rem] text-light">
-                        <Users className="h-3 w-3" />
+                      <div className="flex items-center gap-0.5 text-[0.55rem] text-light">
+                        <Users className="h-2.5 w-2.5" />
                         {table.activeSession?.pax}
                       </div>
                     )}
                   </div>
 
-                  {/* Table Number */}
-                  <div className="flex-1 flex flex-col items-center justify-center gap-1">
-                    <span className="font-serif text-4xl text-light">{table.number}</span>
+                  {/* Table Number + Guest Name */}
+                  <div className="flex-1 flex flex-col items-center justify-center gap-0.5">
+                    <span className="font-serif text-3xl sm:text-4xl text-light">{table.number}</span>
                     {table.activeSession && (
-                      <span className="text-[0.6rem] font-medium tracking-wider text-light/70 uppercase text-center line-clamp-2">
+                      <span className="text-[0.6rem] font-medium tracking-wider text-light/70 uppercase text-center line-clamp-1">
                         {table.activeSession.guestName}
+                      </span>
+                    )}
+                    {/* Bill total — always visible for busy tables */}
+                    {isTableBusy(table.status) && table.billTotal > 0 && (
+                      <span className="text-[0.65rem] font-mono text-light/50 mt-0.5">
+                        ${table.billTotal.toFixed(0)}
                       </span>
                     )}
                   </div>
 
-                  {/* Order Badge */}
+                  {/* Order Badges */}
                   {table.orderCount > 0 && (
-                    <div className="flex gap-2 w-full justify-center text-[0.5rem]">
+                    <div className="flex gap-1.5 w-full justify-center text-[0.5rem]">
                       {table.pendingCount > 0 && (
-                        <div className="bg-glow/20 text-glow px-2 py-1 rounded font-bold">
+                        <div className="bg-glow/20 text-glow px-1.5 py-0.5 rounded font-bold">
                           {table.pendingCount} Pend
                         </div>
                       )}
                       {table.readyCount > 0 && (
-                        <div className="bg-sage-deep/20 text-sage-deep px-2 py-1 rounded font-bold">
+                        <div className="bg-sage-deep/20 text-sage-deep px-1.5 py-0.5 rounded font-bold">
                           {table.readyCount} List
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Hover Overlay Info */}
-                  {isTableBusy(table.status) && (
-                    <div className="absolute inset-0 bg-canvas/95 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
-                      <div className="text-center space-y-2">
-                        <p className="text-sm font-bold text-light">
-                          ${table.billTotal.toFixed(0)}
-                        </p>
-                        <p className="text-xs text-dim">
-                          {table.orderCount} órdenes
-                        </p>
-                        <p className="text-xs text-glow font-bold">
-                          Click para detalles
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Hover Overlay for Dirty Tables */}
+                  {/* Limpiar button — always visible for dirty tables (no hover required) */}
                   {table.status === "SUCIA" && (
-                    <div className="absolute inset-0 bg-canvas/95 rounded-lg flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-sm">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCleanTable(table.id);
-                        }}
-                        className="flex items-center gap-2 bg-sage-deep hover:bg-sage-deep/90 text-canvas px-4 py-2 rounded font-bold uppercase text-sm transition-colors"
-                      >
-                        <Sparkles className="h-4 w-4" />
-                        Limpiar Mesa
-                      </button>
-                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCleanTable(table.id);
+                      }}
+                      className="mt-1 flex items-center gap-1 bg-sage-deep hover:bg-sage-deep/90 active:scale-95 text-canvas px-2 py-1 rounded font-bold uppercase text-[0.6rem] transition-all"
+                    >
+                      <Sparkles className="h-2.5 w-2.5" />
+                      Limpiar
+                    </button>
                   )}
                 </div>
               ))}

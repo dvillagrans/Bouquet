@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(find /c/Users/dvill/Downloads/Bouquet -type f -name *menu*)",
-      "Bash(npx prisma:*)"
+      "Bash(npx prisma:*)",
+      "Bash(npx skills:*)"
     ],
     "additionalDirectories": [
       "c:\\Users\\dvill\\Downloads\\Bouquet\\src\\app"

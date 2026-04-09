@@ -118,7 +118,7 @@ export default function WaiterTableDetail({
           </div>
           <button
             onClick={onClose}
-            className="text-dim hover:text-light transition-colors p-2"
+            className="text-dim hover:text-light transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded active:bg-wire/20"
             aria-label="Cerrar"
           >
             ✕
@@ -126,10 +126,10 @@ export default function WaiterTableDetail({
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 border-b border-wire px-4 pt-4 overflow-x-auto">
+        <div className="flex gap-1 border-b border-wire px-4 pt-3 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveTab("orders")}
-            className={`pb-3 px-2 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+            className={`pb-3 px-3 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-colors min-h-[44px] flex items-end ${
               activeTab === "orders" ? "text-glow border-b-2 border-glow" : "text-dim hover:text-light"
             }`}
           >
@@ -139,19 +139,19 @@ export default function WaiterTableDetail({
             <>
               <button
                 onClick={() => setActiveTab("add-items")}
-                className={`pb-3 px-2 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+                className={`pb-3 px-3 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-colors min-h-[44px] flex items-end gap-1 ${
                   activeTab === "add-items" ? "text-glow border-b-2 border-glow" : "text-dim hover:text-light"
                 }`}
               >
-                <Plus className="inline h-3 w-3 mr-1" /> Agregar
+                <Plus className="h-3 w-3 mb-0.5" /> Agregar
               </button>
               <button
                 onClick={() => setActiveTab("payment")}
-                className={`pb-3 px-2 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-colors ${
+                className={`pb-3 px-3 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-colors min-h-[44px] flex items-end gap-1 ${
                   activeTab === "payment" ? "text-glow border-b-2 border-glow" : "text-dim hover:text-light"
                 }`}
               >
-                <Receipt className="inline h-3 w-3 mr-1" /> Pagar
+                <Receipt className="h-3 w-3 mb-0.5" /> Pagar
               </button>
             </>
           )}

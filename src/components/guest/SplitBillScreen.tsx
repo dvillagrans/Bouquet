@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { requestBillAndPay } from "@/actions/comensal";
+import { payGuestShare } from "@/actions/comensal";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -111,6 +111,7 @@ function MiniStepper({
 // ─── ConfirmedView ───────────────────────────────────────────────────────────
 
 function ConfirmedView({
+  tableCode,
   guestName,
   amount,
 }: {
@@ -165,6 +166,12 @@ function ConfirmedView({
         <p className="mt-4 text-[0.78rem] font-medium leading-relaxed text-dim/55">
           Fue un placer tenerte en la mesa.<br />Esperamos verte pronto.
         </p>
+        <Link
+          href={`/mesa/${encodeURIComponent(tableCode)}/menu?guest=${encodeURIComponent(guestName)}`}
+          className="mt-10 inline-block border border-wire px-8 py-3 text-[0.65rem] font-bold uppercase tracking-[0.26em] text-dim transition-colors hover:border-light/20 hover:text-light"
+        >
+          Volver al menú
+        </Link>
       </div>
 
       {/* Pie */}
@@ -195,6 +202,7 @@ export function SplitBillScreen({
   const [mode, setMode]         = useState<SplitMode>("own");
   const [tipRate, setTipRate]   = useState<TipRate>(0.15);
   const [confirmed, setConfirmed] = useState(false);
+  const [paidAmount, setPaidAmount] = useState(0);
   const [isPending, startTransition] = useTransition();
 
   // Mode: own — adopted item keys from other guests
@@ -243,16 +251,14 @@ export function SplitBillScreen({
   function handlePay() {
     startTransition(async () => {
       try {
-        await requestBillAndPay({
+        await payGuestShare({
           tableCode,
-          splitMode:    mode === "equal" ? "EQUAL" : "FULL",
-          splitCount:   mode === "equal" ? splitCount : 1,
+          guestName,
+          amountPaid: myShare,
           tipRate,
-          tipAmount:    mode === "own" ? ownTip : mode === "equal" ? Math.round(grandTip / splitCount) : sharedTip,
-          totalAmount:  grandWithTip,
-          amountPaid:   myShare,
           paymentMethod: "CARD",
         });
+        setPaidAmount(myShare);
         setConfirmed(true);
       } catch (err) {
         console.error(err);
@@ -262,7 +268,7 @@ export function SplitBillScreen({
   }
 
   if (confirmed) {
-    return <ConfirmedView tableCode={tableCode} guestName={guestName} amount={myShare} />;
+    return <ConfirmedView tableCode={tableCode} guestName={guestName} amount={paidAmount} />;
   }
 
   const modeLabel: Record<SplitMode, string> = {

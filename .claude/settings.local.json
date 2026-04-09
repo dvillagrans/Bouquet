@@ -2,6 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(find /c/Users/dvill/Downloads/Bouquet -type f -name *menu*)",
+      "Bash(find C:UsersdvillDownloadsBouquet -type f \\\\\\(-name *payment* -o -name *bill* -o -name *split* -o -path *migrations* \\\\\\))",
+      "Bash(find C:UsersdvillDownloadsBouquetsrcapp -type f -name *.ts -o -name *.tsx)",
       "Bash(npx prisma:*)",
       "Bash(npx skills:*)"
     ],

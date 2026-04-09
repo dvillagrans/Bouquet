@@ -89,6 +89,7 @@ export async function submitComensalOrder({
     data: {
       restaurantId: restaurant.id,
       tableId: table.id,
+      guestName,
       status: "PENDING",
       items: {
         create: items.map(cartItem => {
@@ -216,6 +217,69 @@ export async function guestJoinTable(tableCode: string, guestName: string, pax: 
     path: "/",
   });
 
+  return true;
+}
+
+// Pago parcial de un comensal sin cerrar la mesa.
+// El mesero confirma el cierre cuando todos hayan pagado.
+export async function payGuestShare(input: {
+  tableCode: string;
+  guestName: string;
+  amountPaid: number;
+  tipRate: number;
+  paymentMethod?: "CASH" | "CARD" | "TRANSFER" | "OTHER";
+}) {
+  const table = await prisma.table.findUnique({
+    where: { qrCode: input.tableCode },
+    include: { restaurant: true },
+  });
+  if (!table) throw new Error("Mesa no encontrada");
+
+  const session = await prisma.session.findFirst({
+    where: { tableId: table.id, isActive: true },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!session) throw new Error("No hay sesión activa");
+
+  // Calcular subtotal de este comensal
+  const myItems = await prisma.orderItem.findMany({
+    where: {
+      sessionId: session.id,
+      order: { guestName: input.guestName },
+    },
+    select: { quantity: true, priceAtTime: true },
+  });
+  const subtotal = myItems.reduce((s, i) => s + i.quantity * i.priceAtTime, 0);
+  const tipAmount = Math.round(subtotal * input.tipRate);
+
+  await prisma.payment.create({
+    data: {
+      restaurantId: table.restaurantId,
+      tableId: table.id,
+      sessionId: session.id,
+      status: "PAID",
+      method: input.paymentMethod ?? "CARD",
+      splitMode: "FULL",
+      splitCount: 1,
+      paxPaid: 1,
+      currency: table.restaurant.currency,
+      subtotal,
+      tipRate: input.tipRate,
+      tipAmount,
+      totalAmount: subtotal + tipAmount,
+      amountPaid: input.amountPaid,
+      paidAt: new Date(),
+      allocations: {
+        create: {
+          sessionId: session.id,
+          guestName: input.guestName,
+          amount: input.amountPaid,
+        },
+      },
+    },
+  });
+
+  revalidatePath("/dashboard/mesas");
   return true;
 }
 

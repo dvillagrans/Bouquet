@@ -67,7 +67,7 @@ export const TopBar = () => {
             href="#contacto"
             className="hidden items-center gap-2 border border-glow/25 px-5 py-2.5 text-[0.8rem] font-semibold text-glow transition-all duration-200 hover:border-glow/40 hover:bg-glow/[0.08] lg:inline-flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
           >
-            Solicitar demo
+            Agenda una demo
           </Link>
 
           {/* Mobile hamburger */}
@@ -142,7 +142,7 @@ export const TopBar = () => {
                 onClick={() => setOpen(false)}
                 className="block bg-cream px-6 py-3.5 text-center text-sm font-semibold text-charcoal transition-colors hover:bg-ivory active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               >
-                Solicitar demo
+                Agenda una demo
               </Link>
             </div>
           </nav>

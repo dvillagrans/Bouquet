@@ -1,8 +1,8 @@
 const pillars = [
   {
     number: "01",
-    title: "Mesas en vivo",
-    body: "Estado en tiempo real de cada mesa. Sabe quién está, qué pidió y en qué momento del servicio va. Sin preguntar, sin correr.",
+    title: "Rota Mesas Más Rápido",
+    body: "Reduce el tiempo muerto de cada mesa. Sabes exactamente quién ya comió y quién está cruzando la puerta para cobrar y sentar a los siguientes. Más rotación = más dinero ingresando hoy.",
     tags: ["Mapa de sala", "Progreso de servicio", "Alertas automáticas"],
     accent: "text-glow border-glow/25 bg-glow/8",
     accentColor: "text-glow",
@@ -32,8 +32,8 @@ const pillars = [
   },
   {
     number: "02",
-    title: "Flujo de servicio",
-    body: "Cocina y sala sincronizadas sin palabras. Las órdenes fluyen, los tiempos se cumplen, el ritmo se mantiene sin esfuerzo.",
+    title: "Cero Mermas por Errores",
+    body: "Cocina y meseros perfectamente sincronizados. Ni un solo platillo se regresa a cocina por errores al comandar y los tiempos de espera caen a la mitad. Menos pérdidas y ticket promedio más alto.",
     tags: ["Paso a cocina", "Confirmación de pase", "Tiempos de espera"],
     accent: "text-sage border-sage/25 bg-sage/8",
     accentColor: "text-sage",
@@ -60,9 +60,9 @@ const pillars = [
   },
   {
     number: "03",
-    title: "Pagos sincronizados",
-    body: "Cierra cuentas en segundos. Divisiones, propinas y comprobantes digitales sin papel, sin errores, sin esperas.",
-    tags: ["División de cuenta", "Propina automática", "Comprobante digital"],
+    title: "Cobro Inmediato y Facturación",
+    body: "Cierra cuentas en segundos desde la mesa. Divide montos sin usar calculadora, cobra terminales de inmediato y permite que el cliente pida factura con QR. Flujo de caja sin frenos.",
+    tags: ["División de cuenta", "Propina rápida", "Facturación digital"],
     accent: "text-gold border-gold/25 bg-gold/8",
     accentColor: "text-gold",
     preview: (
@@ -100,10 +100,10 @@ export const Features = () => (
       {/* Section header */}
       <div className="flex flex-col gap-3 border-b border-wire pb-14 md:flex-row md:items-end md:justify-between">
         <h2 className="max-w-[20ch] font-serif text-[clamp(2rem,3.6vw,3.5rem)] font-medium italic leading-[1.05] text-light">
-          Todo lo que necesita una operación de excelencia
+          La máquina de facturar que tu piso necesita
         </h2>
         <p className="max-w-[30ch] text-[0.85rem] font-medium leading-[1.75] text-dim md:text-right">
-          Una plataforma que entiende cómo funciona realmente un restaurante en servicio.
+          Sustituye ese sistema viejo y complicado por el único software diseñado para exprimir la rentabilidad de cada mesa.
         </p>
       </div>
 

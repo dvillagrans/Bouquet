@@ -8,7 +8,7 @@
 
 const stats = [
   { value: "4.9",  unit: "★", label: "Valoración promedio", sub: "de 5 estrellas"     },
-  { value: "+40",  unit: "",  label: "Restaurantes activos", sub: "en México"          },
+  { value: "+40",  unit: "",  label: "Restaurantes facturando", sub: "en México"          },
   { value: "100%", unit: "",  label: "Renovación anual",     sub: "contratos vigentes" },
 ];
 
@@ -42,7 +42,7 @@ export const SocialProof = () => (
         {/* Primary quote — large editorial */}
         <div>
           <blockquote className="font-serif text-[clamp(2rem,4.2vw,4.4rem)] font-medium italic leading-[1.15] tracking-[-0.025em] text-light/70">
-            &ldquo;Antes del turno revisaba notas, apps y papeles. Ahora abro Bouquet y sé exactamente en qué va cada mesa y cada orden.&rdquo;
+            &ldquo;Antes perdíamos horas cerrando caja y cuadrando cuentas. Con Bouquet cobramos al instante, rotamos las mesas más rápido y las ventas subieron un 20% desde el primer mes.&rdquo;
           </blockquote>
 
           <footer className="mt-10 flex items-center gap-5">
@@ -53,10 +53,10 @@ export const SocialProof = () => (
               </span>
             </div>
             <div>
-              <p className="text-[0.85rem] font-semibold text-light/70">Chef Rodrigo Castellanos</p>
+              <p className="text-[0.85rem] font-semibold text-light/70">Rodrigo Castellanos</p>
               <p className="mt-0.5 flex items-center gap-2 text-[0.6rem] font-bold uppercase tracking-[0.22em] text-dim">
                 <span className="h-px w-3 bg-dim/40" aria-hidden="true" />
-                Restaurante Nuo · Ciudad de México
+                Dueño, Taquería Los Güeros · CDMX
               </p>
             </div>
           </footer>
@@ -65,7 +65,7 @@ export const SocialProof = () => (
         {/* Secondary pull — compact, contrasting weight */}
         <div className="border-l border-wire pl-8 lg:pl-10">
           <p className="font-serif text-[clamp(1.1rem,1.6vw,1.55rem)] font-normal italic leading-[1.5] tracking-[-0.01em] text-dim">
-            &ldquo;El equipo dejó de correr a buscarme para preguntar el estado de una mesa. Eso por sí solo lo vale todo.&rdquo;
+            &ldquo;Mis meseros ahora se dedican a vender más cervezas y postres en lugar de estar correteando las libretas. Recuperamos la inversión en una semana.&rdquo;
           </p>
           <p className="mt-5 text-[0.6rem] font-bold uppercase tracking-[0.22em] text-wire">
             Gerencia de operaciones · Grupo Pujol

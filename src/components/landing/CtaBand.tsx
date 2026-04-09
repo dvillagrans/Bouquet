@@ -22,7 +22,7 @@ export const CtaBand = () => (
     <div className="border-b border-light/[0.07] px-6 py-4 lg:px-12">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
         <span className="text-[0.56rem] font-bold uppercase tracking-[0.38em] text-dim">
-          Bouquet OS · Temporada I
+          Bouquet OS · Alto Rendimiento
         </span>
         <span className="flex items-center gap-2 text-[0.56rem] font-bold uppercase tracking-[0.38em] text-dim">
           <span
@@ -41,10 +41,9 @@ export const CtaBand = () => (
         <div className="grid gap-14 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-20">
 
           {/* Headline */}
-          <h2 className="font-serif text-[clamp(3rem,6.8vw,7.2rem)] font-medium leading-[0.88] tracking-[-0.04em] text-light">
-            Empieza a operar<br />
-            <span className="italic text-light/55">con claridad</span><br />
-            desde mañana.
+          <h2 className="font-serif text-[clamp(2.5rem,6.8vw,6.5rem)] font-medium leading-[0.88] tracking-[-0.04em] text-light">
+            Deja de perder dinero y <br />multiplica tus ventas<br />
+            <span className="italic text-light/55">desde tu próximo turno.</span>
           </h2>
 
           {/* CTA block */}
@@ -54,7 +53,7 @@ export const CtaBand = () => (
               className="group inline-flex min-h-11 items-center gap-2.5 bg-cream px-8 text-[0.82rem] font-bold text-charcoal shadow-none transition-all duration-300 hover:-translate-y-px hover:bg-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               style={{ height: "3.25rem" }}
             >
-              Solicitar demo gratuito
+              Agenda una demostración y vende más
               <svg
                 className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5"
                 fill="none"
@@ -67,7 +66,7 @@ export const CtaBand = () => (
               </svg>
             </Link>
             <p className="text-[0.6rem] font-medium text-dim">
-              Sin tarjeta de crédito · Configuración en 1 día · Soporte incluido
+              Instalación en 1 día · Acompañamiento VIP · Sin contratos forzosos
             </p>
           </div>
         </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -69,18 +69,18 @@ export const Hero = () => (
         className="max-w-3xl"
       >
         <motion.div variants={itemVariants}>
-          <div className="inline-flex items-center gap-3 rounded-full border border-charcoal/10 bg-cream px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.32em] text-charcoal/60 shadow-[0_10px_30px_-18px_rgba(43,36,30,0.45)]">
+          <div className="inline-flex items-center gap-3 text-[0.68rem] font-bold uppercase tracking-[0.32em] text-charcoal/60">
             <span className="h-2 w-2 rounded-full bg-gold" aria-hidden="true" />
             Hospitality OS para servicio real
           </div>
         </motion.div>
 
         <motion.h1 variants={itemVariants} className="mt-7 max-w-[11ch] text-balance font-sans text-[clamp(3.25rem,7.6vw,7.6rem)] font-black tracking-[-0.06em] leading-[0.9] text-charcoal">
-          Sala, cocina y caja. <span className="text-charcoal/60">Sin fricción.</span>
+          Sala, cocina y caja. <span className="text-charcoal/60">Sin fricciÃ³n.</span>
         </motion.h1>
 
         <motion.p variants={itemVariants} className="mt-7 max-w-2xl text-balance text-[1.05rem] leading-[1.8] text-charcoal/68 sm:text-[1.15rem]">
-          Bouquet ordena el turno para que el equipo vea qué mesa pide, qué pasa a cocina y qué se cobra,
+          Bouquet ordena el turno para que el equipo vea quÃ© mesa pide, quÃ© pasa a cocina y quÃ© se cobra,
           sin depender de libretas, walkie-talkies ni capturas duplicadas. Funciona igual de bien para
           taquerias de alto flujo, barras y casual dining.
         </motion.p>
@@ -110,10 +110,10 @@ export const Hero = () => (
           </Link>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="mt-8 flex flex-wrap items-center gap-3 text-[0.82rem] font-medium text-charcoal/58">
-          <span className="rounded-full border border-charcoal/10 bg-cream px-3 py-1.5">Sin tarjeta de crédito</span>
-          <span className="rounded-full border border-charcoal/10 bg-cream px-3 py-1.5">Configuración en 1 día</span>
-          <span className="rounded-full border border-charcoal/10 bg-cream px-3 py-1.5">Soporte humano en español</span>
+        <motion.div variants={itemVariants} className="mt-8 flex flex-wrap items-center text-[0.82rem] font-medium text-charcoal/58">
+          <span className="px-2 py-1 border-r border-charcoal/10 last:border-r-0">Sin tarjeta de crÃ©dito</span>
+          <span className="px-2 py-1 border-r border-charcoal/10 last:border-r-0">ConfiguraciÃ³n en 1 dÃ­a</span>
+          <span className="px-2 py-1 border-r border-charcoal/10 last:border-r-0">Soporte humano en espaÃ±ol</span>
         </motion.div>
       </motion.div>
 
@@ -124,13 +124,13 @@ export const Hero = () => (
         className="relative"
       >
         <div className="absolute -inset-4 rounded-[2.5rem] bg-[radial-gradient(circle_at_top,#f4e6cf_0%,transparent_66%)] blur-2xl" aria-hidden="true" />
-        <div className="relative overflow-hidden rounded-[2rem] border border-charcoal/12 bg-ivory/80 p-4 shadow-[0_34px_80px_-28px_rgba(43,36,30,0.5)] backdrop-blur-sm">
+        <div className="relative overflow-hidden border-t border-charcoal/10 pt-8">
           <div className="flex items-center justify-between border-b border-charcoal/8 px-2 pb-3">
             <div>
               <p className="text-[0.62rem] font-bold uppercase tracking-[0.32em] text-charcoal/35">Turno nocturno</p>
               <p className="mt-1 text-sm font-semibold text-charcoal">18 mesas activas, 5 cierres en curso</p>
             </div>
-            <div className="rounded-full border border-charcoal/10 bg-cream px-3 py-1.5 text-[0.7rem] font-semibold text-charcoal/70">
+            <div className="text-[0.7rem] font-semibold text-charcoal/70">
               21:47
             </div>
           </div>
@@ -139,17 +139,16 @@ export const Hero = () => (
             <FloorPlan />
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="mt-6 flex flex-wrap gap-4">
             {[
-              { label: "Mesa 03", value: "Pase a cocina", tone: "bg-gold/12 text-gold" },
-              { label: "Mesa 08", value: "Cierre de cuenta", tone: "bg-ember/12 text-ember" },
-              { label: "Mesa 11", value: "Libre para sentar", tone: "bg-sage/12 text-sage-deep" },
+              { label: "Mesa 03", value: "Pase a cocina", tone: "text-gold" },
+              { label: "Mesa 08", value: "Cierre de cuenta", tone: "text-ember" },
+              { label: "Mesa 11", value: "Libre para sentar", tone: "text-sage-deep" },
             ].map((item) => (
-              <div key={item.label} className="rounded-2xl border border-charcoal/10 bg-cream px-4 py-3">
-                <p className="text-[0.6rem] font-bold uppercase tracking-[0.28em] text-charcoal/32">{item.label}</p>
-                <div className={`mt-2 inline-flex rounded-full px-3 py-1 text-[0.72rem] font-semibold ${item.tone}`}>
-                  {item.value}
-                </div>
+              <div key={item.label} className="flex items-center gap-2">
+                <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-charcoal/40">{item.label}</span>
+                <span className="text-[0.65rem] font-medium text-charcoal/20">|</span>
+                <span className={`text-[0.72rem] font-semibold ${item.tone}`}>{item.value}</span>
               </div>
             ))}
           </div>
@@ -158,3 +157,4 @@ export const Hero = () => (
     </div>
   </section>
 );
+

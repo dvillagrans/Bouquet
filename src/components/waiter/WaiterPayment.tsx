@@ -78,7 +78,12 @@ export default function WaiterPayment({
         bill.guests.map((g) => ({
           sessionId: g.sessionId,
           guestName: g.guestName,
-          items: g.items,
+          items: g.items.map((i) => ({
+            id: i.key,
+            name: i.name,
+            qty: i.qty,
+            price: i.price,
+          })),
           subtotal: g.subtotal,
         }))
       );

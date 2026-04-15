@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 
@@ -33,9 +33,9 @@ const tables: TableEntry[] = [
 ];
 
 const orders: OrderEntry[] = [
-  { ticket: "#187", table: "03", detail: "Platos fuertes · 4 pax",  status: "Cocina" },
+  { ticket: "#187", table: "03", detail: "Platos fuertes Â· 4 pax",  status: "Cocina" },
   { ticket: "#185", table: "07", detail: "Carne, 2 cortes",          status: "Pase"   },
-  { ticket: "#183", table: "09", detail: "Mezcal · 2 cocteles",      status: "Barra"  },
+  { ticket: "#183", table: "09", detail: "Mezcal Â· 2 cocteles",      status: "Barra"  },
   { ticket: "#181", table: "06", detail: "Entradas confirmadas",     status: "Sala"   },
   { ticket: "#179", table: "08", detail: "Cierre de cuenta",         status: "Caja"   },
 ];
@@ -62,11 +62,11 @@ const timeTextColor: Record<TableStatus, string> = {
 };
 
 const orderStatusStyle: Record<OrderEntry["status"], string> = {
-  Cocina: "bg-charcoal/[0.07] text-charcoal/50",
-  Pase:   "bg-gold/[0.14] text-gold",
-  Barra:  "bg-charcoal/[0.05] text-charcoal/40",
-  Sala:   "bg-charcoal/[0.05] text-charcoal/38",
-  Caja:   "bg-ember/[0.12] text-ember",
+  Cocina: "text-charcoal/50",
+  Pase:   "text-gold",
+  Barra:  "text-charcoal/40",
+  Sala:   "text-charcoal/38",
+  Caja:   "text-ember",
 };
 
 const timeFmt = (m: number) =>
@@ -88,9 +88,9 @@ const itemVariant = {
 };
 
 export const ProductMockup = () => (
-  <div className="relative w-full overflow-hidden rounded-[2rem] border border-charcoal/15 bg-cream shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
+  <div className="relative w-full overflow-hidden border-y border-charcoal/10 bg-cream/50">
 
-    {/* ── HEADER ─────────────────────────────────────────────── */}
+    {/* â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
     <div className="flex items-center justify-between gap-4 bg-charcoal px-4 py-3 sm:px-5">
       <div className="flex items-center gap-2.5">
         <span className="flex h-6 w-6 shrink-0 items-center justify-center bg-cream/[0.1] text-[0.55rem] font-bold uppercase tracking-[0.18em] text-cream/80">
@@ -123,10 +123,10 @@ export const ProductMockup = () => (
           <span
             key={mode}
             className={[
-              "rounded-full border px-2.5 py-1 text-[0.52rem] font-bold uppercase tracking-[0.16em] sm:px-3 sm:text-[0.58rem] sm:tracking-[0.18em]",
+              "text-[0.52rem] font-bold uppercase tracking-[0.16em] sm:text-[0.58rem] sm:tracking-[0.18em]",
               i === 0
-                ? "border-gold/50 bg-gold/[0.12] text-coffee"
-                : "border-charcoal/[0.12] bg-cream text-charcoal/42",
+                ? "text-charcoal/80"
+                : "text-charcoal/40",
             ].join(" ")}
           >
             {mode}
@@ -143,40 +143,40 @@ export const ProductMockup = () => (
       </div>
     </div>
 
-    {/* ── MAIN CONTENT ───────────────────────────────────────── */}
-    <div className="grid lg:grid-cols-[1fr_0.46fr]">
+    {/* â”€â”€ MAIN CONTENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+    <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-charcoal/10">
 
-      {/* LEFT — Floor plan */}
+      {/* LEFT â€” Floor plan */}
       <div className="border-b border-charcoal/[0.07] p-4 sm:p-5 lg:border-b-0 lg:border-r">
         <p className="mb-3.5 text-[0.58rem] font-bold uppercase tracking-[0.28em] text-charcoal/30">
-          Piso · Sala principal
+          Piso Â· Sala principal
         </p>
 
         {/*
          *  4-column grid. Each cell = one table.
          *  wide=true tables span 2 columns, representing group/banquet tables.
-         *  Progress bar = time seated ÷ 90-min target.
+         *  Progress bar = time seated Ã· 90-min target.
          */}
         <motion.div
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-10% 0px" }}
           transition={{ staggerChildren: 0.05, delayChildren: 0.3 }}
-          className="grid grid-cols-4 gap-2"
+          className="flex flex-col"
         >
           {tables.map((t) => (
             <motion.div
               key={t.n}
               variants={itemVariant}
               className={[
-                "relative overflow-hidden rounded-2xl border p-3",
+                "relative overflow-hidden border-b border-charcoal/5 p-3 hover:bg-charcoal/[0.02]",
                 "transition-all duration-300 hover:-translate-y-1 hover:shadow-lg",
-                t.wide ? "col-span-2" : "",
-                tableFrame[t.status],
+                "",
+                "",
               ].join(" ")}
             >
               {/* Number + time */}
-              <div className="flex items-start justify-between gap-1">
+              <div className="flex items-center gap-4 w-1/4">
                 <span className="text-[0.6rem] font-bold text-charcoal/42">{t.n}</span>
                 {t.status !== "libre" && (
                   <span className={["text-[0.5rem] font-bold tabular-nums", timeTextColor[t.status]].join(" ")}>
@@ -185,13 +185,13 @@ export const ProductMockup = () => (
                 )}
               </div>
 
-              {/* Course + progress */}
+              <div className="flex-1 flex flex-col justify-center">
               {t.status !== "libre" ? (
                 <>
-                  <p className="mt-1.5 truncate text-[0.6rem] font-semibold leading-tight text-charcoal/58">
+                  <p className="truncate text-[0.65rem] font-medium text-charcoal/60 w-[30%]">
                     {t.course}
                   </p>
-                  <div className="mt-2.5 h-[2px] overflow-hidden rounded-full bg-charcoal/[0.06]">
+                  <div className="mt-2.5 h-[2px] overflow-hidden rounded-full bg-charcoal/[0.06] w-full">
                     <motion.div
                       initial={{ width: 0 }}
                       whileInView={{ width: `${pct(t.mins)}%` }}
@@ -202,14 +202,15 @@ export const ProductMockup = () => (
                   </div>
                 </>
               ) : (
-                <p className="mt-1.5 text-[0.54rem] font-medium text-charcoal/20">Libre</p>
+                <p className="text-[0.65rem] font-medium text-charcoal/20">Libre</p>
               )}
+            </div>
             </motion.div>
           ))}
         </motion.div>
       </div>
 
-      {/* RIGHT — Orders feed */}
+      {/* RIGHT â€” Orders feed */}
       <div className="p-4 sm:p-5">
         <p className="mb-3.5 text-[0.58rem] font-bold uppercase tracking-[0.28em] text-charcoal/30">
           Servicio en curso
@@ -230,7 +231,7 @@ export const ProductMockup = () => (
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-[0.6rem] font-bold text-charcoal/36">
-                    {o.ticket} · Mesa {o.table}
+                    {o.ticket} Â· Mesa {o.table}
                   </p>
                   <p className="mt-0.5 truncate text-[0.67rem] font-medium text-charcoal/70">
                     {o.detail}
@@ -238,7 +239,7 @@ export const ProductMockup = () => (
                 </div>
                 <span
                   className={[
-                    "shrink-0 rounded-full px-2 py-1 text-[0.52rem] font-bold uppercase tracking-[0.16em]",
+                    "shrink-0 text-[0.52rem] font-bold uppercase tracking-[0.16em]",
                     orderStatusStyle[o.status],
                   ].join(" ")}
                 >
@@ -251,7 +252,7 @@ export const ProductMockup = () => (
       </div>
     </div>
 
-    {/* ── METRICS BAR ────────────────────────────────────────── */}
+    {/* â”€â”€ METRICS BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
     <div className="grid grid-cols-4 border-t border-charcoal/[0.07] bg-charcoal/[0.02]">
       {(
         [
@@ -276,3 +277,7 @@ export const ProductMockup = () => (
     </div>
   </div>
 );
+
+
+
+

@@ -46,14 +46,14 @@ export const SocialProof = () => (
             y el servicio se nota más fluido desde la primera semana.
           </motion.p>
 
-          <motion.div variants={itemVariants} className="mt-10 grid grid-cols-3 gap-4">
+          <motion.div variants={itemVariants} className="mt-12 flex flex-wrap gap-x-12 gap-y-6">
             {[
               { value: "3", label: "frentes sincronizados" },
               { value: "1", label: "pantalla para el turno" },
               { value: "0", label: "capturas duplicadas" },
             ].map((item) => (
-              <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 transition-colors hover:bg-white/[0.08]">
-                <p className="font-serif text-[2rem] font-semibold leading-none text-gold">{item.value}</p>
+              <div key={item.label} className="flex flex-col">
+                <p className="font-serif text-[2.5rem] font-semibold leading-none text-gold">{item.value}</p>
                 <p className="mt-2 text-[0.6rem] font-bold uppercase tracking-[0.24em] text-cream/42">{item.label}</p>
               </div>
             ))}

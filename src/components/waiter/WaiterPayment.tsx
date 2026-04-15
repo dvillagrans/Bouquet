@@ -42,6 +42,21 @@ export default function WaiterPayment({
   const [tipPercentage, setTipPercentage] = useState(0);
   const [paymentMode, setPaymentMode] = useState<WaiterPaymentMode>("TABLE");
   const [selectedGuest, setSelectedGuest] = useState<string>("");
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [isToastLeaving, setIsToastLeaving] = useState(false);
+
+  const showToast = (nextToast: { type: "success" | "error"; message: string }) => {
+    setIsToastLeaving(false);
+    setToast(nextToast);
+  };
+
+  const dismissToast = () => {
+    setIsToastLeaving(true);
+    window.setTimeout(() => {
+      setToast(null);
+      setIsToastLeaving(false);
+    }, 180);
+  };
 
   const loadBill = async () => {
     try {
@@ -75,7 +90,7 @@ export default function WaiterPayment({
       }
     } catch (error) {
       console.error("Error loading bill:", error);
-      alert("Error cargando la cuenta");
+      showToast({ type: "error", message: "Error cargando la cuenta" });
     } finally {
       setLoading(false);
     }
@@ -84,6 +99,12 @@ export default function WaiterPayment({
   useEffect(() => {
     loadBill();
   }, [tableCode]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = setTimeout(() => dismissToast(), 3200);
+    return () => clearTimeout(timeout);
+  }, [toast]);
 
   const calculateTip = () => {
     return Math.round((billTotal * tipPercentage) / 100);
@@ -119,9 +140,10 @@ export default function WaiterPayment({
         paymentMethod,
       });
 
+      showToast({ type: "success", message: "Pago de mesa registrado" });
       onPaymentComplete();
     } catch (error) {
-      alert("Error procesando pago: " + (error as Error).message);
+      showToast({ type: "error", message: "Error procesando pago: " + (error as Error).message });
     } finally {
       setSubmitting(false);
     }
@@ -129,7 +151,7 @@ export default function WaiterPayment({
 
   const handleGuestPayment = async () => {
     if (!selectedGuestData) {
-      alert("Selecciona un comensal");
+      showToast({ type: "error", message: "Selecciona un comensal" });
       return;
     }
 
@@ -144,9 +166,9 @@ export default function WaiterPayment({
       });
 
       await loadBill();
-      alert(`Pago registrado para ${selectedGuestData.guestName}`);
+      showToast({ type: "success", message: `Pago registrado para ${selectedGuestData.guestName}` });
     } catch (error) {
-      alert("Error procesando pago parcial: " + (error as Error).message);
+      showToast({ type: "error", message: "Error procesando pago parcial: " + (error as Error).message });
     } finally {
       setSubmitting(false);
     }
@@ -161,6 +183,39 @@ export default function WaiterPayment({
 
   return (
     <div className="space-y-4">
+      {toast && (
+        <div
+          className={`flex justify-center transition-opacity duration-200 ${isToastLeaving ? "opacity-0" : "opacity-100"}`}
+          role={toast.type === "error" ? "alert" : "status"}
+          aria-live={toast.type === "error" ? "assertive" : "polite"}
+          style={{ animation: "fade-in 0.2s ease-out both" }}
+        >
+          <div
+            className={`w-full flex items-center gap-3 border px-4 py-3 rounded bg-ink ${
+              toast.type === "error"
+                ? "border-ember/50 text-ember"
+                : "border-sage-deep/50 text-sage-deep"
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                toast.type === "error" ? "bg-ember" : "bg-sage-deep"
+              }`}
+              aria-hidden="true"
+            />
+            <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em]">{toast.message}</p>
+            <button
+              type="button"
+              onClick={dismissToast}
+              className="ml-auto text-[0.65rem] font-bold uppercase tracking-[0.14em] text-dim hover:text-light transition-colors"
+              aria-label="Cerrar notificación"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Bill Items */}
       <div className="border border-wire/50 rounded-lg bg-canvas/50 p-4 space-y-2 max-h-64 overflow-y-auto">
         {billItems.length === 0 ? (

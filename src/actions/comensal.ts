@@ -236,10 +236,10 @@ export async function payGuestShare(input: {
   if (!table) throw new Error("Mesa no encontrada");
 
   const session = await prisma.session.findFirst({
-    where: { tableId: table.id, isActive: true },
+    where: { tableId: table.id, isActive: true, guestName: input.guestName },
     orderBy: { createdAt: "desc" },
   });
-  if (!session) throw new Error("No hay sesión activa");
+  if (!session) throw new Error("El comensal ya no tiene sesión activa.");
 
   // Calcular subtotal de este comensal
   const myItems = await prisma.orderItem.findMany({
@@ -250,35 +250,65 @@ export async function payGuestShare(input: {
     select: { quantity: true, priceAtTime: true },
   });
   const subtotal = myItems.reduce((s, i) => s + i.quantity * i.priceAtTime, 0);
-  const tipAmount = Math.round(subtotal * input.tipRate);
+  if (subtotal <= 0) throw new Error("El comensal no tiene consumo pendiente.");
 
-  await prisma.payment.create({
-    data: {
-      restaurantId: table.restaurantId,
-      tableId: table.id,
-      sessionId: session.id,
-      status: "PAID",
-      method: input.paymentMethod ?? "CARD",
-      splitMode: "FULL",
-      splitCount: 1,
-      paxPaid: 1,
-      currency: table.restaurant.currency,
-      subtotal,
-      tipRate: input.tipRate,
-      tipAmount,
-      totalAmount: subtotal + tipAmount,
-      amountPaid: input.amountPaid,
-      paidAt: new Date(),
-      allocations: {
-        create: {
-          sessionId: session.id,
-          guestName: input.guestName,
-          amount: input.amountPaid,
+  const normalizedTipRate = input.tipRate > 1 ? input.tipRate / 100 : input.tipRate;
+  const safeTipRate = Math.max(0, normalizedTipRate);
+  const tipAmount = Math.round(subtotal * safeTipRate);
+  const totalAmount = subtotal + tipAmount;
+  const amountPaid = Math.max(0, input.amountPaid || totalAmount);
+
+  if (amountPaid < totalAmount) {
+    throw new Error("El monto pagado no puede ser menor al total del comensal.");
+  }
+
+  await prisma.$transaction(async tx => {
+    await tx.payment.create({
+      data: {
+        restaurantId: table.restaurantId,
+        tableId: table.id,
+        sessionId: session.id,
+        status: "PAID",
+        method: input.paymentMethod ?? "CARD",
+        splitMode: "FULL",
+        splitCount: 1,
+        paxPaid: 1,
+        currency: table.restaurant.currency,
+        subtotal,
+        tipRate: safeTipRate,
+        tipAmount,
+        totalAmount,
+        amountPaid,
+        paidAt: new Date(),
+        allocations: {
+          create: {
+            sessionId: session.id,
+            guestName: input.guestName,
+            amount: amountPaid,
+          },
         },
       },
-    },
+    });
+
+    // Close only this guest session so the rest of the table can continue ordering/paying.
+    await tx.session.update({
+      where: { id: session.id },
+      data: { isActive: false, closedAt: new Date() },
+    });
+
+    const remainingActive = await tx.session.count({
+      where: { tableId: table.id, isActive: true },
+    });
+
+    if (remainingActive === 0) {
+      await tx.table.update({
+        where: { id: table.id },
+        data: { status: "SUCIA" },
+      });
+    }
   });
 
+  revalidatePath("/mesero");
   revalidatePath("/dashboard/mesas");
   return true;
 }
@@ -301,20 +331,22 @@ export async function requestBillAndPay(input: RequestBillAndPayInput) {
   });
   if (!table) throw new Error("Mesa no encontrada");
 
-  const session = await prisma.session.findFirst({
+  const activeSessions = await prisma.session.findMany({
     where: { tableId: table.id, isActive: true },
-    orderBy: { createdAt: "desc" }
+    orderBy: { createdAt: "asc" },
+    select: { id: true, guestName: true },
   });
 
-  if (!session) throw new Error("No hay sesion activa");
+  if (!activeSessions.length) throw new Error("No hay sesion activa");
 
   const billItems = await prisma.orderItem.findMany({
-    where: { sessionId: session.id },
+    where: { sessionId: { in: activeSessions.map((s) => s.id) } },
     select: { quantity: true, priceAtTime: true }
   });
 
   const subtotal = billItems.reduce((sum, item) => sum + (item.quantity * item.priceAtTime), 0);
-  const tipRate = typeof input.tipRate === "number" ? Math.max(0, input.tipRate) : 0;
+  const rawTipRate = typeof input.tipRate === "number" ? input.tipRate : 0;
+  const tipRate = Math.max(0, rawTipRate > 1 ? rawTipRate / 100 : rawTipRate);
   const computedTipAmount = Math.round(subtotal * tipRate);
   const tipAmount = typeof input.tipAmount === "number" ? Math.max(0, input.tipAmount) : computedTipAmount;
   const totalAmount = typeof input.totalAmount === "number" ? Math.max(0, input.totalAmount) : subtotal + tipAmount;
@@ -326,12 +358,14 @@ export async function requestBillAndPay(input: RequestBillAndPayInput) {
     : (splitMode === "EQUAL" ? Math.ceil(totalAmount / splitCount) : totalAmount);
   const paymentMethod = input.paymentMethod ?? "CARD";
 
+  const referenceSessionId = activeSessions[0].id;
+
   await prisma.$transaction(async tx => {
     await tx.payment.create({
       data: {
         restaurantId: table.restaurantId,
         tableId: table.id,
-        sessionId: session.id,
+        sessionId: referenceSessionId,
         status: "PAID",
         method: paymentMethod,
         splitMode,
@@ -345,17 +379,23 @@ export async function requestBillAndPay(input: RequestBillAndPayInput) {
         amountPaid,
         paidAt: new Date(),
         allocations: {
-          create: {
-            sessionId: session.id,
-            guestName: session.guestName,
-            amount: amountPaid,
-          }
+          create: splitMode === "EQUAL"
+            ? activeSessions.map((session) => ({
+              sessionId: session.id,
+              guestName: session.guestName,
+              amount: amountPaid,
+            }))
+            : [{
+              sessionId: referenceSessionId,
+              guestName: "MESA_COMPLETA",
+              amount: amountPaid,
+            }]
         }
       }
     });
 
-    await tx.session.update({
-      where: { id: session.id },
+    await tx.session.updateMany({
+      where: { id: { in: activeSessions.map((s) => s.id) } },
       data: { isActive: false, closedAt: new Date() }
     });
 
@@ -369,6 +409,7 @@ export async function requestBillAndPay(input: RequestBillAndPayInput) {
   cookieStore.delete(`bq_session_${input.tableCode}`);
   cookieStore.delete(`bq_guest_${input.tableCode}`);
 
+  revalidatePath("/mesero");
   revalidatePath("/dashboard/mesas");
   return true;
 }

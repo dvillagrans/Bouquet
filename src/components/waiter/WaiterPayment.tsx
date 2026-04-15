@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { requestBillAndPay, getTableBill } from "@/actions/comensal";
+import { requestBillAndPay, getTableBill, payGuestShare } from "@/actions/comensal";
 import { CreditCard, Banknote, ArrowRightLeft } from "lucide-react";
 
 interface BillItem {
@@ -11,8 +11,16 @@ interface BillItem {
   price: number;
 }
 
+interface GuestBill {
+  sessionId: string;
+  guestName: string;
+  items: BillItem[];
+  subtotal: number;
+}
+
 type PaymentMethod = "CASH" | "CARD" | "TRANSFER" | "OTHER";
 type SplitMode = "FULL" | "EQUAL";
+type WaiterPaymentMode = "TABLE" | "GUEST";
 
 export default function WaiterPayment({
   tableCode,
@@ -22,6 +30,7 @@ export default function WaiterPayment({
   onPaymentComplete: () => void;
 }) {
   const [billItems, setBillItems] = useState<BillItem[]>([]);
+  const [guestBills, setGuestBills] = useState<GuestBill[]>([]);
   const [billTotal, setBillTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -31,31 +40,48 @@ export default function WaiterPayment({
   const [splitMode, setSplitMode] = useState<SplitMode>("FULL");
   const [splitCount, setSplitCount] = useState(1);
   const [tipPercentage, setTipPercentage] = useState(0);
+  const [paymentMode, setPaymentMode] = useState<WaiterPaymentMode>("TABLE");
+  const [selectedGuest, setSelectedGuest] = useState<string>("");
+
+  const loadBill = async () => {
+    try {
+      setLoading(true);
+      const bill = await getTableBill(tableCode);
+      const multiGuest = bill.guests.length > 1;
+      const items: BillItem[] = bill.guests.flatMap((g) =>
+        g.items.map((i) => ({
+          id: i.key,
+          name: multiGuest ? `${i.name} (${g.guestName})` : i.name,
+          qty: i.qty,
+          price: i.price,
+        }))
+      );
+
+      setBillItems(items);
+      setBillTotal(bill.total);
+      setGuestBills(
+        bill.guests.map((g) => ({
+          sessionId: g.sessionId,
+          guestName: g.guestName,
+          items: g.items,
+          subtotal: g.subtotal,
+        }))
+      );
+
+      if (!selectedGuest && bill.guests.length > 0) {
+        setSelectedGuest(bill.guests[0].guestName);
+      } else if (selectedGuest && !bill.guests.some((g) => g.guestName === selectedGuest)) {
+        setSelectedGuest(bill.guests[0]?.guestName ?? "");
+      }
+    } catch (error) {
+      console.error("Error loading bill:", error);
+      alert("Error cargando la cuenta");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadBill = async () => {
-      try {
-        setLoading(true);
-        const bill = await getTableBill(tableCode);
-        const multiGuest = bill.guests.length > 1;
-        const items: BillItem[] = bill.guests.flatMap((g) =>
-          g.items.map((i) => ({
-            id: i.key,
-            name: multiGuest ? `${i.name} (${g.guestName})` : i.name,
-            qty: i.qty,
-            price: i.price,
-          }))
-        );
-        setBillItems(items);
-        setBillTotal(bill.total);
-      } catch (error) {
-        console.error("Error loading bill:", error);
-        alert("Error cargando la cuenta");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadBill();
   }, [tableCode]);
 
@@ -71,7 +97,12 @@ export default function WaiterPayment({
     return billTotal + calculateTip();
   };
 
-  const handlePayment = async () => {
+  const selectedGuestData = guestBills.find((g) => g.guestName === selectedGuest) ?? null;
+  const selectedGuestSubtotal = selectedGuestData?.subtotal ?? 0;
+  const selectedGuestTip = Math.round((selectedGuestSubtotal * tipPercentage) / 100);
+  const selectedGuestTotal = selectedGuestSubtotal + selectedGuestTip;
+
+  const handleTablePayment = async () => {
     try {
       setSubmitting(true);
       const tip = calculateTip();
@@ -91,6 +122,31 @@ export default function WaiterPayment({
       onPaymentComplete();
     } catch (error) {
       alert("Error procesando pago: " + (error as Error).message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGuestPayment = async () => {
+    if (!selectedGuestData) {
+      alert("Selecciona un comensal");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await payGuestShare({
+        tableCode,
+        guestName: selectedGuestData.guestName,
+        amountPaid: selectedGuestTotal,
+        tipRate: tipPercentage,
+        paymentMethod,
+      });
+
+      await loadBill();
+      alert(`Pago registrado para ${selectedGuestData.guestName}`);
+    } catch (error) {
+      alert("Error procesando pago parcial: " + (error as Error).message);
     } finally {
       setSubmitting(false);
     }
@@ -127,6 +183,34 @@ export default function WaiterPayment({
             </div>
           </>
         )}
+      </div>
+
+      {/* Payment Method */}
+      <div className="space-y-2">
+        <label className="text-sm font-bold text-light uppercase tracking-wider">Tipo de Cobro</label>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPaymentMode("TABLE")}
+            className={`flex-1 p-2 rounded border text-sm font-bold transition-all ${
+              paymentMode === "TABLE"
+                ? "border-glow bg-glow/10 text-glow"
+                : "border-wire text-light hover:border-glow/50"
+            }`}
+          >
+            Mesa Completa
+          </button>
+          <button
+            onClick={() => setPaymentMode("GUEST")}
+            className={`flex-1 p-2 rounded border text-sm font-bold transition-all ${
+              paymentMode === "GUEST"
+                ? "border-glow bg-glow/10 text-glow"
+                : "border-wire text-light hover:border-glow/50"
+            }`}
+            disabled={guestBills.length === 0}
+          >
+            Por Comensal
+          </button>
+        </div>
       </div>
 
       {/* Payment Method */}
@@ -191,7 +275,7 @@ export default function WaiterPayment({
       </div>
 
       {/* Split Mode */}
-      <div className="space-y-2">
+      {paymentMode === "TABLE" && <div className="space-y-2">
         <label className="text-sm font-bold text-light uppercase tracking-wider">Forma de Pago</label>
         <div className="flex gap-2">
           <button
@@ -238,33 +322,88 @@ export default function WaiterPayment({
             </div>
           </div>
         )}
-      </div>
+      </div>}
+
+      {paymentMode === "GUEST" && (
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-light uppercase tracking-wider">Comensal a Cobrar</label>
+          <div className="space-y-2">
+            {guestBills.map((guest) => (
+              <button
+                key={guest.sessionId}
+                onClick={() => setSelectedGuest(guest.guestName)}
+                className={`w-full flex items-center justify-between rounded border px-3 py-2 text-sm transition-all ${
+                  selectedGuest === guest.guestName
+                    ? "border-glow bg-glow/10 text-glow"
+                    : "border-wire text-light hover:border-glow/50"
+                }`}
+              >
+                <span className="font-semibold">{guest.guestName}</span>
+                <span className="font-mono">${guest.subtotal.toFixed(2)}</span>
+              </button>
+            ))}
+            {guestBills.length === 0 && (
+              <p className="text-sm text-dim">No hay comensales activos por cobrar.</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Total Summary */}
       <div className="bg-glow/10 border border-glow/30 rounded-lg p-4 space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-dim">Subtotal:</span>
-          <span className="text-light font-mono">${billTotal.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-dim">Propina ({tipPercentage}%):</span>
-          <span className="text-light font-mono">${tip.toFixed(2)}</span>
-        </div>
-        <div className="border-t border-glow/20 pt-2 flex justify-between">
-          <span className="text-light font-bold">
-            {splitMode === "EQUAL" ? `Por Persona (${splitCount}):` : "Total:"}
-          </span>
-          <span className="text-2xl font-mono text-glow">${total.toFixed(2)}</span>
-        </div>
+        {paymentMode === "TABLE" ? (
+          <>
+            <div className="flex justify-between text-sm">
+              <span className="text-dim">Subtotal:</span>
+              <span className="text-light font-mono">${billTotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-dim">Propina ({tipPercentage}%):</span>
+              <span className="text-light font-mono">${tip.toFixed(2)}</span>
+            </div>
+            <div className="border-t border-glow/20 pt-2 flex justify-between">
+              <span className="text-light font-bold">
+                {splitMode === "EQUAL" ? `Por Persona (${splitCount}):` : "Total:"}
+              </span>
+              <span className="text-2xl font-mono text-glow">${total.toFixed(2)}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex justify-between text-sm">
+              <span className="text-dim">Comensal:</span>
+              <span className="text-light">{selectedGuest || "-"}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-dim">Subtotal:</span>
+              <span className="text-light font-mono">${selectedGuestSubtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-dim">Propina ({tipPercentage}%):</span>
+              <span className="text-light font-mono">${selectedGuestTip.toFixed(2)}</span>
+            </div>
+            <div className="border-t border-glow/20 pt-2 flex justify-between">
+              <span className="text-light font-bold">Total Comensal:</span>
+              <span className="text-2xl font-mono text-glow">${selectedGuestTotal.toFixed(2)}</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Submit Button */}
       <button
-        onClick={handlePayment}
-        disabled={submitting || billTotal === 0}
+        onClick={paymentMode === "TABLE" ? handleTablePayment : handleGuestPayment}
+        disabled={
+          submitting ||
+          (paymentMode === "TABLE" ? billTotal === 0 : !selectedGuestData || selectedGuestSubtotal === 0)
+        }
         className="w-full bg-glow hover:bg-glow/90 disabled:opacity-50 disabled:cursor-not-allowed text-canvas px-4 py-3 rounded font-bold uppercase transition-colors"
       >
-        {submitting ? "Procesando..." : "Confirmar Pago"}
+        {submitting
+          ? "Procesando..."
+          : paymentMode === "TABLE"
+            ? "Confirmar Pago Mesa"
+            : "Cobrar Comensal"}
       </button>
     </div>
   );

@@ -9,19 +9,14 @@ import { getDefaultRestaurant } from "./restaurant";
 
 /**
  * Update the status of a table.
- * When marking as DISPONIBLE (clean), rotate the QR code so old links stop working.
+ * Cleaning now only updates status and clears joinCode.
+ * QR rotation is an explicit waiter action via regenerateTableQr.
  */
 export async function updateTableStatus(tableId: string, status: "DISPONIBLE" | "OCUPADA" | "SUCIA") {
   const data: Prisma.TableUpdateInput = { status };
 
   if (status === "DISPONIBLE") {
-    // Rotate QR so any previous guests can't rejoin via old link
-    let newCode: string;
-    do {
-      newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-    } while (await prisma.table.findUnique({ where: { qrCode: newCode } }));
-    data.qrCode = newCode;
-    // Clear join code — se generará uno nuevo cuando llegue el próximo anfitrión
+    // Clear join code so the next host gets a fresh one
     data.joinCode = null;
   }
 
@@ -29,6 +24,37 @@ export async function updateTableStatus(tableId: string, status: "DISPONIBLE" | 
 
   revalidatePath("/mesero");
   revalidatePath("/dashboard/mesas");
+}
+
+/**
+ * Rotate a table QR explicitly when requested by waiter.
+ * Allowed only for available tables to avoid invalidating an active session.
+ */
+export async function regenerateTableQr(tableId: string) {
+  const table = await prisma.table.findUnique({
+    where: { id: tableId },
+    select: { id: true, status: true },
+  });
+
+  if (!table) throw new Error("Mesa no encontrada");
+  if (table.status !== "DISPONIBLE") {
+    throw new Error("Solo puedes regenerar QR en mesas libres.");
+  }
+
+  let newCode: string;
+  do {
+    newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+  } while (await prisma.table.findUnique({ where: { qrCode: newCode } }));
+
+  await prisma.table.update({
+    where: { id: tableId },
+    data: { qrCode: newCode, joinCode: null },
+  });
+
+  revalidatePath("/mesero");
+  revalidatePath("/dashboard/mesas");
+
+  return { qrCode: newCode };
 }
 
 /**

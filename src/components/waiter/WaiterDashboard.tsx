@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, ChefHat, Clock, RefreshCw, Sparkles, LayoutGrid, Map, Link as LinkIcon, Unlink } from "lucide-react";
-import { getWaiterTablesSummary, updateTableStatus } from "@/actions/waiter";
+import { Users, ChefHat, Clock, RefreshCw, Sparkles, LayoutGrid, Map, Link as LinkIcon, Unlink, QrCode } from "lucide-react";
+import { getWaiterTablesSummary, regenerateTableQr, updateTableStatus } from "@/actions/waiter";
 import { getTables, joinTables, separateTable } from "@/actions/tables";
 import WaiterTableDetail from "./WaiterTableDetail";
 import FloorMapClient from "@/components/dashboard/FloorMapClient";
@@ -64,6 +64,20 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
     } catch (error) {
       console.error("Error cleaning table:", error);
       alert("Error al limpiar la mesa");
+    }
+  };
+
+  const handleRegenerateQr = async (tableId: string) => {
+    if (!confirm("¿Generar nuevo QR para esta mesa? El código anterior dejará de servir.")) {
+      return;
+    }
+
+    try {
+      await regenerateTableQr(tableId);
+      await loadTables();
+    } catch (error) {
+      console.error("Error regenerating table QR:", error);
+      alert((error as Error).message || "Error regenerando el QR");
     }
   };
 
@@ -439,6 +453,21 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
                     >
                       <Sparkles className="h-2.5 w-2.5" />
                       Limpiar
+                    </button>
+                  )}
+
+                  {/* QR rotation is explicit and controlled by waiter */}
+                  {table.status === "DISPONIBLE" && !isChild && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRegenerateQr(table.id);
+                      }}
+                      className="mt-1 flex items-center gap-1 border border-glow/50 bg-glow/10 hover:bg-glow/20 active:scale-95 text-glow px-2 py-1 rounded font-bold uppercase text-[0.6rem] transition-all"
+                      title="Generar nuevo QR"
+                    >
+                      <QrCode className="h-2.5 w-2.5" />
+                      Nuevo QR
                     </button>
                   )}
                 </div>

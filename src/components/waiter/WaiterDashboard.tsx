@@ -40,6 +40,7 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
   const [isJoinMode, setIsJoinMode] = useState(false);
   const [selectedTablesToJoin, setSelectedTablesToJoin] = useState<string[]>([]);
   const [isJoining, setIsJoining] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const loadTables = async () => {
     try {
@@ -67,17 +68,24 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
     }
   };
 
-  const handleRegenerateQr = async (tableId: string) => {
+  const handleRegenerateQr = async (tableId: string, tableNumber: number) => {
     if (!confirm("¿Generar nuevo QR para esta mesa? El código anterior dejará de servir.")) {
       return;
     }
 
     try {
-      await regenerateTableQr(tableId);
+      const result = await regenerateTableQr(tableId);
+      setToast({
+        type: "success",
+        message: `Mesa ${tableNumber}: nuevo QR ${result.qrCode}`,
+      });
       await loadTables();
     } catch (error) {
       console.error("Error regenerating table QR:", error);
-      alert((error as Error).message || "Error regenerando el QR");
+      setToast({
+        type: "error",
+        message: (error as Error).message || "Error regenerando el QR",
+      });
     }
   };
 
@@ -122,6 +130,12 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!toast) return;
+    const timeout = setTimeout(() => setToast(null), 3500);
+    return () => clearTimeout(timeout);
+  }, [toast]);
+
   // Filter tables
   const filteredTables = tables.filter((t) => {
     if (filter === "ocupadas") return isTableBusy(t.status);
@@ -142,6 +156,31 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
 
   return (
     <div className="min-h-screen bg-ink">
+      {toast && (
+        <div
+          className="fixed inset-x-0 top-4 z-[80] flex justify-center px-4"
+          role={toast.type === "error" ? "alert" : "status"}
+          aria-live={toast.type === "error" ? "assertive" : "polite"}
+          style={{ animation: "fade-in 0.2s ease-out both" }}
+        >
+          <div
+            className={`flex items-center gap-3 border bg-ink px-5 py-3 shadow-lg ${
+              toast.type === "error"
+                ? "border-ember/50 text-ember"
+                : "border-sage-deep/50 text-sage-deep"
+            }`}
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${
+                toast.type === "error" ? "bg-ember" : "bg-sage-deep"
+              }`}
+              aria-hidden="true"
+            />
+            <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em]">{toast.message}</p>
+          </div>
+        </div>
+      )}
+
       {/* Header with Stats */}
       <div className="border-b border-wire bg-canvas p-4 sm:p-6">
         <div className="mx-auto max-w-7xl">
@@ -461,7 +500,7 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleRegenerateQr(table.id);
+                        handleRegenerateQr(table.id, table.number);
                       }}
                       className="mt-1 flex items-center gap-1 border border-glow/50 bg-glow/10 hover:bg-glow/20 active:scale-95 text-glow px-2 py-1 rounded font-bold uppercase text-[0.6rem] transition-all"
                       title="Generar nuevo QR"

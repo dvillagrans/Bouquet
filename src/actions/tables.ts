@@ -79,3 +79,19 @@ export async function updateTablePositions(
   );
   revalidatePath("/dashboard/mesas");
 }
+
+export async function joinTables(parentTableId: string, childTableIds: string[]) {
+  await prisma.table.updateMany({
+    where: { id: { in: childTableIds } },
+    data: { parentTableId }
+  });
+  revalidatePath("/dashboard/mesas");
+}
+
+export async function separateTable(tableId: string) {
+  await prisma.table.update({
+    where: { id: tableId },
+    data: { parentTableId: null }
+  });
+  revalidatePath("/dashboard/mesas");
+}

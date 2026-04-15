@@ -2,9 +2,23 @@
 
 import { useState } from "react";
 import { Menu } from "lucide-react";
-import Sidebar from "./Sidebar";
+import Sidebar, { NavGroup } from "./Sidebar";
 
-export default function DashboardShell({ children }: { children: React.ReactNode }) {
+interface DashboardShellProps {
+  children: React.ReactNode;
+  navGroups?: NavGroup[];
+  userInitial?: string;
+  userName?: string;
+  userRole?: string;
+}
+
+export default function DashboardShell({ 
+  children,
+  navGroups,
+  userInitial,
+  userName,
+  userRole 
+}: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -15,13 +29,18 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <div
           className="fixed inset-0 z-40 bg-ink/70 lg:hidden"
           onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
-          style={{ animation: "fade-in 0.2s ease-out both" }}
         />
       )}
 
       {/* Sidebar */}
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar 
+        open={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+        groups={navGroups}
+        userInitial={userInitial}
+        userName={userName}
+        userRole={userRole}
+      />
 
       {/* Mobile top bar */}
       <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-4 border-b border-wire bg-ink px-5 lg:hidden">

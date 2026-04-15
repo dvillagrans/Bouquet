@@ -2,10 +2,21 @@
 
 import { useState } from "react";
 import { Save } from "lucide-react";
+import { updateRestaurantSettings } from "@/actions/restaurant";
 
-export default function SettingsView() {
+export default function SettingsView({ initialSettings }: { initialSettings?: { id: string; allowWaiterJoinTables: boolean } }) {
   const [allowOrders,    setAllowOrders]    = useState(true);
   const [notifyWaiters, setNotifyWaiters] = useState(true);
+  const [allowWaiterJoinTables, setAllowWaiterJoinTables] = useState(initialSettings?.allowWaiterJoinTables ?? false);
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  async function handleSave() {
+    if (!initialSettings?.id) return;
+    setIsSaving(true);
+    await updateRestaurantSettings(initialSettings.id, { allowWaiterJoinTables });
+    setIsSaving(false);
+  }
 
   return (
     <div className="min-h-screen px-8 py-10 lg:px-12 lg:py-12">
@@ -19,9 +30,13 @@ export default function SettingsView() {
           <h1 className="font-serif text-[clamp(2rem,4vw,3rem)] font-medium leading-[0.92] tracking-[-0.02em] text-light">
             Configuración
           </h1>
-          <button className="inline-flex h-10 items-center gap-2 bg-light px-5 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-ink transition-colors hover:bg-light/90 self-start sm:self-auto">
+          <button 
+            onClick={handleSave}
+            disabled={isSaving}
+            className="inline-flex h-10 items-center gap-2 bg-light px-5 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-ink transition-colors hover:bg-light/90 self-start sm:self-auto disabled:opacity-50"
+          >
             <Save className="h-3.5 w-3.5" aria-hidden="true" />
-            Guardar cambios
+            {isSaving ? "Guardando..." : "Guardar cambios"}
           </button>
         </div>
       </div>
@@ -140,6 +155,12 @@ export default function SettingsView() {
               description="Enviar alerta visual cuando una mesa envía un pedido."
               checked={notifyWaiters}
               onChange={setNotifyWaiters}
+            />
+            <ToggleRow
+              label="Permitir a meseros juntar mesas"
+              description="Habilita la opción para que los meseros liguen meses desde su dispositivo."
+              checked={allowWaiterJoinTables}
+              onChange={setAllowWaiterJoinTables}
             />
           </div>
         </section>

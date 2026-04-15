@@ -18,11 +18,18 @@ export const getDefaultRestaurant = cache(async function getDefaultRestaurant() 
   if (!restaurant) {
     restaurant = await prisma.restaurant.create({
       data: {
-        name: "Restaurante Base",
+        name: "Mi Restaurante",
         welcomeMessage: "¡Bienvenidos!",
-      },
+      }
     });
   }
 
   return restaurant;
 });
+
+export async function updateRestaurantSettings(id: string, data: { allowWaiterJoinTables?: boolean }) {
+  await prisma.restaurant.update({
+    where: { id },
+    data
+  });
+}

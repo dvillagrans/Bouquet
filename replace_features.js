@@ -1,4 +1,6 @@
-export const Features = () => {
+const fs = require("fs");
+const file = "src/components/landing/Features.tsx";
+fs.writeFileSync(file, `export const Features = () => {
   return (
     <section id="como-funciona" className="relative bg-zinc-50 py-32">
       <div className="mx-auto max-w-[1200px] px-6 lg:px-8">
@@ -107,3 +109,5 @@ export const Features = () => {
     </section>
   );
 };
+`);
+console.log("Features modified");

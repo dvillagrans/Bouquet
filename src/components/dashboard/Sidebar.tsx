@@ -8,9 +8,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-type NavItem = { label: string; href: string; icon: LucideIcon };
+export type NavItem = { label: string; href: string; icon: LucideIcon };
+export type NavGroup = { label: string; items: NavItem[] };
 
-const groups: { label: string; items: NavItem[] }[] = [
+export const defaultRestaurantGroups: NavGroup[] = [
   {
     label: "Operaciones",
     items: [
@@ -37,9 +38,20 @@ const groups: { label: string; items: NavItem[] }[] = [
 interface SidebarProps {
   open?: boolean;
   onClose?: () => void;
+  groups?: NavGroup[];
+  userInitial?: string;
+  userName?: string;
+  userRole?: string;
 }
 
-export default function Sidebar({ open = false, onClose }: SidebarProps) {
+export default function Sidebar({ 
+  open = false, 
+  onClose,
+  groups = defaultRestaurantGroups,
+  userInitial = "D",
+  userName = "Dueño",
+  userRole = "Administrador"
+}: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -137,16 +149,16 @@ export default function Sidebar({ open = false, onClose }: SidebarProps) {
 
       {/* ── User ── */}
       <div
-        className="border-t border-wire px-6 py-5"
+        className="border-t border-wire px-6 py-5 shrink-0"
         style={{ animation: "fade-in 0.35s ease-out 0.5s both" }}
       >
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center border border-glow/30 bg-glow/10 text-[0.65rem] font-bold uppercase text-glow">
-            D
+            {userInitial}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-[0.75rem] font-semibold text-light">Dueño</p>
-            <p className="text-[0.58rem] font-medium text-dim/50">Administrador</p>
+            <p className="truncate text-[0.75rem] font-semibold text-light">{userName}</p>
+            <p className="truncate text-[0.58rem] font-medium text-dim/50">{userRole}</p>
           </div>
         </div>
       </div>

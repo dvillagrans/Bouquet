@@ -1,4 +1,6 @@
-import Link from "next/link";
+const fs = require("fs");
+const file = "src/components/landing/Hero.tsx";
+fs.writeFileSync(file, `import Link from "next/link";
 
 export const Hero = () => (
   <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden bg-white pt-24 pb-20">
@@ -83,3 +85,5 @@ export const Hero = () => (
     </div>
   </section>
 );
+`);
+console.log("Hero modified");

@@ -1,100 +1,54 @@
 import Link from "next/link";
 
-const stats = [
-  { n: "+40",   label: "restaurantes" },
-  { n: "4.9★",  label: "valoración"   },
-  { n: "100%",  label: "renovación"   },
-];
+export const CtaBand = () => {
+  return (
+    <section className="relative bg-white py-32 border-t border-black/5">
+      <div className="mx-auto flex max-w-[1200px] flex-col items-center justify-center px-6 text-center lg:px-8">
+        
+        <h2 className="text-balance font-sans text-5xl font-bold tracking-tighter text-black sm:text-6xl md:text-7xl lg:text-[5rem] lg:leading-[0.95]">
+          Organiza. <br/> Cobra. Multiplica.
+        </h2>
 
-/*
- *  Concept: "Hoja de Servicio" — the nightly briefing sheet.
- *  Four horizontal bands divided by hairline rules — like a kitchen
- *  service document. Dark, flat, no glows. Every element earns its place.
- *
- *  Band 1 — edition + live time label         (48px)
- *  Band 2 — big headline + CTA                (flex, generous)
- *  Band 3 — three spread stats                (56px)
- */
-export const CtaBand = () => (
-  <section className="overflow-hidden bg-canvas" id="contacto">
+        <p className="mt-8 max-w-2xl text-balance text-lg text-black/60 font-medium">
+          Dile adiós a las libretas de notas, a los sistemas lentos de los 2000s y al desorden en tu cocina. Usa Bouquet en tu restaurante hoy.
+        </p>
 
-    {/* Band 1 — document header */}
-    <div className="border-b border-light/[0.07] px-6 py-4 lg:px-12">
-      <div className="mx-auto flex max-w-7xl items-center justify-between">
-        <span className="text-[0.56rem] font-bold uppercase tracking-[0.38em] text-dim">
-          Bouquet OS · Alto Rendimiento
-        </span>
-        <span className="flex items-center gap-2 text-[0.56rem] font-bold uppercase tracking-[0.38em] text-dim">
-          <span
-            className="h-1.5 w-1.5 rounded-full bg-sage-deep"
-            style={{ animation: "pulse-slow 2.4s ease-in-out infinite" }}
-              aria-hidden="true"
-          />
-          Turno nocturno
-        </span>
-      </div>
-    </div>
+        <div className="mt-12 flex w-full flex-col sm:flex-row items-center justify-center gap-4">
+          <Link
+            href="#contacto"
+            className="flex h-14 w-full sm:w-auto items-center justify-center rounded-full bg-blue-600 px-10 text-lg font-medium text-white transition-transform hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Iniciar gratis ahora
+          </Link>
+          <Link
+            href="#demo"
+            className="flex h-14 w-full sm:w-auto items-center justify-center rounded-full border border-black/10 px-10 text-lg font-medium text-black transition-colors hover:bg-black/5"
+          >
+            Hablar con ventas
+          </Link>
+        </div>
 
-    {/* Band 2 — headline + action */}
-    <div className="px-6 py-20 lg:px-12 lg:py-32">
-      <div className="mx-auto max-w-7xl">
-        <div className="grid gap-14 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-20">
-
-          {/* Headline */}
-          <h2 className="font-serif text-[clamp(2.5rem,6.8vw,6.5rem)] font-medium leading-[0.88] tracking-[-0.04em] text-light">
-            Deja de perder dinero y <br />multiplica tus ventas<br />
-            <span className="italic text-light/55">desde tu próximo turno.</span>
-          </h2>
-
-          {/* CTA block */}
-          <div className="flex flex-col gap-4 lg:items-end lg:pb-2">
-            <Link
-              href="#demo"
-              className="group inline-flex min-h-11 items-center gap-2.5 bg-cream px-8 text-[0.82rem] font-bold text-charcoal shadow-none transition-all duration-300 hover:-translate-y-px hover:bg-ivory focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
-              style={{ height: "3.25rem" }}
-            >
-              Agenda una demostración y vende más
-              <svg
-                className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.2}
-                aria-hidden="true"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14m-5-5 5 5-5 5" />
-              </svg>
-            </Link>
-            <p className="text-[0.6rem] font-medium text-dim">
-              Instalación en 1 día · Acompañamiento VIP · Sin contratos forzosos
-            </p>
+        {/* Minimal metrics below */}
+        <div className="mt-20 w-full max-w-3xl grid grid-cols-2 md:grid-cols-4 gap-8 divide-x divide-black/5 border-t border-b border-black/5 py-10">
+          <div className="flex flex-col gap-2">
+            <span className="text-4xl font-bold tracking-tighter text-black">98%</span>
+            <span className="text-xs font-semibold uppercase tracking-widest text-black/50">Satisfacción</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="text-4xl font-bold tracking-tighter text-black">+2M</span>
+            <span className="text-xs font-semibold uppercase tracking-widest text-black/50">Comandas</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="text-4xl font-bold tracking-tighter text-black">100%</span>
+            <span className="text-xs font-semibold uppercase tracking-widest text-black/50">Cloud</span>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="text-4xl font-bold tracking-tighter text-black">24/7</span>
+            <span className="text-xs font-semibold uppercase tracking-widest text-black/50">Soporte</span>
           </div>
         </div>
-      </div>
-    </div>
 
-    {/* Band 3 — stats spread */}
-    <div className="border-t border-light/[0.07] px-6 py-10 lg:px-12">
-      <div className="mx-auto grid max-w-7xl grid-cols-3">
-        {stats.map(({ n, label }, i) => (
-          <div
-            key={label}
-            className={[
-              "flex flex-col gap-1.5 py-1",
-              i === 1 ? "items-center text-center" : "",
-              i === 2 ? "items-end text-right" : "",
-              i > 0 ? "border-l border-light/[0.07] pl-8 sm:pl-12" : "",
-            ].join(" ")}
-          >
-            <p className="font-serif text-[clamp(1.6rem,3.5vw,2.4rem)] font-semibold leading-none text-glow">
-              {n}
-            </p>
-            <p className="text-[0.56rem] font-bold uppercase tracking-[0.26em] text-dim">
-              {label}
-            </p>
-          </div>
-        ))}
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};

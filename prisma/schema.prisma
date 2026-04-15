@@ -87,6 +87,7 @@ model Restaurant {
   taxRate             Float   @default(16.0)
   suggestedTips       String  @default("10,15,20")
   allowMobileOrdering Boolean @default(true)
+  allowWaiterJoinTables Boolean @default(false)
 
   zone       Zone?      @relation(fields: [zoneId], references: [id], onDelete: SetNull)
   tables     Table[]
@@ -129,6 +130,9 @@ model Table {
   posX         Float       @default(80)
   posY         Float       @default(80)
   shape        String      @default("rect") // "rect" | "round"
+  parentTableId String?
+  parentTable   Table?      @relation("JoinedTables", fields: [parentTableId], references: [id])
+  childTables   Table[]     @relation("JoinedTables")
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   sessions   Session[]

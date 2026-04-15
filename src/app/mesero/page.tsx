@@ -1,4 +1,5 @@
 import WaiterDashboard from "@/components/waiter/WaiterDashboard";
+import { getDefaultRestaurant } from "@/actions/restaurant";
 
 export const metadata = {
   title: "Panel del Mesero | Bouquet",
@@ -7,7 +8,8 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function WaiterPage() {
-  return <WaiterDashboard />;
+export default async function WaiterPage() {
+  const restaurant = await getDefaultRestaurant();
+  return <WaiterDashboard allowJoinTables={restaurant.allowWaiterJoinTables} />;
 }
 

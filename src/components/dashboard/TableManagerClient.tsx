@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { Plus, Trash2, Search, QrCode, Users, Map, LayoutGrid, Download, X } from "lucide-react";
-import { createTable, deleteTable } from "@/actions/tables";
-import { Table, TableStatus } from "@/generated/prisma";
+import { Plus, Trash2, Search, QrCode, Users, Map, LayoutGrid, Download, X, Link as LinkIcon, Unlink } from "lucide-react";
+import { createTable, deleteTable, joinTables, separateTable } from "@/actions/tables";
+import { TableStatus } from "@/generated/prisma";
+
+// Add "parentTableId" to the local type since it comes from Prisma but is not imported implicitly from initialTables if the Prisma type changed recently without client rebuild.
+type Table = import("@/generated/prisma").Table;
 import FloorMapClient from "./FloorMapClient";
 import { QRCodeSVG } from "qrcode.react";
 import { createClient } from "@/lib/supabase/client";
@@ -54,6 +57,10 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
   const [isAdding, setIsAdding] = useState(false);
   const [newTableCap, setNewTableCap] = useState(4);
   const [selectedQRTable, setSelectedQRTable] = useState<Table | null>(null);
+  
+  const [isJoinMode, setIsJoinMode] = useState(false);
+  const [selectedTablesToJoin, setSelectedTablesToJoin] = useState<string[]>([]);
+
   const [isPending, startTransition] = useTransition();
 
   // Supabase real-time
@@ -136,6 +143,43 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
     });
   }
 
+  function toggleJoinMode() {
+    setIsJoinMode(!isJoinMode);
+    setSelectedTablesToJoin([]);
+  }
+
+  function toggleTableSelection(id: string, isParent: boolean) {
+    if (isParent) return; // Cannot select a parent directly to join others 
+    setSelectedTablesToJoin((prev) => 
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+    );
+  }
+
+  function handleConfirmJoin() {
+    if (selectedTablesToJoin.length < 2) return;
+    
+    // First selected is the parent
+    const [parentId, ...childIds] = selectedTablesToJoin;
+    
+    startTransition(async () => {
+      await joinTables(parentId, childIds);
+      setTables((prev) => prev.map((t) => 
+        childIds.includes(t.id) ? { ...t, parentTableId: parentId } : t
+      ));
+      setIsJoinMode(false);
+      setSelectedTablesToJoin([]);
+    });
+  }
+
+  function handleSeparate(childId: string) {
+    startTransition(async () => {
+      await separateTable(childId);
+      setTables((prev) => prev.map((t) => 
+        t.id === childId ? { ...t, parentTableId: null } : t
+      ));
+    });
+  }
+
   function handleDownloadQR() {
     if (!selectedQRTable) return;
     const svg = document.getElementById("qr-svg-" + selectedQRTable.id);
@@ -185,11 +229,28 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
         </div>
         <button
           onClick={() => setIsAdding(true)}
-          className="inline-flex h-10 items-center gap-2 border border-wire px-4 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-all duration-200 hover:border-light/20 hover:text-light hover:-translate-y-px active:translate-y-0"
+          disabled={isJoinMode}
+          className="inline-flex h-10 items-center gap-2 border border-wire px-4 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-all duration-200 hover:border-light/20 hover:text-light hover:-translate-y-px active:translate-y-0 disabled:opacity-50"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden="true" />
           Nueva mesa
         </button>
+        <button
+          onClick={toggleJoinMode}
+          className={`inline-flex h-10 items-center gap-2 border ${isJoinMode ? "border-glow text-glow" : "border-wire text-dim hover:border-light/20 hover:text-light"} px-4 text-[0.72rem] font-bold uppercase tracking-[0.18em] transition-all duration-200 hover:-translate-y-px active:translate-y-0`}
+        >
+          <LinkIcon className="h-3.5 w-3.5" aria-hidden="true" />
+          {isJoinMode ? "Cancelar unión" : "Juntar Mesas"}
+        </button>
+        {isJoinMode && selectedTablesToJoin.length >= 2 && (
+          <button
+            onClick={handleConfirmJoin}
+            disabled={isPending}
+            className="inline-flex h-10 items-center gap-2 bg-glow text-ink px-4 text-[0.72rem] font-bold uppercase tracking-[0.18em] transition-all duration-200 hover:-translate-y-px hover:bg-glow/90 active:translate-y-0 disabled:opacity-50"
+          >
+            Confirmar Unión
+          </button>
+        )}
       </div>
 
       {/* ── Stats strip ───────────────────────────────────────── */}
@@ -318,22 +379,63 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
-            {filtered.map((table, i) => (
+            {filtered.map((table, i) => {
+              const isSelectedToJoin = selectedTablesToJoin.includes(table.id);
+              const parentTable = table.parentTableId ? tables.find(t => t.id === table.parentTableId) : null;
+              
+              // We'll visually group joined tables or indicate connection
+              const isChild = !!table.parentTableId;
+              const hasChildren = tables.some(t => t.parentTableId === table.id);
+              
+              return (
               <div
                 key={table.id}
+                onClick={() => {
+                  if (isJoinMode && !isChild) {
+                    toggleTableSelection(table.id, false);
+                  }
+                }}
                 className={[
                   "group relative flex min-h-[172px] flex-col overflow-hidden border transition-all duration-200",
                   CARD_BORDER[table.status],
                   CARD_BG[table.status],
+                  isJoinMode && !isChild ? "cursor-pointer hover:border-glow/50" : "",
+                  isSelectedToJoin ? "border-glow bg-glow/5" : "",
+                  isChild ? "opacity-70 grayscale-[0.5]" : "",
                 ].join(" ")}
                 style={{
                   animation: `dash-row-enter 0.35s cubic-bezier(0.22,1,0.36,1) ${0.2 + Math.min(i * 0.04, 0.3)}s both`,
                 }}
               >
+                {/* Selection indicator */}
+                {isSelectedToJoin && (
+                  <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-glow text-ink text-[10px] font-bold">
+                    {selectedTablesToJoin.indexOf(table.id) + 1}
+                  </div>
+                )}
+                {/* Parent/Child Badge */}
+                {isChild && (
+                  <div className="absolute left-0 top-0 border-b border-r border-wire bg-wire px-2 py-0.5 text-[0.55rem] font-bold tracking-widest text-dim uppercase">
+                    Unida a Mesa {parentTable?.number}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleSeparate(table.id); }}
+                      className="ml-2 hover:text-ember transition-colors"
+                      title="Separar"
+                    >
+                      <Unlink size={10} className="inline" />
+                    </button>
+                  </div>
+                )}
+                {hasChildren && (
+                  <div className="absolute left-0 top-0 border-b border-r border-glow bg-glow/10 px-2 py-0.5 text-[0.55rem] font-bold tracking-widest text-glow uppercase">
+                    Mesa Principal
+                  </div>
+                )}
+
                 {/* Card content */}
                 <div className="flex flex-1 flex-col p-5">
                   {/* Status row */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 mt-2">
                     <span
                       className={`h-1.5 w-1.5 rounded-full ${STATUS_DOT[table.status]}`}
                       aria-hidden="true"
@@ -361,20 +463,20 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
                 {/* Hover action bar */}
                 <div className="absolute inset-x-0 bottom-0 flex translate-y-full items-center justify-between border-t border-wire bg-canvas/95 px-4 py-3 backdrop-blur-sm transition-transform duration-200 group-hover:translate-y-0">
                   <button
-                    onClick={() => setSelectedQRTable(table)}
+                    onClick={(e) => { e.stopPropagation(); setSelectedQRTable(table); }}
                     className="flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:text-light"
                   >
                     <QrCode className="h-3.5 w-3.5" aria-hidden="true" />
                     QR
                   </button>
                   <button
-                    onClick={() => window.open(`/mesa/${table.qrCode}`, "_blank")}
+                    onClick={(e) => { e.stopPropagation(); window.open(`/mesa/${table.qrCode}`, "_blank"); }}
                     className="flex items-center gap-1.5 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:text-light"
                   >
                     Mesa
                   </button>
                   <button
-                    onClick={() => handleDelete(table.id)}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(table.id); }}
                     aria-label={`Eliminar mesa ${table.number}`}
                     className="flex h-7 w-7 items-center justify-center text-dim/50 transition-colors hover:text-ember"
                   >
@@ -382,7 +484,8 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
                   </button>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         ))}
         

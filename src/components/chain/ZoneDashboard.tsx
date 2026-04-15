@@ -117,8 +117,8 @@ export default function ZoneDashboard() {
 
   if (loading && !data) {
     return (
-      <div className="min-h-screen bg-ink flex items-center justify-center">
-        <p className="text-dim uppercase tracking-widest text-sm">Cargando...</p>
+      <div className="flex h-[80vh] items-center justify-center">
+        <p className="text-dim uppercase tracking-widest text-sm" style={{ animation: "fade-in 1s infinite alternate" }}>Cargando datos de zona...</p>
       </div>
     );
   }
@@ -127,10 +127,10 @@ export default function ZoneDashboard() {
   const { zone, stats, restaurants } = data;
 
   return (
-    <div className="min-h-screen bg-ink">
+    <div className="w-full pb-20">
       {/* Header */}
-      <div className="border-b border-wire bg-canvas p-4 sm:p-6">
-        <div className="mx-auto max-w-7xl">
+      <div className="border-b border-wire bg-canvas/50 px-6 py-8">
+        <div className="w-full">
           <div className="flex items-start justify-between gap-4 mb-4 sm:mb-6">
             <div>
               <p className="text-xs text-dim uppercase tracking-[0.15em] mb-1">
@@ -199,7 +199,7 @@ export default function ZoneDashboard() {
       </div>
 
       {/* Restaurant cards */}
-      <div className="mx-auto max-w-7xl p-4 sm:p-6">
+      <div className="p-6">
         <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-dim mb-4 flex items-center gap-2">
           <Building2 className="h-3.5 w-3.5" />
           Sucursales en la zona

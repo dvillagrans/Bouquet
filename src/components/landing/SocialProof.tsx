@@ -47,8 +47,8 @@ export const SocialProof = () => (
 
           <footer className="mt-10 flex items-center gap-5">
             {/* Typographic monogram — more editorial than a circle avatar */}
-            <div className="flex h-10 w-10 shrink-0 items-end justify-end border border-wire pb-1 pr-1.5">
-              <span className="font-serif text-[1.6rem] font-semibold italic leading-none text-glow">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-wire bg-white/[0.02]">
+              <span className="font-serif text-[1.6rem] font-semibold italic text-glow">
                 R
               </span>
             </div>

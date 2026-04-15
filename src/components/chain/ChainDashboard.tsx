@@ -51,8 +51,8 @@ export default function ChainDashboard() {
 
   if (loading && !data) {
     return (
-      <div className="min-h-screen bg-ink flex items-center justify-center">
-        <p className="text-dim uppercase tracking-widest text-sm">Cargando...</p>
+      <div className="flex h-[80vh] items-center justify-center">
+        <p className="text-dim uppercase tracking-widest text-sm" style={{ animation: "fade-in 1s infinite alternate" }}>Cargando datos de cadena...</p>
       </div>
     );
   }
@@ -61,10 +61,10 @@ export default function ChainDashboard() {
   const { chain, stats, zones, restaurants } = data;
 
   return (
-    <div className="min-h-screen bg-ink">
+    <div className="w-full pb-20">
       {/* Header */}
-      <div className="border-b border-wire bg-canvas p-4 sm:p-6">
-        <div className="mx-auto max-w-7xl">
+      <div className="border-b border-wire bg-canvas/50 px-6 py-8">
+        <div className="w-full">
           <div className="flex items-start justify-between gap-4 mb-4 sm:mb-6">
             <div>
               <p className="text-xs text-dim uppercase tracking-[0.15em] mb-1">
@@ -133,7 +133,7 @@ export default function ChainDashboard() {
       </div>
 
       {/* Main content */}
-      <div className="mx-auto max-w-7xl p-4 sm:p-6 space-y-6">
+      <div className="p-6 space-y-8">
 
         {/* Zones summary — only show if zones exist */}
         {zones.length > 0 && (

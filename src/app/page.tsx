@@ -9,7 +9,7 @@ import { Footer }          from "@/components/landing/Footer";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-ink font-sans text-light selection:bg-glow/25 selection:text-ink">
+    <div className="min-h-screen bg-white font-sans text-black selection:bg-blue-500/25 selection:text-black">
       <TopBar />
       <main>
         {/* 1 — Hero full-viewport: headline + floor plan SVG en vivo */}

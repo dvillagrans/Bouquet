@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, ChefHat, Clock, RefreshCw, Sparkles, LayoutGrid, Map } from "lucide-react";
+import { Users, ChefHat, Clock, RefreshCw, Sparkles, LayoutGrid, Map, Link as LinkIcon, Unlink } from "lucide-react";
 import { getWaiterTablesSummary, updateTableStatus } from "@/actions/waiter";
-import { getTables } from "@/actions/tables";
+import { getTables, joinTables, separateTable } from "@/actions/tables";
 import WaiterTableDetail from "./WaiterTableDetail";
 import FloorMapClient from "@/components/dashboard/FloorMapClient";
 import type { FloorMapTable } from "@/components/dashboard/FloorMap";
@@ -17,6 +17,7 @@ interface TableSummary {
   number: number;
   capacity: number;
   status: TableStatus;
+  parentTableId: string | null;
   activeSession: { guestName: string; pax: number; createdAt: Date } | null;
   orderCount: number;
   pendingCount: number;
@@ -28,13 +29,17 @@ function isTableBusy(status: TableStatus) {
   return status === "OCUPADA" || status === "CERRANDO";
 }
 
-export default function WaiterDashboard() {
+export default function WaiterDashboard({ allowJoinTables = false }: { allowJoinTables?: boolean }) {
   const [tables, setTables] = useState<TableSummary[]>([]);
   const [mapTables, setMapTables] = useState<FloorMapTable[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>("todas");
   const [view, setView] = useState<ViewType>("lista");
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
+
+  const [isJoinMode, setIsJoinMode] = useState(false);
+  const [selectedTablesToJoin, setSelectedTablesToJoin] = useState<string[]>([]);
+  const [isJoining, setIsJoining] = useState(false);
 
   const loadTables = async () => {
     try {
@@ -59,6 +64,40 @@ export default function WaiterDashboard() {
     } catch (error) {
       console.error("Error cleaning table:", error);
       alert("Error al limpiar la mesa");
+    }
+  };
+
+  const handleToggleJoinTable = (tableId: string, isParent: boolean) => {
+    if (isParent) return;
+    setSelectedTablesToJoin((prev) => 
+      prev.includes(tableId) ? prev.filter((id) => id !== tableId) : [...prev, tableId]
+    );
+  };
+
+  const handleConfirmJoin = async () => {
+    if (selectedTablesToJoin.length < 2) return;
+    setIsJoining(true);
+    const [parentId, ...childIds] = selectedTablesToJoin;
+    try {
+      await joinTables(parentId, childIds);
+      await loadTables();
+      setIsJoinMode(false);
+      setSelectedTablesToJoin([]);
+    } catch(err) {
+      console.error(err);
+      alert("Error al unir mesas");
+    } finally {
+      setIsJoining(false);
+    }
+  };
+
+  const handleSeparate = async (childId: string) => {
+    try {
+      await separateTable(childId);
+      await loadTables();
+    } catch(err) {
+      console.error(err);
+      alert("Error separando la mesa");
     }
   };
 
@@ -203,6 +242,32 @@ export default function WaiterDashboard() {
           </div>
 
           {/* Refresh - always visible, icon-only on mobile */}
+          {allowJoinTables && (
+            <button
+              onClick={() => {
+                setIsJoinMode(!isJoinMode);
+                setSelectedTablesToJoin([]);
+              }}
+              className={`shrink-0 flex items-center gap-2 border px-3 py-2 rounded text-sm font-bold uppercase transition-colors ${
+                isJoinMode ? "border-glow bg-glow/10 text-glow" : "border-wire text-dim hover:text-light hover:border-glow"
+              }`}
+              title="Juntar mesas"
+            >
+              <LinkIcon className="h-4 w-4" />
+              <span className="hidden sm:inline">{isJoinMode ? "Cancelar" : "Unir"}</span>
+            </button>
+          )}
+          {isJoinMode && selectedTablesToJoin.length >= 2 && (
+            <button
+              onClick={handleConfirmJoin}
+              disabled={isJoining}
+              className="shrink-0 flex items-center gap-2 border border-glow bg-glow px-3 py-2 rounded text-sm font-bold uppercase text-ink hover:bg-glow/90 transition-colors disabled:opacity-50"
+            >
+              <span className="hidden sm:inline">Confirmar Unwin</span>
+              <span className="sm:hidden">Unir</span>
+            </button>
+          )}
+
           <button
             onClick={() => {
               setLoading(true);
@@ -249,11 +314,24 @@ export default function WaiterDashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-              {filteredTables.map((table) => (
+              {filteredTables.map((table) => {
+                const isSelectedToJoin = selectedTablesToJoin.includes(table.id);
+                const isChild = !!table.parentTableId;
+                const hasChildren = tables.some((t) => t.parentTableId === table.id);
+
+                return (
                 <div
                   key={table.id}
-                  onClick={() => isTableBusy(table.status) && setSelectedTable(table.id)}
+                  onClick={() => {
+                    if (isJoinMode) {
+                      handleToggleJoinTable(table.id, isChild);
+                    } else if (isTableBusy(table.status)) {
+                      setSelectedTable(table.id);
+                    }
+                  }}
                   className={`relative flex flex-col items-center justify-between rounded-lg border p-3 sm:p-4 transition-all duration-200 cursor-pointer aspect-square active:scale-[0.97] ${
+                    isSelectedToJoin ? "border-glow bg-glow/10 shadow-[0_0_10px_rgba(var(--glow-rgb),0.3)]" :
+                    isChild ? "opacity-60 grayscale-[0.5] cursor-not-allowed border-wire bg-wire/10" :
                     table.status === "DISPONIBLE"
                       ? "border-sage/40 bg-sage/5 hover:border-sage"
                       : table.status === "OCUPADA"
@@ -263,8 +341,34 @@ export default function WaiterDashboard() {
                       : "border-ember/40 bg-ember/5 hover:border-ember"
                   }`}
                 >
+                  {/* Join Table Elements */}
+                  {isSelectedToJoin && (
+                    <div className="absolute right-2 top-2 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-glow text-ink text-[9px] font-bold">
+                      {selectedTablesToJoin.indexOf(table.id) + 1}
+                    </div>
+                  )}
+                  {isChild && (
+                    <div className="absolute left-0 top-0 w-full bg-wire/50 px-1 py-0.5 text-center text-[0.5rem] font-bold uppercase tracking-wider text-dim rounded-t-lg">
+                      Mesa Unida
+                      {allowJoinTables && (
+                         <button 
+                         onClick={(e) => { e.stopPropagation(); handleSeparate(table.id); }}
+                         className="ml-1 hover:text-ember"
+                         title="Separar"
+                       >
+                         <Unlink size={8} className="inline" />
+                       </button>
+                      )}
+                    </div>
+                  )}
+                  {hasChildren && (
+                    <div className="absolute left-2 top-2 z-10 rounded border border-glow/50 bg-glow/20 px-1 py-0.5 text-[0.5rem] font-bold uppercase tracking-wider text-glow">
+                      Mesa Princ.
+                    </div>
+                  )}
+
                   {/* Status Badge + pax */}
-                  <div className="flex w-full items-center justify-between">
+                  <div className="flex w-full items-center justify-between mt-2">
                     <span
                       className={`text-[0.55rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
                         table.status === "DISPONIBLE"
@@ -338,7 +442,8 @@ export default function WaiterDashboard() {
                     </button>
                   )}
                 </div>
-              ))}
+              );
+              })}
             </div>
           )}
         </div>

@@ -71,7 +71,7 @@ const timeFmt = (m: number) =>
 const pct = (m: number) => Math.min((m / 90) * 100, 100);
 
 export const ProductMockup = () => (
-  <div className="relative w-full overflow-hidden border border-charcoal/[0.11] bg-cream">
+  <div className="relative w-full overflow-hidden rounded-[2rem] border border-charcoal/15 bg-cream shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
 
     {/* ── HEADER ─────────────────────────────────────────────── */}
     <div className="flex items-center justify-between gap-4 bg-charcoal px-4 py-3 sm:px-5">
@@ -118,8 +118,8 @@ export const ProductMockup = () => (
             <div
               key={t.n}
               className={[
-                "relative overflow-hidden rounded-[10px] border p-2.5",
-                "transition-transform duration-200 hover:-translate-y-0.5",
+                "relative overflow-hidden rounded-2xl border p-3",
+                "transition-all duration-300 hover:-translate-y-1 hover:shadow-lg",
                 t.wide ? "col-span-2" : "",
                 tableFrame[t.status],
               ].join(" ")}
@@ -178,7 +178,7 @@ export const ProductMockup = () => (
                 </div>
                 <span
                   className={[
-                    "shrink-0 rounded px-1.5 py-0.5 text-[0.52rem] font-bold uppercase tracking-[0.16em]",
+                    "shrink-0 rounded-full px-2 py-1 text-[0.52rem] font-bold uppercase tracking-[0.16em]",
                     orderStatusStyle[o.status],
                   ].join(" ")}
                 >

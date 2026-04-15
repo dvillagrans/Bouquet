@@ -1,78 +1,86 @@
-/*
- *  SocialProof — stats strip + editorial blockquote.
- *  Improvements:
- *  – Stats get a hairline accent line + subtle label treatment
- *  – Blockquote attribution gets a typographic rule + restaurant detail
- *  – Added a second pull quote for rhythm
- */
+"use client";
 
-const stats = [
-  { value: "4.9",  unit: "★", label: "Valoración promedio", sub: "de 5 estrellas"     },
-  { value: "+40",  unit: "",  label: "Restaurantes facturando", sub: "en México"          },
-  { value: "100%", unit: "",  label: "Renovación anual",     sub: "contratos vigentes" },
-];
+import { motion } from "framer-motion";
+
+const easeOutQuint = [0.22, 1, 0.36, 1] as const;
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.8, ease: easeOutQuint },
+  },
+};
 
 export const SocialProof = () => (
-  <section className="bg-ink py-28 lg:py-40">
-    <div className="mx-auto max-w-7xl px-6 lg:px-10">
-
-      {/* Stats strip */}
-      <div className="mb-20 grid grid-cols-3 gap-6 border-b border-wire pb-20 sm:gap-12 lg:gap-16">
-        {stats.map(({ value, unit, label, sub }) => (
-          <div key={label} className="flex flex-col gap-3">
-            {/* Accent line — 24px gold hairline above each stat */}
-            <div className="h-px w-6 bg-glow/40" aria-hidden="true" />
-            <p className="font-serif text-[clamp(2.4rem,4.5vw,4.5rem)] font-semibold leading-none text-glow">
-              {value}
-              {unit && (
-                <span className="ml-0.5 text-[0.55em] text-glow/60">{unit}</span>
-              )}
-            </p>
-            <div>
-              <p className="text-[0.78rem] font-semibold text-light">{label}</p>
-              <p className="mt-0.5 text-[0.63rem] font-medium text-dim">{sub}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Two-column testimonial zone */}
-      <div className="grid gap-16 lg:grid-cols-[1fr_0.55fr] lg:gap-24 lg:items-end">
-
-        {/* Primary quote — large editorial */}
+  <section className="bg-charcoal py-24 lg:py-32 overflow-hidden">
+    <motion.div
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-10% 0px" }}
+      variants={containerVariants}
+      className="mx-auto max-w-7xl px-6 lg:px-10"
+    >
+      <div className="grid gap-12 lg:grid-cols-[0.72fr_1fr] lg:items-start">
         <div>
-          <blockquote className="font-serif text-[clamp(2rem,4.2vw,4.4rem)] font-medium italic leading-[1.15] tracking-[-0.025em] text-light/70">
-            &ldquo;Antes perdíamos horas cerrando caja y cuadrando cuentas. Con Bouquet cobramos al instante, rotamos las mesas más rápido y las ventas subieron un 20% desde el primer mes.&rdquo;
-          </blockquote>
+          <motion.p variants={itemVariants} className="text-[0.68rem] font-bold uppercase tracking-[0.32em] text-cream/34">
+            Prueba social
+          </motion.p>
+          <motion.h2 variants={itemVariants} className="mt-4 max-w-[9ch] font-serif text-[clamp(2.8rem,5vw,4.8rem)] font-semibold italic leading-[0.95] tracking-[-0.03em] text-cream">
+            El turno se siente más corto.
+          </motion.h2>
+          <motion.p variants={itemVariants} className="mt-6 max-w-xl text-[1rem] leading-[1.8] text-cream/62">
+            Cuando la sala, la cocina y la caja dejan de pelearse entre sí, el equipo trabaja con más calma
+            y el servicio se nota más fluido desde la primera semana.
+          </motion.p>
 
-          <footer className="mt-10 flex items-center gap-5">
-            {/* Typographic monogram — more editorial than a circle avatar */}
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-wire bg-white/[0.02]">
-              <span className="font-serif text-[1.6rem] font-semibold italic text-glow">
-                R
-              </span>
-            </div>
+          <motion.div variants={itemVariants} className="mt-10 grid grid-cols-3 gap-4">
+            {[
+              { value: "3", label: "frentes sincronizados" },
+              { value: "1", label: "pantalla para el turno" },
+              { value: "0", label: "capturas duplicadas" },
+            ].map((item) => (
+              <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4 transition-colors hover:bg-white/[0.08]">
+                <p className="font-serif text-[2rem] font-semibold leading-none text-gold">{item.value}</p>
+                <p className="mt-2 text-[0.6rem] font-bold uppercase tracking-[0.24em] text-cream/42">{item.label}</p>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+          <motion.blockquote variants={itemVariants} className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 font-serif text-[clamp(1.8rem,3vw,3.2rem)] font-medium italic leading-[1.18] tracking-[-0.025em] text-cream/80">
+            &ldquo;Antes perdíamos horas cerrando caja y cuadrando cuentas. Con Bouquet cobramos más rápido y la sala ya no se queda esperando al cierre.&rdquo;
+          </motion.blockquote>
+
+          <motion.div variants={itemVariants} className="flex flex-col justify-between rounded-[2rem] border border-white/10 bg-white/[0.03] p-8">
             <div>
-              <p className="text-[0.85rem] font-semibold text-light/70">Rodrigo Castellanos</p>
-              <p className="mt-0.5 flex items-center gap-2 text-[0.6rem] font-bold uppercase tracking-[0.22em] text-dim">
-                <span className="h-px w-3 bg-dim/40" aria-hidden="true" />
-                Dueño, Taquería Los Güeros · CDMX
+              <p className="text-[0.62rem] font-bold uppercase tracking-[0.3em] text-cream/34">
+                Rodrigo Castellanos
+              </p>
+              <p className="mt-3 max-w-sm text-[0.95rem] leading-[1.75] text-cream/58">
+                Dueño de restaurante · CDMX
               </p>
             </div>
-          </footer>
-        </div>
 
-        {/* Secondary pull — compact, contrasting weight */}
-        <div className="border-l border-wire pl-8 lg:pl-10">
-          <p className="font-serif text-[clamp(1.1rem,1.6vw,1.55rem)] font-normal italic leading-[1.5] tracking-[-0.01em] text-dim">
-            &ldquo;Mis meseros ahora se dedican a vender más cervezas y postres en lugar de estar correteando las libretas. Recuperamos la inversión en una semana.&rdquo;
-          </p>
-          <p className="mt-5 text-[0.6rem] font-bold uppercase tracking-[0.22em] text-wire">
-            Gerencia de operaciones · Grupo Pujol
-          </p>
+            <div className="mt-8 border-t border-white/10 pt-6 text-[0.8rem] leading-[1.8] text-cream/52">
+              “Mis meseros ahora venden más y corren menos detrás de libretas.”
+            </div>
+          </motion.div>
         </div>
       </div>
-
-    </div>
+    </motion.div>
   </section>
 );

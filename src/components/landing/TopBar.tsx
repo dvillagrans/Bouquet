@@ -32,17 +32,17 @@ export const TopBar = () => {
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 opacity-0 animate-[fade-in_0.5s_ease-out_forwards] ${
-        scrolled ? "bg-ink/97 border-b border-wire" : "bg-transparent"
+        scrolled ? "border-b border-charcoal/10 bg-ivory/95 backdrop-blur-md" : "bg-transparent"
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10 lg:py-5">
 
         {/* Logo */}
         <Link href="/" className="group flex items-baseline gap-2">
-          <span className="font-serif text-[1.6rem] font-semibold italic tracking-tight text-light transition-opacity duration-200 group-hover:opacity-70">
+          <span className="font-serif text-[1.6rem] font-semibold italic tracking-tight text-charcoal transition-opacity duration-200 group-hover:opacity-70">
             bouquet
           </span>
-          <span className="mb-0.5 hidden text-[0.56rem] font-bold uppercase tracking-[0.38em] text-dim sm:block">
+          <span className="mb-0.5 hidden text-[0.56rem] font-bold uppercase tracking-[0.38em] text-charcoal/45 sm:block">
             ops
           </span>
         </Link>
@@ -53,7 +53,7 @@ export const TopBar = () => {
             <Link
               key={href}
               href={href}
-              className="text-[0.85rem] font-medium text-dim transition-colors duration-200 hover:text-light"
+              className="text-[0.85rem] font-medium text-charcoal/62 transition-colors duration-200 hover:text-charcoal"
             >
               {label}
             </Link>
@@ -61,19 +61,19 @@ export const TopBar = () => {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link href="/scan" className="mr-2 text-[0.8rem] font-semibold text-dim hover:text-light transition-colors">App Comensal</Link>
+          <Link href="/scan" className="mr-2 text-[0.8rem] font-semibold text-charcoal/55 transition-colors hover:text-charcoal">App Comensal</Link>
           {/* Desktop CTA — no id="contacto" here (belongs on the section) */}
           <Link
             href="#contacto"
-            className="hidden items-center gap-2 border border-glow/25 px-5 py-2.5 text-[0.8rem] font-semibold text-glow transition-all duration-200 hover:border-glow/40 hover:bg-glow/[0.08] lg:inline-flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
+            className="hidden items-center gap-2 rounded-full border border-charcoal/12 bg-charcoal px-5 py-2.5 text-[0.8rem] font-semibold text-cream transition-all duration-200 hover:-translate-y-0.5 hover:bg-charcoal-light lg:inline-flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
           >
-            Agenda una demo
+            Demo en 20 min
           </Link>
 
           {/* Mobile hamburger */}
           <button
             onClick={() => setOpen(!open)}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-wire text-dim transition-colors hover:border-light/20 hover:text-light lg:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-charcoal/12 text-charcoal/65 transition-colors hover:border-charcoal/25 hover:text-charcoal lg:hidden"
             aria-label={open ? "Cerrar menú" : "Abrir menú"}
             aria-expanded={open}
             aria-controls="mobile-menu"
@@ -99,7 +99,7 @@ export const TopBar = () => {
        */}
       <div
         id="mobile-menu"
-        className={`grid overflow-hidden border-t border-wire bg-ink transition-[grid-template-rows] duration-[350ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] lg:hidden ${
+        className={`grid overflow-hidden border-t border-charcoal/10 bg-ivory transition-[grid-template-rows] duration-[350ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] lg:hidden ${
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         }`}
       >
@@ -113,7 +113,7 @@ export const TopBar = () => {
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className="block border-b border-wire py-4 text-[0.9rem] font-medium text-dim transition-[opacity,transform] hover:text-light active:bg-light/5"
+                className="block border-b border-charcoal/10 py-4 text-[0.9rem] font-medium text-charcoal/68 transition-[opacity,transform] hover:text-charcoal active:bg-charcoal/[0.03]"
                 style={{
                   transitionDuration: "0.4s",
                   transitionDelay: open ? `${0.05 + i * 0.06}s` : "0s",
@@ -140,9 +140,9 @@ export const TopBar = () => {
               <Link
                 href="#contacto"
                 onClick={() => setOpen(false)}
-                className="block bg-cream px-6 py-3.5 text-center text-sm font-semibold text-charcoal transition-colors hover:bg-ivory active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                className="block rounded-full bg-charcoal px-6 py-3.5 text-center text-sm font-semibold text-cream transition-colors hover:bg-charcoal-light active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
               >
-                Agenda una demo
+                Demo en 20 min
               </Link>
             </div>
           </nav>

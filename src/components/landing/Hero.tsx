@@ -1,85 +1,160 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { FloorPlan } from "@/components/landing/FloorPlan";
+
+const easeOutQuint = [0.22, 1, 0.36, 1] as const;
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.8,
+      ease: easeOutQuint,
+    },
+  },
+};
+
+const mockupVariants = {
+  hidden: { opacity: 0, scale: 0.95, y: 40 },
+  show: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      duration: 1,
+      ease: easeOutQuint,
+      delay: 0.3, // Let text come in first
+    },
+  },
+};
 
 export const Hero = () => (
-  <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden bg-white pt-24 pb-20">
-    <div className="relative z-10 mx-auto flex w-full max-w-[1200px] flex-col items-center px-6 text-center lg:px-8">
-      
-      {/* Badge */}
-      <div className="mb-6 inline-flex items-center rounded-full border border-black/10 bg-black/5 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-black/80">
-        <span className="mr-2.5 h-2 w-2 rounded-full bg-blue-500 animate-pulse"></span>
-        Nuevo: Módulo de Cocina Inteligente
-      </div>
-
-      {/* Typography Headline - Big, bold, sans-serif like Air.inc */}
-      <h1 className="max-w-5xl text-balance font-sans text-6xl font-bold tracking-tighter text-black sm:text-7xl md:text-8xl lg:text-[6rem] lg:leading-[0.95]">
-        Tu restaurante. <br className="hidden sm:block" /> En automático.
-      </h1>
-
-      {/* Description */}
-      <p className="mt-8 max-w-2xl text-balance text-lg font-medium leading-relaxed text-black/60 sm:text-xl">
-        Conecta las comandas de tu piso con la cocina en milisegundos.
-        Controla los insumos, cobra con un clic y escala sin estrés.
-      </p>
-
-      {/* CTAs */}
-      <div className="mt-10 flex w-full flex-col sm:flex-row justify-center items-center gap-4">
-        <Link
-          href="#contacto"
-          className="group flex h-14 w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-black px-10 text-[1.1rem] font-medium text-white transition-transform hover:scale-[1.02] active:scale-[0.98]"
-        >
-          Probar Bouquet Gratis
-          <svg className="h-5 w-5 opacity-70 transition-transform group-hover:translate-x-1" viewBox="0 0 20 20" fill="none">
-            <path d="M4 10h12m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </Link>
-        <Link
-          href="#como-funciona"
-          className="flex h-14 w-full sm:w-auto items-center justify-center rounded-full border border-black/10 bg-transparent px-10 text-[1.1rem] font-medium text-black transition-colors hover:bg-black/5"
-        >
-          Ver demostración
-        </Link>
-      </div>
-
-      {/* Trust elements underneath CTA */}
-      <div className="mt-8 opacity-60 flex items-center justify-center gap-2 font-medium text-sm">
-        <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>
-        Sin tarjeta de crédito
-        <span className="mx-2">•</span>
-        Configuración en 5 min
-      </div>
-
+  <section className="relative overflow-hidden pt-28 pb-20 lg:pt-32 lg:pb-28">
+    <div className="absolute inset-0 -z-10">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.5, ease: easeOutQuint }}
+        className="absolute left-[-12%] top-[-8%] h-[28rem] w-[28rem] rounded-full bg-gold/10 blur-3xl"
+      />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.5, delay: 0.2, ease: easeOutQuint }}
+        className="absolute right-[-8%] top-[12%] h-[24rem] w-[24rem] rounded-full bg-sage/12 blur-3xl"
+      />
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-charcoal/10 to-transparent" />
     </div>
 
-    {/* Decorative huge background image or mockup below hero like Air.inc */}
-    <div className="mt-16 w-full max-w-[1400px] px-6">
-      <div className="aspect-[21/9] w-full relative rounded-[2rem] border border-black/5 bg-zinc-50 shadow-2xl overflow-hidden flex items-center justify-center">
-         {/* Faux Interface for visual wow factor */}
-         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-orange-50 opacity-50" />
-         <div className="w-[85%] h-[80%] rounded-xl bg-white shadow-xl flex border border-black/5">
-           <div className="w-[200px] h-full border-r border-black/5 flex flex-col gap-4 p-4">
-              <div className="h-6 w-full rounded-md bg-zinc-100" />
-              <div className="h-4 w-2/3 rounded-md bg-zinc-50" />
-              <div className="h-4 w-3/4 rounded-md bg-zinc-50" />
-           </div>
-           <div className="flex-1 p-8 flex flex-col gap-6">
-              <div className="h-8 w-[250px] rounded-md bg-zinc-100" />
-              <div className="grid grid-cols-3 gap-4">
-                <div className="h-[120px] rounded-xl bg-blue-50/50 border border-blue-100 p-4">
-                   <div className="w-10 h-10 rounded-full bg-blue-100 mb-4" />
-                   <div className="w-1/2 h-3 rounded-full bg-blue-200" />
-                </div>
-                <div className="h-[120px] rounded-xl bg-orange-50/50 border border-orange-100 p-4">
-                   <div className="w-10 h-10 rounded-full bg-orange-100 mb-4" />
-                   <div className="w-1/2 h-3 rounded-full bg-orange-200" />
-                </div>
-                <div className="h-[120px] rounded-xl bg-green-50/50 border border-green-100 p-4">
-                   <div className="w-10 h-10 rounded-full bg-green-100 mb-4" />
-                   <div className="w-1/2 h-3 rounded-full bg-green-200" />
+    <div className="mx-auto grid w-full max-w-7xl gap-12 px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-end lg:px-10">
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="show"
+        className="max-w-3xl"
+      >
+        <motion.div variants={itemVariants}>
+          <div className="inline-flex items-center gap-3 rounded-full border border-charcoal/10 bg-cream px-4 py-2 text-[0.68rem] font-bold uppercase tracking-[0.32em] text-charcoal/60 shadow-[0_10px_30px_-18px_rgba(43,36,30,0.45)]">
+            <span className="h-2 w-2 rounded-full bg-gold" aria-hidden="true" />
+            Hospitality OS para servicio real
+          </div>
+        </motion.div>
+
+        <motion.h1 variants={itemVariants} className="mt-7 max-w-[11ch] text-balance font-sans text-[clamp(3.25rem,7.6vw,7.6rem)] font-black tracking-[-0.06em] leading-[0.9] text-charcoal">
+          Sala, cocina y caja. <span className="text-charcoal/60">Sin fricción.</span>
+        </motion.h1>
+
+        <motion.p variants={itemVariants} className="mt-7 max-w-2xl text-balance text-[1.05rem] leading-[1.8] text-charcoal/68 sm:text-[1.15rem]">
+          Bouquet ordena el turno para que el equipo vea qué mesa pide, qué pasa a cocina y qué se cobra,
+          sin depender de libretas, walkie-talkies ni capturas duplicadas. Funciona igual de bien para
+          taquerias de alto flujo, barras y casual dining.
+        </motion.p>
+
+        <motion.div variants={itemVariants} className="mt-10 flex flex-col gap-4 sm:flex-row">
+          <Link href="#contacto" className="block focus:outline-none">
+            <motion.div
+              whileHover={{ y: -2, scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="group inline-flex h-14 w-full items-center justify-center gap-2 rounded-full bg-charcoal px-8 text-[1rem] font-semibold text-cream shadow-[0_20px_40px_-20px_rgba(43,36,30,0.65)]"
+            >
+              Reservar demo de 20 min
+              <svg className="h-5 w-5 transition-transform group-hover:translate-x-0.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 10h12m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </motion.div>
+          </Link>
+          
+          <Link href="#como-funciona" className="block focus:outline-none">
+            <motion.div
+              whileHover={{ y: -2, backgroundColor: "var(--color-cream)" }}
+              whileTap={{ scale: 0.98 }}
+              className="inline-flex h-14 w-full items-center justify-center rounded-full border border-charcoal/12 bg-cream/75 px-8 text-[1rem] font-semibold text-charcoal transition-colors hover:border-charcoal/20"
+            >
+              Ver recorrido operativo
+            </motion.div>
+          </Link>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="mt-8 flex flex-wrap items-center gap-3 text-[0.82rem] font-medium text-charcoal/58">
+          <span className="rounded-full border border-charcoal/10 bg-cream px-3 py-1.5">Sin tarjeta de crédito</span>
+          <span className="rounded-full border border-charcoal/10 bg-cream px-3 py-1.5">Configuración en 1 día</span>
+          <span className="rounded-full border border-charcoal/10 bg-cream px-3 py-1.5">Soporte humano en español</span>
+        </motion.div>
+      </motion.div>
+
+      <motion.div
+        variants={mockupVariants}
+        initial="hidden"
+        animate="show"
+        className="relative"
+      >
+        <div className="absolute -inset-4 rounded-[2.5rem] bg-[radial-gradient(circle_at_top,#f4e6cf_0%,transparent_66%)] blur-2xl" aria-hidden="true" />
+        <div className="relative overflow-hidden rounded-[2rem] border border-charcoal/12 bg-ivory/80 p-4 shadow-[0_34px_80px_-28px_rgba(43,36,30,0.5)] backdrop-blur-sm">
+          <div className="flex items-center justify-between border-b border-charcoal/8 px-2 pb-3">
+            <div>
+              <p className="text-[0.62rem] font-bold uppercase tracking-[0.32em] text-charcoal/35">Turno nocturno</p>
+              <p className="mt-1 text-sm font-semibold text-charcoal">18 mesas activas, 5 cierres en curso</p>
+            </div>
+            <div className="rounded-full border border-charcoal/10 bg-cream px-3 py-1.5 text-[0.7rem] font-semibold text-charcoal/70">
+              21:47
+            </div>
+          </div>
+
+          <div className="pt-4">
+            <FloorPlan />
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            {[
+              { label: "Mesa 03", value: "Pase a cocina", tone: "bg-gold/12 text-gold" },
+              { label: "Mesa 08", value: "Cierre de cuenta", tone: "bg-ember/12 text-ember" },
+              { label: "Mesa 11", value: "Libre para sentar", tone: "bg-sage/12 text-sage-deep" },
+            ].map((item) => (
+              <div key={item.label} className="rounded-2xl border border-charcoal/10 bg-cream px-4 py-3">
+                <p className="text-[0.6rem] font-bold uppercase tracking-[0.28em] text-charcoal/32">{item.label}</p>
+                <div className={`mt-2 inline-flex rounded-full px-3 py-1 text-[0.72rem] font-semibold ${item.tone}`}>
+                  {item.value}
                 </div>
               </div>
-           </div>
-         </div>
-      </div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
     </div>
   </section>
 );

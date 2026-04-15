@@ -1,3 +1,7 @@
+"use client";
+
+import { motion } from "framer-motion";
+
 type TableStatus = "libre" | "activa" | "cierre" | "pagando";
 
 interface TableEntry {
@@ -70,6 +74,19 @@ const timeFmt = (m: number) =>
 
 const pct = (m: number) => Math.min((m / 90) * 100, 100);
 
+const serviceModes = ["Taqueria alto flujo", "Casual dining", "Bar de cocteleria"] as const;
+
+const modeKpis = [
+  { label: "Ticket promedio", value: "$286" },
+  { label: "Tiempo a pase", value: "11m" },
+  { label: "Rotacion hora", value: "2.4x" },
+] as const;
+
+const itemVariant = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const } }
+};
+
 export const ProductMockup = () => (
   <div className="relative w-full overflow-hidden rounded-[2rem] border border-charcoal/15 bg-cream shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
 
@@ -99,6 +116,33 @@ export const ProductMockup = () => (
       </div>
     </div>
 
+    {/* Context strip */}
+    <div className="flex flex-col gap-3 border-b border-charcoal/[0.08] bg-ivory px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <div className="flex flex-wrap gap-2">
+        {serviceModes.map((mode, i) => (
+          <span
+            key={mode}
+            className={[
+              "rounded-full border px-2.5 py-1 text-[0.52rem] font-bold uppercase tracking-[0.16em] sm:px-3 sm:text-[0.58rem] sm:tracking-[0.18em]",
+              i === 0
+                ? "border-gold/50 bg-gold/[0.12] text-coffee"
+                : "border-charcoal/[0.12] bg-cream text-charcoal/42",
+            ].join(" ")}
+          >
+            {mode}
+          </span>
+        ))}
+      </div>
+      <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-3">
+        {modeKpis.map(({ label, value }) => (
+          <div key={label} className="border-l border-charcoal/[0.08] pl-2 first:border-l-0 first:pl-0 sm:pl-3">
+            <p className="text-[0.5rem] font-bold uppercase tracking-[0.16em] text-charcoal/35">{label}</p>
+            <p className="font-serif text-[0.92rem] font-semibold text-charcoal">{value}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+
     {/* ── MAIN CONTENT ───────────────────────────────────────── */}
     <div className="grid lg:grid-cols-[1fr_0.46fr]">
 
@@ -113,10 +157,17 @@ export const ProductMockup = () => (
          *  wide=true tables span 2 columns, representing group/banquet tables.
          *  Progress bar = time seated ÷ 90-min target.
          */}
-        <div className="grid grid-cols-4 gap-2">
+        <motion.div
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-10% 0px" }}
+          transition={{ staggerChildren: 0.05, delayChildren: 0.3 }}
+          className="grid grid-cols-4 gap-2"
+        >
           {tables.map((t) => (
-            <div
+            <motion.div
               key={t.n}
+              variants={itemVariant}
               className={[
                 "relative overflow-hidden rounded-2xl border p-3",
                 "transition-all duration-300 hover:-translate-y-1 hover:shadow-lg",
@@ -141,18 +192,21 @@ export const ProductMockup = () => (
                     {t.course}
                   </p>
                   <div className="mt-2.5 h-[2px] overflow-hidden rounded-full bg-charcoal/[0.06]">
-                    <div
+                    <motion.div
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${pct(t.mins)}%` }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] as const, delay: 0.5 }}
                       className={["h-full rounded-full", timeBarColor[t.status]].join(" ")}
-                      style={{ width: `${pct(t.mins)}%` }}
                     />
                   </div>
                 </>
               ) : (
                 <p className="mt-1.5 text-[0.54rem] font-medium text-charcoal/20">Libre</p>
               )}
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
 
       {/* RIGHT — Orders feed */}
@@ -161,9 +215,15 @@ export const ProductMockup = () => (
           Servicio en curso
         </p>
 
-        <div>
+        <motion.div
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: "-10% 0px" }}
+          transition={{ staggerChildren: 0.08, delayChildren: 0.6 }}
+        >
           {orders.map((o, i) => (
-            <div
+            <motion.div
+              variants={itemVariant}
               key={o.ticket}
               className={["py-3", i < orders.length - 1 ? "border-b border-charcoal/[0.06]" : ""].join(" ")}
             >
@@ -185,9 +245,9 @@ export const ProductMockup = () => (
                   {o.status}
                 </span>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </div>
 

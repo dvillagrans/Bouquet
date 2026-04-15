@@ -1,3 +1,7 @@
+"use client";
+
+import { motion } from "framer-motion";
+
 /*
  *  Ticker — dual counter-scrolling rows.
  *  Row A scrolls left  (ticker / marquee keyframe)
@@ -6,33 +10,33 @@
  */
 
 const rowA = [
-  "Mesas en vivo",
-  "Órdenes activas",
-  "Flujo de cocina",
-  "Cobro instantáneo",
-  "Control de piso",
-  "Turnos coordinados",
-  "Métricas de turno",
-  "Reservas integradas",
-  "Sala sincronizada",
-  "Pagos sin fricción",
-  "Alertas de servicio",
-  "Vista de cocina",
+  "Mesa se sienta",
+  "Mesero levanta orden",
+  "Comanda validada",
+  "Pase directo a cocina",
+  "Barra recibe bebidas",
+  "Alerta de salida",
+  "Cuenta solicitada",
+  "División por comensal",
+  "Cobro confirmado",
+  "Mesa liberada",
+  "Nuevo turno entra",
+  "Servicio sin fricción",
 ];
 
 const rowB = [
-  "Tiempo en mesa",
-  "División de cuenta",
-  "Pase a cocina",
-  "Propina digital",
-  "Control de acceso",
-  "Comensal digital",
-  "Resumen de turno",
-  "Confirmación de orden",
-  "Cierre exprés",
-  "Nota de cocina",
-  "Servicio coordinado",
-  "Mesa en tiempo real",
+  "Ticket por mesa",
+  "Promedio de servicio",
+  "Entradas en proceso",
+  "Platos en pase",
+  "Postres pendientes",
+  "Incidencias del turno",
+  "Tiempo en caja",
+  "Propina registrada",
+  "Cierre por mesero",
+  "Corte de turno",
+  "Inventario crítico",
+  "Reporte listo",
 ];
 
 const Sep = () => (
@@ -52,7 +56,7 @@ const TickerRow = ({
     <div
       className="flex items-center whitespace-nowrap"
       style={{
-        animation: `${reverse ? "marquee-reverse" : "ticker"} ${speed}s linear infinite`,
+        animation: `${reverse ? "marquee-reverse" : "marquee"} ${speed}s linear infinite`,
       }}
     >
       {[...items, ...items].map((item, i) => (
@@ -68,10 +72,15 @@ const TickerRow = ({
 );
 
 export const Ticker = () => (
-  <div className="overflow-hidden border-y border-wire bg-canvas py-3.5">
+  <motion.div
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    transition={{ duration: 1, delay: 0.2 }}
+    className="overflow-hidden border-y border-wire bg-canvas py-3.5"
+  >
     <div className="flex flex-col gap-3">
       <TickerRow items={rowA} speed={38} />
       <TickerRow items={rowB} speed={44} reverse />
     </div>
-  </div>
+  </motion.div>
 );

@@ -76,11 +76,11 @@ export const Hero = () => (
         </motion.div>
 
         <motion.h1 variants={itemVariants} className="mt-7 max-w-[11ch] text-balance font-sans text-[clamp(3.25rem,7.6vw,7.6rem)] font-black tracking-[-0.06em] leading-[0.9] text-charcoal">
-          Sala, cocina y caja. <span className="text-charcoal/60">Sin fricciÃ³n.</span>
+          Sala, cocina y caja. <span className="text-charcoal/60">Sin fricción.</span>
         </motion.h1>
 
         <motion.p variants={itemVariants} className="mt-7 max-w-2xl text-balance text-[1.05rem] leading-[1.8] text-charcoal/68 sm:text-[1.15rem]">
-          Bouquet ordena el turno para que el equipo vea quÃ© mesa pide, quÃ© pasa a cocina y quÃ© se cobra,
+          Bouquet ordena el turno para que el equipo vea qué mesa pide, qué pasa a cocina y qué se cobra,
           sin depender de libretas, walkie-talkies ni capturas duplicadas. Funciona igual de bien para
           taquerias de alto flujo, barras y casual dining.
         </motion.p>
@@ -111,9 +111,9 @@ export const Hero = () => (
         </motion.div>
 
         <motion.div variants={itemVariants} className="mt-8 flex flex-wrap items-center text-[0.82rem] font-medium text-charcoal/58">
-          <span className="px-2 py-1 border-r border-charcoal/10 last:border-r-0">Sin tarjeta de crÃ©dito</span>
-          <span className="px-2 py-1 border-r border-charcoal/10 last:border-r-0">ConfiguraciÃ³n en 1 dÃ­a</span>
-          <span className="px-2 py-1 border-r border-charcoal/10 last:border-r-0">Soporte humano en espaÃ±ol</span>
+          <span className="px-2 py-1 border-r border-charcoal/10 last:border-r-0">Sin tarjeta de crédito</span>
+          <span className="px-2 py-1 border-r border-charcoal/10 last:border-r-0">Configuración en 1 dÃ­a</span>
+          <span className="px-2 py-1 border-r border-charcoal/10 last:border-r-0">Soporte humano en español</span>
         </motion.div>
       </motion.div>
 
@@ -157,4 +157,5 @@ export const Hero = () => (
     </div>
   </section>
 );
+
 

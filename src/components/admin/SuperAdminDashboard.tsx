@@ -1,47 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building, Map, LayoutGrid, DollarSign, Activity, Plus } from "lucide-react";
 import { getSuperAdminDashboard, createTenant, type SuperAdminDashboardData } from "@/actions/admin";
-
-function StatCard({ 
-  label, 
-  value, 
-  icon: Icon, 
-  trend 
-}: { 
-  label: string; 
-  value: string | number; 
-  icon: any; 
-  trend?: string;
-}) {
-  return (
-    <div className="border border-wire bg-white/[0.01] p-4 sm:p-5 rounded-lg flex flex-col justify-between">
-      <div className="flex items-center justify-between mb-3 text-dim">
-        <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em]">{label}</span>
-        <Icon className="h-4 w-4 opacity-50" />
-      </div>
-      <div>
-        <p className="text-2xl sm:text-3xl font-bold text-light tabular-nums tracking-tight">
-          {value}
-        </p>
-        {trend && (
-          <p className="text-[0.65rem] text-glow font-medium mt-1 uppercase tracking-wider">
-            {trend}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
 
 export default function SuperAdminDashboard() {
   const [data, setData] = useState<SuperAdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // States for 'New Tenant' flow
   const [isCreatingTenant, setIsCreatingTenant] = useState(false);
   const [newTenantName, setNewTenantName] = useState("");
+  const [adminName, setAdminName] = useState("");
+  const [adminPin, setAdminPin] = useState("");
   const [creating, setCreating] = useState(false);
 
   const load = async () => {
@@ -57,14 +26,19 @@ export default function SuperAdminDashboard() {
 
   const handleCreateTenant = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTenantName.trim()) return;
+    if (!newTenantName.trim() || !adminName.trim() || !adminPin.trim()) return;
 
     setCreating(true);
     try {
-      await createTenant({ name: newTenantName.trim() });
+      await createTenant({ 
+        name: newTenantName.trim(),
+        adminName: adminName.trim(),
+        pin: adminPin.trim()
+      });
       setIsCreatingTenant(false);
       setNewTenantName("");
-      // Reload stats
+      setAdminName("");
+      setAdminPin("");
       await load();
     } catch (err) {
       console.error(err);
@@ -79,178 +53,258 @@ export default function SuperAdminDashboard() {
     return () => clearInterval(iv);
   }, []);
 
-  if (loading && !data) {
-    return (
-      <div className="flex h-[80vh] items-center justify-center">
-        <p className="text-dim uppercase tracking-widest text-sm" style={{ animation: "fade-in 1s infinite alternate" }}>
-          Iniciando Core SaaS...
-        </p>
-      </div>
-    );
-  }
-
-  if (!data) return null;
-  const { stats, chains } = data;
-
-  const fmtCurrency = (n: number) => 
-    `$${n.toLocaleString("en-US", { minimumFractionDigits: 0 })} USD`;
+  const fmtCurrency = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 0 });
 
   return (
-    <div className="w-full pb-20">
-      {/* Header */}
-      <div className="border-b border-wire bg-canvas/50 px-6 py-8">
-        <div className="w-full">
-          <div className="flex items-start justify-between gap-4 mb-4 sm:mb-6">
-            <div>
-              <p className="text-xs text-glow uppercase tracking-[0.15em] mb-1 flex items-center gap-2">
-                <Activity className="h-3 w-3" /> Estado Operativo
-              </p>
-              <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-[0.2em] text-light">
-                Supreme Dashboard
-              </h1>
-              <p className="mt-1 text-sm text-dim uppercase tracking-[0.1em]">
-                Vista global del ecosistema
-              </p>
-            </div>
-            <button
-              onClick={() => { setLoading(true); load(); }}
-              disabled={loading}
-              className="shrink-0 flex items-center gap-2 border border-wire hover:border-glow px-3 py-2 rounded text-sm font-bold uppercase text-dim hover:text-light transition-colors disabled:opacity-50"
-            >
-              Refrescar
-            </button>
+    <div className="flex flex-col flex-1 min-h-screen bg-bg-solid text-text-primary text-[13px] antialiased">
+      {/* TOPBAR */}
+      <div className="h-[52px] border-b border-border-main flex items-center justify-between px-8 sticky top-0 z-10 bg-bg-bar/90 backdrop-blur-md shrink-0">
+        <div className="flex items-center gap-2">
+          <div className="text-[11px] text-text-dim flex items-center gap-[6px]">
+            Bouquet OPS <span className="text-text-void">›</span> <span className="text-text-muted font-medium">Dashboard SaaS principal</span>
           </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mt-4">
-            <StatCard label="MRR Proyectado" value={fmtCurrency(stats.mrr)} icon={DollarSign} trend="+12% VS MES PASADO" />
-            <StatCard label="Cadenas Inquilinas" value={stats.chains} icon={Building} />
-            <StatCard label="Zonas Activas" value={stats.zones} icon={Map} />
-            <StatCard label="Restaurantes Totales" value={stats.restaurants} icon={LayoutGrid} trend="USO GENERAL" />
-          </div>
-        </div>
-      </div>
-
-      {/* Chains list */}
-      <div className="p-6">
-        <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-dim mb-4 flex items-center gap-2">
-          <Building className="h-3.5 w-3.5" />
-          Cadenas Registradas (Tenants)
-        </h2>
-
-        <div className="border border-wire rounded-lg overflow-hidden bg-white/[0.01]">
-          {chains.length === 0 ? (
-            <div className="p-8 text-center text-dim text-sm uppercase tracking-widest">
-              Sin cadenas
+          {loading ? (
+            <div className="flex items-center gap-[6px] text-[10px] text-gold tracking-[0.1em] uppercase bg-gold-faint border border-gold-dim/30 px-3 py-1 rounded-full ml-4">
+              <span className="w-[5px] h-[5px] rounded-full bg-gold animate-pulse"></span>
+              Sincronizando
             </div>
           ) : (
-            <div className="divide-y divide-wire/20">
-              {chains.map((c, i) => (
-                <div
-                  key={c.id}
-                  className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto] gap-2 sm:gap-4 px-4 py-4 items-center transition-colors hover:bg-white/[0.02]"
-                >
-                  {/* Name + id */}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[0.6rem] text-dim/50 font-mono tabular-nums w-4">
-                        {i + 1}
-                      </span>
-                      <p className="text-sm font-semibold text-light uppercase tracking-wider">{c.name}</p>
-                    </div>
-                    <p className="text-[0.55rem] text-dim ml-6 font-mono tracking-widest mt-0.5">
-                      Tenant ID: {c.id.split("-")[0]}
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col items-end sm:items-center">
-                    <span className="text-[0.65rem] text-dim uppercase tracking-[0.1em] mb-1">Zonas</span>
-                    <span className="text-sm font-medium text-light">{c.zonesCount}</span>
-                  </div>
-
-                  <div className="flex flex-col items-end sm:items-center sm:ml-4">
-                    <span className="text-[0.65rem] text-dim uppercase tracking-[0.1em] mb-1">Sucursales</span>
-                    <span className="text-sm font-medium text-light">{c.restaurantsCount}</span>
-                  </div>
-
-                  {/* MRR est de esta cadena */}
-                  <div className="flex flex-col items-end sm:items-center sm:ml-6 min-w-[80px]">
-                    <span className="text-[0.65rem] text-dim uppercase tracking-[0.1em] mb-1">MRR Est</span>
-                    <span className="text-sm font-medium text-glow">{fmtCurrency(c.restaurantsCount * 199)}</span>
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center gap-[6px] text-[10px] text-dash-green tracking-[0.1em] uppercase bg-dash-green-bg border border-[#1e3824] px-3 py-1 rounded-full ml-4">
+              <span className="w-[5px] h-[5px] rounded-full bg-dash-green animate-pulse"></span>
+              Estado operativo
             </div>
           )}
         </div>
-        
-        <div className="mt-8 border border-glow/20 bg-glow/5 p-6 rounded-lg">
-          <h3 className="text-lg font-bold text-glow mb-2 uppercase tracking-wide">Acciones del Sistema</h3>
-          <p className="text-sm text-dim mb-4">
-            Como usuario raíz, puedes emitir actualizaciones DDL globales, purgar cachés analíticas de inquilinos y aprovisionar hardware suplementario.
-          </p>
-          <div className="flex gap-3">
-            <button 
-              onClick={() => setIsCreatingTenant(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-glow text-ink font-bold text-xs uppercase tracking-widest rounded hover:opacity-90 transition-opacity"
-            >
-              <Plus className="h-4 w-4" />
-              Nuevo Inquilino
-            </button>
-            <button className="px-4 py-2 border border-wire text-light font-bold text-xs uppercase tracking-widest rounded hover:bg-white/[0.05] transition-colors">
-              Recompilar Estadísticas
-            </button>
+        <div className="flex items-center gap-3">
+          <button onClick={() => { setLoading(true); load(); }} disabled={loading} className="bg-transparent border border-border-main rounded px-3 py-1.5 text-[11px] font-medium text-text-muted tracking-[0.04em] transition-colors hover:border-border-bright hover:text-text-secondary cursor-pointer">
+            Refrescar
+          </button>
+          <button onClick={() => setIsCreatingTenant(true)} className="bg-gold border border-gold text-bg-solid rounded px-3 py-1.5 text-[11px] font-medium tracking-[0.04em] transition-opacity hover:opacity-80 cursor-pointer">
+            + Nuevo Registro
+          </button>
+        </div>
+      </div>
+
+      {/* CONTENT */}
+      <div className="flex-1 px-8 pt-8 pb-12">
+        {/* PAGE HEADER */}
+        <div className="flex items-start justify-between mb-8 gap-6">
+          <div>
+            <div className="text-[10px] tracking-[0.2em] uppercase text-gold mb-2 flex items-center gap-2 font-medium">
+              <svg viewBox="0 0 24 24" className="w-3 h-3 stroke-gold fill-none stroke-[2px] rounded-none">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              Bouquet - Matrix Módulo
+            </div>
+            <h1 className="font-serif text-[28px] font-bold tracking-tight text-text-primary leading-[1.1]">
+              Vista <em className="not-italic font-normal text-gold italic">global.</em>
+            </h1>
+            <div className="text-[12px] text-text-dim mt-1.5 font-light">
+              Métricas y consolidación de inquilinos SaaS
+            </div>
           </div>
         </div>
 
+        {!data ? (
+          <div className="text-text-dim text-sm py-10 opacity-70 font-light">Cargando núcleo de base de datos...</div>
+        ) : (
+          <>
+            {/* KPI GRID */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-[1px] bg-border-main border border-border-main rounded-lg overflow-hidden mb-6">
+              <div className="bg-bg-card p-6 pb-5 hover:bg-bg-hover transition-colors group relative">
+                <div className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim mb-3 flex items-center justify-between">
+                  MRR proyectado
+                  <svg className="w-3.5 h-3.5 stroke-text-faint fill-none stroke-[1.5px]"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+                <div className="font-serif text-[32px] font-bold text-gold leading-none mb-2 tracking-tight group-hover:drop-shadow-[0_0_8px_rgba(201,160,84,0.3)] transition-all">
+                  {fmtCurrency(data.stats.mrr)}
+                </div>
+                <div className="text-[11px] flex flex-wrap items-center gap-1 text-dash-green">
+                  ↑ Modelo de cobranza auto.
+                </div>
+                <div className="text-[10px] text-text-faint mt-0.5">USD · ciclo mensual</div>
+              </div>
+
+              <div className="bg-bg-card p-6 pb-5 hover:bg-bg-hover transition-colors">
+                <div className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim mb-3 flex items-center justify-between">
+                  Cadenas SaaS
+                  <svg className="w-3.5 h-3.5 stroke-text-faint fill-none stroke-[1.5px]"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                </div>
+                <div className="font-serif text-[32px] font-bold text-text-primary leading-none mb-2 tracking-tight">
+                  {data.stats.chains}
+                </div>
+                <div className="text-[11px] flex flex-wrap items-center gap-1 text-dash-green">
+                  ↑ Base B2B
+                </div>
+                <div className="text-[10px] text-text-faint mt-0.5">Inquilinos en el clúster</div>
+              </div>
+
+              <div className="bg-bg-card p-6 pb-5 hover:bg-bg-hover transition-colors">
+                <div className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim mb-3 flex items-center justify-between">
+                  Restaurantes Totales
+                  <svg className="w-3.5 h-3.5 stroke-text-faint fill-none stroke-[1.5px]"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                </div>
+                <div className="font-serif text-[32px] font-bold text-text-primary leading-none mb-2 tracking-tight">
+                  {data.stats.restaurants}
+                </div>
+                <div className="text-[11px] flex flex-wrap items-center gap-1 text-text-dim">
+                  Activos en bd
+                </div>
+                <div className="text-[10px] text-text-faint mt-0.5">Múltiples sucursales y franquicias</div>
+              </div>
+
+              <div className="bg-bg-card p-6 pb-5 hover:bg-bg-hover transition-colors">
+                <div className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim mb-3 flex items-center justify-between">
+                  Zonas Activas
+                  <svg className="w-3.5 h-3.5 stroke-text-faint fill-none stroke-[1.5px]"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                </div>
+                <div className="font-serif text-[32px] font-bold text-text-primary leading-none mb-2 tracking-tight">
+                  {data.stats.zones}
+                </div>
+                <div className="text-[11px] flex flex-wrap items-center gap-1 text-text-dim">
+                  Estructuración interna
+                </div>
+                <div className="text-[10px] text-text-faint mt-0.5">Puntos de control (ciudades/regiones)</div>
+              </div>
+            </div>
+
+            {/* TENANTS TABLE */}
+            <div className="bg-bg-card border border-border-main rounded-lg flex flex-col mb-10 overflow-hidden">
+              <div className="px-5 py-4 border-b border-border-main flex items-center justify-between gap-3 bg-bg-bar">
+                <div className="text-[11px] font-medium tracking-[0.14em] uppercase text-text-muted flex items-center gap-2">
+                  Inquilinos Activos
+                </div>
+                <button onClick={() => setIsCreatingTenant(true)} className="text-[10px] font-medium tracking-[0.06em] text-gold uppercase hover:opacity-80 transition-opacity cursor-pointer">
+                  + Registrar Franquicia
+                </button>
+              </div>
+
+              <div className="w-full overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-border-main bg-bg-solid/30">
+                      <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em] w-12 border-b-transparent">#</th>
+                      <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em] border-b-transparent">Cadena Operativa</th>
+                      <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em] border-b-transparent">ID <span className="opacity-50">ref</span></th>
+                      <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em] border-b-transparent">Admin Principal</th>
+                      <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em] border-b-transparent">PIN <span className="opacity-50">/ Acceso</span></th>
+                      <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em] border-b-transparent">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="align-middle">
+                    {data.chains.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-12 text-text-dim text-xs">Aún no hay clientes en la base de datos de Plataforma.</td>
+                      </tr>
+                    ) : (
+                      data.chains.map((chain, i) => {
+                        const avatar = chain.name.substring(0, 2).toUpperCase();
+                        return (
+                          <tr key={chain.id} className="border-b border-border-main/40 hover:bg-bg-hover transition-colors">
+                            <td className="px-5 py-3.5 text-text-faint font-mono text-xs">{(i + 1).toString().padStart(2, '0')}</td>
+                            <td className="px-5 py-3.5">
+                              <div className="flex items-center gap-3">
+                                <div className="w-[28px] h-[28px] rounded-md bg-gold-faint border border-gold-dim flex items-center justify-center text-[10px] font-bold text-gold shrink-0">
+                                  {avatar}
+                                </div>
+                                <div className="text-[12px] font-medium text-text-primary leading-[1.2]">{chain.name}</div>
+                              </div>
+                            </td>
+                            <td className="px-5 py-3.5 text-text-muted font-mono text-[10px]">{chain.id.split('-')[0]}</td>
+                            <td className="px-5 py-3.5">
+                              <span className="text-[11px] text-dash-green bg-dash-green-bg px-2 py-0.5 rounded border border-[#1e3824]">{chain.adminName}</span>
+                            </td>
+                            <td className="px-5 py-3.5">
+                              <span className="text-text-primary font-mono text-[11px]">{chain.pin}</span>
+                            </td>
+                            <td className="px-5 py-3.5">
+                              <a href={`/cadena?tenantId=${chain.id}`} target="_blank" className="text-[11px] font-medium text-text-secondary hover:text-gold transition-colors border border-border-mid px-2 py-1 rounded hover:bg-bg-solid bg-transparent">
+                                Ir a Consola →
+                              </a>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
+      {/* MODAL NUEVO INQUILINO */}
       {isCreatingTenant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" style={{ animation: "fade-in 0.2s ease-out both" }}>
-          <div className="bg-ink border border-wire p-6 rounded-xl w-full max-w-md shadow-2xl" style={{ animation: "fade-in-up 0.3s ease-out both" }}>
-            <h2 className="text-xl font-bold text-glow mb-2">Dar de Alta Nuevo Tenant</h2>
-            <p className="text-sm text-dim mb-6">
-              Ingresa el nombre corporativo de la nueva cadena. Se creará la base aislada (lógica) y se reflejará instantáneamente en el dashboard maestro.
-            </p>
-            
-            <form onSubmit={handleCreateTenant}>
-              <div className="mb-6">
-                <label className="block text-xs font-bold uppercase tracking-widest text-dim mb-2">
-                  Nombre de la Cadena
-                </label>
-                <input 
-                  type="text"
-                  autoFocus
-                  required
-                  value={newTenantName}
-                  onChange={(e) => setNewTenantName(e.target.value)}
-                  className="w-full bg-black/50 border border-wire rounded px-4 py-3 text-light focus:outline-none focus:border-glow transition-colors placeholder:text-wire"
-                  placeholder="Ej. Taquerías El Torito"
-                />
-              </div>
+        <div className="fixed inset-0 z-50 bg-bg-solid/80 backdrop-blur-[4px] flex items-center justify-center p-4">
+          <div className="bg-bg-card border border-border-main rounded-xl w-full max-w-[420px] shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-8">
+              <h2 className="font-serif text-[24px] font-bold text-text-primary leading-none mb-2 tracking-tight block w-full text-center">Nuevo Client / Cadena</h2>
+              <p className="text-[11px] text-text-muted font-light leading-relaxed mb-6 text-center w-full block">Crea una nueva base y otorga su administrador principal para iniciar la implementación del restaurante.</p>
+              
+              <form onSubmit={handleCreateTenant} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim block">Denominación Comercial</label>
+                  <input 
+                    type="text" 
+                    required 
+                    autoFocus
+                    placeholder="Ej. Grupo MIA" 
+                    value={newTenantName}
+                    onChange={(e) => setNewTenantName(e.target.value)}
+                    className="w-full bg-bg-solid border border-border-bright rounded p-2.5 text-[12px] text-text-primary placeholder:text-text-faint outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-all font-sans"
+                  />
+                </div>
+                
+                <div className="space-y-1.5 pt-2 border-t border-border-main/50">
+                  <label className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim block">Alias Administrador</label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="Ej. Juan Pérez" 
+                    value={adminName}
+                    onChange={(e) => setAdminName(e.target.value)}
+                    className="w-full bg-bg-solid border border-border-bright rounded p-2.5 text-[12px] text-text-primary placeholder:text-text-faint outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-all font-sans"
+                  />
+                </div>
 
-              <div className="flex justify-end gap-3">
-                <button 
-                  type="button" 
-                  disabled={creating}
-                  onClick={() => setIsCreatingTenant(false)}
-                  className="px-4 py-2 text-dim text-sm font-bold uppercase tracking-wider hover:text-light transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={creating || !newTenantName.trim()}
-                  className="px-6 py-2 bg-glow text-ink text-sm font-bold uppercase tracking-wider rounded hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
-                >
-                  {creating ? "Creando..." : "Aprovisionar Cadena"}
-                </button>
-              </div>
-            </form>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim block">Código PIN Maestro (Token)</label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="12345" 
+                    pattern="\d{4,8}"
+                    title="De 4 a 8 números"
+                    value={adminPin}
+                    onChange={(e) => setAdminPin(e.target.value)}
+                    className="w-full bg-bg-solid border border-border-bright rounded p-2.5 text-[12px] text-text-primary font-mono placeholder:text-text-faint outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-all"
+                  />
+                </div>
+                
+                <div className="flex items-center gap-3 pt-4">
+                  <button 
+                    type="button" 
+                    disabled={creating}
+                    onClick={() => setIsCreatingTenant(false)} 
+                    className="flex-1 bg-transparent border border-border-mid text-text-muted rounded py-2.5 text-[11px] font-medium hover:bg-bg-hover hover:text-text-secondary hover:border-text-dim transition-colors cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="submit" 
+                    disabled={creating || !newTenantName.trim() || !adminName.trim() || !adminPin.trim()} 
+                    className="flex-1 bg-gold border border-gold text-bg-solid rounded py-2.5 text-[11px] font-bold hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(201,160,84,0.15)]"
+                  >
+                    {creating && <span className="w-3 h-3 rounded-full border-2 border-bg-solid border-t-transparent animate-spin"/>}
+                    {creating ? "Generando..." : "Lanzar Tenant SaaS"}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

@@ -14,6 +14,8 @@ export interface SuperAdminDashboardData {
     name: string;
     zonesCount: number;
     restaurantsCount: number;
+    adminName?: string;
+    pin?: string;
   }[];
 }
 
@@ -27,16 +29,17 @@ export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData>
           id: true,
           restaurants: { select: { id: true } }
         }
+      },
+      chainStaff: {
+        where: { role: "CHAIN_ADMIN" },
+        select: { name: true, pin: true },
+        take: 1
       }
     },
   });
 
   const totalChains = chains.length;
-  // Total zones acroos all chains
   const totalZones = chains.reduce((acc, c) => acc + c.zones.length, 0);
-  
-  // A restaurant might belong to a zone, or be completely independent. 
-  // Let's get total restaurants overall just to be safe.
   const totalRestaurants = await prisma.restaurant.count();
 
   // Mapeamos los datos de las cadenas
@@ -46,16 +49,19 @@ export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData>
       restCount += z.restaurants.length;
     });
 
+    const admin = c.chainStaff?.[0];
+
     return {
       id: c.id,
       name: c.name,
       zonesCount: c.zones.length,
       restaurantsCount: restCount,
+      adminName: admin?.name || "Sin admin",
+      pin: admin?.pin || "—",
     };
   });
 
-  // Un MRR simulado o basado en el número de restaurantes (ej. $100 usd por restaurante)
-  const mrr = totalRestaurants * 199; // $199 USD al mes por local como ejemplo
+  const mrr = totalRestaurants * 199; 
 
   return {
     stats: {
@@ -68,12 +74,18 @@ export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData>
   };
 }
 
-export async function createTenant(data: { name: string; currency?: string }) {
-  // Solo con el nombre es suficiente para empezar el onboarding
+export async function createTenant(data: { name: string; adminName: string; pin: string; currency?: string }) {
   const chain = await prisma.chain.create({
     data: {
       name: data.name,
       currency: data.currency || "MXN",
+      chainStaff: {
+        create: {
+          name: data.adminName,
+          pin: data.pin,
+          role: "CHAIN_ADMIN"
+        }
+      }
     },
   });
   return { success: true, chainId: chain.id };

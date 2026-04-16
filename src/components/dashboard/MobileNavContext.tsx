@@ -1,0 +1,32 @@
+"use client";
+
+import { createContext, useContext, useState } from "react";
+
+interface MobileNavContextValue {
+  open: boolean;
+  toggle: () => void;
+  close: () => void;
+}
+
+const MobileNavContext = createContext<MobileNavContextValue>({
+  open: false,
+  toggle: () => {},
+  close: () => {},
+});
+
+export function MobileNavProvider({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <MobileNavContext.Provider
+      value={{
+        open,
+        toggle: () => setOpen((p) => !p),
+        close: () => setOpen(false),
+      }}
+    >
+      {children}
+    </MobileNavContext.Provider>
+  );
+}
+
+export const useMobileNav = () => useContext(MobileNavContext);

@@ -1,70 +1,42 @@
 "use client";
 
-import { useState } from "react";
-import { Menu } from "lucide-react";
-import Sidebar, { NavGroup } from "./Sidebar";
+import { AppSidebar } from "./AppSidebar";
+import { NavGroup } from "./Sidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { MobileNavProvider } from "./MobileNavContext";
 
 interface DashboardShellProps {
   children: React.ReactNode;
-  navGroups?: NavGroup[];
-  userInitial?: string;
+  navGroups: NavGroup[];
   userName?: string;
   userRole?: string;
+  userInitial?: string;
 }
 
-export default function DashboardShell({ 
+export default function DashboardShell({
   children,
   navGroups,
-  userInitial,
   userName,
-  userRole 
+  userRole,
+  userInitial,
 }: DashboardShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
   return (
-    <div className="min-h-screen bg-canvas text-light">
-
-      {/* Mobile backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-ink/70 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <Sidebar 
-        open={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
-        groups={navGroups}
-        userInitial={userInitial}
-        userName={userName}
-        userRole={userRole}
-      />
-
-      {/* Mobile top bar */}
-      <header className="fixed inset-x-0 top-0 z-30 flex h-14 items-center gap-4 border-b border-wire bg-ink px-5 lg:hidden">
-        <button
-          onClick={() => setSidebarOpen(true)}
-          aria-label="Abrir menú"
-          aria-expanded={sidebarOpen}
-          className="flex h-9 w-9 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light"
-        >
-          <Menu className="h-4 w-4" aria-hidden="true" />
-        </button>
-        <span className="font-serif text-[1.2rem] font-semibold italic tracking-tight text-light">
-          bouquet
-        </span>
-        <span className="text-[0.44rem] font-bold uppercase tracking-[0.34em] text-dim">ops</span>
-      </header>
-
-      {/* Main content */}
-      <main className="dash-main min-h-screen" style={{ paddingTop: "3.5rem" }}>
-        <div className="dash-content-offset">
-          {children}
+    <SidebarProvider>
+      <MobileNavProvider>
+        <div className="flex min-h-screen w-full bg-bg-solid text-text-primary antialiased selection:bg-gold selection:text-bg-solid font-sans">
+          <AppSidebar
+            groups={navGroups}
+            userName={userName}
+            userRole={userRole}
+            userInitial={userInitial}
+          />
+          {/* On mobile the sidebar is fixed/overlay, so main takes full width.
+              On desktop the sidebar is sticky in the flex flow, so flex-1 applies. */}
+          <main className="flex min-h-svh min-w-0 flex-1 flex-col">
+            {children}
+          </main>
         </div>
-      </main>
-
-    </div>
+      </MobileNavProvider>
+    </SidebarProvider>
   );
 }

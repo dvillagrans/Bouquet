@@ -222,7 +222,6 @@ body {
   :where(.sm\:text-\[5\.5rem\]) { font-size: 5.5rem; }
 }
 @media (min-width: 1024px) {
-  .dash-content-offset { margin-left: 16rem; }
   .dash-main { padding-top: 0; }
   :where(.lg\:px-10) { padding-left: 2.5rem; padding-right: 2.5rem; }
   :where(.lg\:px-12) { padding-left: 3rem;   padding-right: 3rem;   }
@@ -457,4 +456,30 @@ a {
   html {
     @apply font-sans;
   }
+}
+@theme {
+  --font-serif: "Playfair Display", "Cormorant Garamond", serif;
+  --font-mono: "DM Mono", monospace;
+  --color-gold: #c9a054;
+  --color-gold-dim: #8a6c34;
+  --color-gold-faint: #3a2e18;
+  --color-bg-solid: #090907;
+  --color-bg-card: #0f0f0c;
+  --color-bg-hover: #141410;
+  --color-bg-bar: #0c0c09;
+  --color-border-main: #1c1b17;
+  --color-border-mid: #252420;
+  --color-border-bright: #32302a;
+  --color-text-primary: #ede8de;
+  --color-text-secondary: #b8b2a4;
+  --color-text-muted: #847e72;
+  --color-text-dim: #5a5650;
+  --color-text-faint: #3e3c38;
+  --color-text-void: #28271f;
+  --color-dash-green: #4d8460;
+  --color-dash-green-bg: #162418;
+  --color-dash-red: #a04040;
+  --color-dash-red-bg: #281818;
+  --color-dash-blue: #4472a0;
+  --color-dash-blue-bg: #141e2a;
 }

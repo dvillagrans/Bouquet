@@ -7,6 +7,7 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function ZonaPage() {
-  return <ZoneDashboard />;
+export default async function ZonaPage({ searchParams }: { searchParams: Promise<{ zoneId?: string }> }) {
+  const params = await searchParams;
+  return <ZoneDashboard initialZoneId={params.zoneId} />;
 }

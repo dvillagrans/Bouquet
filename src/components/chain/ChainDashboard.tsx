@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building2, Users, TrendingUp, MapPin, RefreshCw, CircleDot } from "lucide-react";
+import { Building2, Users, TrendingUp, MapPin, RefreshCw, CircleDot, Plus } from "lucide-react";
 import { getChainDashboard } from "@/actions/chain";
 import type { ChainDashboardData } from "@/actions/chain";
+import ChainAuthGuard from "./ChainAuthGuard";
+import CreateRestaurantDialog from "./CreateRestaurantDialog";
 
 function fmt(n: number) {
   return `$${n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -11,31 +13,33 @@ function fmt(n: number) {
 
 function OccupancyBar({ active, total }: { active: number; total: number }) {
   const pct = total > 0 ? Math.round((active / total) * 100) : 0;
-  const color =
-    pct >= 70 ? "bg-glow" : pct >= 40 ? "bg-gold" : "bg-sage-deep";
+  const color = pct >= 70 ? "bg-glow" : pct >= 40 ? "bg-gold" : "bg-sage-deep";
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 flex-1 rounded-full bg-wire/30 overflow-hidden">
+      <div className="h-1.5 flex-1 rounded-full bg-border-main overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${color}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-[0.65rem] text-dim tabular-nums w-8 text-right">
+      <span className="text-[10px] text-text-dim tabular-nums w-8 text-right">
         {active}/{total}
       </span>
     </div>
   );
 }
 
-export default function ChainDashboard() {
+export default function ChainDashboard({ initialTenantId }: { initialTenantId?: string }) {
+  const [tenantId, setTenantId] = useState<string | null>(null);
   const [data, setData] = useState<ChainDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isCreatingRest, setIsCreatingRest] = useState(false);
 
-  const load = async () => {
+  const load = async (tid: string) => {
     try {
       setLoading(true);
-      setData(await getChainDashboard());
+      const res = await getChainDashboard(tid);
+      setData(res);
     } catch (e) {
       console.error(e);
     } finally {
@@ -44,221 +48,245 @@ export default function ChainDashboard() {
   };
 
   useEffect(() => {
-    load();
-    const iv = setInterval(load, 30000);
-    return () => clearInterval(iv);
-  }, []);
+    if (tenantId) {
+      load(tenantId);
+      const iv = setInterval(() => load(tenantId), 30000);
+      return () => clearInterval(iv);
+    }
+  }, [tenantId]);
+
+  if (!tenantId) {
+    return <ChainAuthGuard tenantId={initialTenantId} onAuthenticated={(tid) => setTenantId(tid)} />;
+  }
 
   if (loading && !data) {
     return (
-      <div className="flex h-[80vh] items-center justify-center">
-        <p className="text-dim uppercase tracking-widest text-sm" style={{ animation: "fade-in 1s infinite alternate" }}>Cargando datos de cadena...</p>
+      <div className="flex flex-col items-center justify-center min-h-screen bg-bg-solid text-text-dim px-4 font-sans text-xs">
+        <div className="flex items-center gap-2 border border-border-main bg-bg-card px-4 py-2 rounded-full">
+           <span className="w-2 h-2 rounded-full border-2 border-gold border-t-transparent animate-spin"/>
+           Cargando Dashboard de Cadena...
+        </div>
       </div>
     );
   }
 
-  if (!data) return null;
-  const { chain, stats, zones, restaurants } = data;
+  if (!data) {
+    return <div className="p-8 text-dash-red text-xs bg-bg-solid min-h-screen">Esa cadena no existe o fue eliminada.</div>;
+  }
 
   return (
-    <div className="w-full pb-20">
-      {/* Header */}
-      <div className="border-b border-wire bg-canvas/50 px-6 py-8">
-        <div className="w-full">
-          <div className="flex items-start justify-between gap-4 mb-4 sm:mb-6">
-            <div>
-              <p className="text-xs text-dim uppercase tracking-[0.15em] mb-1">
-                Gerente de Cadena
-              </p>
-              <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-[0.2em] text-light">
-                {chain.name}
-              </h1>
-              <p className="mt-1 text-sm text-dim uppercase tracking-[0.1em]">
-                Vista consolidada — Hoy
-              </p>
+    <div className="min-h-screen bg-bg-solid text-text-primary p-4 md:p-8 font-sans">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+           <div className="text-[10px] tracking-[0.2em] uppercase text-gold mb-1.5 flex items-center gap-2 font-medium">
+             <Building2 className="w-3.5 h-3.5" />
+             Corporate B2B
+           </div>
+          <h1 className="font-serif text-[28px] font-bold tracking-tight text-text-primary leading-none mb-1">
+            Cadena <em className="not-italic text-gold">{data.chain.name}</em>
+          </h1>
+          <p className="text-[12px] text-text-dim mt-1 font-light">
+            Vista global. {data.zones.length} Zonas activas. {data.restaurants.length} Sucursales.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsCreatingRest(true)}
+            className="flex items-center justify-center gap-2 px-3 py-1.5 bg-gold border border-gold rounded text-[11px] text-bg-solid hover:bg-gold-light transition-colors w-full md:w-auto font-medium"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Nueva Sucursal 
+          </button>
+          <button
+            onClick={() => load(tenantId)}
+            disabled={loading}
+            className="flex items-center justify-center gap-2 px-3 py-1.5 bg-bg-card border border-border-main rounded text-[11px] text-text-muted hover:text-text-secondary hover:border-border-bright transition-colors w-full md:w-auto"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+            {loading ? "Sincronizando..." : "Actualizar"}
+          </button>
+        </div>
+      </div>
+
+      {/* STATS */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="bg-bg-card border border-border-main rounded-xl p-5 shadow-sm">
+          <div className="flex items-start justify-between mb-4">
+            <h3 className="text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim">Ventas Hoy</h3>
+            <div className="p-2 bg-dash-green-bg/50 rounded-lg border border-[#1e3824]">
+              <TrendingUp className="w-4 h-4 text-dash-green" />
             </div>
-            <button
-              onClick={() => { setLoading(true); load(); }}
-              disabled={loading}
-              className="shrink-0 flex items-center gap-2 border border-wire hover:border-glow px-3 py-2 rounded text-sm font-bold uppercase text-dim hover:text-light transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-              <span className="hidden sm:inline">Actualizar</span>
-            </button>
           </div>
+          <p className="font-serif text-[28px] font-bold text-text-primary mb-1 tracking-tight">
+            {fmt(data.stats.totalRevenue)}
+          </p>
+          <p className="text-[10px] text-dash-green font-medium">
+            ↗ En tiempo real
+          </p>
+        </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <div className="flex items-center gap-3 rounded border border-wire/40 bg-glow/5 p-4">
-              <div className="rounded-lg bg-glow/20 p-2.5">
-                <TrendingUp className="h-5 w-5 text-glow" />
-              </div>
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-dim">Ventas Hoy</p>
-                <p className="text-xl font-bold text-glow">{fmt(stats.totalRevenue)}</p>
-              </div>
+        <div className="bg-bg-card border border-border-main rounded-xl p-5 shadow-sm">
+          <div className="flex items-start justify-between mb-4">
+            <h3 className="text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim">Mesas Activas</h3>
+            <div className="p-2 bg-gold-faint rounded-lg border border-gold-dim">
+              <CircleDot className="w-4 h-4 text-gold" />
             </div>
+          </div>
+          <p className="font-serif text-[28px] font-bold text-text-primary mb-1 tracking-tight">
+            {data.stats.activeTables}
+          </p>
+          <p className="text-[10px] text-text-dim font-light">
+            En servicio este momento
+          </p>
+        </div>
 
-            <div className="flex items-center gap-3 rounded border border-wire/40 bg-glow/5 p-4">
-              <div className="rounded-lg bg-glow/20 p-2.5">
-                <Users className="h-5 w-5 text-glow" />
-              </div>
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-dim">Mesas Activas</p>
-                <p className="text-xl font-bold text-glow">{stats.activeTables}</p>
-              </div>
+        <div className="bg-bg-card border border-border-main rounded-xl p-5 shadow-sm">
+          <div className="flex items-start justify-between mb-4">
+            <h3 className="text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim">Sesiones</h3>
+            <div className="p-2 bg-bg-hover rounded-lg border border-border-mid">
+              <Users className="w-4 h-4 text-text-muted" />
             </div>
+          </div>
+          <p className="font-serif text-[28px] font-bold text-text-primary mb-1 tracking-tight">
+            {data.stats.totalSessions}
+          </p>
+          <p className="text-[10px] text-text-dim font-light">
+            Comensales / Grupos hoy
+          </p>
+        </div>
 
-            <div className="flex items-center gap-3 rounded border border-wire/40 bg-sage-deep/5 p-4">
-              <div className="rounded-lg bg-sage-deep/20 p-2.5">
-                <CircleDot className="h-5 w-5 text-sage-deep" />
-              </div>
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-dim">Sesiones Hoy</p>
-                <p className="text-xl font-bold text-sage-deep">{stats.totalSessions}</p>
-              </div>
+        <div className="bg-bg-card border border-border-main rounded-xl p-5 shadow-sm">
+          <div className="flex items-start justify-between mb-4">
+            <h3 className="text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim">Unidades</h3>
+            <div className="p-2 bg-bg-hover rounded-lg border border-border-mid">
+              <MapPin className="w-4 h-4 text-text-muted" />
             </div>
+          </div>
+          <p className="font-serif text-[28px] font-bold text-text-primary mb-1 tracking-tight">
+            {data.stats.restaurantCount}
+          </p>
+          <p className="text-[10px] text-text-dim font-light">
+            Sucursales operando
+          </p>
+        </div>
+      </div>
 
-            <div className="flex items-center gap-3 rounded border border-wire/40 bg-wire/5 p-4">
-              <div className="rounded-lg bg-wire/20 p-2.5">
-                <Building2 className="h-5 w-5 text-light" />
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* TABLA SUCURSALES (ocupa 2 columnas) */}
+        <div className="lg:col-span-2 bg-bg-card border border-border-main rounded-xl shadow-sm overflow-hidden flex flex-col">
+          <div className="p-5 border-b border-border-main bg-bg-bar flex items-center justify-between">
+            <h2 className="text-[12px] font-medium tracking-[0.14em] uppercase text-text-primary">
+              Desempeño por Sucursal
+            </h2>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-border-main text-text-muted">
+              {data.restaurants.length} ubicaciones
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-border-main bg-bg-solid/30">
+                  <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em]">Restaurante</th>
+                  <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em]">Zona / Región</th>
+                  <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em]">Ventas Hoy</th>
+                  <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em]">Ocupación</th>
+                  <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em] text-right">Staff</th>
+                </tr>
+              </thead>
+              <tbody className="align-middle">
+                {data.restaurants.map((rest) => (
+                  <tr key={rest.id} className="border-b border-border-main/40 hover:bg-bg-hover transition-colors">
+                    <td className="px-5 py-3.5">
+                      <div className="font-medium text-[12px] text-text-primary">{rest.name}</div>
+                      <div className="text-[10px] text-text-dim font-light truncate max-w-[150px]">
+                        {rest.address || "Sin dirección"}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      {rest.zoneName ? (
+                         <span className="text-[10px] font-medium tracking-[0.04em] text-text-muted bg-bg-solid border border-border-main px-2 py-1 rounded">
+                           {rest.zoneName}
+                         </span>
+                      ) : (
+                        <span className="text-[10px] text-text-faint">Independiente</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5 text-[12px] font-medium text-gold">
+                      {fmt(rest.todayRevenue)}
+                    </td>
+                    <td className="px-5 py-3.5 w-32">
+                      <OccupancyBar active={rest.activeTables} total={rest.totalTables} />
+                    </td>
+                    <td className="px-5 py-3.5 text-[12px] text-text-dim text-right">
+                      {rest.activeStaff}
+                    </td>
+                  </tr>
+                ))}
+                {data.restaurants.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-text-dim text-[11px]">
+                      No hay restaurantes registrados en esta cadena.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ZONAS */}
+        <div className="bg-bg-card border border-border-main rounded-xl shadow-sm flex flex-col">
+          <div className="p-5 border-b border-border-main bg-bg-bar flex items-center justify-between">
+            <h2 className="text-[12px] font-medium tracking-[0.14em] uppercase text-text-primary">
+              Agrupación por Zonas
+            </h2>
+            {data.zones.length > 0 && (
+               <span className="text-[10px] text-gold font-medium">Nivel 2 Activo</span>
+            )}
+          </div>
+          <div className="p-5 flex flex-col gap-4 flex-1">
+            {data.zones.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-[11px] text-text-faint gap-2 p-8 text-center bg-bg-solid rounded-lg border border-border-main border-dashed">
+                <MapPin className="w-6 h-6 text-text-muted mb-2" />
+                Sin zonas configuradas
+                <span className="text-[10px]">Crea una nueva sucursal designando una zona para activarlas.</span>
               </div>
-              <div>
-                <p className="text-[0.65rem] uppercase tracking-wider text-dim">Sucursales</p>
-                <p className="text-xl font-bold text-light">{stats.restaurantCount}</p>
-              </div>
-            </div>
+            ) : (
+              data.zones.map((zone) => (
+                <div key={zone.id} className="border border-border-main rounded-lg p-4 bg-bg-solid">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h4 className="text-[12px] font-medium text-text-secondary flex items-center gap-1.5">
+                        {zone.name}
+                        <span className="px-1.5 py-[1px] bg-bg-card border border-border-main rounded text-[8px] text-text-muted font-mono">{zone.id}</span>
+                      </h4>
+                      <p className="text-[10px] text-text-faint mt-1">{zone.restaurantCount} sucursales</p>
+                    </div>
+                    <span className="text-[12px] font-medium text-text-primary">{fmt(zone.totalRevenue)}</span>
+                  </div>
+                  <div className="text-[10px] text-text-dim mb-1 flex items-center justify-between">
+                     <span>Ocupación combinada</span>
+                     <a href={`/zona?zoneId=${zone.id}`} target="_blank" className="text-gold hover:text-gold-light hover:underline">Gestionar &rarr;</a>
+                  </div>
+                  <OccupancyBar active={zone.activeTables} total={zone.totalTables} />
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
 
-      {/* Main content */}
-      <div className="p-6 space-y-8">
-
-        {/* Zones summary — only show if zones exist */}
-        {zones.length > 0 && (
-          <section>
-            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-dim mb-3 flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5" /> Zonas
-            </h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {zones.map((zone) => (
-                <div
-                  key={zone.id}
-                  className="rounded-lg border border-wire/40 bg-canvas p-4 space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-light uppercase tracking-wider">
-                      {zone.name}
-                    </span>
-                    <span className="text-[0.6rem] text-dim border border-wire/40 rounded px-2 py-0.5 uppercase">
-                      {zone.restaurantCount} suc.
-                    </span>
-                  </div>
-                  <p className="text-2xl font-bold text-glow font-mono">
-                    {fmt(zone.totalRevenue)}
-                  </p>
-                  <OccupancyBar active={zone.activeTables} total={zone.totalTables} />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Restaurants table */}
-        <section>
-          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-dim mb-3 flex items-center gap-2">
-            <Building2 className="h-3.5 w-3.5" /> Sucursales
-          </h2>
-
-          {restaurants.length === 0 ? (
-            <div className="rounded-lg border border-wire/40 bg-canvas p-12 text-center">
-              <Building2 className="h-8 w-8 text-wire mx-auto mb-3" />
-              <p className="text-sm text-dim">No hay sucursales registradas.</p>
-              <p className="text-xs text-dim/60 mt-1">
-                Agrega restaurantes y asígnalos a una cadena para verlos aquí.
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-lg border border-wire/40 overflow-hidden">
-              {/* Table header */}
-              <div className="hidden sm:grid grid-cols-[1fr_auto_auto_auto_auto] gap-4 bg-panel px-4 py-2.5 text-[0.6rem] font-bold uppercase tracking-widest text-dim border-b border-wire/40">
-                <span>Sucursal</span>
-                <span className="text-right">Mesas</span>
-                <span className="text-right">Staff</span>
-                <span className="text-right">Ventas hoy</span>
-                <span className="text-right">Estado</span>
-              </div>
-
-              {/* Rows */}
-              {restaurants.map((r, i) => {
-                const isActive = r.activeTables > 0;
-                return (
-                  <div
-                    key={r.id}
-                    className={`grid grid-cols-1 sm:grid-cols-[1fr_auto_auto_auto_auto] gap-2 sm:gap-4 px-4 py-3.5 items-center transition-colors hover:bg-white/[0.02] ${
-                      i < restaurants.length - 1 ? "border-b border-wire/20" : ""
-                    }`}
-                  >
-                    {/* Name + zone */}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[0.6rem] text-dim/50 font-mono tabular-nums w-4">
-                          {i + 1}
-                        </span>
-                        <p className="text-sm font-semibold text-light">{r.name}</p>
-                      </div>
-                      <p className="text-[0.65rem] text-dim ml-6">
-                        {r.zoneName ? `Zona ${r.zoneName}` : r.address ?? "Sin zona asignada"}
-                      </p>
-                    </div>
-
-                    {/* Mesas activas */}
-                    <div className="sm:text-right flex sm:block items-center gap-2">
-                      <span className="text-[0.6rem] text-dim sm:hidden">Mesas:</span>
-                      <div className="w-24 sm:w-auto">
-                        <OccupancyBar active={r.activeTables} total={r.totalTables} />
-                      </div>
-                    </div>
-
-                    {/* Staff */}
-                    <div className="sm:text-right flex sm:block items-center gap-2">
-                      <span className="text-[0.6rem] text-dim sm:hidden">Staff:</span>
-                      <span className="text-sm text-light">{r.activeStaff}</span>
-                    </div>
-
-                    {/* Revenue */}
-                    <div className="sm:text-right flex sm:block items-center gap-2">
-                      <span className="text-[0.6rem] text-dim sm:hidden">Ventas:</span>
-                      <span className="text-sm font-mono font-semibold text-light">
-                        {fmt(r.todayRevenue)}
-                      </span>
-                    </div>
-
-                    {/* Status */}
-                    <div className="sm:text-right flex sm:justify-end">
-                      <span
-                        className={`inline-flex items-center gap-1 text-[0.6rem] font-bold uppercase px-2 py-1 rounded ${
-                          isActive
-                            ? "bg-glow/15 text-glow"
-                            : "bg-wire/10 text-dim"
-                        }`}
-                      >
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full ${
-                            isActive ? "bg-glow" : "bg-dim/40"
-                          }`}
-                        />
-                        {isActive ? "Activa" : "Sin act."}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-      </div>
+      {isCreatingRest && (
+        <CreateRestaurantDialog
+          chainId={tenantId}
+          zones={data.zones}
+          onCreated={() => {
+            load(tenantId);
+          }}
+          onClose={() => setIsCreatingRest(false)}
+        />
+      )}
     </div>
   );
 }

@@ -7,6 +7,7 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default function CadenaPage() {
-  return <ChainDashboard />;
+export default async function CadenaPage({ searchParams }: { searchParams: Promise<{ tenantId?: string }> }) {
+  const params = await searchParams;
+  return <ChainDashboard initialTenantId={params.tenantId} />;
 }

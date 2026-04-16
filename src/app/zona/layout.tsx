@@ -1,3 +1,5 @@
+"use client";
+
 import { Map, Building2, Users, Settings2 } from "lucide-react";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import { defaultRestaurantGroups } from "@/components/dashboard/Sidebar";

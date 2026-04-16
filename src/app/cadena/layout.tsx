@@ -1,3 +1,5 @@
+"use client";
+
 import { Network, Map, LayoutTemplate, Users, ShieldAlert } from "lucide-react";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 

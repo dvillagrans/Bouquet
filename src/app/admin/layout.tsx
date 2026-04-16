@@ -1,3 +1,5 @@
+"use client";
+
 import { Shield, Building, CreditCard, Wrench } from "lucide-react";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 

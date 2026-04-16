@@ -67,3 +67,14 @@ export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData>
     chains: chainsList,
   };
 }
+
+export async function createTenant(data: { name: string; currency?: string }) {
+  // Solo con el nombre es suficiente para empezar el onboarding
+  const chain = await prisma.chain.create({
+    data: {
+      name: data.name,
+      currency: data.currency || "MXN",
+    },
+  });
+  return { success: true, chainId: chain.id };
+}

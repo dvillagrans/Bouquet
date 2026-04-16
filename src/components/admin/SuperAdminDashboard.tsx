@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Building, Map, LayoutGrid, DollarSign, Activity } from "lucide-react";
-import { getSuperAdminDashboard, type SuperAdminDashboardData } from "@/actions/admin";
+import { Building, Map, LayoutGrid, DollarSign, Activity, Plus } from "lucide-react";
+import { getSuperAdminDashboard, createTenant, type SuperAdminDashboardData } from "@/actions/admin";
 
 function StatCard({ 
   label, 
@@ -39,6 +39,11 @@ export default function SuperAdminDashboard() {
   const [data, setData] = useState<SuperAdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // States for 'New Tenant' flow
+  const [isCreatingTenant, setIsCreatingTenant] = useState(false);
+  const [newTenantName, setNewTenantName] = useState("");
+  const [creating, setCreating] = useState(false);
+
   const load = async () => {
     try {
       const res = await getSuperAdminDashboard();
@@ -47,6 +52,24 @@ export default function SuperAdminDashboard() {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateTenant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTenantName.trim()) return;
+
+    setCreating(true);
+    try {
+      await createTenant({ name: newTenantName.trim() });
+      setIsCreatingTenant(false);
+      setNewTenantName("");
+      // Reload stats
+      await load();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -167,7 +190,11 @@ export default function SuperAdminDashboard() {
             Como usuario raíz, puedes emitir actualizaciones DDL globales, purgar cachés analíticas de inquilinos y aprovisionar hardware suplementario.
           </p>
           <div className="flex gap-3">
-            <button className="px-4 py-2 bg-glow text-ink font-bold text-xs uppercase tracking-widest rounded hover:opacity-90 transition-opacity">
+            <button 
+              onClick={() => setIsCreatingTenant(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-glow text-ink font-bold text-xs uppercase tracking-widest rounded hover:opacity-90 transition-opacity"
+            >
+              <Plus className="h-4 w-4" />
               Nuevo Inquilino
             </button>
             <button className="px-4 py-2 border border-wire text-light font-bold text-xs uppercase tracking-widest rounded hover:bg-white/[0.05] transition-colors">
@@ -177,6 +204,53 @@ export default function SuperAdminDashboard() {
         </div>
 
       </div>
+
+      {isCreatingTenant && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" style={{ animation: "fade-in 0.2s ease-out both" }}>
+          <div className="bg-ink border border-wire p-6 rounded-xl w-full max-w-md shadow-2xl" style={{ animation: "fade-in-up 0.3s ease-out both" }}>
+            <h2 className="text-xl font-bold text-glow mb-2">Dar de Alta Nuevo Tenant</h2>
+            <p className="text-sm text-dim mb-6">
+              Ingresa el nombre corporativo de la nueva cadena. Se creará la base aislada (lógica) y se reflejará instantáneamente en el dashboard maestro.
+            </p>
+            
+            <form onSubmit={handleCreateTenant}>
+              <div className="mb-6">
+                <label className="block text-xs font-bold uppercase tracking-widest text-dim mb-2">
+                  Nombre de la Cadena
+                </label>
+                <input 
+                  type="text"
+                  autoFocus
+                  required
+                  value={newTenantName}
+                  onChange={(e) => setNewTenantName(e.target.value)}
+                  className="w-full bg-black/50 border border-wire rounded px-4 py-3 text-light focus:outline-none focus:border-glow transition-colors placeholder:text-wire"
+                  placeholder="Ej. Taquerías El Torito"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3">
+                <button 
+                  type="button" 
+                  disabled={creating}
+                  onClick={() => setIsCreatingTenant(false)}
+                  className="px-4 py-2 text-dim text-sm font-bold uppercase tracking-wider hover:text-light transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={creating || !newTenantName.trim()}
+                  className="px-6 py-2 bg-glow text-ink text-sm font-bold uppercase tracking-wider rounded hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                >
+                  {creating ? "Creando..." : "Aprovisionar Cadena"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

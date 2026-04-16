@@ -2,6 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { getSuperAdminDashboard, createTenant, type SuperAdminDashboardData } from "@/actions/admin";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 export default function SuperAdminDashboard() {
   const [data, setData] = useState<SuperAdminDashboardData | null>(null);
@@ -234,77 +245,116 @@ export default function SuperAdminDashboard() {
         )}
       </div>
 
-      {/* MODAL NUEVO INQUILINO */}
-      {isCreatingTenant && (
-        <div className="fixed inset-0 z-50 bg-bg-solid/80 backdrop-blur-[4px] flex items-center justify-center p-4">
-          <div className="bg-bg-card border border-border-main rounded-xl w-full max-w-[420px] shadow-2xl relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="p-8">
-              <h2 className="font-serif text-[24px] font-bold text-text-primary leading-none mb-2 tracking-tight block w-full text-center">Nuevo Client / Cadena</h2>
-              <p className="text-[11px] text-text-muted font-light leading-relaxed mb-6 text-center w-full block">Crea una nueva base y otorga su administrador principal para iniciar la implementación del restaurante.</p>
-              
-              <form onSubmit={handleCreateTenant} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim block">Denominación Comercial</label>
-                  <input 
-                    type="text" 
-                    required 
-                    autoFocus
-                    placeholder="Ej. Grupo MIA" 
-                    value={newTenantName}
-                    onChange={(e) => setNewTenantName(e.target.value)}
-                    className="w-full bg-bg-solid border border-border-bright rounded p-2.5 text-[12px] text-text-primary placeholder:text-text-faint outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-all font-sans"
-                  />
-                </div>
-                
-                <div className="space-y-1.5 pt-2 border-t border-border-main/50">
-                  <label className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim block">Alias Administrador</label>
-                  <input 
-                    type="text" 
-                    required 
-                    placeholder="Ej. Juan Pérez" 
-                    value={adminName}
-                    onChange={(e) => setAdminName(e.target.value)}
-                    className="w-full bg-bg-solid border border-border-bright rounded p-2.5 text-[12px] text-text-primary placeholder:text-text-faint outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-all font-sans"
-                  />
-                </div>
+      {/* ── DIALOG NUEVO INQUILINO ── */}
+      <Dialog
+        open={isCreatingTenant}
+        onOpenChange={(open) => { if (!creating) setIsCreatingTenant(open); }}
+      >
+        <DialogContent
+          className="bg-bg-card text-text-primary border-border-main ring-0 sm:max-w-[440px] gap-0 p-0 overflow-hidden"
+        >
+          <div className="flex flex-col gap-6 p-7">
+            <DialogHeader className="items-center text-center gap-2">
+              <DialogTitle className="font-serif text-[22px] font-bold tracking-tight text-text-primary leading-none">
+                Nuevo Client / Cadena
+              </DialogTitle>
+              <DialogDescription className="text-[11px] text-text-muted font-light leading-relaxed max-w-xs">
+                Crea una nueva base y otorga su administrador principal para iniciar la implementación del restaurante.
+              </DialogDescription>
+            </DialogHeader>
 
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim block">Código PIN Maestro (Token)</label>
-                  <input 
-                    type="text" 
-                    required 
-                    placeholder="12345" 
-                    pattern="\d{4,8}"
-                    title="De 4 a 8 números"
-                    value={adminPin}
-                    onChange={(e) => setAdminPin(e.target.value)}
-                    className="w-full bg-bg-solid border border-border-bright rounded p-2.5 text-[12px] text-text-primary font-mono placeholder:text-text-faint outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-all"
-                  />
-                </div>
-                
-                <div className="flex items-center gap-3 pt-4">
-                  <button 
-                    type="button" 
-                    disabled={creating}
-                    onClick={() => setIsCreatingTenant(false)} 
-                    className="flex-1 bg-transparent border border-border-mid text-text-muted rounded py-2.5 text-[11px] font-medium hover:bg-bg-hover hover:text-text-secondary hover:border-text-dim transition-colors cursor-pointer"
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    disabled={creating || !newTenantName.trim() || !adminName.trim() || !adminPin.trim()} 
-                    className="flex-1 bg-gold border border-gold text-bg-solid rounded py-2.5 text-[11px] font-bold hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(201,160,84,0.15)]"
-                  >
-                    {creating && <span className="w-3 h-3 rounded-full border-2 border-bg-solid border-t-transparent animate-spin"/>}
-                    {creating ? "Generando..." : "Lanzar Tenant SaaS"}
-                  </button>
-                </div>
-              </form>
-            </div>
+            <form onSubmit={handleCreateTenant} className="flex flex-col gap-4">
+              {/* Denominación Comercial */}
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="tenant-name"
+                  className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim"
+                >
+                  Denominación Comercial
+                </Label>
+                <Input
+                  id="tenant-name"
+                  required
+                  autoFocus
+                  placeholder="Ej. Grupo MIA"
+                  value={newTenantName}
+                  onChange={(e) => setNewTenantName(e.target.value)}
+                  className="h-10 bg-bg-solid border-border-bright text-[12px] text-text-primary placeholder:text-text-faint focus-visible:border-gold focus-visible:ring-gold/30"
+                />
+              </div>
+
+              <Separator className="bg-border-main/50" />
+
+              {/* Alias Administrador */}
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="admin-name"
+                  className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim"
+                >
+                  Alias Administrador
+                </Label>
+                <Input
+                  id="admin-name"
+                  required
+                  placeholder="Ej. Juan Pérez"
+                  value={adminName}
+                  onChange={(e) => setAdminName(e.target.value)}
+                  className="h-10 bg-bg-solid border-border-bright text-[12px] text-text-primary placeholder:text-text-faint focus-visible:border-gold focus-visible:ring-gold/30"
+                />
+              </div>
+
+              {/* PIN Maestro */}
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="admin-pin"
+                  className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim"
+                >
+                  Código PIN Maestro
+                </Label>
+                <Input
+                  id="admin-pin"
+                  required
+                  placeholder="12345"
+                  pattern="\d{4,8}"
+                  title="De 4 a 8 números"
+                  value={adminPin}
+                  onChange={(e) => setAdminPin(e.target.value)}
+                  className="h-10 bg-bg-solid border-border-bright text-[12px] text-text-primary font-mono placeholder:text-text-faint focus-visible:border-gold focus-visible:ring-gold/30"
+                />
+                <p className="text-[10px] text-text-dim font-light">
+                  4 a 8 dígitos. Acceso maestro para el tenant.
+                </p>
+              </div>
+
+              {/* Acciones */}
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={creating}
+                  onClick={() => setIsCreatingTenant(false)}
+                  className="flex-1 border-border-mid text-text-muted hover:text-text-secondary"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={creating || !newTenantName.trim() || !adminName.trim() || !adminPin.trim()}
+                  className="flex-1 bg-gold border-gold text-bg-solid hover:opacity-90 disabled:opacity-50 shadow-[0_4px_12px_rgba(201,160,84,0.15)]"
+                >
+                  {creating && (
+                    <svg className="size-3.5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  )}
+                  {creating ? "Generando..." : "Lanzar Tenant SaaS"}
+                </Button>
+              </div>
+            </form>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

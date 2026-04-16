@@ -474,3 +474,67 @@ export async function setChainStaffActive(input: {
     return { success: false, error: msg };
   }
 }
+
+// ── Auditoría (cadena) ──────────────────────────────────────
+
+export interface ChainAuditOverviewData {
+  chain: { id: string; name: string };
+  stats: {
+    zones: number;
+    restaurants: number;
+    templates: number;
+    templateCategories: number;
+    templateItems: number;
+    staffTotal: number;
+    staffActive: number;
+    zoneOverrides: number;
+    restaurantOverrides: number;
+  };
+  updatedAt: string;
+}
+
+export async function getChainAuditOverview(tenantId: string): Promise<ChainAuditOverviewData | null> {
+  const chain = await prisma.chain.findUnique({
+    where: { id: tenantId },
+    select: { id: true, name: true },
+  });
+  if (!chain) return null;
+
+  const [
+    zones,
+    restaurants,
+    templates,
+    templateCategories,
+    templateItems,
+    staffTotal,
+    staffActive,
+    zoneOverrides,
+    restaurantOverrides,
+  ] = await Promise.all([
+    prisma.zone.count({ where: { chainId: tenantId } }),
+    prisma.restaurant.count({ where: { zone: { chainId: tenantId } } }),
+    prisma.menuTemplate.count({ where: { chainId: tenantId } }),
+    prisma.templateCategory.count({ where: { template: { chainId: tenantId } } }),
+    prisma.templateItem.count({ where: { category: { template: { chainId: tenantId } } } }),
+    prisma.chainStaff.count({ where: { chainId: tenantId } }),
+    prisma.chainStaff.count({ where: { chainId: tenantId, isActive: true } }),
+    prisma.zoneMenuOverride.count({ where: { template: { chainId: tenantId } } }),
+    prisma.restaurantMenuOverride.count({ where: { restaurant: { zone: { chainId: tenantId } } } }),
+  ]);
+
+  return {
+    chain,
+    stats: {
+      zones,
+      restaurants,
+      templates,
+      templateCategories,
+      templateItems,
+      staffTotal,
+      staffActive,
+      zoneOverrides,
+      restaurantOverrides,
+    },
+    updatedAt: new Date().toISOString(),
+  };
+}

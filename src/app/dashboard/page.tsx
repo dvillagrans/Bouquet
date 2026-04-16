@@ -1,6 +1,15 @@
-import { redirect } from "next/navigation";
+import { getRestaurantOverview } from "@/actions/restaurant";
+import DashboardOverview from "@/components/dashboard/DashboardOverview";
 
-export default function DashboardIndex() {
-  // Por ahora redirigimos directamente a mesas, que es el módulo que estamos trabajando
-  redirect("/dashboard/mesas");
+export const metadata = {
+  title: "Panel de Sucursal | Bouquet Dashboard",
+  description: "Visión global operativa de la sucursal activa.",
+};
+
+export const dynamic = "force-dynamic";
+
+export default async function DashboardIndex() {
+  const data = await getRestaurantOverview();
+
+  return <DashboardOverview data={data} />;
 }

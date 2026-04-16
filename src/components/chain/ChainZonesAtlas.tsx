@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
@@ -15,7 +16,7 @@ import {
   Waves,
 } from "lucide-react";
 import { getChainDashboard } from "@/actions/chain";
-import type { ChainDashboardData, ZoneSummary } from "@/actions/chain";
+import type { ChainDashboardData, RestaurantSummary, ZoneSummary } from "@/actions/chain";
 import ChainAuthGuard from "./ChainAuthGuard";
 import { Map, Marker, ZoomControl } from "pigeon-maps";
 
@@ -223,6 +224,7 @@ function EmptyAtlas({ chainName }: { chainName: string }) {
 }
 
 export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?: string }) {
+  const router = useRouter();
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [data, setData] = useState<ChainDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -231,6 +233,12 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
   // Geocoder cache
   const [geoPoints, setGeoPoints] = useState<Record<string, [number, number]>>({});
   const [mapCenter, setMapCenter] = useState<[number, number]>([19.432608, -99.133209]); // CDMX central
+
+  const [hovered, setHovered] = useState<{
+    rest: RestaurantSummary;
+    x: number;
+    y: number;
+  } | null>(null);
 
   const load = useCallback(async (tid: string) => {
     try {
@@ -261,7 +269,7 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
     const geocodeAll = async () => {
       const currentCacheStr = sessionStorage.getItem("geoCacheBouquet") || "{}";
       const cache = JSON.parse(currentCacheStr);
-      let newPoints = { ...geoPoints };
+      const newPoints = { ...geoPoints };
       let changed = false;
       let firstCenter: [number, number] | null = null;
 
@@ -309,7 +317,7 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
 
     geocodeAll();
     return () => { isMounted = false; };
-  }, [data]);
+  }, [data, geoPoints]);
 
   const zoneRevenueTotal = useMemo(
     () => (data?.zones ?? []).reduce((a, z) => a + z.totalRevenue, 0),
@@ -444,11 +452,35 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
                    const coords = geoPoints[rest.id];
                    if (!coords) return null;
                    return (
-                     <Marker 
-                       key={rest.id} 
-                       width={35} 
-                       anchor={coords} 
-                       color="#E5A85A" 
+                     <Marker
+                       key={rest.id}
+                       width={36}
+                       anchor={coords}
+                       color="#E5A85A"
+                       payload={rest}
+                       onMouseOver={(args: unknown) => {
+                         const a = args as { event?: MouseEvent; payload?: RestaurantSummary };
+                         const ev = a.event;
+                         const payload = a.payload ?? rest;
+                         if (!ev) return;
+                         const target = ev.target as HTMLElement | null;
+                         const rect = target?.getBoundingClientRect?.();
+                         if (rect) {
+                           setHovered({
+                             rest: payload,
+                             x: rect.left + rect.width / 2,
+                             y: rect.top + rect.height / 2,
+                           });
+                         } else {
+                           setHovered({ rest: payload, x: ev.clientX, y: ev.clientY });
+                         }
+                       }}
+                       onMouseOut={() => setHovered(null)}
+                       onClick={(args: unknown) => {
+                         const a = args as { payload?: RestaurantSummary };
+                         const payload = a.payload ?? rest;
+                         router.push(`/cadena/restaurantes/${payload.id}`);
+                       }}
                      />
                    );
                  })}
@@ -467,6 +499,57 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
                   </div>
                 </div>
               </div>
+
+              {/* Hover card (outside map DOM, but positioned to viewport) */}
+              {hovered ? (
+                <div
+                  className="fixed z-50 pointer-events-none"
+                  style={{ left: hovered.x + 14, top: hovered.y + 14 }}
+                >
+                  <div className="w-[260px] overflow-hidden rounded-2xl border border-border-main bg-bg-card/95 shadow-[0_26px_90px_-50px_rgba(0,0,0,0.9)] backdrop-blur-md">
+                    <div className="border-b border-border-main bg-bg-bar/70 px-4 py-3">
+                      <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-text-faint">
+                        Sucursal
+                      </p>
+                      <p className="mt-1 font-serif text-[16px] leading-tight text-text-primary">
+                        {hovered.rest.name}
+                      </p>
+                      <p className="mt-1 text-[11px] text-text-dim">
+                        {hovered.rest.address || "Sin dirección registrada"}
+                      </p>
+                    </div>
+                    <div className="px-4 py-3">
+                      <div className="flex items-center justify-between text-[10px] text-text-dim">
+                        <span>Zona</span>
+                        <span className="font-medium text-text-secondary">
+                          {hovered.rest.zoneName || "—"}
+                        </span>
+                      </div>
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        <div className="rounded-xl border border-border-main bg-bg-solid/60 px-2 py-2">
+                          <p className="font-mono text-[11px] tabular-nums text-gold">{fmtMoney(hovered.rest.todayRevenue)}</p>
+                          <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-text-faint">Ventas</p>
+                        </div>
+                        <div className="rounded-xl border border-border-main bg-bg-solid/60 px-2 py-2">
+                          <p className="font-mono text-[11px] tabular-nums text-text-secondary">
+                            {hovered.rest.activeTables}/{hovered.rest.totalTables}
+                          </p>
+                          <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-text-faint">Mesas</p>
+                        </div>
+                        <div className="rounded-xl border border-border-main bg-bg-solid/60 px-2 py-2">
+                          <p className="font-mono text-[11px] tabular-nums text-text-secondary">
+                            {hovered.rest.activeStaff}
+                          </p>
+                          <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-text-faint">Staff</p>
+                        </div>
+                      </div>
+                      <p className="mt-3 text-[10px] text-text-faint">
+                        Click para abrir dossier completo
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
            </motion.div>
         </div>
 

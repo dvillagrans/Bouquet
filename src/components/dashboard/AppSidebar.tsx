@@ -19,6 +19,16 @@ export function AppSidebar({
   const pathname = usePathname();
   const { open, close } = useMobileNav();
 
+  const bestMatchHref = (items: NavGroup["items"]) => {
+    let best: string | null = null;
+    for (const it of items) {
+      const matches = pathname === it.href || pathname.startsWith(it.href + "/");
+      if (!matches) continue;
+      if (!best || it.href.length > best.length) best = it.href;
+    }
+    return best;
+  };
+
   return (
     <>
       {/* Backdrop — mobile only */}
@@ -80,16 +90,16 @@ export function AppSidebar({
 
         {/* Nav groups */}
         <nav className="flex-1 min-h-0 py-5 overflow-y-auto w-full scrollbar-none">
-          {groups.map((group) => (
+          {groups.map((group) => {
+            const activeHref = bestMatchHref(group.items);
+            return (
             <div key={group.label} className="mb-7 w-full">
               <div className="text-[9px] font-semibold tracking-[0.24em] uppercase text-text-void px-5 mb-2 w-full">
                 {group.label}
               </div>
 
               {group.items.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  pathname.startsWith(item.href + "/");
+                const isActive = activeHref === item.href;
 
                 if (isActive) {
                   return (
@@ -123,7 +133,7 @@ export function AppSidebar({
                 );
               })}
             </div>
-          ))}
+          )})}
         </nav>
 
         {/* User footer */}

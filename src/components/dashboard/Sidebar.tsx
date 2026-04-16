@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   X, LayoutGrid, BookOpen, ChefHat,
-  BarChart3, Users, Settings2,
+  BarChart3, Users, Settings2, Store,
   type LucideIcon,
 } from "lucide-react";
 
@@ -12,6 +12,12 @@ export type NavItem = { label: string; href: string; icon: LucideIcon };
 export type NavGroup = { label: string; items: NavItem[] };
 
 export const defaultRestaurantGroups: NavGroup[] = [
+  {
+    label: "Visión Operativa",
+    items: [
+      { label: "Panel Principal", href: "/dashboard",       icon: Store      },
+    ],
+  },
   {
     label: "Operaciones",
     items: [

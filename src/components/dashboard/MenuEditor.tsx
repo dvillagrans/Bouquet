@@ -596,17 +596,13 @@ export default function MenuEditor({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex flex-col border-t border-wire divide-y divide-wire mt-4">
           {filtered.map((item, i) => (
             <div
               key={item.id}
               className={[
-                "group flex flex-col border transition-all duration-200",
-                item.isSoldOut
-                  ? "border-wire/60 bg-canvas/60 opacity-70"
-                  : item.isPopular
-                    ? "border-glow/25 bg-canvas hover:border-glow/50"
-                    : "border-wire bg-canvas hover:border-light/20",
+                "group flex flex-row items-center justify-between px-6 transition-all duration-300 hover:bg-wire/10",
+                item.isSoldOut ? "opacity-50 grayscale-[0.8]" : "",
               ].join(" ")}
               style={{
                 animation: `dash-row-enter 0.35s cubic-bezier(0.22,1,0.36,1) ${0.12 + Math.min(i * 0.035, 0.28)}s both`,

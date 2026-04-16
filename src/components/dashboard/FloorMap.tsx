@@ -122,7 +122,7 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd }: TableNode
             strokeWidth={2}
             opacity={0.4}
             dash={[4, 4]}
-            cornerRadius={4}
+            
             listening={false}
           />
         )
@@ -144,7 +144,7 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd }: TableNode
           fill={fill + "28"}
           stroke={stroke}
           strokeWidth={isSelected ? 2 : 1.5}
-          cornerRadius={4}
+          
         />
       )}
 

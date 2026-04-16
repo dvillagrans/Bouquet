@@ -81,7 +81,7 @@ function StaffCard({
       ].join(" ")}
     >
       {/* Card top */}
-      <div className="flex flex-col items-center gap-3 p-6 pb-5">
+      <div className="flex items-center gap-4 flex-1">
 
         {/* Avatar */}
         <div className={[
@@ -446,7 +446,7 @@ export default function StaffManager({ initialStaff }: { initialStaff: Staff[] }
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="flex flex-col border-t border-wire divide-y divide-wire mt-4">
           {filtered.map((member, i) => (
             <div
               key={member.id}

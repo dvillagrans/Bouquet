@@ -7,7 +7,8 @@
     "build": "prisma generate && next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "super-admin:seed": "tsx scripts/ensure-default-super-admin.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.0",

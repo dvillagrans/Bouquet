@@ -474,3 +474,18 @@ model PaymentAllocation {
   @@index([paymentId])
   @@index([sessionId])
 }
+
+// ------------------------------------
+// Plataforma SaaS (por encima de roles de cadena/restaurante)
+// ------------------------------------
+
+model SuperAdmin {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  isActive     Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

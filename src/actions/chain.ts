@@ -280,3 +280,197 @@ export async function createRestaurantInChain(data: {
     return { success: false, error: e.message };
   }
 }
+
+// ── Plantillas de menú (cadena) ─────────────────────────────
+
+export interface ChainMenuTemplateRow {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  categoryCount: number;
+  itemCount: number;
+  restaurantCount: number;
+  updatedAt: string;
+}
+
+export interface ChainMenuTemplatesData {
+  chain: { id: string; name: string };
+  templates: ChainMenuTemplateRow[];
+}
+
+export async function getChainMenuTemplates(tenantId: string): Promise<ChainMenuTemplatesData | null> {
+  const chain = await prisma.chain.findUnique({
+    where: { id: tenantId },
+    select: { id: true, name: true },
+  });
+  if (!chain) return null;
+
+  const rows = await prisma.menuTemplate.findMany({
+    where: { chainId: tenantId },
+    orderBy: [{ isDefault: "desc" }, { updatedAt: "desc" }],
+    include: {
+      categories: {
+        select: { _count: { select: { items: true } } },
+      },
+      _count: { select: { restaurants: true } },
+    },
+  });
+
+  const templates: ChainMenuTemplateRow[] = rows.map((t) => ({
+    id: t.id,
+    name: t.name,
+    isDefault: t.isDefault,
+    categoryCount: t.categories.length,
+    itemCount: t.categories.reduce((acc, c) => acc + c._count.items, 0),
+    restaurantCount: t._count.restaurants,
+    updatedAt: t.updatedAt.toISOString(),
+  }));
+
+  return { chain, templates };
+}
+
+export async function createChainMenuTemplate(input: {
+  chainId: string;
+  name: string;
+}): Promise<{ success: true } | { success: false; error: string }> {
+  const name = input.name?.trim();
+  if (!name) return { success: false, error: "El nombre es obligatorio." };
+
+  try {
+    const chain = await prisma.chain.findUnique({
+      where: { id: input.chainId },
+      select: { id: true },
+    });
+    if (!chain) return { success: false, error: "Cadena no encontrada." };
+
+    await prisma.menuTemplate.create({
+      data: {
+        chainId: input.chainId,
+        name,
+        isDefault: false,
+      },
+    });
+    return { success: true };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "No se pudo crear la plantilla.";
+    return { success: false, error: msg };
+  }
+}
+
+// ── Personal corporativo (ChainStaff) ───────────────────────
+
+export type ChainStaffRole = "CHAIN_ADMIN" | "ZONE_MANAGER";
+
+export interface ChainStaffRow {
+  id: string;
+  name: string;
+  role: ChainStaffRole;
+  isActive: boolean;
+  zoneId: string | null;
+  zoneName: string | null;
+  createdAt: string;
+}
+
+export interface ChainStaffListData {
+  chain: { id: string; name: string };
+  staff: ChainStaffRow[];
+  zones: { id: string; name: string }[];
+}
+
+export async function getChainStaffList(tenantId: string): Promise<ChainStaffListData | null> {
+  const chain = await prisma.chain.findUnique({
+    where: { id: tenantId },
+    select: { id: true, name: true },
+  });
+  if (!chain) return null;
+
+  const [staff, zones] = await Promise.all([
+    prisma.chainStaff.findMany({
+      where: { chainId: tenantId },
+      orderBy: [{ role: "asc" }, { name: "asc" }],
+    }),
+    prisma.zone.findMany({
+      where: { chainId: tenantId },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
+
+  const zoneMap = Object.fromEntries(zones.map((z) => [z.id, z.name]));
+
+  const rows: ChainStaffRow[] = staff.map((s) => ({
+    id: s.id,
+    name: s.name,
+    role: s.role as ChainStaffRole,
+    isActive: s.isActive,
+    zoneId: s.zoneId,
+    zoneName: s.zoneId ? (zoneMap[s.zoneId] ?? null) : null,
+    createdAt: s.createdAt.toISOString(),
+  }));
+
+  return { chain, staff: rows, zones };
+}
+
+export async function createChainStaffMember(input: {
+  chainId: string;
+  name: string;
+  role: ChainStaffRole;
+  pin: string;
+  zoneId?: string | null;
+}): Promise<{ success: true } | { success: false; error: string }> {
+  const name = input.name?.trim();
+  if (!name) return { success: false, error: "El nombre es obligatorio." };
+  const pin = input.pin?.trim() ?? "";
+  if (pin.length < 4) return { success: false, error: "El PIN debe tener al menos 4 caracteres." };
+
+  if (input.role === "ZONE_MANAGER") {
+    if (!input.zoneId) {
+      return { success: false, error: "Selecciona una zona para el gerente de zona." };
+    }
+    const zone = await prisma.zone.findFirst({
+      where: { id: input.zoneId, chainId: input.chainId },
+      select: { id: true },
+    });
+    if (!zone) return { success: false, error: "La zona no pertenece a esta cadena." };
+  }
+
+  try {
+    const chain = await prisma.chain.findUnique({
+      where: { id: input.chainId },
+      select: { id: true },
+    });
+    if (!chain) return { success: false, error: "Cadena no encontrada." };
+
+    await prisma.chainStaff.create({
+      data: {
+        chainId: input.chainId,
+        name,
+        role: input.role,
+        pin,
+        zoneId: input.role === "ZONE_MANAGER" ? input.zoneId! : null,
+      },
+    });
+    return { success: true };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "No se pudo registrar al miembro.";
+    return { success: false, error: msg };
+  }
+}
+
+export async function setChainStaffActive(input: {
+  chainId: string;
+  staffId: string;
+  isActive: boolean;
+}): Promise<{ success: true } | { success: false; error: string }> {
+  try {
+    const res = await prisma.chainStaff.updateMany({
+      where: { id: input.staffId, chainId: input.chainId },
+      data: { isActive: input.isActive },
+    });
+    if (res.count === 0) return { success: false, error: "Miembro no encontrado." };
+    return { success: true };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "No se pudo actualizar el estado.";
+    return { success: false, error: msg };
+  }
+}

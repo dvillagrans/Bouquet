@@ -17,6 +17,7 @@ import {
 import { getChainDashboard } from "@/actions/chain";
 import type { ChainDashboardData, ZoneSummary } from "@/actions/chain";
 import ChainAuthGuard from "./ChainAuthGuard";
+import { Map, Marker, ZoomControl } from "pigeon-maps";
 
 function fmtMoney(n: number) {
   return `$${n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -227,6 +228,10 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
   const [loading, setLoading] = useState(true);
   const reduceMotion = useReducedMotion();
 
+  // Geocoder cache
+  const [geoPoints, setGeoPoints] = useState<Record<string, [number, number]>>({});
+  const [mapCenter, setMapCenter] = useState<[number, number]>([19.432608, -99.133209]); // CDMX central
+
   const load = useCallback(async (tid: string) => {
     try {
       setLoading(true);
@@ -246,6 +251,65 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
       return () => clearInterval(iv);
     }
   }, [tenantId, load]);
+
+  // Client-side geocoding for visual map
+  useEffect(() => {
+    if (!data?.restaurants || data.restaurants.length === 0) return;
+    
+    let isMounted = true;
+    
+    const geocodeAll = async () => {
+      const currentCacheStr = sessionStorage.getItem("geoCacheBouquet") || "{}";
+      const cache = JSON.parse(currentCacheStr);
+      let newPoints = { ...geoPoints };
+      let changed = false;
+      let firstCenter: [number, number] | null = null;
+
+      for (const r of data.restaurants) {
+        if (!r.address || newPoints[r.id]) continue;
+        
+        if (cache[r.address]) {
+           newPoints[r.id] = cache[r.address];
+           changed = true;
+           if (!firstCenter) firstCenter = cache[r.address];
+           continue;
+        }
+
+        try {
+          // Add artificial delay to avoid hammering Nominatim
+          await new Promise((res) => setTimeout(res, 800));
+          if (!isMounted) return;
+
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+              r.address
+            )}&format=json&limit=1&countrycodes=mx`
+          );
+          const points = await res.json();
+          if (points && points.length > 0) {
+            const coords: [number, number] = [parseFloat(points[0].lat), parseFloat(points[0].lon)];
+            newPoints[r.id] = coords;
+            cache[r.address] = coords;
+            changed = true;
+            if (!firstCenter) firstCenter = coords;
+          }
+        } catch (e) {
+          console.error("Geocode failed for", r.address, e);
+        }
+      }
+
+      if (changed && isMounted) {
+        setGeoPoints(newPoints);
+        sessionStorage.setItem("geoCacheBouquet", JSON.stringify(cache));
+        if (firstCenter) {
+           setMapCenter(firstCenter);
+        }
+      }
+    };
+
+    geocodeAll();
+    return () => { isMounted = false; };
+  }, [data]);
 
   const zoneRevenueTotal = useMemo(
     () => (data?.zones ?? []).reduce((a, z) => a + z.totalRevenue, 0),
@@ -285,9 +349,15 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
   const activeTablesAll = zones.reduce((a, z) => a + z.activeTables, 0);
   const occAll = totalTablesAll > 0 ? (activeTablesAll / totalTablesAll) * 100 : 0;
 
+  const darkTiles = (x: number, y: number, z: number, dpr?: number) => {
+    return `https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/${z}/${x}/${y}${
+      dpr && dpr >= 2 ? "@2x" : ""
+    }.png`;
+  };
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-bg-solid font-sans text-text-primary">
-      {/* Atmósfera */}
+      {/* Atmósfera Subyacente */}
       <div className="pointer-events-none absolute inset-0" aria-hidden>
         <div className="absolute -left-1/4 top-0 h-[min(90vh,720px)] w-[min(120vw,900px)] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(201,160,84,0.14),transparent_65%)] blur-3xl" />
         <div className="absolute bottom-0 right-0 h-[50vh] w-[70vw] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(77,132,96,0.08),transparent_60%)] blur-3xl" />
@@ -300,55 +370,105 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
         />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 pb-24 pt-10 md:px-8 md:pt-14">
-        <motion.header
-          initial={reduceMotion ? false : { opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-12 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
-        >
-          <div className="max-w-2xl space-y-5">
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/cadena"
-                className="inline-flex items-center gap-2 rounded-full border border-border-main bg-bg-card/70 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-text-muted transition-colors hover:border-gold/30 hover:text-gold"
+      <div className="relative z-10 mx-auto max-w-7xl px-4 pb-24 pt-10 md:px-8 md:pt-14">
+        
+        {/* Header Hero + MAP (Split View Banner) */}
+        <div className="mb-12 grid grid-cols-1 lg:grid-cols-2 gap-8 rounded-3xl border border-border-main bg-bg-card/40 backdrop-blur-md overflow-hidden shadow-2xl">
+           
+           {/* Info Side */}
+           <motion.header
+             initial={reduceMotion ? false : { opacity: 0, x: -20 }}
+             animate={{ opacity: 1, x: 0 }}
+             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+             className="relative p-8 md:p-12 flex flex-col justify-center"
+           >
+             <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: `linear-gradient(var(--color-gold) 1px, transparent 1px), linear-gradient(90deg, var(--color-gold) 1px, transparent 1px)`, backgroundSize: "24px 24px" }} />
+             
+             <div className="relative z-10 space-y-6">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link
+                    href="/cadena"
+                    className="inline-flex items-center gap-2 rounded-full border border-border-main bg-bg-card/70 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-text-muted transition-colors hover:border-gold/30 hover:text-gold"
+                  >
+                    <ArrowLeft className="size-3" aria-hidden />
+                    Panel maestro
+                  </Link>
+                  <span className="flex items-center gap-1.5 rounded-full border border-gold/25 bg-gold-faint/30 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-gold">
+                    <Sparkles className="size-3" aria-hidden />
+                    Vista atlas
+                  </span>
+                </div>
+
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-text-faint">Cartografía · Red Global</p>
+                  <h1 className="mt-2 font-serif text-[clamp(2.2rem,5vw,3.5rem)] font-semibold leading-[1.05] tracking-tight">
+                    Zonas de{" "}
+                    <span className="bg-gradient-to-r from-gold via-[#e4c78a] to-gold-dim bg-clip-text text-transparent">
+                      {data.chain.name}
+                    </span>
+                  </h1>
+                  <p className="mt-4 max-w-md text-[13px] leading-relaxed text-text-muted">
+                    Geolocalización en vivo de cada unidad operativa reportando actividad. Analiza la densidad territorial y los frentes de venta activos.
+                  </p>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => load(tenantId)}
+                    disabled={loading}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-border-bright bg-bg-card px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary transition-colors hover:border-gold/35 hover:text-gold disabled:opacity-50"
+                  >
+                    <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} aria-hidden />
+                    {loading ? "Rastreando" : "Redibujar mapa"}
+                  </button>
+                </div>
+             </div>
+           </motion.header>
+
+           {/* Map Side */}
+           <motion.div 
+             initial={reduceMotion ? false : { opacity: 0 }}
+             animate={{ opacity: 1 }}
+             transition={{ duration: 1, delay: 0.2 }}
+             className="relative h-64 lg:h-full min-h-[350px] border-t lg:border-t-0 lg:border-l border-border-main bg-[#1a1a1a]"
+           >
+              <Map
+                provider={darkTiles}
+                center={mapCenter}
+                zoom={11}
+                onBoundsChanged={({ center }) => setMapCenter(center)}
+                metaWheelZoom={true}
               >
-                <ArrowLeft className="size-3" aria-hidden />
-                Panel maestro
-              </Link>
-              <span className="flex items-center gap-1.5 rounded-full border border-gold/25 bg-gold-faint/30 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-gold">
-                <Sparkles className="size-3" aria-hidden />
-                Vista atlas
-              </span>
-            </div>
-
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-text-faint">Cartografía · Operaciones</p>
-              <h1 className="mt-2 font-serif text-[clamp(2rem,5vw,3.25rem)] font-semibold leading-[1.05] tracking-tight">
-                Zonas de{" "}
-                <span className="bg-gradient-to-r from-gold via-[#e4c78a] to-gold-dim bg-clip-text text-transparent">
-                  {data.chain.name}
-                </span>
-              </h1>
-              <p className="mt-4 max-w-xl text-[13px] leading-relaxed text-text-muted">
-                Cada bloque es un territorio vivo: ingresos del día, carga de mesas y peso relativo frente al resto de la
-                red. Diseñado para decidir dónde actuar primero.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center lg:flex-col lg:items-stretch">
-            <button
-              type="button"
-              onClick={() => load(tenantId)}
-              disabled={loading}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border-bright bg-bg-card px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary transition-colors hover:border-gold/35 hover:text-gold disabled:opacity-50"
-            >
-              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} aria-hidden />
-              {loading ? "Sincronizando" : "Refrescar datos"}
-            </button>
-          </div>
-        </motion.header>
+                 {data.restaurants.map((rest) => {
+                   const coords = geoPoints[rest.id];
+                   if (!coords) return null;
+                   return (
+                     <Marker 
+                       key={rest.id} 
+                       width={35} 
+                       anchor={coords} 
+                       color="#E5A85A" 
+                     />
+                   );
+                 })}
+                 <ZoomControl style={{ bottom: 20, right: 20 }} />
+              </Map>
+              
+              {/* Map UI Overlay Elements */}
+              <div className="absolute top-4 left-4 z-10 pointer-events-none">
+                <div className="inline-flex flex-col gap-2">
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gold/30 bg-[#222]/80 backdrop-blur-sm text-[10px] text-text-secondary shadow-lg">
+                    <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+                    Radar Activo
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-main bg-[#222]/80 backdrop-blur-sm text-[10px] text-text-muted shadow-lg">
+                    {Object.keys(geoPoints).length} Puntos Geofijados
+                  </div>
+                </div>
+              </div>
+           </motion.div>
+        </div>
 
         {/* Cinta de métricas */}
         <motion.div
@@ -401,14 +521,20 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
           <EmptyAtlas chainName={data.chain.name} />
         ) : (
           <div className="space-y-8">
-            <div className="flex items-end justify-between gap-4 border-b border-border-main pb-4">
+            <div className="flex flex-wrap items-end justify-between gap-4 border-b border-border-main pb-4">
               <div>
-                <h2 className="font-serif text-xl text-text-primary">Territorios en cartografía</h2>
-                <p className="mt-1 text-[12px] text-text-dim">Ordenados por relevancia económica hoy.</p>
+                <h2 className="font-serif text-xl text-text-primary">Desglose de Territorios</h2>
+                <p className="mt-1 text-[12px] text-text-dim">Clasificación de zonas operativas activas.</p>
               </div>
-              <p className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-text-faint sm:block">
-                Bouquet · cadena viva
-              </p>
+              <div className="flex items-center gap-4">
+                <p className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-text-faint sm:block">
+                  Bouquet · V{new Date().getFullYear()}
+                </p>
+                <div className="flex items-center gap-1">
+                  <div className="w-1.5 h-1.5 bg-dash-green rounded-full" />
+                  <span className="font-mono text-[9px] uppercase tracking-widest text-text-dim">En línea</span>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">

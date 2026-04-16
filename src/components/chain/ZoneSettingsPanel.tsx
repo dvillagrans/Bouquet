@@ -89,7 +89,7 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
       setMsg("PIN actualizado.");
       setTimeout(() => setMsg(null), 2000);
     } else {
-      setErr(res.error);
+      setErr(res.error ?? "No se pudo rotar el PIN.");
     }
   };
 

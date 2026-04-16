@@ -1,0 +1,35 @@
+src/actions/chain.ts(239,23): error TS2323: Cannot redeclare exported variable 'createZoneStaffMember'.
+src/actions/chain.ts(239,23): error TS2393: Duplicate function implementation.
+src/actions/chain.ts(275,23): error TS2323: Cannot redeclare exported variable 'createZoneStaffMember'.
+src/actions/chain.ts(275,23): error TS2393: Duplicate function implementation.
+src/components/chain/ChainAuditSentinel.tsx(19,10): error TS2305: Module '"@/actions/chain"' has no exported member 'getChainAuditOverview'.
+src/components/chain/ChainAuditSentinel.tsx(20,15): error TS2305: Module '"@/actions/chain"' has no exported member 'ChainAuditOverviewData'.
+src/components/chain/ChainMenuTemplatesAtelier.tsx(19,3): error TS2305: Module '"@/actions/chain"' has no exported member 'createChainMenuTemplate'.
+src/components/chain/ChainMenuTemplatesAtelier.tsx(20,3): error TS2305: Module '"@/actions/chain"' has no exported member 'getChainMenuTemplates'.
+src/components/chain/ChainMenuTemplatesAtelier.tsx(22,15): error TS2305: Module '"@/actions/chain"' has no exported member 'ChainMenuTemplatesData'.
+src/components/chain/ChainMenuTemplatesAtelier.tsx(22,39): error TS2305: Module '"@/actions/chain"' has no exported member 'ChainMenuTemplateRow'.
+src/components/chain/ChainMenuTemplatesAtelier.tsx(260,24): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/components/chain/ChainMenuTemplatesAtelier.tsx(260,27): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/components/chain/ChainMenuTemplatesAtelier.tsx(261,40): error TS7006: Parameter 'a' implicitly has an 'any' type.
+src/components/chain/ChainMenuTemplatesAtelier.tsx(261,43): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/components/chain/ChainMenuTemplatesAtelier.tsx(455,31): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/components/chain/ChainMenuTemplatesAtelier.tsx(455,36): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/chain/ChainStaffRoster.tsx(18,3): error TS2724: '"@/actions/chain"' has no exported member named 'createChainStaffMember'. Did you mean 'createZoneStaffMember'?
+src/components/chain/ChainStaffRoster.tsx(19,3): error TS2305: Module '"@/actions/chain"' has no exported member 'getChainStaffList'.
+src/components/chain/ChainStaffRoster.tsx(20,3): error TS2305: Module '"@/actions/chain"' has no exported member 'setChainStaffActive'.
+src/components/chain/ChainStaffRoster.tsx(22,15): error TS2305: Module '"@/actions/chain"' has no exported member 'ChainStaffListData'.
+src/components/chain/ChainStaffRoster.tsx(22,35): error TS2305: Module '"@/actions/chain"' has no exported member 'ChainStaffRole'.
+src/components/chain/ChainStaffRoster.tsx(22,51): error TS2305: Module '"@/actions/chain"' has no exported member 'ChainStaffRow'.
+src/components/chain/ChainStaffRoster.tsx(175,25): error TS7006: Parameter 'x' implicitly has an 'any' type.
+src/components/chain/ChainStaffRoster.tsx(176,26): error TS7006: Parameter 'x' implicitly has an 'any' type.
+src/components/chain/ChainStaffRoster.tsx(177,25): error TS7006: Parameter 'x' implicitly has an 'any' type.
+src/components/chain/ChainStaffRoster.tsx(412,31): error TS7006: Parameter 'z' implicitly has an 'any' type.
+src/components/chain/ChainStaffRoster.tsx(487,27): error TS7006: Parameter 'row' implicitly has an 'any' type.
+src/components/chain/ChainStaffRoster.tsx(487,32): error TS7006: Parameter 'index' implicitly has an 'any' type.
+src/components/chain/CreateRestaurantDialog.tsx(5,10): error TS2305: Module '"@/actions/chain"' has no exported member 'createRestaurantInChain'.
+src/components/chain/ZoneStaffPanel.tsx(16,33): error TS2305: Module '"@/actions/chain"' has no exported member 'getZoneStaff'.
+src/components/chain/ZoneStaffPanel.tsx(17,15): error TS2305: Module '"@/actions/chain"' has no exported member 'RestaurantManagerRow'.
+src/components/chain/ZoneStaffPanel.tsx(17,37): error TS2305: Module '"@/actions/chain"' has no exported member 'ZoneStaffData'.
+src/components/chain/ZoneStaffPanel.tsx(69,25): error TS7006: Parameter 'x' implicitly has an 'any' type.
+src/components/chain/ZoneStaffPanel.tsx(235,51): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/components/chain/ZoneStaffPanel.tsx(309,27): error TS7006: Parameter 'row' implicitly has an 'any' type.

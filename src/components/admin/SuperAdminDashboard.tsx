@@ -222,7 +222,7 @@ export default function SuperAdminDashboard() {
 
             {/* TENANTS TABLE */}
             <div className="bg-bg-card border border-border-main rounded-lg flex flex-col mb-10 overflow-hidden">
-              <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-border-main flex items-center justify-between gap-3 bg-bg-bar">
+              <div className="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-border-main flex items-center justify-between gap-3 bg-bg-bar">
                 <div className="text-[11px] font-medium tracking-[0.14em] uppercase text-text-muted flex items-center gap-2">
                   Inquilinos Activos
                 </div>
@@ -231,19 +231,68 @@ export default function SuperAdminDashboard() {
                 </button>
               </div>
 
-              <div className="w-full overflow-x-auto">
+              <div className="sm:hidden p-4 space-y-3">
+                {data.chains.length === 0 ? (
+                  <div className="rounded-lg border border-border-main bg-bg-bar px-4 py-8 text-center text-xs text-text-dim">
+                    Aún no hay clientes en la base de datos de Plataforma.
+                  </div>
+                ) : (
+                  data.chains.map((chain) => {
+                    const avatar = chain.name.substring(0, 2).toUpperCase();
+                    return (
+                      <article key={chain.id} className="rounded-xl border border-border-main bg-bg-bar px-4 py-4 shadow-[0_1px_0_rgba(255,255,255,0.02)]">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-md bg-gold-faint border border-gold-dim flex items-center justify-center text-[11px] font-bold text-gold shrink-0">
+                            {avatar}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <h3 className="truncate text-[13px] font-semibold text-text-primary leading-tight">
+                                  {chain.name}
+                                </h3>
+                                <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-text-dim">
+                                  ID {chain.id.split('-')[0]}
+                                </p>
+                              </div>
+                              <span className="inline-flex shrink-0 items-center rounded border border-border-mid bg-bg-solid px-2 py-1 font-mono text-[10px] text-text-secondary">
+                                PIN {chain.pin}
+                              </span>
+                            </div>
+
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              <span className="inline-flex items-center rounded border border-[#1e3824] bg-dash-green-bg px-2 py-1 text-[10px] text-dash-green">
+                                {chain.adminName}
+                              </span>
+                              <a
+                                href={`/cadena?tenantId=${chain.id}`}
+                                target="_blank"
+                                className="inline-flex items-center justify-center rounded border border-border-mid px-3 py-1.5 text-[11px] font-medium text-text-secondary transition-colors hover:bg-bg-solid hover:text-gold"
+                              >
+                                Abrir consola →
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="hidden sm:block w-full overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                  <thead>
+                  <thead className="hidden sm:table-header-group">
                     <tr className="border-b border-border-main bg-bg-solid/30">
                       <th className="hidden sm:table-cell font-normal text-[10px] text-text-dim px-4 sm:px-5 py-3 tracking-[0.06em] w-12 border-b-transparent">#</th>
                       <th className="font-normal text-[10px] text-text-dim px-4 sm:px-5 py-3 tracking-[0.06em] border-b-transparent">Cadena</th>
                       <th className="hidden md:table-cell font-normal text-[10px] text-text-dim px-4 sm:px-5 py-3 tracking-[0.06em] border-b-transparent">ID <span className="opacity-50">ref</span></th>
                       <th className="hidden sm:table-cell font-normal text-[10px] text-text-dim px-4 sm:px-5 py-3 tracking-[0.06em] border-b-transparent">Admin</th>
-                      <th className="font-normal text-[10px] text-text-dim px-4 sm:px-5 py-3 tracking-[0.06em] border-b-transparent">PIN</th>
+                      <th className="hidden sm:table-cell font-normal text-[10px] text-text-dim px-4 sm:px-5 py-3 tracking-[0.06em] border-b-transparent">PIN</th>
                       <th className="font-normal text-[10px] text-text-dim px-4 sm:px-5 py-3 tracking-[0.06em] border-b-transparent">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className="align-middle">
+                  <tbody className="align-middle [&>tr:last-child]:border-b-0">
                     {data.chains.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="text-center py-12 text-text-dim text-xs">Aún no hay clientes en la base de datos de Plataforma.</td>
@@ -254,25 +303,32 @@ export default function SuperAdminDashboard() {
                         return (
                           <tr key={chain.id} className="border-b border-border-main/40 hover:bg-bg-hover transition-colors">
                             <td className="hidden sm:table-cell px-4 sm:px-5 py-3 text-text-faint font-mono text-xs">{(i + 1).toString().padStart(2, '0')}</td>
-                            <td className="px-4 sm:px-5 py-3">
-                              <div className="flex items-center gap-2 sm:gap-3">
+                            <td className="px-4 sm:px-5 py-4 sm:py-3">
+                              <div className="flex items-center gap-3 sm:gap-3.5">
                                 <div className="w-[26px] h-[26px] sm:w-[28px] sm:h-[28px] rounded-md bg-gold-faint border border-gold-dim flex items-center justify-center text-[10px] font-bold text-gold shrink-0">
                                   {avatar}
                                 </div>
-                                <div className="text-[12px] font-medium text-text-primary leading-[1.2] truncate max-w-[120px] sm:max-w-none">{chain.name}</div>
+                                <div className="min-w-0">
+                                  <div className="text-[12px] font-medium text-text-primary leading-[1.3] truncate max-w-[150px] sm:max-w-none">{chain.name}</div>
+                                  <div className="mt-1.5 sm:hidden">
+                                    <span className="inline-flex items-center rounded border border-border-mid bg-bg-solid px-1.5 py-0.5 font-mono text-[10px] text-text-secondary">
+                                      PIN {chain.pin}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
                             </td>
                             <td className="hidden md:table-cell px-4 sm:px-5 py-3 text-text-muted font-mono text-[10px]">{chain.id.split('-')[0]}</td>
                             <td className="hidden sm:table-cell px-4 sm:px-5 py-3">
                               <span className="text-[11px] text-dash-green bg-dash-green-bg px-2 py-0.5 rounded border border-[#1e3824]">{chain.adminName}</span>
                             </td>
-                            <td className="px-4 sm:px-5 py-3">
+                            <td className="hidden sm:table-cell px-4 sm:px-5 py-3">
                               <span className="text-text-primary font-mono text-[11px]">{chain.pin}</span>
                             </td>
-                            <td className="px-4 sm:px-5 py-3">
-                              <a href={`/cadena?tenantId=${chain.id}`} target="_blank" className="text-[11px] font-medium text-text-secondary hover:text-gold transition-colors border border-border-mid px-2 py-1 rounded hover:bg-bg-solid bg-transparent whitespace-nowrap">
+                            <td className="px-3 sm:px-5 py-4 sm:py-3 text-right sm:text-left">
+                              <a href={`/cadena?tenantId=${chain.id}`} target="_blank" className="inline-flex items-center justify-center text-[11px] font-medium text-text-secondary hover:text-gold transition-colors border border-border-mid px-2.5 py-1.5 rounded hover:bg-bg-solid bg-transparent whitespace-nowrap">
                                 <span className="hidden sm:inline">Ir a Consola →</span>
-                                <span className="sm:hidden">→</span>
+                                <span className="sm:hidden">Consola →</span>
                               </a>
                             </td>
                           </tr>

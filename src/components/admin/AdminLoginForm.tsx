@@ -30,7 +30,7 @@ export default function AdminLoginForm({
 
   const banner =
     initialError === "missing_secret"
-      ? "Falta AUTH_SECRET en el servidor (obligatorio en producción). Legado: NEXTAUTH_SECRET o BOUQUET_ADMIN_AUTH_SECRET. Con `next start` local: BOUQUET_ADMIN_ALLOW_DEV_AUTH_SECRET=1."
+      ? "Falta AUTH_SECRET en el entorno de ejecución (obligatorio en producción). En Vercel: Settings → Environment Variables → AUTH_SECRET activa para Production y vuelve a desplegar. Las variables solo en archivos .env del repo no llegan al Middleware en Edge. Legado: NEXTAUTH_SECRET o BOUQUET_ADMIN_AUTH_SECRET. `next start` local: BOUQUET_ADMIN_ALLOW_DEV_AUTH_SECRET=1."
       : null;
 
   const submit = async (e: React.FormEvent) => {

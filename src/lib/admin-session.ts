@@ -114,13 +114,22 @@ export async function verifyAdminSessionToken(token: string | undefined, secret:
   return true;
 }
 
+const ADMIN_AUTH_SECRET_KEYS = ["AUTH_SECRET", "NEXTAUTH_SECRET", "BOUQUET_ADMIN_AUTH_SECRET"] as const;
+
+/**
+ * Lee el secreto en runtime con `process.env[key]`.
+ * En el Middleware (Edge) en Vercel, el acceso directo `process.env.AUTH_SECRET` a veces
+ * queda inlinado vacío en el build; la forma dinámica evita eso y coincide con la guía de Next.
+ */
 export function getAdminAuthSecret(): string | undefined {
-  return (
-    process.env.AUTH_SECRET?.trim() ||
-    process.env.NEXTAUTH_SECRET?.trim() ||
-    process.env.BOUQUET_ADMIN_AUTH_SECRET?.trim() ||
-    undefined
-  );
+  for (const key of ADMIN_AUTH_SECRET_KEYS) {
+    const raw = process.env[key];
+    if (typeof raw === "string") {
+      const t = raw.trim();
+      if (t.length > 0) return t;
+    }
+  }
+  return undefined;
 }
 
 export function resolveAdminAuthSecret(): string | undefined {

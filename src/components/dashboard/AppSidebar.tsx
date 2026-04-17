@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import { LogOut } from "lucide-react";
 import { NavGroup } from "./Sidebar";
 import { useMobileNav } from "./MobileNavContext";
 
@@ -10,14 +12,32 @@ export function AppSidebar({
   userInitial,
   userName,
   userRole,
+  showSidebarLogout,
 }: {
   groups: NavGroup[];
   userInitial?: string;
   userName?: string;
   userRole?: string;
+  showSidebarLogout?: boolean;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { open, close } = useMobileNav();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await fetch("/api/admin/logout", { method: "POST" });
+      close();
+      router.push("/admin/login");
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoggingOut(false);
+    }
+  };
 
   const bestMatchHref = (items: NavGroup["items"]) => {
     let best: string | null = null;
@@ -136,23 +156,36 @@ export function AppSidebar({
           )})}
         </nav>
 
-        {/* User footer */}
-        {userName && (
-          <div className="px-4 py-4 border-t border-border-main shrink-0 w-full">
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer transition-colors hover:bg-bg-hover group w-full">
-              <div className="w-[32px] h-[32px] rounded-full bg-gold-faint border border-gold-dim flex items-center justify-center text-[10px] font-medium text-gold shrink-0 uppercase">
-                {userInitial || "U"}
-              </div>
-              <div className="flex flex-col truncate flex-1 min-w-0">
-                <div className="text-[12px] font-medium text-text-secondary leading-[1.2] group-hover:text-text-primary transition-colors truncate">
-                  {userName}
+        {/* User + salir (admin) */}
+        {(userName || showSidebarLogout) && (
+          <div className="px-4 py-4 border-t border-border-main shrink-0 w-full space-y-2">
+            {userName ? (
+              <div className="flex items-center gap-3 px-3 py-2.5 rounded-md cursor-default transition-colors hover:bg-bg-hover group w-full">
+                <div className="w-[32px] h-[32px] rounded-full bg-gold-faint border border-gold-dim flex items-center justify-center text-[10px] font-medium text-gold shrink-0 uppercase">
+                  {userInitial || "U"}
                 </div>
-                <div className="text-[10px] text-text-dim tracking-[0.06em] mt-0.5 truncate uppercase">
-                  {userRole}
+                <div className="flex flex-col truncate flex-1 min-w-0">
+                  <div className="text-[12px] font-medium text-text-secondary leading-[1.2] group-hover:text-text-primary transition-colors truncate">
+                    {userName}
+                  </div>
+                  <div className="text-[10px] text-text-dim tracking-[0.06em] mt-0.5 truncate uppercase">
+                    {userRole}
+                  </div>
                 </div>
+                <div className="w-[6px] h-[6px] rounded-full bg-dash-green shadow-[0_0_6px_var(--color-dash-green)] shrink-0 animate-pulse ml-auto" />
               </div>
-              <div className="w-[6px] h-[6px] rounded-full bg-dash-green shadow-[0_0_6px_var(--color-dash-green)] shrink-0 animate-pulse ml-auto" />
-            </div>
+            ) : null}
+            {showSidebarLogout ? (
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                className="flex w-full items-center gap-2.5 rounded-md border border-border-main bg-transparent px-3 py-2.5 text-left text-[12px] font-medium text-text-dim transition-colors hover:border-dash-red/35 hover:bg-bg-hover hover:text-dash-red disabled:opacity-50 cursor-pointer"
+              >
+                <LogOut className="size-4 shrink-0 opacity-70" aria-hidden />
+                {loggingOut ? "Saliendo…" : "Cerrar sesión"}
+              </button>
+            ) : null}
           </div>
         )}
       </aside>

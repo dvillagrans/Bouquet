@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import { getSuperAdminDashboard, createTenant, type SuperAdminDashboardData } from "@/actions/admin";
 import { useMobileNav } from "@/components/dashboard/MobileNavContext";
 import {
@@ -18,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
 export default function SuperAdminDashboard() {
-  const router = useRouter();
   const { toggle } = useMobileNav();
   const [data, setData] = useState<SuperAdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,7 +24,6 @@ export default function SuperAdminDashboard() {
   const [isCreatingTenant, setIsCreatingTenant] = useState(false);
   const [newTenantName, setNewTenantName] = useState("");
   const [adminName, setAdminName] = useState("");
-  const [loggingOut, setLoggingOut] = useState(false);
   const [adminPin, setAdminPin] = useState("");
   const [creating, setCreating] = useState(false);
 
@@ -41,7 +38,7 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  const handleCreateTenant = async (e: React.FormEvent) => {
+  const handleCreateTenant = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newTenantName.trim() || !adminName.trim() || !adminPin.trim()) return;
 
@@ -64,19 +61,6 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    try {
-      await fetch("/api/admin/logout", { method: "POST" });
-      router.push("/admin/login");
-      router.refresh();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoggingOut(false);
-    }
-  };
-
   useEffect(() => {
     load();
     const iv = setInterval(load, 60000);
@@ -88,12 +72,12 @@ export default function SuperAdminDashboard() {
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-bg-solid text-text-primary text-[13px] antialiased">
       {/* TOPBAR */}
-      <div className="h-[52px] border-b border-border-main flex items-center justify-between px-3 sm:px-8 sticky top-0 z-10 bg-bg-bar/90 backdrop-blur-md shrink-0 gap-2">
-        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          {/* Hamburger — mobile only */}
+      <div className="h-[52px] sticky top-0 z-10 shrink-0 border-b border-border-main bg-bg-bar/90 backdrop-blur-md flex items-center justify-between px-3 sm:px-8 gap-2">
+        {/* Left */}
+        <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={toggle}
-            className="lg:hidden w-8 h-8 flex items-center justify-center text-text-dim hover:text-text-primary transition-colors rounded shrink-0"
+            className="lg:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded text-text-dim transition-colors hover:text-text-primary"
             aria-label="Abrir menú"
           >
             <svg className="w-4 h-4 stroke-current fill-none stroke-[2px]" viewBox="0 0 24 24">
@@ -102,37 +86,43 @@ export default function SuperAdminDashboard() {
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <div className="text-[11px] text-text-dim items-center gap-[6px] hidden sm:flex">
-            Bouquet OPS <span className="text-text-void">›</span> <span className="text-text-muted font-medium">Dashboard SaaS</span>
+          <div className="hidden sm:flex text-[11px] text-text-dim items-center gap-[6px]">
+            Bouquet OPS <span className="text-text-void">›</span>
+            <span className="text-text-muted font-medium">Dashboard SaaS</span>
           </div>
           {loading ? (
-            <div className="flex items-center gap-[6px] text-[10px] text-gold tracking-[0.1em] uppercase bg-gold-faint border border-gold-dim/30 px-2 sm:px-3 py-1 rounded-full sm:ml-2 shrink-0">
-              <span className="w-[5px] h-[5px] rounded-full bg-gold animate-pulse"></span>
+            <div className="flex items-center gap-[6px] text-[10px] text-gold tracking-[0.1em] uppercase bg-gold-faint border border-gold-dim/30 px-2 py-1 rounded-full shrink-0">
+              <span className="w-[5px] h-[5px] rounded-full bg-gold animate-pulse" />
               <span className="hidden sm:inline">Sincronizando</span>
             </div>
           ) : (
-            <div className="flex items-center gap-[6px] text-[10px] text-dash-green tracking-[0.1em] uppercase bg-dash-green-bg border border-[#1e3824] px-2 sm:px-3 py-1 rounded-full sm:ml-2 shrink-0">
-              <span className="w-[5px] h-[5px] rounded-full bg-dash-green animate-pulse"></span>
+            <div className="flex items-center gap-[6px] text-[10px] text-dash-green tracking-[0.1em] uppercase bg-dash-green-bg border border-[#1e3824] px-2 py-1 rounded-full shrink-0">
+              <span className="w-[5px] h-[5px] rounded-full bg-dash-green animate-pulse" />
               <span className="hidden sm:inline">Operativo</span>
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button onClick={() => { setLoading(true); load(); }} disabled={loading} className="hidden sm:flex bg-transparent border border-border-main rounded px-3 py-1.5 text-[11px] font-medium text-text-muted tracking-[0.04em] transition-colors hover:border-border-bright hover:text-text-secondary cursor-pointer">
-            Refrescar
-          </button>
+
+        {/* Right */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Refrescar — icon-only on mobile */}
           <button
-            type="button"
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="inline-flex items-center gap-1.5 bg-transparent border border-border-main rounded px-2 sm:px-3 py-1.5 text-[11px] font-medium text-text-muted tracking-[0.04em] transition-colors hover:border-dash-red/40 hover:text-dash-red cursor-pointer disabled:opacity-50"
+            onClick={() => { setLoading(true); load(); }}
+            disabled={loading}
+            title="Refrescar"
+            className="flex h-8 w-8 sm:w-auto sm:px-3 items-center justify-center sm:gap-1.5 rounded border border-border-main bg-transparent text-[11px] font-medium text-text-muted transition-colors hover:border-border-bright hover:text-text-secondary disabled:opacity-50 cursor-pointer"
           >
-            <LogOut className="size-3.5" aria-hidden />
-            <span className="hidden sm:inline">{loggingOut ? "Saliendo…" : "Salir"}</span>
+            <RefreshCw className={`size-3.5 shrink-0 ${loading ? "animate-spin" : ""}`} aria-hidden />
+            <span className="hidden sm:inline">Refrescar</span>
           </button>
-          <button onClick={() => setIsCreatingTenant(true)} className="bg-gold border border-gold text-bg-solid rounded px-3 py-1.5 text-[11px] font-medium tracking-[0.04em] transition-opacity hover:opacity-80 cursor-pointer whitespace-nowrap">
-            <span className="hidden sm:inline">+ Nuevo Registro</span>
-            <span className="sm:hidden">+ Nuevo</span>
+          {/* Nuevo — icon + short label on mobile */}
+          <button
+            onClick={() => setIsCreatingTenant(true)}
+            className="flex h-8 items-center gap-1.5 rounded border border-gold bg-gold px-3 text-[11px] font-medium text-bg-solid transition-opacity hover:opacity-80 cursor-pointer whitespace-nowrap"
+          >
+            <Plus className="size-3.5 shrink-0" aria-hidden />
+            <span className="hidden sm:inline">Nuevo Registro</span>
+            <span className="sm:hidden">Nuevo</span>
           </button>
         </div>
       </div>

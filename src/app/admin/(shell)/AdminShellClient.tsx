@@ -27,6 +27,7 @@ export default function AdminShellClient({ children }: { children: React.ReactNo
       userInitial="SA"
       userName="Admin Supremo"
       userRole="BouquetOps"
+      showSidebarLogout
     >
       {children}
     </DashboardShell>

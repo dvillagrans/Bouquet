@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { verifyChainPin } from "@/actions/chain";
-import { useRouter } from "next/navigation";
 
 export default function ChainAuthGuard({ tenantId, onAuthenticated }: { tenantId: string | undefined; onAuthenticated: (tenantId: string) => void }) {
   const [pin, setPin] = useState("");
@@ -11,121 +10,129 @@ export default function ChainAuthGuard({ tenantId, onAuthenticated }: { tenantId
   const [localTenantId, setLocalTenantId] = useState(tenantId || "");
 
   useEffect(() => {
-    // Si llegó un tenantId por url, guardémoslo en localStorage por si luego recarga
     if (tenantId) {
       localStorage.setItem("bq_current_tenant", tenantId);
       setLocalTenantId(tenantId);
-    } else {
-      const stored = localStorage.getItem("bq_current_tenant");
-      if (stored) setLocalTenantId(stored);
+      return;
     }
+
+    const stored = localStorage.getItem("bq_current_tenant");
+    if (stored) setLocalTenantId(stored);
   }, [tenantId]);
+
+  useEffect(() => {
+    if (!localTenantId) return;
+
+    const isAuth = sessionStorage.getItem(`bq_auth_${localTenantId}`);
+    if (isAuth === "true") {
+      onAuthenticated(localTenantId);
+    }
+  }, [localTenantId, onAuthenticated]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!localTenantId) {
-      setError("Falta ID del Inquilino (Tenant).");
+      setError("Falta ID del inquilino.");
       return;
     }
 
     setLoading(true);
     setError("");
+
     const isValid = await verifyChainPin(localTenantId, pin);
+
     setLoading(false);
 
     if (isValid) {
-      // Éxito. Guardar en memoria si es necesario y notificar al padre
       sessionStorage.setItem(`bq_auth_${localTenantId}`, "true");
       onAuthenticated(localTenantId);
-    } else {
-      setError("PIN Inválido o usuario no encontrado.");
+      return;
     }
+
+    setError("PIN inválido o usuario no encontrado.");
   };
 
-  useEffect(() => {
-    // Auto-login si ya existe la sesión en la pestaña actual
-    if (localTenantId) {
-      const isAuth = sessionStorage.getItem(`bq_auth_${localTenantId}`);
-      if (isAuth === "true") {
-        onAuthenticated(localTenantId);
-      }
-    }
-  }, [localTenantId, onAuthenticated]);
-
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-bg-solid text-text-primary px-4 font-sans">
-      <div className="w-full max-w-[360px] p-8 border border-border-main bg-bg-card rounded-xl shadow-2xl relative overflow-hidden">
-        {/* Glow effect */}
-        <div className="absolute -top-[100px] left-1/2 -translate-x-1/2 w-[200px] h-[100px] bg-gold/20 blur-[60px] pointer-events-none rounded-full" />
-        
-        <div className="text-center mb-8 relative z-10">
-          <div className="text-[10px] tracking-[0.2em] uppercase text-gold mb-3 flex items-center justify-center gap-2 font-medium">
-             <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 stroke-gold fill-none stroke-[2px] rounded-none">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-             </svg>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-bg-solid px-4 py-8 font-sans text-text-primary sm:px-6">
+      <div className="relative w-full max-w-[390px] overflow-hidden rounded-2xl border border-border-main bg-bg-card p-6 shadow-2xl sm:p-8">
+        <div className="pointer-events-none absolute -top-[100px] left-1/2 h-[100px] w-[200px] -translate-x-1/2 rounded-full bg-gold/20 blur-[60px]" />
+
+        <div className="relative z-10 mb-7 text-center sm:mb-8">
+          <div className="mb-3 flex items-center justify-center gap-2 text-[10px] font-medium uppercase tracking-[0.2em] text-gold">
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-none stroke-[2px] stroke-gold rounded-none">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
             Operaciones B2B
           </div>
-          <h1 className="font-serif text-[24px] font-bold tracking-tight text-text-primary leading-none mb-1">
+          <h1 className="mb-2 font-serif text-[24px] font-bold leading-none tracking-tight text-text-primary sm:text-[26px]">
             Plataforma de <em className="not-italic text-gold">Cadena.</em>
           </h1>
-          <p className="text-[12px] text-text-dim font-light">
-            Introduce tu PIN Maestro para administrar tus sucursales.
+          <p className="text-[12px] leading-5 font-light text-text-dim">
+            Introduce tu PIN maestro para administrar tus sucursales.
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-5 relative z-10">
+        <form onSubmit={handleLogin} className="relative z-10 space-y-4 sm:space-y-5">
           {!localTenantId ? (
-            <div className="text-[12px] text-dash-red bg-dash-red-bg border border-[#3e1818] p-3 rounded text-center">
-              ⚠️ Inquilino no identificado. Por favor, usa el enlace proporcionado por Bouquet SaaS.
+            <div className="rounded-lg border border-[#3e1818] bg-dash-red-bg p-4 text-center text-[12px] text-dash-red">
+              Inquilino no identificado. Abre el acceso desde el enlace de Bouquet SaaS.
             </div>
           ) : (
             <div className="space-y-1.5">
-              <label className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim block">Tenand ID <span className="opacity-50">(Auto)</span></label>
-              <input 
-                type="text" 
+              <label className="block text-[10px] font-medium uppercase tracking-[0.16em] text-text-dim">
+                Tenant ID <span className="opacity-50">(auto)</span>
+              </label>
+              <input
+                type="text"
                 disabled
                 value={localTenantId}
-                className="w-full bg-bg-solid border border-border-main rounded p-3 text-[12px] text-text-dim placeholder:text-text-faint outline-none font-mono h-11"
+                className="h-11 w-full rounded border border-border-main bg-bg-solid p-3 font-mono text-[12px] text-text-dim outline-none placeholder:text-text-faint"
               />
             </div>
           )}
 
           <div className="space-y-1.5">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim block">PIN Maestro</label>
-            </div>
-            <input 
-              type="password" 
-              required 
+            <label className="block text-[10px] font-medium uppercase tracking-[0.16em] text-text-dim">
+              PIN Maestro
+            </label>
+            <input
+              type="password"
+              required
               disabled={!localTenantId || loading}
-              placeholder="••••••" 
+              placeholder="••••••"
               autoFocus
               value={pin}
               onChange={(e) => {
                 setPin(e.target.value);
                 setError("");
               }}
-              className="w-full bg-bg-solid border border-border-bright rounded p-3 text-[16px] tracking-[0.3em] font-mono text-center text-text-primary placeholder:text-text-faint outline-none focus:border-gold focus:ring-1 focus:ring-gold/30 transition-all h-11"
+              className="h-12 w-full rounded border border-border-bright bg-bg-solid p-3 text-center font-mono text-[16px] tracking-[0.3em] text-text-primary outline-none transition-all placeholder:text-text-faint focus:border-gold focus:ring-1 focus:ring-gold/30"
             />
           </div>
 
           {error && (
-             <div className="text-[11px] text-dash-red border border-[#3e1818] px-2 py-1 bg-dash-red-bg rounded text-center">
-               {error}
-             </div>
+            <div className="rounded border border-[#3e1818] bg-dash-red-bg px-3 py-2 text-center text-[11px] text-dash-red">
+              {error}
+            </div>
           )}
 
-          <button 
-            type="submit" 
-            disabled={!localTenantId || loading || !pin} 
-            className="w-full bg-gold border border-gold text-bg-solid rounded py-3 mt-2 text-[12px] font-bold hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer shadow-[0_4px_12px_rgba(201,160,84,0.15)] flex justify-center items-center gap-2"
+          <button
+            type="submit"
+            disabled={!localTenantId || loading || !pin}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded border border-gold bg-gold py-3 text-[12px] font-bold text-bg-solid shadow-[0_4px_12px_rgba(201,160,84,0.15)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading && <span className="w-3.5 h-3.5 rounded-full border-2 border-bg-solid border-t-transparent animate-spin"/>}
-            {loading ? "Verificando..." : "Acceder al Consola"}
+            {loading && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-bg-solid border-t-transparent" />}
+            {loading ? "Verificando..." : "Acceder a la consola"}
           </button>
+
+          <p className="text-center text-[10px] tracking-[0.06em] text-text-faint">
+            La sesión queda guardada en esta pestaña.
+          </p>
         </form>
       </div>
-      <div className="mt-8 text-[10px] text-text-faint tracking-[0.06em]">
+
+      <div className="mt-7 text-[10px] tracking-[0.06em] text-text-faint">
         © {new Date().getFullYear()} Bouquet Platform. Acceso restringido.
       </div>
     </div>

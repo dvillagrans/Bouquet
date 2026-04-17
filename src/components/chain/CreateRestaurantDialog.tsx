@@ -133,11 +133,11 @@ export default function CreateRestaurantDialog({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-[800px] h-[90vh] md:h-auto flex flex-col md:flex-row bg-[#222222] rounded-xl overflow-hidden shadow-2xl relative border border-[#333333] my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+      <div className="w-full max-w-[800px] h-[92vh] md:h-auto flex flex-col md:flex-row bg-[#222222] rounded-xl overflow-hidden shadow-2xl relative border border-[#333333] my-4 sm:my-8">
         
-        {/* Left Col: MAP (Hides in small mobile, or takes top section) */}
-        <div className="w-full md:w-2/5 h-48 md:h-auto border-b md:border-b-0 md:border-r border-[#333333] relative">
+        {/* Left Col: MAP */}
+        <div className="hidden md:block w-full md:w-2/5 h-48 md:h-auto border-b md:border-b-0 md:border-r border-[#333333] relative">
            <Map
              provider={darkTiles}
              center={center} 
@@ -156,22 +156,22 @@ export default function CreateRestaurantDialog({
         </div>
 
         {/* Right Col: FORM */}
-        <div className="w-full md:w-3/5 p-6 md:p-8 flex flex-col h-full overflow-y-auto relative">
+        <div className="w-full md:w-3/5 p-5 sm:p-6 md:p-8 flex flex-col h-full overflow-y-auto relative">
           <button 
             onClick={onClose}
-            className="absolute top-5 right-5 p-1 rounded-full text-[#888] hover:text-white transition-colors z-10 bg-[#333]/50"
+            className="absolute top-4 right-4 p-1.5 rounded-full text-[#888] hover:text-white transition-colors z-10 bg-[#333]/50"
           >
             <X className="w-5 h-5" />
           </button>
 
-          <h2 className="text-[22px] font-semibold text-white mb-1 tracking-tight pr-6">
+          <h2 className="text-[20px] sm:text-[22px] font-semibold text-white mb-1 tracking-tight pr-6">
             Registra tu sucursal
           </h2>
-          <p className="text-[13px] text-[#A0A0A0] mb-6">
+          <p className="text-[12px] sm:text-[13px] text-[#A0A0A0] mb-5 sm:mb-6 max-w-md">
             Busca la dirección y autocompletaremos el formulario.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
              {error && (
                <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-[12px] rounded-md">
                  {error}
@@ -189,7 +189,7 @@ export default function CreateRestaurantDialog({
                  value={name}
                  onChange={(e) => setName(e.target.value)}
                  placeholder="ej. Sucursal Polanco"
-                 className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-2.5 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[13px] placeholder:text-[#555]"
+                 className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-3 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[14px] placeholder:text-[#555]"
                />
              </div>
 
@@ -205,7 +205,7 @@ export default function CreateRestaurantDialog({
                    onChange={(e) => setAddressSearch(e.target.value)}
                    onFocus={() => { if(searchResults.length > 0) setShowResults(true); }}
                    placeholder="Escribe tu calle y número..."
-                   className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-2.5 pl-3 pr-10 text-white focus:outline-none focus:border-[#777] transition-all text-[13px] placeholder:text-[#555]"
+                   className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-3 pl-3 pr-10 text-white focus:outline-none focus:border-[#777] transition-all text-[14px] placeholder:text-[#555]"
                  />
                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                    {isSearching ? (
@@ -218,7 +218,7 @@ export default function CreateRestaurantDialog({
 
                {/* Dropdown Results */}
                {showResults && searchResults.length > 0 && (
-                 <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-[#2A2A2A] border border-[#444] rounded-md shadow-2xl overflow-hidden max-h-48 overflow-y-auto">
+                 <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-[#2A2A2A] border border-[#444] rounded-md shadow-2xl overflow-hidden max-h-44 overflow-y-auto">
                    {searchResults.map((item, idx) => (
                      <button
                        key={idx}
@@ -234,7 +234,7 @@ export default function CreateRestaurantDialog({
              </div>
 
              {/* Geo Grid */}
-             <div className="grid grid-cols-2 gap-3">
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                <div className="space-y-1.5">
                  <label className="text-[10px] tracking-[0.1em] uppercase text-[#A0A0A0]">Colonia</label>
                  <input
@@ -242,7 +242,7 @@ export default function CreateRestaurantDialog({
                    value={colonia}
                    onChange={(e) => setColonia(e.target.value)}
                    placeholder="—"
-                   className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-2.5 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[13px] placeholder:text-[#555]"
+                   className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-3 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[14px] placeholder:text-[#555]"
                  />
                </div>
                <div className="space-y-1.5">
@@ -252,7 +252,7 @@ export default function CreateRestaurantDialog({
                    value={cp}
                    onChange={(e) => setCp(e.target.value)}
                    placeholder="—"
-                   className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-2.5 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[13px] placeholder:text-[#555]"
+                   className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-3 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[14px] placeholder:text-[#555]"
                  />
                </div>
                <div className="space-y-1.5 col-span-2">
@@ -270,7 +270,7 @@ export default function CreateRestaurantDialog({
                      value={estado}
                      onChange={(e) => setEstado(e.target.value)}
                      placeholder="Estado"
-                     className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-2.5 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[13px] placeholder:text-[#555]"
+                    className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-3 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[14px] placeholder:text-[#555]"
                    />
                  </div>
                </div>

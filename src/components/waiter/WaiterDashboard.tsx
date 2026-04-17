@@ -246,7 +246,7 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
       <div className="border-b border-wire bg-panel py-3 px-4">
         <div className="mx-auto max-w-7xl flex items-center gap-2">
           {/* Scrollable filter area */}
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-none flex-1 min-w-0 pb-0.5">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0 pb-0.5">
             {/* View toggle */}
             <div className="flex border border-wire rounded overflow-hidden shrink-0">
               <button

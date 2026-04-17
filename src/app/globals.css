@@ -255,6 +255,45 @@ a {
   display: none;
 }
 
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .scrollbar-hide {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-gold) transparent;
+    scrollbar-gutter: stable;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: block;
+    width: 10px;
+    height: 10px;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar-thumb {
+    background: rgba(183, 146, 93, 0.5);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar-thumb:hover {
+    background: rgba(183, 146, 93, 0.8);
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+}
+
 /* ─── Keyframes ─────────────────────────────────────────── */
 
 @keyframes fade-in {

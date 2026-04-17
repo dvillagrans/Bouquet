@@ -75,107 +75,109 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
   }
 
   return (
-    <div className="min-h-screen bg-bg-solid text-text-primary p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-bg-solid text-text-primary px-4 py-4 sm:px-6 md:p-8 font-sans">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 sm:mb-8">
+        <div className="max-w-2xl">
            <div className="text-[10px] tracking-[0.2em] uppercase text-gold mb-1.5 flex items-center gap-2 font-medium">
              <Building2 className="w-3.5 h-3.5" />
              Corporate B2B
            </div>
-          <h1 className="font-serif text-[28px] font-bold tracking-tight text-text-primary leading-none mb-1">
+          <h1 className="font-serif text-[22px] sm:text-[28px] font-bold tracking-tight text-text-primary leading-tight mb-1">
             Cadena <em className="not-italic text-gold">{data.chain.name}</em>
           </h1>
-          <p className="text-[12px] text-text-dim mt-1 font-light">
+          <p className="text-[12px] sm:text-[13px] text-text-dim mt-1 font-light max-w-xl leading-5">
             Vista global. {data.zones.length} Zonas activas. {data.restaurants.length} Sucursales.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 gap-2 w-full md:w-auto md:flex md:items-center">
           <button
             onClick={() => setIsCreatingRest(true)}
-            className="flex items-center justify-center gap-2 px-3 py-1.5 bg-gold border border-gold rounded text-[11px] text-bg-solid hover:bg-gold-light transition-colors w-full md:w-auto font-medium"
+            className="flex items-center justify-center gap-2 px-3 py-2.5 bg-gold border border-gold rounded text-[11px] text-bg-solid hover:bg-gold-light transition-colors w-full md:w-auto font-medium"
           >
             <Plus className="w-3.5 h-3.5" />
-            Nueva Sucursal 
+            <span className="sm:hidden">Nueva</span>
+            <span className="hidden sm:inline">Nueva Sucursal</span>
           </button>
           <button
             onClick={() => load(tenantId)}
             disabled={loading}
-            className="flex items-center justify-center gap-2 px-3 py-1.5 bg-bg-card border border-border-main rounded text-[11px] text-text-muted hover:text-text-secondary hover:border-border-bright transition-colors w-full md:w-auto"
+            className="flex items-center justify-center gap-2 px-3 py-2.5 bg-bg-card border border-border-main rounded text-[11px] text-text-muted hover:text-text-secondary hover:border-border-bright transition-colors w-full md:w-auto"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            {loading ? "Sincronizando..." : "Actualizar"}
+            <span className="sm:hidden">{loading ? "Sync" : "Refrescar"}</span>
+            <span className="hidden sm:inline">{loading ? "Sincronizando..." : "Actualizar"}</span>
           </button>
         </div>
       </div>
 
       {/* STATS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-bg-card border border-border-main rounded-xl p-5 shadow-sm">
-          <div className="flex items-start justify-between mb-4">
-            <h3 className="text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim">Ventas Hoy</h3>
-            <div className="p-2 bg-dash-green-bg/50 rounded-lg border border-[#1e3824]">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4 mb-6 sm:mb-8">
+        <div className="bg-bg-card border border-border-main rounded-xl p-4 sm:p-5 shadow-sm">
+          <div className="flex items-start justify-between mb-3 sm:mb-4">
+            <h3 className="text-[10px] sm:text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim leading-tight pr-2">Ventas Hoy</h3>
+            <div className="p-2 bg-dash-green-bg/50 rounded-lg border border-[#1e3824] shrink-0">
               <TrendingUp className="w-4 h-4 text-dash-green" />
             </div>
           </div>
-          <p className="font-serif text-[28px] font-bold text-text-primary mb-1 tracking-tight">
+          <p className="font-serif text-[24px] sm:text-[28px] font-bold text-text-primary mb-1 tracking-tight leading-none">
             {fmt(data.stats.totalRevenue)}
           </p>
-          <p className="text-[10px] text-dash-green font-medium">
+          <p className="text-[10px] text-dash-green font-medium leading-4">
             ↗ En tiempo real
           </p>
         </div>
 
-        <div className="bg-bg-card border border-border-main rounded-xl p-5 shadow-sm">
-          <div className="flex items-start justify-between mb-4">
-            <h3 className="text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim">Mesas Activas</h3>
-            <div className="p-2 bg-gold-faint rounded-lg border border-gold-dim">
+        <div className="bg-bg-card border border-border-main rounded-xl p-4 sm:p-5 shadow-sm">
+          <div className="flex items-start justify-between mb-3 sm:mb-4">
+            <h3 className="text-[10px] sm:text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim leading-tight pr-2">Mesas Activas</h3>
+            <div className="p-2 bg-gold-faint rounded-lg border border-gold-dim shrink-0">
               <CircleDot className="w-4 h-4 text-gold" />
             </div>
           </div>
-          <p className="font-serif text-[28px] font-bold text-text-primary mb-1 tracking-tight">
+          <p className="font-serif text-[24px] sm:text-[28px] font-bold text-text-primary mb-1 tracking-tight leading-none">
             {data.stats.activeTables}
           </p>
-          <p className="text-[10px] text-text-dim font-light">
+          <p className="text-[10px] text-text-dim font-light leading-4">
             En servicio este momento
           </p>
         </div>
 
-        <div className="bg-bg-card border border-border-main rounded-xl p-5 shadow-sm">
-          <div className="flex items-start justify-between mb-4">
-            <h3 className="text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim">Sesiones</h3>
-            <div className="p-2 bg-bg-hover rounded-lg border border-border-mid">
+        <div className="bg-bg-card border border-border-main rounded-xl p-4 sm:p-5 shadow-sm">
+          <div className="flex items-start justify-between mb-3 sm:mb-4">
+            <h3 className="text-[10px] sm:text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim leading-tight pr-2">Sesiones</h3>
+            <div className="p-2 bg-bg-hover rounded-lg border border-border-mid shrink-0">
               <Users className="w-4 h-4 text-text-muted" />
             </div>
           </div>
-          <p className="font-serif text-[28px] font-bold text-text-primary mb-1 tracking-tight">
+          <p className="font-serif text-[24px] sm:text-[28px] font-bold text-text-primary mb-1 tracking-tight leading-none">
             {data.stats.totalSessions}
           </p>
-          <p className="text-[10px] text-text-dim font-light">
+          <p className="text-[10px] text-text-dim font-light leading-4">
             Comensales / Grupos hoy
           </p>
         </div>
 
-        <div className="bg-bg-card border border-border-main rounded-xl p-5 shadow-sm">
-          <div className="flex items-start justify-between mb-4">
-            <h3 className="text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim">Unidades</h3>
-            <div className="p-2 bg-bg-hover rounded-lg border border-border-mid">
+        <div className="bg-bg-card border border-border-main rounded-xl p-4 sm:p-5 shadow-sm">
+          <div className="flex items-start justify-between mb-3 sm:mb-4">
+            <h3 className="text-[10px] sm:text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim leading-tight pr-2">Unidades</h3>
+            <div className="p-2 bg-bg-hover rounded-lg border border-border-mid shrink-0">
               <MapPin className="w-4 h-4 text-text-muted" />
             </div>
           </div>
-          <p className="font-serif text-[28px] font-bold text-text-primary mb-1 tracking-tight">
+          <p className="font-serif text-[24px] sm:text-[28px] font-bold text-text-primary mb-1 tracking-tight leading-none">
             {data.stats.restaurantCount}
           </p>
-          <p className="text-[10px] text-text-dim font-light">
+          <p className="text-[10px] text-text-dim font-light leading-4">
             Sucursales operando
           </p>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
+      <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
         {/* TABLA SUCURSALES (ocupa 2 columnas) */}
         <div className="lg:col-span-2 bg-bg-card border border-border-main rounded-xl shadow-sm overflow-hidden flex flex-col">
-          <div className="p-5 border-b border-border-main bg-bg-bar flex items-center justify-between">
+          <div className="p-4 sm:p-5 border-b border-border-main bg-bg-bar flex items-center justify-between gap-3">
             <h2 className="text-[12px] font-medium tracking-[0.14em] uppercase text-text-primary">
               Desempeño por Sucursal
             </h2>
@@ -183,7 +185,52 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
               {data.restaurants.length} ubicaciones
             </span>
           </div>
-          <div className="overflow-x-auto">
+          <div className="sm:hidden p-4 space-y-3">
+            {data.restaurants.length === 0 ? (
+              <div className="rounded-lg border border-border-main bg-bg-solid px-4 py-8 text-center text-xs text-text-dim">
+                No hay restaurantes registrados en esta cadena.
+              </div>
+            ) : (
+              data.restaurants.map((rest) => (
+                <article key={rest.id} className="rounded-xl border border-border-main bg-bg-solid p-4 shadow-[0_1px_0_rgba(255,255,255,0.02)]">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="truncate text-[13px] font-semibold text-text-primary leading-tight">
+                        {rest.name}
+                      </h3>
+                      <p className="mt-1 text-[10px] text-text-dim truncate">
+                        {rest.address || "Sin dirección"}
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-border-mid bg-bg-card px-2 py-1 text-[10px] text-text-muted shrink-0">
+                      {rest.zoneName || "Independiente"}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="rounded-lg border border-border-main bg-bg-card px-3 py-2">
+                      <div className="text-[9px] uppercase tracking-[0.12em] text-text-dim">Ventas hoy</div>
+                      <div className="mt-1 font-medium text-gold">{fmt(rest.todayRevenue)}</div>
+                    </div>
+                    <div className="rounded-lg border border-border-main bg-bg-card px-3 py-2">
+                      <div className="text-[9px] uppercase tracking-[0.12em] text-text-dim">Staff</div>
+                      <div className="mt-1 font-medium text-text-primary">{rest.activeStaff}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3">
+                    <div className="mb-2 flex items-center justify-between text-[10px] text-text-dim">
+                      <span>Ocupación</span>
+                      <span>{rest.activeTables}/{rest.totalTables}</span>
+                    </div>
+                    <OccupancyBar active={rest.activeTables} total={rest.totalTables} />
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+
+          <div className="hidden sm:block overflow-x-auto scrollbar-hide">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-border-main bg-bg-solid/30">
@@ -237,7 +284,7 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
 
         {/* ZONAS */}
         <div className="bg-bg-card border border-border-main rounded-xl shadow-sm flex flex-col">
-          <div className="p-5 border-b border-border-main bg-bg-bar flex items-center justify-between">
+          <div className="p-4 sm:p-5 border-b border-border-main bg-bg-bar flex items-center justify-between">
             <h2 className="text-[12px] font-medium tracking-[0.14em] uppercase text-text-primary">
               Agrupación por Zonas
             </h2>
@@ -245,9 +292,9 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
                <span className="text-[10px] text-gold font-medium">Nivel 2 Activo</span>
             )}
           </div>
-          <div className="p-5 flex flex-col gap-4 flex-1">
+          <div className="p-4 sm:p-5 flex flex-col gap-4 flex-1">
             {data.zones.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-[11px] text-text-faint gap-2 p-8 text-center bg-bg-solid rounded-lg border border-border-main border-dashed">
+              <div className="flex-1 flex flex-col items-center justify-center text-[11px] text-text-faint gap-2 p-6 sm:p-8 text-center bg-bg-solid rounded-lg border border-border-main border-dashed">
                 <MapPin className="w-6 h-6 text-text-muted mb-2" />
                 Sin zonas configuradas
                 <span className="text-[10px]">Crea una nueva sucursal designando una zona para activarlas.</span>

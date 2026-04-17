@@ -126,7 +126,7 @@ export default function WaiterTableDetail({
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 border-b border-wire px-4 pt-3 overflow-x-auto scrollbar-none">
+        <div className="flex gap-1 border-b border-wire px-4 pt-3 overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setActiveTab("orders")}
             className={`pb-3 px-3 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-colors min-h-[44px] flex items-end ${

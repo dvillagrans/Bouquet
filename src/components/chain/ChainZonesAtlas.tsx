@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
@@ -8,17 +8,31 @@ import {
   ArrowLeft,
   Compass,
   MapPinned,
+  Maximize2,
+  Minimize2,
   Orbit,
+  Pencil,
   RefreshCw,
   Sparkles,
   Store,
   TrendingUp,
   Waves,
 } from "lucide-react";
-import { getChainDashboard } from "@/actions/chain";
+import { getChainDashboard, renameChainZone } from "@/actions/chain";
 import type { ChainDashboardData, RestaurantSummary, ZoneSummary } from "@/actions/chain";
 import ChainAuthGuard from "./ChainAuthGuard";
-import { Map, Marker, ZoomControl } from "pigeon-maps";
+import { Map, Marker } from "pigeon-maps";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 function fmtMoney(n: number) {
   return `$${n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -63,15 +77,50 @@ function ZoneCard({
   sharePct,
   totalRestaurants,
   reduceMotion,
+  chainId,
+  onRenamed,
 }: {
   zone: ZoneSummary;
   index: number;
   sharePct: number;
   totalRestaurants: number;
   reduceMotion: boolean | null;
+  chainId: string;
+  onRenamed: () => void | Promise<void>;
 }) {
   const occPct = zone.totalTables > 0 ? (zone.activeTables / zone.totalTables) * 100 : 0;
   const tone = occupancyTone(occPct);
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState(zone.name);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (editOpen) {
+      setEditName(zone.name);
+      setFormError(null);
+    }
+  }, [editOpen, zone.name]);
+
+  const handleRename = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const next = editName.trim();
+    if (next.length < 2) {
+      setFormError("Mínimo 2 caracteres.");
+      return;
+    }
+    setSaving(true);
+    setFormError(null);
+    const res = await renameChainZone({ chainId, zoneId: zone.id, name: next });
+    setSaving(false);
+    if (res.success) {
+      setEditOpen(false);
+      await onRenamed();
+    } else {
+      setFormError(res.error ?? "No se pudo guardar.");
+    }
+  };
 
   return (
     <motion.article
@@ -171,6 +220,14 @@ function ZoneCard({
               <MapPinned className="size-3.5" aria-hidden />
               Consola de zona
             </Link>
+            <button
+              type="button"
+              onClick={() => setEditOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-border-mid bg-bg-solid/50 px-4 py-2 text-[11px] font-semibold text-text-secondary transition-colors hover:border-gold/35 hover:text-gold"
+            >
+              <Pencil className="size-3.5" aria-hidden />
+              Editar zona
+            </button>
             <span className="font-mono text-[10px] text-text-faint">ID · {zone.id.slice(0, 8)}…</span>
           </div>
         </div>
@@ -182,6 +239,118 @@ function ZoneCard({
           </p>
         </div>
       </div>
+
+      <Dialog open={editOpen} onOpenChange={(open) => !saving && setEditOpen(open)}>
+        <DialogContent className="bg-bg-card text-text-primary border-border-main ring-0 sm:max-w-[440px] gap-0 p-0 overflow-hidden">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage: `linear-gradient(var(--color-gold) 1px, transparent 1px), linear-gradient(90deg, var(--color-gold) 1px, transparent 1px)`,
+              backgroundSize: "22px 22px",
+            }}
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute -right-20 -top-24 size-52 rounded-full bg-gradient-to-br from-gold/10 via-transparent to-transparent blur-2xl"
+            aria-hidden
+          />
+          <div className="relative flex flex-col gap-6 p-7">
+            <DialogHeader className="items-center text-center gap-3">
+              <div className="mx-auto flex size-11 items-center justify-center rounded-xl border border-gold/35 bg-gold-faint/40 shadow-[0_0_24px_-8px_rgba(201,160,84,0.45)]">
+                <Pencil className="size-4 text-gold" aria-hidden />
+              </div>
+              <div className="space-y-1.5">
+                <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-text-faint">
+                  Territorio {String(index + 1).padStart(2, "0")}
+                </p>
+                <DialogTitle className="font-serif text-[22px] font-bold tracking-tight text-text-primary leading-none">
+                  Renombrar zona
+                </DialogTitle>
+                <DialogDescription className="text-[11px] text-text-muted font-light leading-relaxed max-w-xs mx-auto">
+                  Cambia la etiqueta visible en cadena y consolas. El PIN y seguridad se gestionan en la vista de zona.
+                </DialogDescription>
+              </div>
+            </DialogHeader>
+
+            <form onSubmit={handleRename} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor={`zone-name-${zone.id}`}
+                  className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim"
+                >
+                  Nombre del territorio
+                </Label>
+                <Input
+                  id={`zone-name-${zone.id}`}
+                  autoFocus
+                  value={editName}
+                  onChange={(e) => {
+                    setEditName(e.target.value);
+                    setFormError(null);
+                  }}
+                  maxLength={120}
+                  autoComplete="off"
+                  placeholder="Ej. Norte Metropolitano"
+                  className="h-10 bg-bg-solid border-border-bright text-[12px] text-text-primary placeholder:text-text-faint focus-visible:border-gold focus-visible:ring-gold/30"
+                />
+                {formError ? (
+                  <p className="text-[11px] font-medium text-dash-red">{formError}</p>
+                ) : (
+                  <p className="text-[10px] text-text-dim font-light">
+                    Mínimo 2 caracteres · visible en reportes y paneles.
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={saving}
+                  onClick={() => setEditOpen(false)}
+                  className="flex-1 border-border-mid text-text-muted hover:text-text-secondary"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={saving || editName.trim().length < 2}
+                  className="flex-1 bg-gold border-gold text-bg-solid hover:opacity-90 disabled:opacity-50 shadow-[0_4px_12px_rgba(201,160,84,0.15)]"
+                >
+                  {saving && (
+                    <svg className="size-3.5 animate-spin shrink-0" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                  )}
+                  {saving ? "Guardando…" : "Guardar cambios"}
+                </Button>
+              </div>
+            </form>
+
+            <div className="border-t border-border-main/60 pt-4">
+              <Link
+                href={`/zona/settings?zoneId=${zone.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group inline-flex w-full items-center justify-between gap-2 rounded-lg border border-border-main bg-bg-solid/50 px-3.5 py-2.5 text-[11px] text-text-muted transition-colors hover:border-gold/35 hover:text-gold"
+              >
+                <span className="flex items-center gap-2">
+                  <MapPinned className="size-3.5 text-gold/70 group-hover:text-gold" aria-hidden />
+                  Configuración y PIN (vista zona)
+                </span>
+                <span className="font-mono text-[13px] text-text-dim transition-transform group-hover:translate-x-0.5 group-hover:text-gold">
+                  →
+                </span>
+              </Link>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.article>
   );
 }
@@ -233,12 +402,74 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
   // Geocoder cache
   const [geoPoints, setGeoPoints] = useState<Record<string, [number, number]>>({});
   const [mapCenter, setMapCenter] = useState<[number, number]>([19.432608, -99.133209]); // CDMX central
+  const [mapZoom, setMapZoom] = useState(11);
+  const mapAreaRef = useRef<HTMLDivElement>(null);
+  const hoverClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [hovered, setHovered] = useState<{
     rest: RestaurantSummary;
     x: number;
     y: number;
   } | null>(null);
+
+  const cancelClearHover = useCallback(() => {
+    if (hoverClearTimer.current) {
+      clearTimeout(hoverClearTimer.current);
+      hoverClearTimer.current = null;
+    }
+  }, []);
+
+  const scheduleClearHover = useCallback(() => {
+    if (hoverClearTimer.current) clearTimeout(hoverClearTimer.current);
+    hoverClearTimer.current = setTimeout(() => {
+      hoverClearTimer.current = null;
+      setHovered(null);
+    }, 200);
+  }, []);
+
+  useEffect(() => () => cancelClearHover(), [cancelClearHover]);
+
+  const [mapFullscreen, setMapFullscreen] = useState(false);
+
+  useEffect(() => {
+    const syncFullscreen = () => {
+      const el = mapAreaRef.current;
+      const doc = document as Document & { webkitFullscreenElement?: Element | null };
+      const active =
+        (el && document.fullscreenElement === el) || (el && doc.webkitFullscreenElement === el);
+      setMapFullscreen(!!active);
+    };
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    document.addEventListener("webkitfullscreenchange", syncFullscreen);
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreen);
+      document.removeEventListener("webkitfullscreenchange", syncFullscreen);
+    };
+  }, []);
+
+  const toggleMapFullscreen = useCallback(async () => {
+    const el = mapAreaRef.current;
+    if (!el) return;
+    const doc = document as Document & {
+      webkitExitFullscreen?: () => void;
+      webkitFullscreenElement?: Element | null;
+    };
+    const elAny = el as HTMLElement & {
+      webkitRequestFullscreen?: () => Promise<void> | void;
+    };
+    try {
+      const fsEl = document.fullscreenElement ?? doc.webkitFullscreenElement ?? null;
+      if (fsEl === el) {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else doc.webkitExitFullscreen?.();
+        return;
+      }
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else await elAny.webkitRequestFullscreen?.();
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   const load = useCallback(async (tid: string) => {
     try {
@@ -380,35 +611,42 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 pb-24 pt-10 md:px-8 md:pt-14">
         
-        {/* Header Hero + MAP (Split View Banner) */}
-        <div className="mb-12 grid grid-cols-1 lg:grid-cols-2 gap-8 rounded-3xl border border-border-main bg-bg-card/40 backdrop-blur-md overflow-hidden shadow-2xl">
-           
-           {/* Info Side */}
+        {/* Hero + mapa: dos bloques rectangulares (evita la sensación de “cápsula” del contenedor único muy redondeado) */}
+        <div className="mb-12 grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2 lg:gap-6">
+           {/* Columna copy */}
            <motion.header
              initial={reduceMotion ? false : { opacity: 0, x: -20 }}
              animate={{ opacity: 1, x: 0 }}
              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-             className="relative p-8 md:p-12 flex flex-col justify-center"
+             className="relative flex flex-col justify-center overflow-hidden rounded-xl border border-border-main bg-bg-card/50 p-8 shadow-lg backdrop-blur-sm md:p-10"
            >
-             <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: `linear-gradient(var(--color-gold) 1px, transparent 1px), linear-gradient(90deg, var(--color-gold) 1px, transparent 1px)`, backgroundSize: "24px 24px" }} />
-             
-             <div className="relative z-10 space-y-6">
-                <div className="flex flex-wrap items-center gap-3">
+             <div
+               className="pointer-events-none absolute inset-0 opacity-[0.02]"
+               style={{
+                 backgroundImage:
+                   "linear-gradient(var(--color-gold) 1px, transparent 1px), linear-gradient(90deg, var(--color-gold) 1px, transparent 1px)",
+                 backgroundSize: "24px 24px",
+               }}
+               aria-hidden
+             />
+
+             <div className="relative space-y-6">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <Link
                     href="/cadena"
-                    className="inline-flex items-center gap-2 rounded-full border border-border-main bg-bg-card/70 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-text-muted transition-colors hover:border-gold/30 hover:text-gold"
+                    className="inline-flex items-center gap-2 rounded-md border border-border-main bg-bg-solid/60 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-text-muted transition-colors hover:border-gold/35 hover:text-gold"
                   >
                     <ArrowLeft className="size-3" aria-hidden />
                     Panel maestro
                   </Link>
-                  <span className="flex items-center gap-1.5 rounded-full border border-gold/25 bg-gold-faint/30 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-gold">
+                  <span className="inline-flex items-center gap-1.5 rounded-md border border-gold/30 bg-gold-faint/25 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-gold">
                     <Sparkles className="size-3" aria-hidden />
                     Vista atlas
                   </span>
                 </div>
 
                 <div>
-                  <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-text-faint">Cartografía · Red Global</p>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-text-faint">Cartografía · Red Global</p>
                   <h1 className="mt-2 font-serif text-[clamp(2.2rem,5vw,3.5rem)] font-semibold leading-[1.05] tracking-tight">
                     Zonas de{" "}
                     <span className="bg-gradient-to-r from-gold via-[#e4c78a] to-gold-dim bg-clip-text text-transparent">
@@ -420,12 +658,12 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
                   </p>
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-1">
                   <button
                     type="button"
                     onClick={() => load(tenantId)}
                     disabled={loading}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-border-bright bg-bg-card px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary transition-colors hover:border-gold/35 hover:text-gold disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-border-bright bg-bg-card px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary transition-colors hover:border-gold/35 hover:text-gold disabled:opacity-50"
                   >
                     <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} aria-hidden />
                     {loading ? "Rastreando" : "Redibujar mapa"}
@@ -434,119 +672,200 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
              </div>
            </motion.header>
 
-           {/* Map Side */}
+           {/* Columna mapa */}
            <motion.div 
+             ref={mapAreaRef}
              initial={reduceMotion ? false : { opacity: 0 }}
              animate={{ opacity: 1 }}
              transition={{ duration: 1, delay: 0.2 }}
-             className="relative h-64 lg:h-full min-h-[350px] border-t lg:border-t-0 lg:border-l border-border-main bg-[#1a1a1a]"
+             className={`relative overflow-hidden rounded-xl border border-border-main bg-[#1a1a1a] shadow-lg ${
+               mapFullscreen
+                 ? "flex h-[100dvh] min-h-[100dvh] w-full flex-col"
+                 : "h-64 min-h-[350px] lg:h-full lg:min-h-0"
+             }`}
            >
+              <div
+                className={
+                  mapFullscreen
+                    ? "relative min-h-0 w-full flex-1 overflow-hidden"
+                    : "absolute inset-0 overflow-hidden"
+                }
+              >
               <Map
                 provider={darkTiles}
                 center={mapCenter}
-                zoom={11}
-                onBoundsChanged={({ center }) => setMapCenter(center)}
+                zoom={mapZoom}
+                onBoundsChanged={({ center, zoom }) => {
+                  setMapCenter(center);
+                  if (typeof zoom === "number" && !Number.isNaN(zoom)) setMapZoom(zoom);
+                }}
                 metaWheelZoom={true}
+                attribution={false}
               >
                  {data.restaurants.map((rest) => {
                    const coords = geoPoints[rest.id];
                    if (!coords) return null;
+                   const initial = rest.name.trim().charAt(0).toUpperCase() || "?";
                    return (
                      <Marker
                        key={rest.id}
-                       width={36}
+                       width={56}
+                       height={56}
                        anchor={coords}
-                       color="#E5A85A"
                        payload={rest}
-                       onMouseOver={(args: unknown) => {
-                         const a = args as { event?: MouseEvent; payload?: RestaurantSummary };
-                         const ev = a.event;
-                         const payload = a.payload ?? rest;
-                         if (!ev) return;
-                         const target = ev.target as HTMLElement | null;
-                         const rect = target?.getBoundingClientRect?.();
-                         if (rect) {
-                           setHovered({
-                             rest: payload,
-                             x: rect.left + rect.width / 2,
-                             y: rect.top + rect.height / 2,
-                           });
-                         } else {
-                           setHovered({ rest: payload, x: ev.clientX, y: ev.clientY });
-                         }
+                       onMouseOver={(p: { event?: MouseEvent; payload?: RestaurantSummary }) => {
+                         cancelClearHover();
+                         const ev = p.event;
+                         const wrap = mapAreaRef.current;
+                         if (!ev || !wrap) return;
+                         const br = wrap.getBoundingClientRect();
+                         setHovered({
+                           rest: p.payload ?? rest,
+                           x: ev.clientX - br.left,
+                           y: ev.clientY - br.top,
+                         });
                        }}
-                       onMouseOut={() => setHovered(null)}
-                       onClick={(args: unknown) => {
-                         const a = args as { payload?: RestaurantSummary };
-                         const payload = a.payload ?? rest;
+                       onMouseOut={() => scheduleClearHover()}
+                       onClick={(p: { payload?: RestaurantSummary }) => {
+                         const payload = p.payload ?? rest;
                          router.push(`/cadena/restaurantes/${payload.id}`);
                        }}
-                     />
+                     >
+                       <div
+                         className="relative flex h-14 w-14 cursor-pointer select-none items-end justify-center pb-0.5"
+                         style={{ pointerEvents: "auto" }}
+                         onMouseMove={(ev) => {
+                           const wrap = mapAreaRef.current;
+                           if (!wrap) return;
+                           const br = wrap.getBoundingClientRect();
+                           setHovered((h) => {
+                             if (!h || h.rest.id !== rest.id) return h;
+                             return { ...h, x: ev.clientX - br.left, y: ev.clientY - br.top };
+                           });
+                         }}
+                       >
+                         <div
+                           className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white/90 bg-gold text-[12px] font-bold text-bg-solid shadow-[0_4px_14px_rgba(0,0,0,0.5)] ring-2 ring-black/25 transition-transform duration-200 hover:scale-105"
+                           title={rest.name}
+                         >
+                           {initial}
+                         </div>
+                       </div>
+                     </Marker>
                    );
                  })}
-                 <ZoomControl style={{ bottom: 20, right: 20 }} />
               </Map>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => void toggleMapFullscreen()}
+                aria-label={mapFullscreen ? "Salir de pantalla completa" : "Mapa en pantalla completa"}
+                title={mapFullscreen ? "Salir de pantalla completa (Esc)" : "Pantalla completa"}
+                className="absolute right-4 top-4 z-20 flex h-9 w-9 items-center justify-center rounded-lg border border-border-main bg-[#1f1f1f]/95 text-text-secondary shadow-lg backdrop-blur-sm transition-colors hover:border-gold/40 hover:text-gold"
+              >
+                {mapFullscreen ? <Minimize2 className="size-4" aria-hidden /> : <Maximize2 className="size-4" aria-hidden />}
+              </button>
+
+              {/* Zoom compacto: el ZoomControl de pigeon usa un contenedor grande que bloqueaba hover en marcadores */}
+              <div className="absolute bottom-3 right-3 z-20 flex flex-col overflow-hidden rounded-lg border border-border-main bg-[#1f1f1f]/95 shadow-lg backdrop-blur-sm">
+                <button
+                  type="button"
+                  aria-label="Acercar mapa"
+                  onClick={() => setMapZoom((z) => Math.min(18, z + 1))}
+                  className="flex h-9 w-9 items-center justify-center border-b border-border-main text-[15px] font-semibold leading-none text-text-secondary transition-colors hover:bg-bg-hover hover:text-gold"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  aria-label="Alejar mapa"
+                  onClick={() => setMapZoom((z) => Math.max(1, z - 1))}
+                  className="flex h-9 w-9 items-center justify-center text-[17px] font-semibold leading-none text-text-secondary transition-colors hover:bg-bg-hover hover:text-gold"
+                >
+                  −
+                </button>
+              </div>
+
+              {/* Créditos teselas (sustituyen la caja pigeon-attribution); obligatorio para OSM/CARTO */}
+              <div className="absolute bottom-2 left-2 z-[6] max-w-[min(100%,220px)] rounded-md bg-black/55 px-2 py-1 text-[8px] leading-snug text-white/70 backdrop-blur-sm pointer-events-auto">
+                <a
+                  href="https://www.openstreetmap.org/copyright"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="underline-offset-2 hover:text-white hover:underline"
+                >
+                  © OpenStreetMap
+                </a>
+                <span className="text-white/35"> · </span>
+                <a
+                  href="https://carto.com/attributions"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="underline-offset-2 hover:text-white hover:underline"
+                >
+                  CARTO
+                </a>
+              </div>
               
               {/* Map UI Overlay Elements */}
               <div className="absolute top-4 left-4 z-10 pointer-events-none">
                 <div className="inline-flex flex-col gap-2">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gold/30 bg-[#222]/80 backdrop-blur-sm text-[10px] text-text-secondary shadow-lg">
-                    <div className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+                  <div className="flex items-center gap-2 rounded-md border border-gold/30 bg-[#222]/80 px-3 py-1.5 text-[10px] text-text-secondary shadow-lg backdrop-blur-sm">
+                    <div className="size-2 shrink-0 rounded-sm bg-gold animate-pulse" />
                     Radar Activo
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-main bg-[#222]/80 backdrop-blur-sm text-[10px] text-text-muted shadow-lg">
+                  <div className="flex items-center gap-2 rounded-md border border-border-main bg-[#222]/80 px-3 py-1.5 text-[10px] text-text-muted shadow-lg backdrop-blur-sm">
                     {Object.keys(geoPoints).length} Puntos Geofijados
                   </div>
                 </div>
               </div>
 
-              {/* Hover card (outside map DOM, but positioned to viewport) */}
+              {/* Tarjeta hover: coordenadas relativas al mapa; pointer-events para poder leer sin que se cierre al salir del pin */}
               {hovered ? (
                 <div
-                  className="fixed z-50 pointer-events-none"
-                  style={{ left: hovered.x + 14, top: hovered.y + 14 }}
+                  role="tooltip"
+                  className="absolute z-[25] w-[min(288px,calc(100%-24px))] overflow-hidden rounded-2xl border border-border-main bg-bg-card/95 shadow-[0_26px_90px_-50px_rgba(0,0,0,0.9)] backdrop-blur-md pointer-events-auto"
+                  style={{
+                    left: hovered.x,
+                    top: hovered.y,
+                    transform: "translate(-50%, 14px)",
+                  }}
+                  onMouseEnter={cancelClearHover}
+                  onMouseLeave={() => {
+                    cancelClearHover();
+                    setHovered(null);
+                  }}
                 >
-                  <div className="w-[260px] overflow-hidden rounded-2xl border border-border-main bg-bg-card/95 shadow-[0_26px_90px_-50px_rgba(0,0,0,0.9)] backdrop-blur-md">
-                    <div className="border-b border-border-main bg-bg-bar/70 px-4 py-3">
-                      <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-text-faint">
-                        Sucursal
-                      </p>
-                      <p className="mt-1 font-serif text-[16px] leading-tight text-text-primary">
-                        {hovered.rest.name}
-                      </p>
-                      <p className="mt-1 text-[11px] text-text-dim">
-                        {hovered.rest.address || "Sin dirección registrada"}
-                      </p>
+                  <div className="border-b border-border-main bg-bg-bar/70 px-4 py-3">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-text-faint">Sucursal</p>
+                    <p className="mt-1 font-serif text-[16px] leading-tight text-text-primary">{hovered.rest.name}</p>
+                    <p className="mt-1 text-[11px] text-text-dim">
+                      {hovered.rest.address || "Sin dirección registrada"}
+                    </p>
+                  </div>
+                  <div className="px-4 py-3">
+                    <div className="flex items-center justify-between text-[10px] text-text-dim">
+                      <span>Zona</span>
+                      <span className="font-medium text-text-secondary">{hovered.rest.zoneName || "—"}</span>
                     </div>
-                    <div className="px-4 py-3">
-                      <div className="flex items-center justify-between text-[10px] text-text-dim">
-                        <span>Zona</span>
-                        <span className="font-medium text-text-secondary">
-                          {hovered.rest.zoneName || "—"}
-                        </span>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      <div className="rounded-xl border border-border-main bg-bg-solid/60 px-2 py-2">
+                        <p className="font-mono text-[11px] tabular-nums text-gold">{fmtMoney(hovered.rest.todayRevenue)}</p>
+                        <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-text-faint">Ventas hoy</p>
                       </div>
-                      <div className="mt-2 grid grid-cols-3 gap-2">
-                        <div className="rounded-xl border border-border-main bg-bg-solid/60 px-2 py-2">
-                          <p className="font-mono text-[11px] tabular-nums text-gold">{fmtMoney(hovered.rest.todayRevenue)}</p>
-                          <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-text-faint">Ventas</p>
-                        </div>
-                        <div className="rounded-xl border border-border-main bg-bg-solid/60 px-2 py-2">
-                          <p className="font-mono text-[11px] tabular-nums text-text-secondary">
-                            {hovered.rest.activeTables}/{hovered.rest.totalTables}
-                          </p>
-                          <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-text-faint">Mesas</p>
-                        </div>
-                        <div className="rounded-xl border border-border-main bg-bg-solid/60 px-2 py-2">
-                          <p className="font-mono text-[11px] tabular-nums text-text-secondary">
-                            {hovered.rest.activeStaff}
-                          </p>
-                          <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-text-faint">Staff</p>
-                        </div>
+                      <div className="rounded-xl border border-border-main bg-bg-solid/60 px-2 py-2">
+                        <p className="font-mono text-[11px] tabular-nums text-text-secondary">
+                          {hovered.rest.activeTables}/{hovered.rest.totalTables}
+                        </p>
+                        <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-text-faint">Mesas</p>
                       </div>
-                      <p className="mt-3 text-[10px] text-text-faint">
-                        Click para abrir dossier completo
-                      </p>
+                      <div className="rounded-xl border border-border-main bg-bg-solid/60 px-2 py-2">
+                        <p className="font-mono text-[11px] tabular-nums text-text-secondary">{hovered.rest.activeStaff}</p>
+                        <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-text-faint">Staff</p>
+                      </div>
                     </div>
+                    <p className="mt-3 text-[10px] text-text-faint">Clic en el marcador para abrir el dossier</p>
                   </div>
                 </div>
               ) : null}
@@ -631,6 +950,8 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
                       sharePct={sharePct}
                       totalRestaurants={data.stats.restaurantCount}
                       reduceMotion={reduceMotion}
+                      chainId={tenantId}
+                      onRenamed={() => load(tenantId)}
                     />
                   </div>
                 );

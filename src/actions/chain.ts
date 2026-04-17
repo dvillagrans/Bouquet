@@ -182,6 +182,37 @@ export async function getChainDashboard(tenantId: string): Promise<ChainDashboar
   };
 }
 
+const ZONE_NAME_MAX_LEN = 120;
+
+/** Renombrar zona desde contexto cadena (el cliente envía chainId; revisa sesión en UI). */
+export async function renameChainZone(input: {
+  chainId: string;
+  zoneId: string;
+  name: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const name = input.name.trim();
+  if (name.length < 2) {
+    return { success: false, error: "El nombre debe tener al menos 2 caracteres." };
+  }
+  if (name.length > ZONE_NAME_MAX_LEN) {
+    return { success: false, error: `Máximo ${ZONE_NAME_MAX_LEN} caracteres.` };
+  }
+
+  const zone = await prisma.zone.findFirst({
+    where: { id: input.zoneId, chainId: input.chainId },
+    select: { id: true },
+  });
+  if (!zone) {
+    return { success: false, error: "La zona no existe o no pertenece a esta cadena." };
+  }
+
+  await prisma.zone.update({
+    where: { id: input.zoneId },
+    data: { name },
+  });
+  return { success: true };
+}
+
 export async function getZoneDashboard(zoneId: string): Promise<ZoneDashboardData | null> {
   const [zone, rawRestaurants] = await Promise.all([
     prisma.zone.findUnique({

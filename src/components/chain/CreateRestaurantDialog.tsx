@@ -143,10 +143,16 @@ export default function CreateRestaurantDialog({
              center={center} 
              zoom={zoom} 
              onBoundsChanged={({ center, zoom }) => { setCenter(center); setZoom(zoom); }}
+             attribution={false}
            >
              <Marker width={30} anchor={center} color="#E5A85A" />
              <ZoomControl style={{ bottom: 10, right: 10 }} />
            </Map>
+           <div className="absolute bottom-1.5 left-1.5 z-[6] rounded bg-black/55 px-1.5 py-0.5 text-[7px] text-white/65 pointer-events-auto">
+             <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer noopener" className="hover:text-white hover:underline">© OSM</a>
+             <span className="text-white/35"> · </span>
+             <a href="https://carto.com/attributions" target="_blank" rel="noreferrer noopener" className="hover:text-white hover:underline">CARTO</a>
+           </div>
            <div className="absolute top-4 left-4 z-10 pointer-events-none">
              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-[#444] bg-[#2C2C2C]/80 backdrop-blur-sm text-[10px] text-[#DDDDDD] shadow-lg">
                <div className="w-1.5 h-1.5 rounded-full bg-[#E5A85A] animate-pulse" />

@@ -13,7 +13,6 @@ import {
   Orbit,
   Pencil,
   RefreshCw,
-  Sparkles,
   Store,
   TrendingUp,
   Waves,
@@ -611,40 +610,14 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 pb-24 pt-10 md:px-8 md:pt-14">
         
-        {/* Hero + mapa: dos bloques rectangulares (evita la sensación de “cápsula” del contenedor único muy redondeado) */}
-        <div className="mb-12 grid grid-cols-1 items-stretch gap-5 lg:grid-cols-2 lg:gap-6">
-           {/* Columna copy */}
+        {/* Hero + mapa: texto al aire (sin card); mapa solo fondo oscuro + separador suave en desktop */}
+        <div className="mb-12 grid grid-cols-1 items-stretch gap-8 lg:grid-cols-2 lg:gap-10">
            <motion.header
              initial={reduceMotion ? false : { opacity: 0, x: -20 }}
              animate={{ opacity: 1, x: 0 }}
              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-             className="relative flex flex-col justify-center overflow-hidden rounded-xl border border-border-main bg-bg-card/50 p-8 shadow-lg backdrop-blur-sm md:p-10"
+             className="flex flex-col justify-center space-y-6 py-1 md:pr-4 md:py-2"
            >
-             <div
-               className="pointer-events-none absolute inset-0 opacity-[0.02]"
-               style={{
-                 backgroundImage:
-                   "linear-gradient(var(--color-gold) 1px, transparent 1px), linear-gradient(90deg, var(--color-gold) 1px, transparent 1px)",
-                 backgroundSize: "24px 24px",
-               }}
-               aria-hidden
-             />
-
-             <div className="relative space-y-6">
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <Link
-                    href="/cadena"
-                    className="inline-flex items-center gap-2 rounded-md border border-border-main bg-bg-solid/60 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-text-muted transition-colors hover:border-gold/35 hover:text-gold"
-                  >
-                    <ArrowLeft className="size-3" aria-hidden />
-                    Panel maestro
-                  </Link>
-                  <span className="inline-flex items-center gap-1.5 rounded-md border border-gold/30 bg-gold-faint/25 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-gold">
-                    <Sparkles className="size-3" aria-hidden />
-                    Vista atlas
-                  </span>
-                </div>
-
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-text-faint">Cartografía · Red Global</p>
                   <h1 className="mt-2 font-serif text-[clamp(2.2rem,5vw,3.5rem)] font-semibold leading-[1.05] tracking-tight">
@@ -663,22 +636,20 @@ export default function ChainZonesAtlas({ initialTenantId }: { initialTenantId?:
                     type="button"
                     onClick={() => load(tenantId)}
                     disabled={loading}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-border-bright bg-bg-card px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary transition-colors hover:border-gold/35 hover:text-gold disabled:opacity-50"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-border-main px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-secondary transition-colors hover:border-gold/40 hover:bg-bg-hover/40 hover:text-gold disabled:opacity-50"
                   >
                     <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} aria-hidden />
                     {loading ? "Rastreando" : "Redibujar mapa"}
                   </button>
                 </div>
-             </div>
            </motion.header>
 
-           {/* Columna mapa */}
            <motion.div 
              ref={mapAreaRef}
              initial={reduceMotion ? false : { opacity: 0 }}
              animate={{ opacity: 1 }}
              transition={{ duration: 1, delay: 0.2 }}
-             className={`relative overflow-hidden rounded-xl border border-border-main bg-[#1a1a1a] shadow-lg ${
+             className={`relative overflow-hidden bg-[#1a1a1a] lg:border-l lg:border-border-main/35 ${
                mapFullscreen
                  ? "flex h-[100dvh] min-h-[100dvh] w-full flex-col"
                  : "h-64 min-h-[350px] lg:h-full lg:min-h-0"

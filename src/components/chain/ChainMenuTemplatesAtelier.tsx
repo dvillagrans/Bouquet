@@ -11,7 +11,6 @@ import {
   LayoutTemplate,
   Plus,
   RefreshCw,
-  Sparkles,
   Store,
   UtensilsCrossed,
 } from "lucide-react";
@@ -336,19 +335,6 @@ export default function ChainMenuTemplatesAtelier({ initialTenantId }: { initial
           className="mb-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
         >
           <div className="max-w-2xl space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/cadena"
-                className="inline-flex items-center gap-2 rounded-full border border-border-main bg-bg-card/70 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-text-muted transition-colors hover:border-gold/30 hover:text-gold"
-              >
-                <ArrowLeft className="size-3" aria-hidden />
-                Panel maestro
-              </Link>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-dash-blue/25 bg-dash-blue-bg/40 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-dash-blue">
-                <Sparkles className="size-3" aria-hidden />
-                Atelier de carta
-              </span>
-            </div>
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-text-faint">Estandarización · Menú</p>
               <h1 className="mt-2 font-serif text-[clamp(1.85rem,4.5vw,3rem)] font-semibold leading-[1.06] tracking-tight">

@@ -1,6 +1,7 @@
 "use client";
 
 import { AppSidebar } from "./AppSidebar";
+import MobileBottomNav from "./MobileBottomNav";
 import { NavGroup } from "./Sidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { MobileNavProvider } from "./MobileNavContext";
@@ -57,9 +58,16 @@ function DashboardShellContent({
         userInitial={userInitial}
         showSidebarLogout={showSidebarLogout}
       />
-      <main className="flex min-h-svh min-w-0 flex-1 flex-col">
+      <main className="flex min-h-svh min-w-0 flex-1 flex-col pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-0">
         {children}
       </main>
+      <MobileBottomNav
+        navGroups={navGroups}
+        userName={userName}
+        userRole={userRole}
+        userInitial={userInitial}
+        showSidebarLogout={showSidebarLogout}
+      />
     </div>
   );
 }

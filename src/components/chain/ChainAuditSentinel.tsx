@@ -4,15 +4,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import {
-  Activity,
-  ArrowLeft,
   ClipboardCheck,
   Eye,
   FileWarning,
   Flame,
   RefreshCw,
   ShieldAlert,
-  Sparkles,
   SplitSquareVertical,
   Users,
 } from "lucide-react";
@@ -52,19 +49,6 @@ function riskFrom(stats: ChainAuditOverviewData["stats"]) {
   const tier =
     risk >= 70 ? "alto" : risk >= 40 ? "medio" : risk >= 20 ? "bajo" : "mínimo";
   return { risk, tier, overrideDensity };
-}
-
-function toneForTier(tier: string) {
-  switch (tier) {
-    case "alto":
-      return { badge: "bg-dash-red-bg text-dash-red border-[#3e1818]", bar: "from-dash-red to-ember" };
-    case "medio":
-      return { badge: "bg-gold-faint text-gold border-gold/25", bar: "from-gold to-amber-200/80" };
-    case "bajo":
-      return { badge: "bg-dash-blue-bg text-dash-blue border-dash-blue/25", bar: "from-dash-blue to-cyan-200/70" };
-    default:
-      return { badge: "bg-dash-green-bg text-dash-green border-dash-green/25", bar: "from-dash-green to-emerald-300/70" };
-  }
 }
 
 function KPI({
@@ -161,8 +145,7 @@ export default function ChainAuditSentinel({ initialTenantId }: { initialTenantI
 
   const derived = useMemo(() => {
     if (!data) return null;
-    const r = riskFrom(data.stats);
-    return { ...r, tone: toneForTier(r.tier) };
+    return riskFrom(data.stats);
   }, [data]);
 
   if (!tenantId) {
@@ -194,8 +177,7 @@ export default function ChainAuditSentinel({ initialTenantId }: { initialTenantI
   }
 
   const { stats } = data;
-  const { risk, tier, overrideDensity, tone } = derived;
-  const riskPct = `${risk}%`;
+  const { overrideDensity } = derived;
 
   const findings = [
     ...(stats.templates === 0
@@ -281,24 +263,6 @@ export default function ChainAuditSentinel({ initialTenantId }: { initialTenantI
           className="mb-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
         >
           <div className="max-w-2xl space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/cadena"
-                className="inline-flex items-center gap-2 rounded-full border border-border-main bg-bg-card/70 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-text-muted transition-colors hover:border-gold/30 hover:text-gold"
-              >
-                <ArrowLeft className="size-3" aria-hidden />
-                Panel maestro
-              </Link>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/25 bg-gold-faint/35 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-gold">
-                <Sparkles className="size-3" aria-hidden />
-                Sentinel
-              </span>
-              <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] ${tone.badge}`}>
-                <Activity className="size-3" aria-hidden />
-                Riesgo {tier} · {riskPct}
-              </span>
-            </div>
-
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-text-faint">
                 Auditoría · gobernanza operativa

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Plus, RefreshCw, Search } from "lucide-react";
 import { getAdminClientesList, type AdminClienteRow } from "@/actions/admin";
 import { CreateTenantDialog } from "@/components/admin/CreateTenantDialog";
-import { useMobileNav } from "@/components/dashboard/MobileNavContext";
 import { Input } from "@/components/ui/input";
 
 function fmtDate(iso: string) {
@@ -20,7 +19,6 @@ function fmtDate(iso: string) {
 }
 
 export default function AdminClientesPage() {
-  const { toggle } = useMobileNav();
   const [rows, setRows] = useState<AdminClienteRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -73,18 +71,6 @@ export default function AdminClientesPage() {
     <div className="flex flex-col flex-1 min-h-screen bg-bg-solid text-text-primary text-[13px] antialiased">
       <div className="h-[52px] sticky top-0 z-10 shrink-0 border-b border-border-main bg-bg-bar/90 backdrop-blur-md flex items-center justify-between px-3 sm:px-8 gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <button
-            type="button"
-            onClick={toggle}
-            className="lg:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded text-text-dim transition-colors hover:text-text-primary"
-            aria-label="Abrir menú"
-          >
-            <svg className="w-4 h-4 stroke-current fill-none stroke-[2px]" viewBox="0 0 24 24">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
           <div className="hidden sm:flex text-[11px] text-text-dim items-center gap-[6px] min-w-0">
             Bouquet OPS <span className="text-text-void shrink-0">›</span>
             <span className="text-text-muted font-medium truncate">Tenants / Cadenas</span>

@@ -5,22 +5,18 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowUpRight,
-  Building2,
   CircleDot,
   Compass,
   MapPin,
   MapPinned,
   Orbit,
   Plus,
-  RefreshCw,
-  Sparkles,
   Store,
   TrendingUp,
   Users,
 } from "lucide-react";
 import { getChainDashboard } from "@/actions/chain";
 import type { ChainDashboardData, RestaurantSummary, ZoneSummary } from "@/actions/chain";
-import { useMobileNav } from "@/components/dashboard/MobileNavContext";
 import ChainAuthGuard from "./ChainAuthGuard";
 import CreateRestaurantDialog from "./CreateRestaurantDialog";
 
@@ -319,7 +315,6 @@ function RestaurantCard({
 }
 
 export default function ChainDashboard({ initialTenantId }: { initialTenantId?: string }) {
-  const { toggle } = useMobileNav();
   const reduceMotion = useReducedMotion();
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [data, setData] = useState<ChainDashboardData | null>(null);
@@ -399,67 +394,15 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
         />
       </div>
 
-      {/* TOPBAR */}
-      <div className="sticky top-0 z-20 flex h-[52px] shrink-0 items-center justify-between gap-2 border-b border-border-main bg-bg-bar/90 px-3 backdrop-blur-md sm:px-8">
-        <div className="flex min-w-0 items-center gap-2">
-          <button
-            onClick={toggle}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded text-text-dim transition-colors hover:text-text-primary lg:hidden"
-            aria-label="Abrir menú"
-          >
-            <svg className="h-4 w-4 fill-none stroke-current stroke-[2px]" viewBox="0 0 24 24">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-          <div className="hidden items-center gap-[6px] truncate text-[11px] text-text-dim sm:flex">
-            Cadena <span className="text-text-void">›</span>
-            <span className="truncate font-medium text-text-muted">{data.chain.name}</span>
-          </div>
-          {loading ? (
-            <div className="flex shrink-0 items-center gap-[6px] rounded-full border border-gold-dim/30 bg-gold-faint px-2 py-1 text-[10px] uppercase tracking-[0.1em] text-gold">
-              <span className="h-[5px] w-[5px] animate-pulse rounded-full bg-gold" />
-              <span className="hidden sm:inline">Sincronizando</span>
-            </div>
-          ) : (
-            <div className="flex shrink-0 items-center gap-[6px] rounded-full border border-[#1e3824] bg-dash-green-bg px-2 py-1 text-[10px] uppercase tracking-[0.1em] text-dash-green">
-              <span className="h-[5px] w-[5px] animate-pulse rounded-full bg-dash-green" />
-              <span className="hidden sm:inline">Operativo</span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1.5">
-          <button
-            onClick={() => load(tenantId)}
-            disabled={loading}
-            title="Refrescar"
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded border border-border-main bg-transparent text-[11px] font-medium text-text-muted transition-colors hover:border-border-bright hover:text-text-secondary disabled:opacity-50 sm:w-auto sm:gap-1.5 sm:px-3"
-          >
-            <RefreshCw className={`size-3.5 shrink-0 ${loading ? "animate-spin" : ""}`} aria-hidden />
-            <span className="hidden sm:inline">Refrescar</span>
-          </button>
-          <button
-            onClick={() => setIsCreatingRest(true)}
-            className="flex h-8 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded border border-gold bg-gold px-3 text-[11px] font-medium text-bg-solid transition-opacity hover:opacity-80"
-          >
-            <Plus className="size-3.5 shrink-0" aria-hidden />
-            <span className="hidden sm:inline">Nueva Sucursal</span>
-            <span className="sm:hidden">Nueva</span>
-          </button>
-        </div>
-      </div>
-
       {/* CONTENT */}
       <div className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-4 pb-20 pt-6 sm:px-8 sm:pt-10 space-y-10 sm:space-y-12">
         {/* HERO SPLIT */}
-        <div className="grid grid-cols-1 overflow-hidden rounded-3xl border border-border-main bg-bg-card/40 shadow-2xl backdrop-blur-md lg:grid-cols-[1.4fr_1fr]">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-center">
           <motion.section
             initial={reduceMotion ? false : { opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="relative flex flex-col justify-center p-7 sm:p-10 lg:p-12"
+            className="relative flex flex-col justify-center py-1"
           >
             <div
               className="absolute inset-0 opacity-[0.02]"
@@ -471,17 +414,6 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
             />
 
             <div className="relative z-10 space-y-6">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/25 bg-gold-faint/30 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-gold">
-                  <Sparkles className="size-3" aria-hidden />
-                  Panel Maestro
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-border-main bg-bg-card/70 px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-text-muted">
-                  <Building2 className="size-3" aria-hidden />
-                  Red Corporativa · B2B
-                </span>
-              </div>
-
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-text-faint">Vista consolidada · {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}</p>
                 <h1 className="mt-2 font-serif text-[clamp(2rem,4.5vw,3.25rem)] font-semibold leading-[1.04] tracking-tight">
@@ -521,7 +453,7 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
                 </button>
                 <Link
                   href={`/cadena/zonas?tenantId=${tenantId}`}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border-bright bg-bg-card/80 px-5 py-2.5 text-[12px] font-semibold text-text-secondary transition-colors hover:border-gold/35 hover:text-gold"
+                  className="inline-flex items-center gap-2 rounded-xl border border-border-bright bg-bg-solid/40 px-5 py-2.5 text-[12px] font-semibold text-text-secondary transition-colors hover:border-gold/35 hover:text-gold"
                 >
                   <Compass className="size-3.5" aria-hidden />
                   Abrir atlas de zonas
@@ -534,7 +466,7 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
             initial={reduceMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.9, delay: 0.2 }}
-            className="relative flex flex-col items-center justify-center gap-5 border-t border-border-main bg-gradient-to-br from-bg-bar/40 to-bg-solid/80 p-7 sm:p-10 lg:border-l lg:border-t-0"
+            className="relative flex flex-col items-center justify-center gap-5 p-7 sm:p-10"
           >
             <div
               className="pointer-events-none absolute inset-0 opacity-[0.04]"
@@ -546,7 +478,7 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
             />
             <div className="pointer-events-none absolute -left-16 -top-24 size-56 rounded-full bg-gold/12 blur-3xl" aria-hidden />
 
-            <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-gold/30 bg-bg-card/80 px-3 py-1 text-[10px] text-gold backdrop-blur">
+            <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-gold/30 bg-bg-solid/50 px-3 py-1 text-[10px] text-gold backdrop-blur">
               <span className="size-1.5 animate-pulse rounded-full bg-gold" />
               Pulso en vivo
             </div>
@@ -554,11 +486,11 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
             <OccupancyDial pct={derived.occPct} reduceMotion={reduceMotion} />
 
             <div className="relative grid w-full max-w-[280px] grid-cols-2 gap-2.5">
-              <div className="rounded-xl border border-border-main bg-bg-solid/60 px-3 py-2.5 text-center">
+              <div className="text-center">
                 <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-text-faint">Activas</p>
                 <p className="mt-0.5 font-mono text-[16px] font-semibold tabular-nums text-dash-green">{derived.activeTables}</p>
               </div>
-              <div className="rounded-xl border border-border-main bg-bg-solid/60 px-3 py-2.5 text-center">
+              <div className="text-center">
                 <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-text-faint">Totales</p>
                 <p className="mt-0.5 font-mono text-[16px] font-semibold tabular-nums text-text-secondary">{derived.totalTables}</p>
               </div>

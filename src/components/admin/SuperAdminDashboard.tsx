@@ -4,10 +4,8 @@ import { useState, useEffect } from "react";
 import { Plus, RefreshCw } from "lucide-react";
 import { getSuperAdminDashboard, type SuperAdminDashboardData } from "@/actions/admin";
 import { CreateTenantDialog } from "@/components/admin/CreateTenantDialog";
-import { useMobileNav } from "@/components/dashboard/MobileNavContext";
 
 export default function SuperAdminDashboard() {
-  const { toggle } = useMobileNav();
   const [data, setData] = useState<SuperAdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -38,17 +36,6 @@ export default function SuperAdminDashboard() {
       <div className="h-[52px] sticky top-0 z-10 shrink-0 border-b border-border-main bg-bg-bar/90 backdrop-blur-md flex items-center justify-between px-3 sm:px-8 gap-2">
         {/* Left */}
         <div className="flex items-center gap-2 min-w-0">
-          <button
-            onClick={toggle}
-            className="lg:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded text-text-dim transition-colors hover:text-text-primary"
-            aria-label="Abrir menú"
-          >
-            <svg className="w-4 h-4 stroke-current fill-none stroke-[2px]" viewBox="0 0 24 24">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
           <div className="hidden sm:flex text-[11px] text-text-dim items-center gap-[6px]">
             Bouquet OPS <span className="text-text-void">›</span>
             <span className="text-text-muted font-medium">Dashboard SaaS</span>

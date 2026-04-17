@@ -1,15 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import {
-  ArrowLeft,
   KeyRound,
   MapPin,
   RefreshCw,
   Shield,
-  Sparkles,
   UserCheck,
   UserCog,
   Users,
@@ -268,19 +265,6 @@ export default function ChainStaffRoster({ initialTenantId }: { initialTenantId?
           className="mb-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
         >
           <div className="max-w-2xl space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/cadena"
-                className="inline-flex items-center gap-2 rounded-full border border-border-main bg-bg-card/70 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-text-muted transition-colors hover:border-gold/30 hover:text-gold"
-              >
-                <ArrowLeft className="size-3" aria-hidden />
-                Panel maestro
-              </Link>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-dash-green/25 bg-dash-green-bg/35 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-dash-green">
-                <Sparkles className="size-3" aria-hidden />
-                Nómina &amp; accesos
-              </span>
-            </div>
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-text-faint">Personal corporativo</p>
               <h1 className="mt-2 font-serif text-[clamp(1.85rem,4.5vw,3rem)] font-semibold leading-[1.06] tracking-tight">

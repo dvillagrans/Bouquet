@@ -1,34 +1,26 @@
-"use client";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
+import {
+  adminSessionCookieName,
+  resolveAdminAuthSecret,
+  verifyAdminSessionToken,
+} from "@/lib/admin-session";
+import AdminShellClient from "./AdminShellClient";
 
-import { Shield, Building, CreditCard, Wrench } from "lucide-react";
-import DashboardShell from "@/components/dashboard/DashboardShell";
+export default async function AdminShellLayout({ children }: { children: React.ReactNode }) {
+  const secret = resolveAdminAuthSecret();
+  if (!secret) {
+    redirect("/admin/login?error=missing_secret");
+  }
 
-const adminGroups = [
-  {
-    label: "SaaS",
-    items: [
-      { label: "Console", href: "/admin", icon: Shield },
-      { label: "Tenants/Cadenas", href: "/admin/clientes", icon: Building },
-      { label: "Facturación SaaS", href: "/admin/billing", icon: CreditCard },
-    ],
-  },
-  {
-    label: "Mantenimiento",
-    items: [
-      { label: "Ajustes del Sistema", href: "/admin/system", icon: Wrench },
-    ],
-  },
-];
+  const cookieStore = await cookies();
+  const token = cookieStore.get(adminSessionCookieName())?.value;
+  const ok = await verifyAdminSessionToken(token, secret);
+  if (!ok) {
+    const h = await headers();
+    const from = h.get("x-bouquet-admin-pathname") ?? "/admin";
+    redirect(`/admin/login?from=${encodeURIComponent(from)}`);
+  }
 
-export default function AdminShellLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <DashboardShell
-      navGroups={adminGroups}
-      userInitial="SA"
-      userName="Admin Supremo"
-      userRole="BouquetOps"
-    >
-      {children}
-    </DashboardShell>
-  );
+  return <AdminShellClient>{children}</AdminShellClient>;
 }

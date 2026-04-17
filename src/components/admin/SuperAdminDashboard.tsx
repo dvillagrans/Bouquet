@@ -102,117 +102,138 @@ export default function SuperAdminDashboard() {
         ) : (
           <>
             {/* KPI GRID */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-[1px] bg-border-main border border-border-main rounded-lg overflow-hidden mb-6">
-              <div className="bg-bg-card p-4 sm:p-6 sm:pb-5 hover:bg-bg-hover transition-colors group relative">
-                <div className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim mb-2 sm:mb-3 flex items-center justify-between">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-md transition-all hover:bg-white/[0.04]">
+                <div className="text-[10px] font-semibold tracking-[0.15em] uppercase text-neutral-500 mb-3 flex items-center justify-between">
                   MRR proyectado
-                  <svg className="w-3.5 h-3.5 stroke-text-faint fill-none stroke-[1.5px]"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                  <svg className="w-3.5 h-3.5 stroke-neutral-500 fill-none stroke-[2px]"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                 </div>
-                <div className="font-serif text-[24px] sm:text-[32px] font-bold text-gold leading-none mb-1 sm:mb-2 tracking-tight group-hover:drop-shadow-[0_0_8px_rgba(201,160,84,0.3)] transition-all">
+                <div className="font-serif text-[28px] sm:text-[36px] font-medium tracking-tight text-white mb-2 group-hover:text-gold transition-colors">
                   {fmtCurrency(data.stats.mrr)}
                 </div>
-                <div className="text-[11px] flex flex-wrap items-center gap-1 text-dash-green">
-                  ↑ Modelo de cobranza auto.
+                <div className="flex flex-col gap-0.5">
+                  <div className="text-[11px] font-medium text-emerald-400">
+                    ↑ Modelo de cobranza auto.
+                  </div>
+                  <div className="text-[10px] text-neutral-500">USD · ciclo mensual</div>
                 </div>
-                <div className="text-[10px] text-text-faint mt-0.5">USD · ciclo mensual</div>
               </div>
 
-              <div className="bg-bg-card p-4 sm:p-6 sm:pb-5 hover:bg-bg-hover transition-colors">
-                <div className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim mb-2 sm:mb-3 flex items-center justify-between">
+              <div className="relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-md transition-all hover:bg-white/[0.04]">
+                <div className="text-[10px] font-semibold tracking-[0.15em] uppercase text-neutral-500 mb-3 flex items-center justify-between">
                   Cadenas SaaS
-                  <svg className="w-3.5 h-3.5 stroke-text-faint fill-none stroke-[1.5px]"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                  <svg className="w-3.5 h-3.5 stroke-neutral-500 fill-none stroke-[2px]"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
                 </div>
-                <div className="font-serif text-[24px] sm:text-[32px] font-bold text-text-primary leading-none mb-1 sm:mb-2 tracking-tight">
+                <div className="font-serif text-[28px] sm:text-[36px] font-medium tracking-tight text-white mb-2">
                   {data.stats.chains}
                 </div>
-                <div className="text-[11px] flex flex-wrap items-center gap-1 text-dash-green">
-                  ↑ Base B2B
+                <div className="flex flex-col gap-0.5">
+                  <div className="text-[11px] font-medium text-emerald-400">
+                    ↑ Base B2B
+                  </div>
+                  <div className="text-[10px] text-neutral-500">Inquilinos en el clúster</div>
                 </div>
-                <div className="text-[10px] text-text-faint mt-0.5">Inquilinos en el clúster</div>
               </div>
 
-              <div className="bg-bg-card p-4 sm:p-6 sm:pb-5 hover:bg-bg-hover transition-colors">
-                <div className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim mb-2 sm:mb-3 flex items-center justify-between">
+              <div className="relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-md transition-all hover:bg-white/[0.04]">
+                <div className="text-[10px] font-semibold tracking-[0.15em] uppercase text-neutral-500 mb-3 flex items-center justify-between">
                   Restaurantes Totales
-                  <svg className="w-3.5 h-3.5 stroke-text-faint fill-none stroke-[1.5px]"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                  <svg className="w-3.5 h-3.5 stroke-neutral-500 fill-none stroke-[2px]"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
                 </div>
-                <div className="font-serif text-[24px] sm:text-[32px] font-bold text-text-primary leading-none mb-1 sm:mb-2 tracking-tight">
+                <div className="font-serif text-[28px] sm:text-[36px] font-medium tracking-tight text-white mb-2">
                   {data.stats.restaurants}
                 </div>
-                <div className="text-[11px] flex flex-wrap items-center gap-1 text-text-dim">
-                  Activos en bd
+                <div className="flex flex-col gap-0.5">
+                  <div className="text-[11px] font-medium text-neutral-400">
+                    Activos en bd
+                  </div>
+                  <div className="text-[10px] text-neutral-500">Múltiples sucursales y franquicias</div>
                 </div>
-                <div className="text-[10px] text-text-faint mt-0.5">Múltiples sucursales y franquicias</div>
               </div>
 
-              <div className="bg-bg-card p-4 sm:p-6 sm:pb-5 hover:bg-bg-hover transition-colors">
-                <div className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim mb-2 sm:mb-3 flex items-center justify-between">
+              <div className="relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-md transition-all hover:bg-white/[0.04]">
+                <div className="text-[10px] font-semibold tracking-[0.15em] uppercase text-neutral-500 mb-3 flex items-center justify-between">
                   Zonas Activas
-                  <svg className="w-3.5 h-3.5 stroke-text-faint fill-none stroke-[1.5px]"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                  <svg className="w-3.5 h-3.5 stroke-neutral-500 fill-none stroke-[2px]"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                 </div>
-                <div className="font-serif text-[24px] sm:text-[32px] font-bold text-text-primary leading-none mb-1 sm:mb-2 tracking-tight">
+                <div className="font-serif text-[28px] sm:text-[36px] font-medium tracking-tight text-white mb-2">
                   {data.stats.zones}
                 </div>
-                <div className="text-[11px] flex flex-wrap items-center gap-1 text-text-dim">
-                  Estructuración interna
+                <div className="flex flex-col gap-0.5">
+                  <div className="text-[11px] font-medium text-neutral-400">
+                    Estructuración interna
+                  </div>
+                  <div className="text-[10px] text-neutral-500">Puntos de control (ciudades/regiones)</div>
                 </div>
-                <div className="text-[10px] text-text-faint mt-0.5">Puntos de control (ciudades/regiones)</div>
               </div>
             </div>
 
             {/* TENANTS TABLE */}
-            <div className="bg-bg-card border border-border-main rounded-lg flex flex-col mb-10 overflow-hidden">
-              <div className="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-border-main flex items-center justify-between gap-3 bg-bg-bar">
-                <div className="text-[11px] font-medium tracking-[0.14em] uppercase text-text-muted flex items-center gap-2">
+            <div className="rounded-[1.5rem] border border-white/5 bg-white/[0.02] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-xl flex flex-col mb-10 overflow-hidden">
+              <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between gap-3 bg-white/[0.01]">
+                <div className="text-[12px] font-semibold tracking-[0.15em] uppercase text-white flex items-center gap-2">
                   Inquilinos Activos
                 </div>
-                <button onClick={() => setIsCreatingTenant(true)} className="text-[10px] font-medium tracking-[0.06em] text-gold uppercase hover:opacity-80 transition-opacity cursor-pointer whitespace-nowrap">
-                  + Registrar
+                <button onClick={() => setIsCreatingTenant(true)} className="text-[11px] font-semibold tracking-[0.1em] text-gold uppercase hover:opacity-80 transition-opacity cursor-pointer whitespace-nowrap bg-gold/10 px-3 py-1.5 rounded-full ring-1 ring-gold/20">
+                  + Registrar Nuevo
                 </button>
               </div>
 
-              <div className="sm:hidden p-4 space-y-3">
+              {/* Mobile View */}
+              <div className="sm:hidden flex flex-col divide-y divide-white/5">
                 {data.chains.length === 0 ? (
-                  <div className="rounded-lg border border-border-main bg-bg-bar px-4 py-8 text-center text-xs text-text-dim">
+                  <div className="px-5 py-10 text-center text-[13px] text-neutral-500">
                     Aún no hay clientes en la base de datos de Plataforma.
                   </div>
                 ) : (
                   data.chains.map((chain) => {
                     const avatar = chain.name.substring(0, 2).toUpperCase();
                     return (
-                      <article key={chain.id} className="rounded-xl border border-border-main bg-bg-bar px-4 py-4 shadow-[0_1px_0_rgba(255,255,255,0.02)]">
-                        <div className="flex items-start gap-3">
-                          <div className="w-10 h-10 rounded-md bg-gold-faint border border-gold-dim flex items-center justify-center text-[11px] font-bold text-gold shrink-0">
+                      <article key={chain.id} className="group relative flex flex-col gap-4 bg-transparent p-5 transition-colors active:bg-white/[0.03]">
+                        <div className="flex items-start gap-4">
+                          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-gold/30 to-gold/10 text-[13px] font-bold text-gold shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] ring-1 ring-gold/20">
                             {avatar}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <h3 className="truncate text-[13px] font-semibold text-text-primary leading-tight">
-                                  {chain.name}
-                                </h3>
-                                <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-text-dim">
-                                  ID {chain.id.split('-')[0]}
-                                </p>
-                              </div>
-                              <span className="inline-flex shrink-0 items-center rounded border border-border-mid bg-bg-solid px-2 py-1 font-mono text-[10px] text-text-secondary">
-                                PIN {chain.pin}
-                              </span>
-                            </div>
-
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
-                              <span className="inline-flex items-center rounded border border-[#1e3824] bg-dash-green-bg px-2 py-1 text-[10px] text-dash-green">
-                                {chain.adminName}
-                              </span>
-                              <a
-                                href={`/cadena?tenantId=${chain.id}`}
-                                target="_blank"
-                                className="inline-flex items-center justify-center rounded border border-border-mid px-3 py-1.5 text-[11px] font-medium text-text-secondary transition-colors hover:bg-bg-solid hover:text-gold"
-                              >
-                                Abrir consola →
-                              </a>
-                            </div>
+                            <h3 className="truncate font-serif text-[18px] font-medium tracking-tight text-white leading-tight">
+                              {chain.name}
+                            </h3>
+                            <p className="mt-1 text-[11px] font-mono tracking-widest text-neutral-500 uppercase">
+                              ID: {chain.id.split('-')[0]}
+                            </p>
                           </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-3 mt-1">
+                          <div className="flex flex-col gap-1 rounded-[1rem] bg-white/[0.03] px-4 py-3 ring-1 ring-white/5">
+                            <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">
+                              Restaurantes
+                            </span>
+                            <span className="font-mono text-[14px] font-medium text-white">
+                              {chain.restaurantsCount}
+                            </span>
+                          </div>
+                          <div className="flex flex-col gap-1 rounded-[1rem] bg-white/[0.03] px-4 py-3 ring-1 ring-white/5">
+                            <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">
+                              PIN Maestro
+                            </span>
+                            <span className="font-mono text-[14px] font-medium text-gold">
+                              {chain.pin}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-white/5 pt-4">
+                          <span className="inline-flex items-center rounded-full border border-[#1e3824] bg-[#0d1f13] px-3 py-1 text-[10px] font-medium tracking-wide text-emerald-400">
+                            {chain.adminName}
+                          </span>
+                          <a
+                            href={`/cadena?tenantId=${chain.id}`}
+                            target="_blank"
+                            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.02] px-4 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-white/[0.05] hover:text-gold active:bg-white/[0.01]"
+                          >
+                            Abrir consola →
+                          </a>
                         </div>
                       </article>
                     );

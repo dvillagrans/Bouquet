@@ -20,6 +20,7 @@ import {
 } from "@/actions/chain";
 import type { ChainMenuTemplatesData, ChainMenuTemplateRow } from "@/actions/chain";
 import ChainAuthGuard from "./ChainAuthGuard";
+import ChefAIAssistant from "./ai/ChefAIAssistant";
 
 function fmtUpdated(iso: string) {
   try {
@@ -328,6 +329,7 @@ export default function ChainMenuTemplatesAtelier({ initialTenantId }: { initial
       </div>
 
       <div className="relative z-10 mx-auto max-w-5xl px-4 pb-24 pt-10 md:px-8 md:pt-14">
+        <ChefAIAssistant />
         <motion.header
           initial={reduceMotion ? false : { opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}

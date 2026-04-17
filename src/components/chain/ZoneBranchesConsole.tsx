@@ -73,56 +73,81 @@ function BranchRow({
       initial={reduceMotion ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={onSelect}
-      className={`group relative w-full text-left rounded-[1.5rem] border p-4 sm:p-5 transition-all duration-300 ease-out active:scale-[0.98] ${
+      className={`group relative w-full min-w-0 text-left rounded-2xl border p-3.5 transition-all duration-300 ease-out active:scale-[0.98] sm:rounded-[1.5rem] sm:p-5 ${
         active
           ? "border-gold/40 bg-gold/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_8px_20px_-8px_rgba(0,0,0,0.4)]"
           : "border-white/5 bg-bg-card/40 hover:border-white/10 hover:bg-white/[0.04]"
       }`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+      <div className="flex min-w-0 flex-col sm:flex-row sm:items-start sm:justify-between sm:gap-5">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className="truncate font-serif text-[18px] font-medium tracking-tight text-white">
-              {r.name}
-            </p>
-            {!active && pct < 40 && (
-              <span className="inline-flex size-2 mt-0.5 shrink-0 rounded-full bg-dash-red shadow-[0_0_8px_var(--color-dash-red)]" />
-            )}
-          </div>
-          <p className="mt-1 truncate text-[12px] text-neutral-400">{r.address || "Sin dirección"}</p>
-          <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
-            <div className="rounded-[1rem] border border-white/5 bg-white/[0.03] px-3 py-2">
-              <p className="font-mono text-[13px] font-medium tabular-nums text-gold">{fmtMoney(r.todayRevenue)}</p>
-              <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">Ventas</p>
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <div className="flex min-w-0 items-start gap-2">
+              <p className="min-w-0 flex-1 font-serif text-[18px] font-medium leading-snug tracking-tight text-white">
+                <span className="line-clamp-1">{r.name}</span>
+              </p>
+              {!active && pct < 40 && (
+                <span className="mt-2 inline-flex size-1.5 shrink-0 rounded-full bg-dash-red shadow-[0_0_8px_var(--color-dash-red)]" aria-hidden />
+              )}
             </div>
-            <div className="rounded-[1rem] border border-white/5 bg-white/[0.03] px-3 py-2">
-              <p className="font-mono text-[13px] font-medium tabular-nums text-white">
+            
+            {/* Ocupación Mobile alineada arriba a la derecha */}
+            <span className="inline-flex sm:hidden items-center gap-1.5 text-[12px] font-medium text-neutral-300 shrink-0">
+              <CircleDot className="size-3.5 shrink-0 text-gold" aria-hidden />
+              <span className="tabular-nums">{pct}%</span>
+            </span>
+          </div>
+
+          <p className="mt-1 line-clamp-1 text-[13px] text-neutral-400 truncate">
+            {r.address || "Sin dirección"}
+          </p>
+
+          <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3 sm:gap-x-8">
+            <div className="flex flex-col gap-0.5">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">
+                Ventas
+              </p>
+              <p className="font-mono text-[14px] font-medium tabular-nums text-gold">
+                {fmtMoney(r.todayRevenue)}
+              </p>
+            </div>
+            <div className="h-6 w-px bg-white/10" aria-hidden />
+            <div className="flex flex-col gap-0.5">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">
+                Mesas
+              </p>
+              <p className="font-mono text-[14px] font-medium tabular-nums text-white">
                 {r.activeTables}/{r.totalTables}
               </p>
-              <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">Mesas</p>
             </div>
-            <div className="rounded-[1rem] border border-white/5 bg-white/[0.03] px-3 py-2">
-              <p className="font-mono text-[13px] font-medium tabular-nums text-white">{r.activeStaff}</p>
-              <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">Staff</p>
+            <div className="h-6 w-px bg-white/10" aria-hidden />
+            <div className="flex flex-col gap-0.5">
+              <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">
+                Staff
+              </p>
+              <p className="font-mono text-[14px] font-medium tabular-nums text-white">
+                {r.activeStaff}
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="flex w-full sm:w-auto items-center justify-between sm:flex-col sm:items-end gap-3 sm:space-y-3 rounded-[1rem] sm:rounded-none border sm:border-0 border-white/5 bg-white/[0.02] sm:bg-transparent p-3 sm:p-0">
-          <div className="flex sm:flex-col items-center sm:items-end gap-3">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-neutral-300">
-              <CircleDot className="size-3 text-gold" aria-hidden />
-              {pct}% ocup.
+        {/* Desktop actions & progress bar */}
+        <div className="hidden sm:flex min-w-0 flex-col items-end justify-between self-stretch gap-3 shrink-0">
+          <div className="flex flex-col items-end gap-2.5">
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-neutral-300">
+              <CircleDot className="size-3.5 shrink-0 text-gold" aria-hidden />
+              <span className="tabular-nums">{pct}% ocupación</span>
             </span>
-            <div className="h-1.5 w-24 sm:w-28 overflow-hidden rounded-full bg-white/5 ring-1 ring-white/10">
+            <div className="h-1.5 w-28 overflow-hidden rounded-full bg-white/5 ring-1 ring-white/10">
               <div
                 className={`h-full bg-gradient-to-r ${tone} shadow-[0_0_10px_rgba(255,255,255,0.2)]`}
                 style={{ width: `${pct}%` }}
               />
             </div>
           </div>
-          <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-neutral-400 group-hover:text-gold transition-colors">
-            Ver detalle <ArrowRight className="size-3.5 opacity-70 transition-transform group-hover:translate-x-1" aria-hidden />
+          <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-neutral-400 group-hover:text-gold transition-colors">
+            Ver detalle <ArrowRight className="size-3.5 shrink-0 opacity-70 transition-transform group-hover:translate-x-1" aria-hidden />
           </span>
         </div>
       </div>

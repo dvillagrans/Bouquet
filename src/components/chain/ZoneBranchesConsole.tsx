@@ -17,6 +17,8 @@ import {
 import { getZoneDashboard } from "@/actions/chain";
 import type { RestaurantSummary, ZoneDashboardData } from "@/actions/chain";
 import ZoneAuthGuard from "./ZoneAuthGuard";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 function fmtMoney(n: number) {
   return `$${n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -71,49 +73,56 @@ function BranchRow({
       initial={reduceMotion ? false : { opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       onClick={onSelect}
-      className={`group w-full text-left rounded-2xl border p-4 transition-colors ${
+      className={`group relative w-full text-left rounded-[1.5rem] border p-4 sm:p-5 transition-all duration-300 ease-out active:scale-[0.98] ${
         active
-          ? "border-gold/40 bg-gold-faint/30"
-          : "border-border-main bg-bg-card/30 hover:border-border-bright hover:bg-bg-hover/60"
+          ? "border-gold/40 bg-gold/5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_8px_20px_-8px_rgba(0,0,0,0.4)]"
+          : "border-white/5 bg-bg-card/40 hover:border-white/10 hover:bg-white/[0.04]"
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="truncate font-serif text-[16px] font-semibold tracking-tight text-text-primary">
-            {r.name}
-          </p>
-          <p className="mt-1 truncate text-[11px] text-text-dim">{r.address || "Sin dirección"}</p>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <div className="rounded-xl border border-border-main bg-bg-solid/55 px-2 py-2">
-              <p className="font-mono text-[11px] tabular-nums text-gold">{fmtMoney(r.todayRevenue)}</p>
-              <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-text-faint">Ventas</p>
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="truncate font-serif text-[18px] font-medium tracking-tight text-white">
+              {r.name}
+            </p>
+            {!active && pct < 40 && (
+              <span className="inline-flex size-2 mt-0.5 shrink-0 rounded-full bg-dash-red shadow-[0_0_8px_var(--color-dash-red)]" />
+            )}
+          </div>
+          <p className="mt-1 truncate text-[12px] text-neutral-400">{r.address || "Sin dirección"}</p>
+          <div className="mt-4 grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="rounded-[1rem] border border-white/5 bg-white/[0.03] px-3 py-2">
+              <p className="font-mono text-[13px] font-medium tabular-nums text-gold">{fmtMoney(r.todayRevenue)}</p>
+              <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">Ventas</p>
             </div>
-            <div className="rounded-xl border border-border-main bg-bg-solid/55 px-2 py-2">
-              <p className="font-mono text-[11px] tabular-nums text-text-secondary">
+            <div className="rounded-[1rem] border border-white/5 bg-white/[0.03] px-3 py-2">
+              <p className="font-mono text-[13px] font-medium tabular-nums text-white">
                 {r.activeTables}/{r.totalTables}
               </p>
-              <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-text-faint">Mesas</p>
+              <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">Mesas</p>
             </div>
-            <div className="rounded-xl border border-border-main bg-bg-solid/55 px-2 py-2">
-              <p className="font-mono text-[11px] tabular-nums text-text-secondary">{r.activeStaff}</p>
-              <p className="mt-1 text-[9px] uppercase tracking-[0.12em] text-text-faint">Staff</p>
+            <div className="rounded-[1rem] border border-white/5 bg-white/[0.03] px-3 py-2">
+              <p className="font-mono text-[13px] font-medium tabular-nums text-white">{r.activeStaff}</p>
+              <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">Staff</p>
             </div>
           </div>
         </div>
 
-        <div className="shrink-0 space-y-3">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border-main bg-bg-solid/60 px-2.5 py-1 text-[10px] text-text-dim">
-            <CircleDot className="size-3 text-gold/70" aria-hidden />
-            {pct}% ocup.
-          </span>
-          <div className="w-24 rounded-full bg-bg-solid ring-1 ring-border-main overflow-hidden">
-            <div
-              className={`h-2 bg-gradient-to-r ${tone}`}
-              style={{ width: `${pct}%` }}
-            />
+        <div className="flex w-full sm:w-auto items-center justify-between sm:flex-col sm:items-end gap-3 sm:space-y-3 rounded-[1rem] sm:rounded-none border sm:border-0 border-white/5 bg-white/[0.02] sm:bg-transparent p-3 sm:p-0">
+          <div className="flex sm:flex-col items-center sm:items-end gap-3">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-neutral-300">
+              <CircleDot className="size-3 text-gold" aria-hidden />
+              {pct}% ocup.
+            </span>
+            <div className="h-1.5 w-24 sm:w-28 overflow-hidden rounded-full bg-white/5 ring-1 ring-white/10">
+              <div
+                className={`h-full bg-gradient-to-r ${tone} shadow-[0_0_10px_rgba(255,255,255,0.2)]`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
           </div>
-          <span className="inline-flex items-center gap-1.5 text-[10px] text-text-faint">
-            Ver detalle <ArrowRight className="size-3.5 opacity-70 group-hover:translate-x-0.5 transition-transform" aria-hidden />
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-neutral-400 group-hover:text-gold transition-colors">
+            Ver detalle <ArrowRight className="size-3.5 opacity-70 transition-transform group-hover:translate-x-1" aria-hidden />
           </span>
         </div>
       </div>
@@ -128,6 +137,7 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
   const [q, setQ] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
+  const isMobile = useIsMobile();
 
   const load = useCallback(async (zid: string) => {
     try {
@@ -150,8 +160,8 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
 
   useEffect(() => {
     if (!data?.restaurants?.length) return;
-    if (!selectedId) setSelectedId(data.restaurants[0].id);
-  }, [data?.restaurants, selectedId]);
+    if (!isMobile && !selectedId) setSelectedId(data.restaurants[0].id);
+  }, [data?.restaurants, selectedId, isMobile]);
 
   const filtered = useMemo(() => {
     const list = data?.restaurants ?? [];
@@ -254,25 +264,33 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
           </button>
         </motion.header>
 
-        <div className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-10 grid gap-4 grid-cols-2 lg:grid-cols-4">
           <StatPill label="Ventas zonales" value={fmtMoney(data.stats.totalRevenue)} icon={TrendingUp} />
           <StatPill label="Mesas activas" value={String(data.stats.activeTables)} icon={CircleDot} />
           <StatPill label="Staff en turno" value={String(data.stats.staffCount)} icon={Users} />
           <StatPill label="Sucursales" value={String(data.restaurants.length)} icon={Building2} />
         </div>
 
-        <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-border-main bg-bg-card/35 p-4 backdrop-blur-md sm:flex-row sm:items-center">
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <Search className="size-4 shrink-0 text-gold/70" aria-hidden />
+        <div className="mb-8 flex flex-col gap-3 border-b border-border-main/70 pb-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <Search className="size-[18px] shrink-0 text-text-faint" aria-hidden />
+            <label htmlFor="zone-branch-search" className="sr-only">
+              Buscar sucursales por nombre o dirección
+            </label>
             <input
+              id="zone-branch-search"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Buscar por nombre o dirección…"
-              className="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-text-primary outline-none placeholder:text-text-faint"
+              className="min-w-0 flex-1 border-0 bg-transparent py-1 text-[14px] text-text-primary outline-none placeholder:text-text-faint"
             />
           </div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-faint">
-            {filtered.length}/{data.restaurants.length} visibles
+          <p className="shrink-0 text-[12px] leading-snug text-text-muted sm:text-right">
+            <span className="tabular-nums font-medium text-text-secondary">{filtered.length}</span>
+            <span className="text-text-faint"> de </span>
+            <span className="tabular-nums font-medium text-text-secondary">{data.restaurants.length}</span>
+            <span className="text-text-faint"> sucursales</span>
+            {q.trim() ? <span className="ml-1.5 text-text-faint">· coincidencias</span> : null}
           </p>
         </div>
 
@@ -296,48 +314,106 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
             )}
           </div>
 
-          <aside className="space-y-4 rounded-2xl border border-border-main bg-bg-card/35 p-6 backdrop-blur-md">
-            <h2 className="font-serif text-lg text-text-primary">Detalle rápido</h2>
+          <aside className="hidden space-y-5 rounded-[2rem] border border-white/5 bg-neutral-950/40 p-7 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_8px_32px_-8px_rgba(0,0,0,0.5)] backdrop-blur-2xl lg:block lg:sticky lg:top-8 h-fit">
+            <h2 className="font-serif text-xl font-medium tracking-tight text-white mb-2">Detalle rápido</h2>
             {selected ? (
               <>
-                <p className="font-serif text-xl text-text-primary">{selected.name}</p>
-                <p className="text-[12px] text-text-dim">{selected.address || "Sin dirección registrada"}</p>
-                <div className="mt-3 space-y-2">
-                  <div className="flex items-center justify-between text-[11px] text-text-dim">
-                    <span>Ventas hoy</span>
-                    <span className="font-medium text-gold">{fmtMoney(selected.todayRevenue)}</span>
+                <p className="font-serif text-[22px] font-semibold text-gold">{selected.name}</p>
+                <p className="text-[13px] text-neutral-400">{selected.address || "Sin dirección registrada"}</p>
+                <div className="mt-8 space-y-4 rounded-[1.25rem] bg-white/[0.02] p-4 ring-1 ring-white/5">
+                  <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                    <span className="text-[12px] font-medium text-neutral-400">Ventas hoy</span>
+                    <span className="font-mono text-[14px] font-bold text-gold">{fmtMoney(selected.todayRevenue)}</span>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-text-dim">
-                    <span>Sesiones</span>
-                    <span className="font-mono text-text-secondary">{selected.todaySessions}</span>
+                  <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                    <span className="text-[12px] font-medium text-neutral-400">Sesiones</span>
+                    <span className="font-mono text-[14px] text-white">{selected.todaySessions}</span>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-text-dim">
-                    <span>Mesas</span>
-                    <span className="font-mono text-text-secondary">
+                  <div className="flex items-center justify-between pb-3 border-b border-white/5">
+                    <span className="text-[12px] font-medium text-neutral-400">Mesas activas</span>
+                    <span className="font-mono text-[14px] text-white">
                       {selected.activeTables}/{selected.totalTables} ({occPct(selected.activeTables, selected.totalTables)}%)
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[11px] text-text-dim">
-                    <span>Staff activo</span>
-                    <span className="font-mono text-text-secondary">{selected.activeStaff}</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[12px] font-medium text-neutral-400">Staff activo</span>
+                    <span className="font-mono text-[14px] text-white">{selected.activeStaff}</span>
                   </div>
                 </div>
                 <Link
                   href={`/dashboard/impersonate/${selected.id}`}
-                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gold/40 bg-gold-faint/40 px-4 py-2.5 text-[12px] font-semibold text-gold transition-colors hover:border-gold/60 hover:bg-gold-faint/70"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-3.5 text-[13px] font-semibold tracking-tight text-gold shadow-inner transition-all hover:bg-gold/20 active:scale-[0.98]"
                 >
-                  Abrir dashboard de sucursal
-                  <ArrowRight className="size-4" aria-hidden />
+                  Abrir panel de este restaurante
+                  <ArrowRight className="size-[1.125rem]" aria-hidden />
                 </Link>
-                <p className="mt-3 text-[10px] text-text-faint">
-                  Nota: esto cambia la sucursal activa del dashboard.
+                <p className="mt-4 text-center text-[11px] text-neutral-500">
+                  Cambiarás temporalmente al contexto de esta unidad.
                 </p>
               </>
             ) : (
-              <p className="text-[12px] text-text-dim">Selecciona una sucursal de la lista.</p>
+              <div className="rounded-[1.25rem] border border-dashed border-white/10 p-8 text-center bg-white/[0.02]">
+                <p className="text-[13px] text-neutral-400">Selecciona un restaurante de la lista para ver sus métricas detalladas aquí.</p>
+              </div>
             )}
           </aside>
         </div>
+
+        {/* Mobile Detail Sheet */}
+        <Sheet open={isMobile && !!selectedId} onOpenChange={(open) => !open && setSelectedId(null)}>
+          <SheetContent
+            side="bottom"
+            showCloseButton={false}
+            className="rounded-t-[2rem] border-x-0 border-b-0 border-t border-white/10 bg-neutral-950/80 p-0 backdrop-blur-3xl backdrop-saturate-200 outline-none"
+          >
+            <div className="absolute left-1/2 top-4 h-1.5 w-12 -translate-x-1/2 rounded-full bg-white/20" />
+            
+            <div className="mx-auto max-w-sm px-6 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-10">
+              {selected && (
+                <>
+                  <SheetHeader className="px-0 pb-6 text-center">
+                    <SheetTitle className="font-serif text-[24px] font-medium tracking-tight text-white mb-1">
+                      {selected.name}
+                    </SheetTitle>
+                    <SheetDescription className="text-[13px] text-neutral-400 overflow-hidden text-ellipsis whitespace-nowrap px-4">
+                      {selected.address || "Sin dirección registrada"}
+                    </SheetDescription>
+                  </SheetHeader>
+
+                  <div className="space-y-4 rounded-[1.5rem] border border-white/5 bg-white/[0.03] p-5 shadow-inner">
+                    <div className="flex items-center justify-between pb-3.5 border-b border-white/5">
+                      <span className="text-[13px] font-medium text-neutral-400">Ventas hoy</span>
+                      <span className="font-mono text-[16px] font-bold tracking-tight text-gold">{fmtMoney(selected.todayRevenue)}</span>
+                    </div>
+                    <div className="flex items-center justify-between pb-3.5 border-b border-white/5">
+                      <span className="text-[13px] font-medium text-neutral-400">Sesiones</span>
+                      <span className="font-mono text-[14px] text-white">{selected.todaySessions}</span>
+                    </div>
+                    <div className="flex items-center justify-between pb-3.5 border-b border-white/5">
+                      <span className="text-[13px] font-medium text-neutral-400">Ocupación (mesas)</span>
+                      <span className="font-mono text-[14px] text-white">
+                        {selected.activeTables}/{selected.totalTables} ({occPct(selected.activeTables, selected.totalTables)}%)
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-medium text-neutral-400">Personal activo</span>
+                      <span className="font-mono text-[14px] text-white">{selected.activeStaff}</span>
+                    </div>
+                  </div>
+
+                  <Link
+                    href={`/dashboard/impersonate/${selected.id}`}
+                    onClick={() => setSelectedId(null)}
+                    className="mt-6 flex w-full items-center justify-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-5 py-4 text-[14px] font-semibold tracking-tight text-gold shadow-inner transition-all hover:bg-gold/20 active:scale-[0.96]"
+                  >
+                    Entrar al dashboard
+                    <ArrowRight className="size-[1.25rem] transition-transform group-hover:translate-x-1" aria-hidden />
+                  </Link>
+                </>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   );

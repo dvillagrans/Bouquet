@@ -12,6 +12,7 @@ export default function DashboardLayout({
       userInitial="M"
       userName="Manager"
       userRole="Sucursal"
+      showSidebarLogout
     >
       {children}
     </DashboardShell>

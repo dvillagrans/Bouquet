@@ -28,6 +28,7 @@ export default function ZoneLayout({ children }: { children: React.ReactNode }) 
       userInitial="Z"
       userName="Gerente Zona"
       userRole="Norte"
+      showSidebarLogout
     >
       {children}
     </DashboardShell>

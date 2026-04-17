@@ -28,6 +28,7 @@ export default function ChainLayout({ children }: { children: React.ReactNode })
       userInitial="C"
       userName="Dir. Operaciones"
       userRole="Cadena Nacional"
+      showSidebarLogout
     >
       {children}
     </DashboardShell>

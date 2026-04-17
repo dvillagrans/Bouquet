@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Hash, Lock } from "lucide-react";
 import { verifyChainPin } from "@/actions/chain";
+import { useShellChrome } from "@/components/dashboard/ShellChromeContext";
 
 export default function ChainAuthGuard({ tenantId, onAuthenticated }: { tenantId: string | undefined; onAuthenticated: (tenantId: string) => void }) {
+  const { setHideDashboardChrome } = useShellChrome();
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [localTenantId, setLocalTenantId] = useState(tenantId || "");
+
+  useEffect(() => {
+    setHideDashboardChrome(true);
+    return () => setHideDashboardChrome(false);
+  }, [setHideDashboardChrome]);
 
   useEffect(() => {
     if (tenantId) {
@@ -83,12 +91,21 @@ export default function ChainAuthGuard({ tenantId, onAuthenticated }: { tenantId
               <label className="block text-[10px] font-medium uppercase tracking-[0.16em] text-text-dim">
                 Tenant ID <span className="opacity-50">(auto)</span>
               </label>
-              <input
-                type="text"
-                disabled
-                value={localTenantId}
-                className="h-11 w-full rounded border border-border-main bg-bg-solid p-3 font-mono text-[12px] text-text-dim outline-none placeholder:text-text-faint"
-              />
+              <div className="flex min-h-[44px] overflow-hidden rounded-md border border-border-main bg-bg-solid">
+                <span
+                  className="flex w-11 shrink-0 items-center justify-center border-r border-border-main/70 bg-bg-hover/20 text-text-muted"
+                  aria-hidden
+                >
+                  <Hash className="size-4 shrink-0" />
+                </span>
+                <input
+                  type="text"
+                  disabled
+                  value={localTenantId}
+                  readOnly
+                  className="min-w-0 flex-1 cursor-not-allowed border-0 bg-transparent py-2.5 pl-3 pr-3 font-mono text-[12px] text-text-dim outline-none"
+                />
+              </div>
             </div>
           )}
 
@@ -96,19 +113,27 @@ export default function ChainAuthGuard({ tenantId, onAuthenticated }: { tenantId
             <label className="block text-[10px] font-medium uppercase tracking-[0.16em] text-text-dim">
               PIN Maestro
             </label>
-            <input
-              type="password"
-              required
-              disabled={!localTenantId || loading}
-              placeholder="••••••"
-              autoFocus
-              value={pin}
-              onChange={(e) => {
-                setPin(e.target.value);
-                setError("");
-              }}
-              className="h-12 w-full rounded border border-border-bright bg-bg-solid p-3 text-center font-mono text-[16px] tracking-[0.3em] text-text-primary outline-none transition-all placeholder:text-text-faint focus:border-gold focus:ring-1 focus:ring-gold/30"
-            />
+            <div className="flex min-h-[48px] overflow-hidden rounded-md border border-border-bright bg-bg-solid transition-shadow focus-within:border-gold focus-within:ring-1 focus-within:ring-gold/30">
+              <span
+                className="flex w-11 shrink-0 items-center justify-center border-r border-border-main/70 bg-bg-hover/25 text-text-muted"
+                aria-hidden
+              >
+                <Lock className="size-4 shrink-0" />
+              </span>
+              <input
+                type="password"
+                required
+                disabled={!localTenantId || loading}
+                placeholder="••••••"
+                autoFocus
+                value={pin}
+                onChange={(e) => {
+                  setPin(e.target.value);
+                  setError("");
+                }}
+                className="min-w-0 flex-1 border-0 bg-transparent py-3 pl-3 pr-3 text-left font-mono text-[16px] tracking-[0.28em] text-text-primary outline-none placeholder:text-text-faint disabled:opacity-50 sm:text-[17px] sm:tracking-[0.32em]"
+              />
+            </div>
           </div>
 
           {error && (

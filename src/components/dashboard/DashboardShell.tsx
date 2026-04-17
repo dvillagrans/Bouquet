@@ -3,6 +3,7 @@
 import { AppSidebar } from "./AppSidebar";
 import MobileBottomNav from "./MobileBottomNav";
 import { NavGroup } from "./Sidebar";
+import { ShellChromeProvider, useShellChrome } from "./ShellChromeContext";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { MobileNavProvider } from "./MobileNavContext";
 
@@ -27,15 +28,17 @@ export default function DashboardShell({
   return (
     <SidebarProvider>
       <MobileNavProvider>
-        <DashboardShellContent
-          navGroups={navGroups}
-          userName={userName}
-          userRole={userRole}
-          userInitial={userInitial}
-          showSidebarLogout={showSidebarLogout}
-        >
-          {children}
-        </DashboardShellContent>
+        <ShellChromeProvider>
+          <DashboardShellContent
+            navGroups={navGroups}
+            userName={userName}
+            userRole={userRole}
+            userInitial={userInitial}
+            showSidebarLogout={showSidebarLogout}
+          >
+            {children}
+          </DashboardShellContent>
+        </ShellChromeProvider>
       </MobileNavProvider>
     </SidebarProvider>
   );
@@ -49,25 +52,37 @@ function DashboardShellContent({
   userInitial,
   showSidebarLogout,
 }: DashboardShellProps) {
+  const { hideDashboardChrome } = useShellChrome();
+
   return (
     <div className="flex min-h-screen w-full bg-bg-solid text-text-primary antialiased selection:bg-gold selection:text-bg-solid font-sans">
-      <AppSidebar
-        groups={navGroups}
-        userName={userName}
-        userRole={userRole}
-        userInitial={userInitial}
-        showSidebarLogout={showSidebarLogout}
-      />
-      <main className="flex min-h-svh min-w-0 flex-1 flex-col pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-0">
+      {hideDashboardChrome ? null : (
+        <AppSidebar
+          groups={navGroups}
+          userName={userName}
+          userRole={userRole}
+          userInitial={userInitial}
+          showSidebarLogout={showSidebarLogout}
+        />
+      )}
+      <main
+        className={
+          hideDashboardChrome
+            ? "flex min-h-svh min-w-0 flex-1 flex-col pb-0"
+            : "flex min-h-svh min-w-0 flex-1 flex-col pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-0"
+        }
+      >
         {children}
       </main>
-      <MobileBottomNav
-        navGroups={navGroups}
-        userName={userName}
-        userRole={userRole}
-        userInitial={userInitial}
-        showSidebarLogout={showSidebarLogout}
-      />
+      {hideDashboardChrome ? null : (
+        <MobileBottomNav
+          navGroups={navGroups}
+          userName={userName}
+          userRole={userRole}
+          userInitial={userInitial}
+          showSidebarLogout={showSidebarLogout}
+        />
+      )}
     </div>
   );
 }

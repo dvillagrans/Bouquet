@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Lock, ArrowRight, ShieldCheck, MapPin } from "lucide-react";
 import { verifyZonePin } from "@/actions/chain";
+import { useShellChrome } from "@/components/dashboard/ShellChromeContext";
 
 interface GuardProps {
   zoneId?: string;
@@ -10,10 +11,16 @@ interface GuardProps {
 }
 
 export default function ZoneAuthGuard({ zoneId, onAuthenticated }: GuardProps) {
+  const { setHideDashboardChrome } = useShellChrome();
   const [zid, setZid] = useState(zoneId || "");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setHideDashboardChrome(true);
+    return () => setHideDashboardChrome(false);
+  }, [setHideDashboardChrome]);
 
   useEffect(() => {
     // Attempt auto-login if saved session
@@ -87,18 +94,21 @@ export default function ZoneAuthGuard({ zoneId, onAuthenticated }: GuardProps) {
                    <label className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim">
                      ID de Zona
                    </label>
-                   <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <MapPin className="w-3.5 h-3.5 text-text-muted" />
-                      </div>
+                   <div className="flex min-h-[44px] overflow-hidden rounded-md border border-border-main bg-bg-solid transition-shadow focus-within:border-gold/50 focus-within:ring-1 focus-within:ring-gold/30">
+                      <span
+                        className="flex w-11 shrink-0 items-center justify-center border-r border-border-main/70 bg-bg-hover/25 text-text-muted"
+                        aria-hidden
+                      >
+                        <MapPin className="size-4 shrink-0" />
+                      </span>
                       <input
                         autoFocus={!zid}
-                         required
-                         type="text" 
-                         value={zid}
-                         onChange={(e) => setZid(e.target.value)}
-                         placeholder="Ej. zn_8f7a6"
-                         className="w-full bg-bg-solid border border-border-main rounded-md py-2.5 pl-9 pr-3 text-text-primary focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/30 transition-all font-mono text-[13px] placeholder:text-text-faint placeholder:font-sans"
+                        required
+                        type="text"
+                        value={zid}
+                        onChange={(e) => setZid(e.target.value)}
+                        placeholder="Ej. zn_8f7a6"
+                        className="min-w-0 flex-1 border-0 bg-transparent py-2.5 pl-3 pr-3 font-mono text-[13px] text-text-primary outline-none placeholder:text-text-faint placeholder:font-sans"
                       />
                    </div>
                  </div>
@@ -107,20 +117,23 @@ export default function ZoneAuthGuard({ zoneId, onAuthenticated }: GuardProps) {
                    <label className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim">
                      PIN de Supervisor
                    </label>
-                   <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Lock className="w-3.5 h-3.5 text-text-muted" />
-                      </div>
+                   <div className="flex min-h-[44px] overflow-hidden rounded-md border border-border-main bg-bg-solid transition-shadow focus-within:border-gold/50 focus-within:ring-1 focus-within:ring-gold/30">
+                      <span
+                        className="flex w-11 shrink-0 items-center justify-center border-r border-border-main/70 bg-bg-hover/25 text-text-muted"
+                        aria-hidden
+                      >
+                        <Lock className="size-4 shrink-0" />
+                      </span>
                       <input
-                         autoFocus={!!zid}
-                         required
-                         type="password" 
-                         pattern="[0-9]*"
-                         inputMode="numeric"
-                         value={pin}
-                         onChange={(e) => setPin(e.target.value)}
-                         placeholder="••••"
-                         className="w-full bg-bg-solid border border-border-main rounded-md py-2.5 pl-9 pr-3 text-text-primary focus:outline-none focus:border-gold/50 focus:ring-1 focus:ring-gold/30 transition-all font-mono text-[20px] tracking-[0.5em] placeholder:text-text-faint placeholder:font-sans placeholder:tracking-normal placeholder:text-[13px]"
+                        autoFocus={!!zid}
+                        required
+                        type="password"
+                        pattern="[0-9]*"
+                        inputMode="numeric"
+                        value={pin}
+                        onChange={(e) => setPin(e.target.value)}
+                        placeholder="••••"
+                        className="min-w-0 flex-1 border-0 bg-transparent py-2.5 pl-3 pr-3 text-left font-mono text-[18px] tracking-[0.35em] text-text-primary outline-none placeholder:text-text-faint placeholder:font-sans placeholder:text-[13px] placeholder:tracking-normal sm:text-[20px] sm:tracking-[0.45em]"
                       />
                    </div>
                  </div>

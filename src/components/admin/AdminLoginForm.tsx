@@ -30,7 +30,7 @@ export default function AdminLoginForm({
 
   const banner =
     initialError === "missing_secret"
-      ? "Falta BOUQUET_ADMIN_AUTH_SECRET en el servidor."
+      ? "Falta AUTH_SECRET en el servidor (obligatorio en producción). Legado: NEXTAUTH_SECRET o BOUQUET_ADMIN_AUTH_SECRET. Con `next start` local: BOUQUET_ADMIN_ALLOW_DEV_AUTH_SECRET=1."
       : null;
 
   const submit = async (e: React.FormEvent) => {

@@ -18,7 +18,14 @@ function normalizeEmail(raw: string): string {
 export async function POST(req: Request) {
   const secret = resolveAdminAuthSecret();
   if (!secret) {
-    return NextResponse.json({ ok: false, error: "BOUQUET_ADMIN_AUTH_SECRET no está configurada." }, { status: 503 });
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "Falta AUTH_SECRET (recomendado) para firmar la sesión admin. En legado puedes usar NEXTAUTH_SECRET o BOUQUET_ADMIN_AUTH_SECRET.",
+      },
+      { status: 503 }
+    );
   }
 
   let body: { email?: string; password?: string };

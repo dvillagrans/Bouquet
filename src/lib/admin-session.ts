@@ -5,7 +5,21 @@
 
 const COOKIE_NAME = "bq_admin_session";
 
-/** Solo desarrollo: en producción define `BOUQUET_ADMIN_AUTH_SECRET`. */
+/**
+ * Secreto HMAC para firmar la cookie de sesión admin (`bq_admin_session`).
+ *
+ * **Variable recomendada:** `AUTH_SECRET` (misma convención que Auth.js / NextAuth v5).
+ *
+ * Orden de resolución (gana la primera definida):
+ * 1. `AUTH_SECRET`
+ * 2. `NEXTAUTH_SECRET` (legado NextAuth v4)
+ * 3. `BOUQUET_ADMIN_AUTH_SECRET` (compatibilidad con despliegues antiguos)
+ *
+ * - **Producción** (`NODE_ENV=production`): define `AUTH_SECRET`. Si falta, el middleware
+ *   usa `?error=missing_secret`.
+ * - **`next dev`**: sin ninguna, fallback interno de desarrollo.
+ * - **`next start` local** sin secret: `BOUQUET_ADMIN_ALLOW_DEV_AUTH_SECRET=1` (solo tu máquina).
+ */
 export const DEV_ADMIN_AUTH_SECRET_FALLBACK = "bouquet-dev-admin-auth-secret-change-me-32";
 
 function encoder() {
@@ -101,9 +115,18 @@ export async function verifyAdminSessionToken(token: string | undefined, secret:
 }
 
 export function getAdminAuthSecret(): string | undefined {
-  return process.env.BOUQUET_ADMIN_AUTH_SECRET?.trim() || undefined;
+  return (
+    process.env.AUTH_SECRET?.trim() ||
+    process.env.NEXTAUTH_SECRET?.trim() ||
+    process.env.BOUQUET_ADMIN_AUTH_SECRET?.trim() ||
+    undefined
+  );
 }
 
 export function resolveAdminAuthSecret(): string | undefined {
-  return getAdminAuthSecret() ?? (process.env.NODE_ENV !== "production" ? DEV_ADMIN_AUTH_SECRET_FALLBACK : undefined);
+  const fromEnv = getAdminAuthSecret();
+  if (fromEnv) return fromEnv;
+  if (process.env.NODE_ENV !== "production") return DEV_ADMIN_AUTH_SECRET_FALLBACK;
+  if (process.env.BOUQUET_ADMIN_ALLOW_DEV_AUTH_SECRET === "1") return DEV_ADMIN_AUTH_SECRET_FALLBACK;
+  return undefined;
 }

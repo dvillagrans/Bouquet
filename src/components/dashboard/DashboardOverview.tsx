@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   MapPin,
@@ -13,6 +13,7 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import Link from "next/link";
+import { resolveNavHref, restaurantBaseFromPathname } from "@/lib/dashboard-nav";
 
 interface DashboardOverviewProps {
   data: {
@@ -31,6 +32,8 @@ interface DashboardOverviewProps {
 }
 
 export default function DashboardOverview({ data }: DashboardOverviewProps) {
+  const pathname = usePathname();
+  const restaurantBase = restaurantBaseFromPathname(pathname);
   const { metrics, restaurant } = data;
   const occPct = metrics.totalTables > 0 ? (metrics.activeTables / metrics.totalTables) * 100 : 0;
 
@@ -172,7 +175,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
            </p>
 
            <Link 
-             href="/dashboard/mesas"
+             href={resolveNavHref("/dashboard/mesas", restaurantBase)}
              className="mt-6 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-gold/10 px-5 py-2 text-[11px] font-medium uppercase tracking-[0.1em] text-gold transition-colors hover:bg-gold/20"
            >
              <LayoutGrid className="w-3.5 h-3.5" />

@@ -8,12 +8,7 @@ export async function GET(
 ) {
   const { restaurantId } = await params;
 
-  const res = NextResponse.redirect(new URL("/dashboard", process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"));
-  res.cookies.set("bq_restaurant_id", restaurantId, {
-    path: "/",
-    sameSite: "lax",
-    httpOnly: true,
-  });
-  return res;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  return NextResponse.redirect(new URL(`/restaurant/${restaurantId}`, baseUrl));
 }
 

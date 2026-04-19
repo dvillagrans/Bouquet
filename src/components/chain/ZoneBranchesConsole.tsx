@@ -366,7 +366,7 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
                 </div>
 
                 <Link
-                  href={`/dashboard/impersonate/${selected.id}`}
+                  href={`/restaurant/${selected.id}`}
                   className="mt-8 flex w-full items-center justify-center gap-3 rounded-full bg-white text-[13px] font-bold text-black py-4 transition-all hover:bg-gold shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(183,146,93,0.3)] group"
                 >
                   IMPERSONAR OPERACIÓN
@@ -421,7 +421,7 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
                   </div>
 
                   <Link
-                    href={`/dashboard/impersonate/${selected.id}`}
+                    href={`/restaurant/${selected.id}`}
                     onClick={() => setSelectedId(null)}
                     className="flex w-full items-center justify-center gap-3 rounded-full bg-white py-4 text-[14px] font-bold text-black transition-all hover:bg-gold shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-[0.98] group"
                   >

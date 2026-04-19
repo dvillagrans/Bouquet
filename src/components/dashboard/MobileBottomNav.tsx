@@ -6,6 +6,11 @@ import { Ellipsis, LogOut } from "lucide-react";
 import { NavGroup } from "./Sidebar";
 import { useMobileNav } from "./MobileNavContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import {
+  resolveNavHref,
+  restaurantBaseFromPathname,
+  toCanonicalDashboardPath,
+} from "@/lib/dashboard-nav";
 
 type NavItem = NavGroup["items"][number];
 
@@ -17,9 +22,10 @@ type MobileBottomNavProps = {
   showSidebarLogout?: boolean;
 };
 
-/** Coincidencia por prefijo (rutas anidadas). No usar solo esto para “activo”: /cadena matchearía /cadena/zonas. */
+/** Coincidencia por prefijo (rutas anidadas). Incluye URLs `/restaurant/[id]/...` → equivalente `/dashboard/...`. */
 function hrefMatchesPath(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
+  const logical = toCanonicalDashboardPath(pathname);
+  return logical === href || logical.startsWith(`${href}/`);
 }
 
 /** Entre varios enlaces, el activo debe ser el prefijo más largo (p. ej. /cadena/zonas gana a /cadena). */
@@ -55,6 +61,7 @@ export default function MobileBottomNav({
   showSidebarLogout,
 }: MobileBottomNavProps) {
   const pathname = usePathname();
+  const restaurantBase = restaurantBaseFromPathname(pathname);
   const router = useRouter();
   const { open, toggle, close } = useMobileNav();
   const items = flattenNavGroups(navGroups);
@@ -96,7 +103,7 @@ export default function MobileBottomNav({
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={resolveNavHref(item.href, restaurantBase)}
                 className={`group relative flex min-h-[52px] min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1.5 rounded-[1.25rem] px-2 py-1.5 transition-all duration-500 ease-out active:scale-95 ${
                   active
                     ? "text-gold"
@@ -187,7 +194,7 @@ export default function MobileBottomNav({
                       return (
                         <Link
                           key={item.href}
-                          href={item.href}
+                          href={resolveNavHref(item.href, restaurantBase)}
                           onClick={close}
                           className={`relative flex min-h-[48px] touch-manipulation items-center gap-3 px-4 py-3.5 text-[15px] transition-colors active:bg-white/10 sm:text-[13px] ${
                             active

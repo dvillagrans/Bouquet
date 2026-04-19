@@ -5,6 +5,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { LogOut } from "lucide-react";
 import { NavGroup } from "./Sidebar";
+import {
+  resolveNavHref,
+  restaurantBaseFromPathname,
+  toCanonicalDashboardPath,
+} from "@/lib/dashboard-nav";
 
 export function AppSidebar({
   groups,
@@ -22,6 +27,8 @@ export function AppSidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const restaurantBase = restaurantBaseFromPathname(pathname);
+  const pathForNavMatch = toCanonicalDashboardPath(pathname);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -39,7 +46,8 @@ export function AppSidebar({
   const bestMatchHref = (items: NavGroup["items"]) => {
     let best: string | null = null;
     for (const it of items) {
-      const matches = pathname === it.href || pathname.startsWith(it.href + "/");
+      const matches =
+        pathForNavMatch === it.href || pathForNavMatch.startsWith(it.href + "/");
       if (!matches) continue;
       if (!best || it.href.length > best.length) best = it.href;
     }
@@ -88,7 +96,7 @@ export function AppSidebar({
                   return (
                     <Link
                       key={item.label}
-                      href={item.href}
+                      href={resolveNavHref(item.href, restaurantBase)}
                       className="flex items-center gap-3 px-5 py-2.5 text-[12.5px] text-gold cursor-pointer transition-all border-l-2 bg-gradient-to-r from-gold-faint to-transparent border-gold w-full decoration-none"
                     >
                       <item.icon
@@ -102,7 +110,7 @@ export function AppSidebar({
                 return (
                   <Link
                     key={item.label}
-                    href={item.href}
+                    href={resolveNavHref(item.href, restaurantBase)}
                     className="flex items-center gap-3 px-5 py-2.5 text-[12.5px] text-text-dim cursor-pointer transition-all border-l-2 border-transparent hover:bg-bg-hover hover:text-text-muted w-full decoration-none"
                   >
                     <item.icon

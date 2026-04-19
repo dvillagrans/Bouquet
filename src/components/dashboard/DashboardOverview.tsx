@@ -119,7 +119,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
           </div>
           
           <div>
-             <h3 className="text-[14px] font-semibold text-text-primary tracking-wide flex items-center gap-2">
+             <h3 className="text-base font-semibold text-text-primary tracking-wide flex items-center gap-2 lg:text-[14px]">
                <ChefHat className="w-4 h-4 text-gold" />
                Pulso de Cocina
              </h3>

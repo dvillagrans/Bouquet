@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useReducedMotion } from "framer-motion";
 
 type Status = "active" | "steady" | "closing" | "open";
 
@@ -46,9 +47,19 @@ const TABLES: TableDef[] = [
 
 const TRANSITION = "fill 0.6s ease, stroke 0.6s ease, stroke-dasharray 0.4s ease";
 
-function TableShape({ id, x, y, w, h, rx = 8, status }: TableDef) {
+function TableShape({
+  id,
+  x,
+  y,
+  w,
+  h,
+  rx = 8,
+  status,
+  reduceMotion,
+}: TableDef & { reduceMotion: boolean }) {
   const p = PALETTE[status];
-  const isAnimated = status === "active" || status === "closing";
+  const isAnimated =
+    !reduceMotion && (status === "active" || status === "closing");
 
   return (
     <g>
@@ -81,20 +92,21 @@ function TableShape({ id, x, y, w, h, rx = 8, status }: TableDef) {
         fill={p.dot}
         style={{ transition: "fill 0.6s ease" }}
       >
-        {isAnimated && (
+        {isAnimated ? (
           <animate
             attributeName="opacity"
             values="1;0.3;1"
             dur={status === "active" ? "2.2s" : "1.5s"}
             repeatCount="indefinite"
           />
-        )}
+        ) : null}
       </circle>
     </g>
   );
 }
 
 export const FloorPlan = () => {
+  const reduceMotion = useReducedMotion() === true;
   const [statusById, setStatusById] = useState<Record<string, Status>>(() =>
     Object.fromEntries(TABLES.map((t) => [t.id, t.status]))
   );
@@ -180,7 +192,12 @@ export const FloorPlan = () => {
 
           {/* Tables */}
           {TABLES.map((t) => (
-            <TableShape key={t.id} {...t} status={statusById[t.id] ?? t.status} />
+            <TableShape
+              key={t.id}
+              {...t}
+              status={statusById[t.id] ?? t.status}
+              reduceMotion={reduceMotion}
+            />
           ))}
 
           {/* Bar — decorative bottom element */}

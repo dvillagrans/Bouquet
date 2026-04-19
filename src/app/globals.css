@@ -521,3 +521,16 @@ body {
   --color-dash-blue: #4472a0;
   --color-dash-blue-bg: #141e2a;
 }
+
+/*
+ * Safari (iOS): zoom automático al enfocar inputs con fuente efectiva <16px.
+ * Ocurre también en iPhone apaisado / tablets si `md:` (≥768px) baja el tamaño.
+ * Puntero grueso = dispositivos táctiles; no afecta escritorio con ratón (pointer: fine).
+ */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="submit"], [type="button"], [type="reset"], [type="image"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}

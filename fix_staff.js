@@ -1,4 +1,9 @@
+const fs = require('fs');
+const filePath = 'src/components/chain/ZoneStaffPanel.tsx';
+let txt = fs.readFileSync(filePath, 'utf8');
 
+// The file needs a complete structural rewrite. We will create a fresh high-end JSX.
+const code = `
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -89,7 +94,7 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
   const toggle = async (uid: string, act: boolean) => {
     if (!zoneId) return;
     setTogglingId(uid);
-    await setRestaurantAdminActive({ staffId: uid, isActive: act });
+    await setRestaurantAdminActive(zoneId, uid, act);
     setTogglingId(null);
     load(zoneId);
   };
@@ -145,7 +150,7 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
           <div className="flex items-center gap-2 text-[12px] font-medium text-text-dim uppercase tracking-wider">
             <span className="text-white">Bouquet OPS</span>
             <ChevronRight className="size-3 text-white/20" />
-            <Link href={`/zona?zoneId=${zoneId}`} className="text-white/60 hover:text-white transition-colors">
+            <Link href={\`/zona?zoneId=\${zoneId}\`} className="text-white/60 hover:text-white transition-colors">
               ZONAS
             </Link>
             <ChevronRight className="size-3 text-white/20" />
@@ -159,7 +164,7 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
           disabled={loading}
           className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-transparent text-text-dim transition-colors hover:border-white/20 hover:text-white disabled:opacity-50 sm:w-auto sm:gap-2 sm:px-4"
         >
-          <RefreshCw className={`size-4 shrink-0 ${loading ? "animate-spin text-gold" : ""}`} aria-hidden />
+          <RefreshCw className={\`size-4 shrink-0 \${loading ? "animate-spin text-gold" : ""}\`} aria-hidden />
           <span className="hidden text-[12px] font-medium sm:inline">Refrescar</span>
         </button>
       </header>
@@ -287,7 +292,7 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
                     maxLength={6}
                     min={4}
                     value={pin}
-                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                    onChange={(e) => setPin(e.target.value.replace(/\\D/g, ""))}
                     className="w-full rounded-xl border border-white/10 bg-white/5 p-3.5 pl-11 text-[16px] tracking-[0.3em] font-mono text-white placeholder:text-text-dim outline-none transition-colors focus:border-gold/50 focus:bg-white/10 focus:ring-1 focus:ring-gold/30"
                   />
                 </div>
@@ -323,7 +328,7 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
                 <div 
                   key={rest.id} 
                   className="rounded-3xl border border-white/5 bg-[linear-gradient(145deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] overflow-hidden shadow-[0_24px_48px_-12px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-[30px] duration-1000 ease-out"
-                  style={{ animationFillMode: "both", animationDelay: `${900 + (restIdx * 150)}ms` }}
+                  style={{ animationFillMode: "both", animationDelay: \\\`\${900 + (restIdx * 150)}ms\\\` }}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/5 bg-white/[0.02] p-5 sm:px-6">
                     <div className="flex items-center gap-3">
@@ -344,13 +349,13 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
                         className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 hover:bg-white/[0.02] transition-colors"
                       >
                         <div className="flex items-center gap-4">
-                          <div className={`flex size-12 shrink-0 items-center justify-center rounded-2xl shadow-inner ${
+                          <div className={\`flex size-12 shrink-0 items-center justify-center rounded-2xl shadow-inner \${
                             m.isActive ? 'bg-gold/10 border border-gold/20' : 'bg-dash-error/10 border border-dash-error/20'
-                          }`}>
+                          }\`}>
                             {m.role === "ADMIN" ? (
-                              <UserCog className={`size-5 ${m.isActive ? 'text-gold' : 'text-dash-error'}`} />
+                              <UserCog className={\`size-5 \${m.isActive ? 'text-gold' : 'text-dash-error'}\`} />
                             ) : (
-                              <Users className={`size-5 ${m.isActive ? 'text-emerald-400' : 'text-dash-error'}`} />
+                              <Users className={\`size-5 \${m.isActive ? 'text-emerald-400' : 'text-dash-error'}\`} />
                             )}
                           </div>
                           <div>
@@ -368,11 +373,11 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
 
                         <div className="flex min-w-0 items-center gap-3 sm:min-w-[12rem] sm:justify-end">
                           <span
-                            className={`inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest ${
+                            className={\`inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest \${
                               m.isActive ? "text-emerald-400" : "text-dash-error"
-                            }`}
+                            }\`}
                           >
-                            <span className={`size-1.5 rounded-full ${m.isActive ? "bg-emerald-400 shadow-[0_0_8px_var(--color-emerald-400)]" : "bg-dash-error"}`} />
+                            <span className={\`size-1.5 rounded-full \${m.isActive ? "bg-emerald-400 shadow-[0_0_8px_var(--color-emerald-400)]" : "bg-dash-error"}\`} />
                             {m.isActive ? "Activo" : "Baja"}
                           </span>
                           <button
@@ -403,3 +408,6 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
     </div>
   );
 }
+`;
+
+fs.writeFileSync(filePath, code);

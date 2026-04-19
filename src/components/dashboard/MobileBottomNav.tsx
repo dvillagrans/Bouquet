@@ -89,7 +89,7 @@ export default function MobileBottomNav({
             className="pointer-events-none absolute inset-x-6 top-0 h-[1px] rounded-full bg-gradient-to-r from-transparent via-white/45 to-transparent blur-[0.5px]"
             aria-hidden
           />
-          <div className="relative z-[1] flex w-full max-w-full items-stretch justify-between gap-1 px-0.5 py-0.5 sm:gap-1.5">
+          <div className="relative z-[1] flex w-full max-w-full items-stretch justify-between gap-1 px-1 py-1 sm:gap-2">
           {primaryItems.map((item) => {
             const active = activeHref !== null && item.href === activeHref;
             const Icon = item.icon;
@@ -97,21 +97,29 @@ export default function MobileBottomNav({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative flex min-h-[48px] min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl px-1 py-1 text-[11px] font-medium leading-snug tracking-tight transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)] active:scale-[0.96] sm:min-h-[52px] sm:gap-1.5 sm:rounded-[1.65rem] sm:text-xs ${
+                className={`group relative flex min-h-[52px] min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1.5 rounded-[1.25rem] px-2 py-1.5 transition-all duration-500 ease-out active:scale-95 ${
                   active
-                    ? "text-gold shadow-[inset_0_1px_0_rgba(255,255,255,0.14),inset_0_-1px_0_rgba(0,0,0,0.18)] ring-1 ring-gold/25"
-                    : "text-text-muted active:bg-white/[0.12] hover:bg-white/[0.07] hover:text-text-secondary"
+                    ? "text-gold"
+                    : "text-text-muted hover:text-white"
                 }`}
                 aria-current={active ? "page" : undefined}
               >
                 {active ? (
-                  <span className="absolute inset-0 rounded-2xl bg-gradient-to-b from-gold/[0.18] via-gold/[0.08] to-white/[0.04] backdrop-blur-md sm:rounded-[1.65rem]" />
-                ) : null}
+                  <span className="absolute inset-0 rounded-[1.25rem] border border-gold/20 bg-[linear-gradient(180deg,rgba(183,146,93,0.15)_0%,rgba(183,146,93,0.05)_100%)] shadow-[0_8px_16px_-6px_rgba(183,146,93,0.25)] backdrop-blur-md" />
+                ) : (
+                  <span className="absolute inset-0 scale-95 rounded-[1.25rem] bg-white/5 opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100" />
+                )}
                 <Icon
-                  className={`relative z-10 size-5 shrink-0 transition-transform duration-300 sm:size-[22px] ${active ? "scale-105 drop-shadow-[0_2px_10px_rgba(201,160,84,0.45)]" : ""}`}
+                  className={`relative z-10 size-5 shrink-0 transition-transform duration-500 ease-out sm:size-6 ${
+                    active ? "scale-110 drop-shadow-[0_2px_8px_rgba(183,146,93,0.6)]" : "group-hover:-translate-y-0.5 group-hover:scale-105 group-hover:text-white"
+                  }`}
                   aria-hidden
                 />
-                <span className="relative z-10 line-clamp-2 max-w-[5.75rem] text-center sm:max-w-[6.5rem]">{item.label}</span>
+                <span className={`relative z-10 line-clamp-1 max-w-[6rem] text-center text-[10px] font-bold uppercase tracking-[0.15em] transition-colors duration-300 sm:max-w-[7rem] sm:text-[11px] ${
+                  active ? "text-gold" : "text-text-dim group-hover:text-white"
+                }`}>
+                  {item.label}
+                </span>
               </Link>
             );
           })}
@@ -119,11 +127,14 @@ export default function MobileBottomNav({
           <button
             type="button"
             onClick={toggle}
-            className="group relative flex min-h-[48px] min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl px-1 py-1 text-[11px] font-medium leading-snug tracking-tight text-text-muted transition-all duration-300 ease-[cubic-bezier(0.25,0.8,0.25,1)] active:scale-[0.96] active:bg-white/[0.12] hover:bg-white/[0.07] hover:text-text-secondary sm:min-h-[52px] sm:gap-1.5 sm:rounded-[1.65rem] sm:text-xs"
+            className="group relative flex min-h-[52px] min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1.5 rounded-[1.25rem] px-2 py-1.5 text-text-muted transition-all duration-500 ease-out hover:text-white active:scale-95"
             aria-label="Abrir menú"
           >
-            <Ellipsis className="relative z-10 size-5 shrink-0 transition-transform duration-300 group-active:scale-90 sm:size-[22px]" aria-hidden />
-            <span className="relative z-10">Más</span>
+            <span className="absolute inset-0 scale-95 rounded-[1.25rem] bg-white/5 opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100" />
+            <Ellipsis className="relative z-10 size-5 shrink-0 transition-transform duration-500 ease-out group-hover:-translate-y-0.5 group-hover:scale-105 group-hover:text-white sm:size-6" aria-hidden />
+            <span className="relative z-10 line-clamp-1 max-w-[6rem] text-center text-[10px] font-bold uppercase tracking-[0.15em] text-text-dim transition-colors duration-300 group-hover:text-white sm:max-w-[7rem] sm:text-[11px]">
+              Más
+            </span>
           </button>
           </div>
         </nav>

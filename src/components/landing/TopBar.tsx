@@ -31,49 +31,78 @@ export const TopBar = () => {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 opacity-0 animate-[fade-in_0.5s_ease-out_forwards] ${
-        scrolled ? "border-b border-charcoal/10 bg-ivory/95 backdrop-blur-md" : "bg-transparent"
-      }`}
+      className="fixed inset-x-0 top-0 z-50 opacity-0 animate-[fade-in_0.5s_ease-out_forwards]"
+      aria-label="Barra de navegación"
     >
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10 lg:py-5">
+      <div
+        className={[
+          "mx-auto flex items-center justify-between transition-[max-width,padding,background,border-color,box-shadow,border-radius,margin] duration-[500ms]",
+          "ease-[cubic-bezier(0.32,0.72,0,1)]",
+          scrolled
+            ? "mt-4 max-w-[min(1180px,calc(100vw-1.5rem))] rounded-full border border-charcoal/10 bg-ivory/75 px-4 py-2.5 shadow-[0_18px_50px_-30px_rgba(43,36,30,0.35),inset_0_1px_0_rgba(255,255,255,0.85)] backdrop-blur-xl lg:px-5 lg:py-3"
+            : "mt-0 max-w-7xl rounded-none border border-transparent bg-transparent px-6 py-4 lg:px-10 lg:py-5",
+        ].join(" ")}
+      >
 
         {/* Logo */}
-        <Link href="/" className="group flex items-baseline gap-2">
-          <span className="font-serif text-[1.6rem] font-semibold italic tracking-tight text-charcoal transition-opacity duration-200 group-hover:opacity-70">
+        <Link href="/" className="group flex items-baseline gap-2 shrink-0">
+          <span className="font-serif text-[1.55rem] font-semibold italic tracking-tight text-charcoal transition-opacity duration-200 group-hover:opacity-70">
             bouquet
           </span>
-          <span className="mb-0.5 hidden text-[0.56rem] font-bold uppercase tracking-[0.38em] text-charcoal/45 sm:block">
+          <span className="mb-0.5 hidden text-[0.54rem] font-bold uppercase tracking-[0.38em] text-charcoal/45 sm:block">
             ops
           </span>
         </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden items-center gap-7 lg:flex" aria-label="Menú principal">
+        {/* Desktop nav — espacio generoso entre ítems (evita sensación “pegado”) */}
+        <nav className="hidden items-center lg:flex lg:gap-10 xl:gap-12" aria-label="Menú principal">
           {nav.map(({ label, href }) => (
             <Link
               key={href}
               href={href}
-              className="text-[0.85rem] font-medium text-charcoal/62 transition-colors duration-200 hover:text-charcoal"
+              className="relative whitespace-nowrap rounded-full px-4 py-2 text-[0.84rem] font-medium text-charcoal/62 transition-colors duration-200 hover:bg-charcoal/[0.04] hover:text-charcoal lg:px-5"
             >
               {label}
             </Link>
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
-          <Link href="/scan" className="mr-2 text-[0.8rem] font-semibold text-charcoal/55 transition-colors hover:text-charcoal">App Comensal</Link>
-          {/* Desktop CTA — no id="contacto" here (belongs on the section) */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Link href="/scan" className="hidden lg:inline-flex text-[0.78rem] font-semibold text-charcoal/55 transition-colors hover:text-charcoal px-3">
+            App Comensal
+          </Link>
+          {/* Desktop CTA — altura táctil, relieve y acento dorado */}
           <Link
             href="#contacto"
-            className="hidden items-center gap-2 rounded-full border border-charcoal/12 bg-charcoal px-5 py-2.5 text-[0.8rem] font-semibold text-cream transition-all duration-200 hover:-translate-y-0.5 hover:bg-charcoal-light lg:inline-flex focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+            className={[
+              "group relative isolate hidden shrink-0 overflow-hidden lg:inline-flex",
+              "h-11 min-h-[44px] min-w-[15.5rem] max-w-[calc(100vw-2rem)] flex-nowrap items-center justify-between gap-2.5 rounded-full py-2 pl-5 pr-2 sm:min-w-[16rem] sm:pl-6",
+              "bg-charcoal text-[0.8125rem] font-semibold tracking-tight text-cream",
+              "shadow-[0_12px_34px_-14px_rgba(43,36,30,0.55)] ring-1 ring-white/12",
+              "transition-[transform,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
+              "before:pointer-events-none before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-b before:from-white/[0.07] before:to-transparent",
+              "hover:-translate-y-[2px] hover:bg-charcoal-light hover:shadow-[0_16px_42px_-16px_rgba(43,36,30,0.5)] hover:ring-white/18",
+              "active:translate-y-0 active:scale-[0.98]",
+              "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold",
+            ].join(" ")}
           >
-            Demo en 20 min
+            <span className="relative z-[1] shrink-0 whitespace-nowrap pl-0.5">
+              Demo en 20 min
+            </span>
+            <span className="relative z-[1] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold/95 text-charcoal shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] ring-1 ring-charcoal/10 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:brightness-105">
+              <svg className="h-4 w-4 -translate-x-px" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 10h12m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
           </Link>
 
           {/* Mobile hamburger */}
           <button
             onClick={() => setOpen(!open)}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-charcoal/12 text-charcoal/65 transition-colors hover:border-charcoal/25 hover:text-charcoal lg:hidden"
+            className={[
+              "flex items-center justify-center rounded-full border border-charcoal/10 text-charcoal/65 transition-[height,width,background-color,color] duration-300 hover:border-charcoal/25 hover:text-charcoal lg:hidden",
+              scrolled ? "h-9 w-9 bg-white/40" : "h-11 w-11",
+            ].join(" ")}
             aria-label={open ? "Cerrar menú" : "Abrir menú"}
             aria-expanded={open}
             aria-controls="mobile-menu"
@@ -99,13 +128,18 @@ export const TopBar = () => {
        */}
       <div
         id="mobile-menu"
-        className={`grid overflow-hidden border-t border-charcoal/10 bg-ivory transition-[grid-template-rows] duration-[350ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)] lg:hidden ${
-          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
+        aria-hidden={!open}
+        className={[
+          "mx-3 grid overflow-hidden lg:hidden",
+          "transition-[grid-template-rows,margin,border-color,box-shadow,background-color,backdrop-filter] duration-[350ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)]",
+          open
+            ? "mt-2 grid-rows-[1fr] rounded-[1.5rem] border border-charcoal/10 bg-ivory/90 shadow-[0_30px_60px_-30px_rgba(43,36,30,0.35)] backdrop-blur-xl"
+            : "pointer-events-none mt-0 grid-rows-[0fr] border-0 bg-transparent shadow-none backdrop-blur-none",
+        ].join(" ")}
       >
         <div className="min-h-0">
           <nav
-            className="mx-auto flex max-w-7xl flex-col px-6 pb-8 pt-2"
+            className="mx-auto flex flex-col px-5 pb-6 pt-4"
             aria-label="Menú móvil"
           >
             {nav.map(({ label, href }, i) => (

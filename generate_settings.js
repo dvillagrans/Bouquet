@@ -1,3 +1,6 @@
+const fs = require('fs');
+
+const code = `
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -11,13 +14,14 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Store,
+  Users,
 } from "lucide-react";
 import { getZoneSettings, rotateZonePin } from "@/actions/chain";
 import type { ZoneSettingsData } from "@/actions/chain";
 import ZoneAuthGuard from "./ZoneAuthGuard";
 
 function shortId(id: string) {
-  return id.length > 10 ? `${id.slice(0, 6)}…${id.slice(-4)}` : id;
+  return id.length > 10 ? \\\`\\\${id.slice(0, 6)}…\\\${id.slice(-4)}\\\` : id;
 }
 
 export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: string }) {
@@ -72,7 +76,7 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
     setErr(null);
     setMsg(null);
 
-    const actorStaffId = sessionStorage.getItem(`bq_auth_z_${zoneId}`) ?? "";
+    const actorStaffId = sessionStorage.getItem(\\\`bq_auth_z_\\\${zoneId}\\\`) ?? "";
     if (!actorStaffId) {
       setErr("Sesión no encontrada. Reingresa con tu PIN.");
       return;
@@ -119,12 +123,9 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
       <div className="pointer-events-none absolute inset-0 transition-opacity duration-1000 ease-out opacity-100">
         <div className="absolute -top-[20%] -left-[10%] h-[70vh] w-[70vw] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(201,160,84,0.15),transparent_60%)] blur-3xl" />
         <div className="absolute top-[60%] -right-[10%] h-[60vh] w-[50vw] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(68,114,160,0.08),transparent_60%)] blur-3xl opacity-50" />
-        <div
-          className="absolute inset-0 mix-blend-overlay opacity-[0.03]"
-          style={{
-            backgroundImage:
-              'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.65\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")',
-          }}
+        <div 
+          className="absolute inset-0 mix-blend-overlay opacity-[0.03]" 
+          style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\\'0 0 200 200\\' xmlns=\\'http://www.w3.org/2000/svg\\'%3E%3Cfilter id=\\'noiseFilter\\'%3E%3CfeTurbulence type=\\'fractalNoise\\' baseFrequency=\\'0.65\\' numOctaves=\\'3\\' stitchTiles=\\'stitch\\'/%3E%3C/filter%3E%3Crect width=\\'100%25\\' height=\\'100%25\\' filter=\\'url(%23noiseFilter)\\'/%3E%3C/svg%3E")' }} 
         />
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20" />
       </div>
@@ -147,9 +148,7 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
                 {data.zone.name}
               </span>
               <div className="flex h-1 w-1 rounded-full bg-white/20" />
-              <span
-                className={`flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] ${status.ok ? "text-emerald-400/90" : "text-gold/90"}`}
-              >
+              <span className={\\\`flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] \\\${status.ok ? "text-emerald-400/90" : "text-gold/90"}\\\`}>
                 <ShieldCheck className="size-3" />
                 {status.ok ? "Operativa" : "Revisar"}
               </span>
@@ -172,17 +171,17 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
             disabled={loading}
             className="group inline-flex items-center justify-center gap-2 self-start rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.1em] text-neutral-300 transition-all hover:border-gold/30 hover:text-gold disabled:opacity-50"
           >
-            <RefreshCw className={`size-3.5 transition-transform ${loading ? "animate-spin" : "group-hover:rotate-180"}`} />
+            <RefreshCw className={\\\`size-3.5 transition-transform \\\${loading ? "animate-spin" : "group-hover:rotate-180"}\\\`} />
             {loading ? "Sincronizando..." : "Refrescar datos"}
           </button>
         </header>
 
         {/* Grid Stats / Staggered entry 2 */}
         <div className="mb-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-
+          
           {/* Branch Card */}
-          <div
-            className="rounded-3xl border border-white/5 bg-[linear-gradient(145deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-[20px] duration-700 ease-out"
+          <div 
+            className="rounded-3xl border border-white/5 bg-[linear-gradient(145deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-[20px] duration-700 ease-out" 
             style={{ animationFillMode: "both", animationDelay: "300ms" }}
           >
             <div className="flex items-center gap-3 mb-6">
@@ -192,7 +191,7 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
               <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">Cadena Respaldo</p>
             </div>
             <p className="font-serif text-2xl text-white mb-6">{data.zone.chainName}</p>
-
+            
             <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-black/40 p-4">
               <div className="min-w-0 pr-3">
                 <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-neutral-500 mb-1.5">Chain ID</p>
@@ -210,8 +209,8 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
           </div>
 
           {/* Zone ID Card */}
-          <div
-            className="rounded-3xl border border-white/5 bg-[linear-gradient(145deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-[20px] duration-700 ease-out"
+          <div 
+            className="rounded-3xl border border-white/5 bg-[linear-gradient(145deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-[20px] duration-700 ease-out" 
             style={{ animationFillMode: "both", animationDelay: "400ms" }}
           >
             <div className="flex items-center gap-3 mb-6">
@@ -221,7 +220,7 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
               <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-neutral-400">Identificador</p>
             </div>
             <p className="font-serif text-2xl text-white mb-6">{data.zone.name}</p>
-
+            
             <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-black/40 p-4">
               <div className="min-w-0 pr-3">
                 <p className="font-mono text-[9px] uppercase tracking-[0.15em] text-neutral-500 mb-1.5">Zone ID</p>
@@ -286,7 +285,7 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
               </p>
 
               {(msg || err) && (
-                <div className={`mb-6 rounded-xl border p-4 backdrop-blur-md ${msg ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' : 'border-red-500/20 bg-red-500/10 text-red-300'}`}>
+                <div className={\\\`mb-6 rounded-xl border p-4 backdrop-blur-md \\\${msg ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' : 'border-red-500/20 bg-red-500/10 text-red-300'}\\\`}>
                   <p className="text-[12px] font-medium">{msg || err}</p>
                 </div>
               )}
@@ -307,7 +306,7 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
                     }}
                     minLength={4}
                     required
-                    placeholder="Nuevo PIN maestro..."
+                    placeholder="Nuevo PIN..."
                     className="w-full rounded-2xl border border-white/10 bg-black/50 px-5 py-4 font-mono text-[14px] tracking-[0.2em] text-white outline-none placeholder:text-neutral-600 placeholder:tracking-normal focus:border-gold/30 focus:bg-white/[0.02] focus:ring-1 focus:ring-gold/30 transition-all shadow-inner"
                   />
                 </div>
@@ -327,3 +326,9 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
     </div>
   );
 }
+\`;
+
+// Replacing literal string artifacts if any
+const finalCode = code.replace(/\\\\\`/g, '\`').replace(/\\\\\$/g, '$');
+fs.writeFileSync('src/components/chain/ZoneSettingsPanel.tsx', finalCode);
+console.log("Written!");

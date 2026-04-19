@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, TrendingUp, CircleDot, Briefcase, RefreshCw, Building2, MapPin } from "lucide-react";
+import { Users, TrendingUp, CircleDot, Briefcase, RefreshCw, Building2, ChevronRight } from "lucide-react";
 import { getZoneDashboard } from "@/actions/chain";
 import type { ZoneDashboardData, RestaurantSummary } from "@/actions/chain";
 import ZoneAuthGuard from "./ZoneAuthGuard";
@@ -12,16 +12,16 @@ function fmt(n: number) {
 
 function OccupancyBar({ active, total }: { active: number; total: number }) {
   const pct = total > 0 ? Math.round((active / total) * 100) : 0;
-  const color = pct >= 70 ? "bg-glow" : pct >= 40 ? "bg-gold" : "bg-sage-deep";
+  const color = pct >= 80 ? "bg-emerald-400" : pct >= 50 ? "bg-gold" : "bg-white/30";
   return (
-    <div className="flex items-center gap-2">
-      <div className="h-1.5 flex-1 rounded-full bg-border-main overflow-hidden">
+    <div className="flex items-center gap-3">
+      <div className="h-1.5 flex-1 rounded-full bg-white/5 overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${color}`}
+          className={`h-full rounded-full transition-all duration-1000 ease-out ${color}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-[10px] text-text-dim tabular-nums w-8 text-right">
+      <span className="text-[12px] font-mono text-text-dim tabular-nums w-10 text-right">
         {active}/{total}
       </span>
     </div>
@@ -59,194 +59,226 @@ export default function ZoneDashboard({ initialZoneId }: { initialZoneId?: strin
 
   if (loading && !data) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-bg-solid text-text-dim px-4 font-sans text-xs">
-        <div className="flex items-center gap-2 border border-border-main bg-bg-card px-4 py-2 rounded-full">
-           <span className="w-2 h-2 rounded-full border-2 border-gold border-t-transparent animate-spin"/>
-           Cargando Operaciones de Zona...
+      <div className="flex min-h-[100dvh] items-center justify-center bg-bg-solid">
+        <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-5 py-2.5 backdrop-blur-md animate-in fade-in zoom-in-95 duration-700">
+          <RefreshCw className="size-4 animate-spin text-gold" />
+          <span className="text-[13px] font-medium tracking-wide text-text-dim">Cargando Zona...</span>
         </div>
       </div>
     );
   }
 
   if (!data) {
-    return <div className="p-8 text-dash-red text-xs bg-bg-solid min-h-screen">Esta zona no existe o fue eliminada.</div>;
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center bg-bg-solid animate-in fade-in duration-1000">
+        <div className="text-center">
+          <h2 className="font-serif text-2xl text-white mb-2">Zona no encontrada</h2>
+          <p className="text-[14px] text-text-dim">Esta zona no existe o fue eliminada del sistema.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-bg-solid text-text-primary p-4 md:p-8 font-sans">
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-           <div className="text-[10px] tracking-[0.2em] uppercase text-gold mb-1.5 flex items-center gap-2 font-medium">
-             <Briefcase className="w-3.5 h-3.5" />
-             Corporate B2B
-           </div>
-          <h1 className="font-serif text-[28px] font-bold tracking-tight text-text-primary leading-none mb-1 flex items-center gap-2">
-            Zona <em className="not-italic text-gold">{data.zone.name}</em>
-          </h1>
-          <p className="text-[12px] text-text-dim mt-1 font-light">
-            Vista operativa regional. {data.restaurants.length} Sucursales activas.
-          </p>
+    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-bg-solid text-[14px] text-text-primary antialiased selection:bg-gold/30">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40 mix-blend-color-dodge animate-in fade-in duration-[2000ms]"
+        style={{
+          background:
+            "radial-gradient(circle at 80% 0%, rgba(183,146,93,0.12) 0%, transparent 40%), radial-gradient(circle at 10% 90%, rgba(183,146,93,0.06) 0%, transparent 40%)",
+        }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 transition-opacity duration-1000 animate-in fade-in duration-[2000ms]"
+        style={{
+          backgroundImage: "url('https://grainy-gradients.vercel.app/noise.svg')",
+          opacity: 0.03,
+          mixBlendMode: "overlay",
+        }}
+        aria-hidden
+      />
+
+      <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-white/5 bg-bg-solid/80 px-6 backdrop-blur-2xl sm:px-10 animate-in slide-in-from-top-full fade-in duration-700">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-[12px] font-medium text-text-dim uppercase tracking-wider">
+            <span className="text-white">Bouquet OPS</span>
+            <ChevronRight className="size-3 text-white/20" />
+            <span className="text-white/60">ZONAS</span>
+            <ChevronRight className="size-3 text-white/20" />
+            <span className="text-gold tracking-widest">{data.zone.name}</span>
+          </div>
         </div>
+
         <button
+          type="button"
           onClick={() => load(zoneId!)}
           disabled={loading}
-          className="flex items-center justify-center gap-2 px-3 py-1.5 bg-bg-card border border-border-main rounded text-[11px] text-text-muted hover:text-text-secondary hover:border-border-bright transition-colors w-full md:w-auto"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-transparent text-text-dim transition-colors hover:border-white/20 hover:text-white disabled:opacity-50 sm:w-auto sm:gap-2 sm:px-4"
         >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-          {loading ? "Sincronizando..." : "Actualizar"}
+          <RefreshCw className={`size-4 shrink-0 ${loading ? "animate-spin text-gold" : ""}`} aria-hidden />
+          <span className="hidden text-[12px] font-medium sm:inline">Sincronizar</span>
         </button>
-      </div>
+      </header>
 
-      {/* STATS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-bg-card border border-border-main rounded-xl p-5 shadow-sm">
-          <div className="flex items-start justify-between mb-4">
-            <h3 className="text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim">Ventas Zonal</h3>
-            <div className="p-2 bg-dash-green-bg/50 rounded-lg border border-[#1e3824]">
-              <TrendingUp className="w-4 h-4 text-dash-green" />
+      <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-6 pb-20 pt-10 sm:px-10 sm:pt-14">
+        <header 
+          className="mb-12 w-full flex flex-col md:flex-row md:items-end justify-between gap-6 animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out"
+          style={{ animationFillMode: "both", animationDelay: "150ms" }}
+        >
+          <div className="max-w-2xl">
+            <p className="mb-4 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-gold">
+              <Briefcase className="size-3.5" /> Corporate B2B
+            </p>
+            <h1 className="font-serif text-4xl font-medium leading-[1.05] tracking-tight text-white sm:text-6xl text-balance">
+              Zona <em className="not-italic text-gold">{data.zone.name}</em>.
+            </h1>
+            <p className="mt-5 text-[15px] leading-relaxed text-text-dim">
+              Vista operativa y financiera consolidada a nivel región. Tablero centralizando las métricas en tiempo real de {data.restaurants.length} sucursales activas.
+            </p>
+          </div>
+          <div className="text-left md:text-right">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-text-dim mb-1">ID Operativo</p>
+            <p className="font-mono text-[13px] text-white/40">{data.zone.id}</p>
+          </div>
+        </header>
+
+        {/* STATS */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+          <article 
+            className="group overflow-hidden rounded-2xl border border-gold/30 bg-[linear-gradient(135deg,rgba(183,146,93,0.1),rgba(0,0,0,0))] p-6 shadow-[0_32px_64px_-16px_rgba(183,146,93,0.15)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_48px_80px_-16px_rgba(183,146,93,0.25)] animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out"
+            style={{ animationFillMode: "both", animationDelay: "300ms" }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-text-dim">Ventas Zonal</p>
+              <TrendingUp className="size-4 text-gold group-hover:scale-110 transition-transform duration-500" />
+            </div>
+            <p className="font-serif text-4xl sm:text-5xl font-semibold text-gold tabular-nums leading-none tracking-tight">
+              {fmt(data.stats.totalRevenue)}
+            </p>
+            <div className="mt-4 pt-4 border-t border-white/5 text-[12px] text-text-dim">
+              Ingreso bruto hoy (MXN)
+            </div>
+          </article>
+
+          <article 
+            className="group overflow-hidden rounded-2xl border border-white/5 bg-[linear-gradient(145deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.4)] transition-all duration-500 hover:-translate-y-1 hover:border-gold/20 hover:shadow-[0_48px_80px_-12px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out"
+            style={{ animationFillMode: "both", animationDelay: "450ms" }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white">Mesas en Uso</p>
+              <CircleDot className="size-4 text-emerald-400 group-hover:scale-110 transition-transform duration-500" />
+            </div>
+            <p className="font-serif text-4xl sm:text-5xl font-semibold text-white tabular-nums leading-none tracking-tight group-hover:text-emerald-50 transition-colors duration-500">
+              {data.stats.activeTables}
+            </p>
+            <div className="mt-4 pt-4 border-t border-white/5 text-[12px] text-text-dim">
+              Distribuidas en la zona
+            </div>
+          </article>
+
+          <article 
+            className="group overflow-hidden rounded-2xl border border-white/5 bg-[linear-gradient(145deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.4)] transition-all duration-500 hover:-translate-y-1 hover:border-gold/20 hover:shadow-[0_48px_80px_-12px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out"
+            style={{ animationFillMode: "both", animationDelay: "600ms" }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white">Staff Activo</p>
+              <Users className="size-4 text-white/50 group-hover:text-white group-hover:scale-110 transition-all duration-500" />
+            </div>
+            <p className="font-serif text-4xl sm:text-5xl font-semibold text-white tabular-nums leading-none tracking-tight">
+              {data.stats.staffCount}
+            </p>
+            <div className="mt-4 pt-4 border-t border-white/5 text-[12px] text-text-dim">
+              Personal rotando turno
+            </div>
+          </article>
+
+          <article 
+            className="group overflow-hidden rounded-2xl border border-white/5 bg-[linear-gradient(145deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] p-6 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.4)] transition-all duration-500 hover:-translate-y-1 hover:border-gold/20 hover:shadow-[0_48px_80px_-12px_rgba(0,0,0,0.6)] animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out"
+            style={{ animationFillMode: "both", animationDelay: "750ms" }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white">Locaciones</p>
+              <Building2 className="size-4 text-white/50 group-hover:text-white group-hover:scale-110 transition-all duration-500" />
+            </div>
+            <p className="font-serif text-4xl sm:text-5xl font-semibold text-white tabular-nums leading-none tracking-tight">
+              {data.restaurants.length}
+            </p>
+            <div className="mt-4 pt-4 border-t border-white/5 text-[12px] text-text-dim">
+              Sucursales integradas
+            </div>
+          </article>
+        </section>
+
+        {/* TABLE */}
+        <section 
+          className="rounded-2xl border border-white/5 bg-[#0a0a0a] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in slide-in-from-bottom-12 duration-1000 ease-out"
+          style={{ animationFillMode: "both", animationDelay: "900ms" }}
+        >
+          <div className="border-b border-white/5 px-6 py-5 sm:px-8 flex items-center justify-between">
+            <h2 className="text-base font-medium tracking-tight text-white">Métricas Analíticas por Sucursal</h2>
+            <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-medium text-text-dim tracking-widest uppercase">
+              Desglose Geográfico
             </div>
           </div>
-          <p className="font-serif text-[28px] font-bold text-text-primary mb-1 tracking-tight">
-            {fmt(data.stats.totalRevenue)}
-          </p>
-          <p className="text-[10px] text-dash-green font-medium">
-            ↗ Suma de la región
-          </p>
-        </div>
 
-        <div className="bg-bg-card border border-border-main rounded-xl p-5 shadow-sm">
-          <div className="flex items-start justify-between mb-4">
-            <h3 className="text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim">Mesas en Uso</h3>
-            <div className="p-2 bg-gold-faint rounded-lg border border-gold-dim">
-              <CircleDot className="w-4 h-4 text-gold" />
-            </div>
-          </div>
-          <p className="font-serif text-[28px] font-bold text-text-primary mb-1 tracking-tight">
-            {data.stats.activeTables}
-          </p>
-          <p className="text-[10px] text-text-dim font-light">
-            Distribuidas en sucursales
-          </p>
-        </div>
-
-        <div className="bg-bg-card border border-border-main rounded-xl p-5 shadow-sm">
-          <div className="flex items-start justify-between mb-4">
-            <h3 className="text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim">Staff en Turno</h3>
-            <div className="p-2 bg-bg-hover rounded-lg border border-border-mid">
-              <Users className="w-4 h-4 text-text-muted" />
-            </div>
-          </div>
-          <p className="font-serif text-[28px] font-bold text-text-primary mb-1 tracking-tight">
-            {data.stats.staffCount}
-          </p>
-          <p className="text-[10px] text-text-dim font-light">
-            Operando actualmente
-          </p>
-        </div>
-
-        <div className="bg-bg-card border border-border-main rounded-xl p-5 shadow-sm">
-          <div className="flex items-start justify-between mb-4">
-            <h3 className="text-[11px] font-medium tracking-[0.16em] uppercase text-text-dim">Sucursales</h3>
-            <div className="p-2 bg-bg-hover rounded-lg border border-border-mid">
-              <Building2 className="w-4 h-4 text-text-muted" />
-            </div>
-          </div>
-          <p className="font-serif text-[28px] font-bold text-text-primary mb-1 tracking-tight">
-            {data.restaurants.length}
-          </p>
-          <p className="text-[10px] text-text-dim font-light">
-            Locaciones en esta zona
-          </p>
-        </div>
-      </div>
-
-      <div className="grid lg:grid-cols-4 gap-6">
-        {/* TABLA RESTAURANTES ZONA (3/4) */}
-        <div className="lg:col-span-3 bg-bg-card border border-border-main rounded-xl shadow-sm overflow-hidden flex flex-col">
-          <div className="p-5 border-b border-border-main bg-bg-bar flex items-center justify-between">
-            <h2 className="text-[12px] font-medium tracking-[0.14em] uppercase text-text-primary">
-              Métricas por Sucursal
-            </h2>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-border-main text-text-muted">
-              {data.restaurants.length} ubicaciones
-            </span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left font-sans">
               <thead>
-                <tr className="border-b border-border-main bg-bg-solid/30">
-                  <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em]">Restaurante</th>
-                  <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em]">Ventas Hoy</th>
-                  <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em]">Ocupación</th>
-                  <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em]">Comensales</th>
-                  <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em]">Staff</th>
-                  <th className="font-normal text-[10px] text-text-dim px-5 py-3 tracking-[0.06em] text-right">Dirección</th>
+                <tr className="border-b border-white/5 bg-transparent">
+                  <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-widest text-text-dim w-[25%]">Restaurante</th>
+                  <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-widest text-text-dim w-[25%]">Ocupación Física</th>
+                  <th className="px-8 py-5 text-right text-[11px] font-bold uppercase tracking-widest text-text-dim">Tickets/Sesiones</th>
+                  <th className="px-8 py-5 text-right text-[11px] font-bold uppercase tracking-widest text-text-dim">Staff</th>
+                  <th className="px-8 py-5 text-right text-[11px] font-bold uppercase tracking-widest text-text-dim text-gold">Ingreso (Hoy)</th>
                 </tr>
               </thead>
               <tbody className="align-middle">
-                {data.restaurants.map((rest: RestaurantSummary) => (
-                  <tr key={rest.id} className="border-b border-border-main/40 hover:bg-bg-hover transition-colors">
-                    <td className="px-5 py-3.5">
-                      <div className="font-medium text-[12px] text-text-primary">{rest.name}</div>
-                    </td>
-                    <td className="px-5 py-3.5 text-[12px] font-medium text-gold">
-                      {fmt(rest.todayRevenue)}
-                    </td>
-                    <td className="px-5 py-3.5 w-32">
-                      <OccupancyBar active={rest.activeTables} total={rest.totalTables} />
-                    </td>
-                    <td className="px-5 py-3.5 text-[12px] text-text-dim">
-                      {rest.todaySessions}
-                    </td>
-                    <td className="px-5 py-3.5">
-                       <span className="text-[10px] bg-bg-solid border border-border-main px-2 py-0.5 rounded text-text-muted">
-                         {rest.activeStaff} act
-                       </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-[10px] text-text-dim font-light text-right max-w-[150px] truncate">
-                      {rest.address || "-"}
-                    </td>
-                  </tr>
-                ))}
-                {data.restaurants.length === 0 && (
+                {data.restaurants.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-8 text-center text-text-dim text-[11px]">
-                      No hay restaurantes asociados a esta zona.
+                    <td colSpan={5} className="py-20 text-center text-[14px] text-text-dim">
+                      No hay restaurantes operando bajo esta zona.
                     </td>
                   </tr>
+                ) : (
+                  data.restaurants.map((rest: RestaurantSummary, idx) => (
+                    <tr 
+                      key={rest.id} 
+                      className="group border-b border-white/5 transition-colors hover:bg-white/[0.03] last:border-b-0 animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out"
+                      style={{ animationFillMode: "both", animationDelay: `${1100 + (idx * 50)}ms` }}
+                    >
+                      <td className="px-8 py-5">
+                        <div className="flex flex-col">
+                          <span className="text-[14px] font-medium text-white">{rest.name}</span>
+                          <span className="text-[12px] font-light text-text-dim truncate mt-0.5 max-w-[200px]">{rest.address || "Dirección no especificada"}</span>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5">
+                        <div className="group-hover:scale-[1.02] transition-transform duration-500 origin-left">
+                          <OccupancyBar active={rest.activeTables} total={rest.totalTables} />
+                        </div>
+                      </td>
+                      <td className="px-8 py-5 text-right">
+                        <span className="text-[13px] text-white tabular-nums">{rest.todaySessions}</span>
+                      </td>
+                      <td className="px-8 py-5 text-right">
+                        <span className="inline-flex items-center justify-center px-2 py-1 rounded bg-white/5 border border-white/10 text-[11px] font-mono text-white/70">
+                          {rest.activeStaff}
+                        </span>
+                      </td>
+                      <td className="px-8 py-5 text-right">
+                        <span className="font-serif text-[16px] font-semibold text-gold tabular-nums tracking-tight">
+                          {fmt(rest.todayRevenue)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
                 )}
               </tbody>
             </table>
           </div>
-        </div>
-
-        {/* INFO ZONA (1/4) */}
-        <div className="bg-bg-card border border-border-main rounded-xl shadow-sm flex flex-col">
-          <div className="p-5 border-b border-border-main bg-bg-bar mb-4">
-             <h2 className="text-[12px] font-medium tracking-[0.14em] uppercase text-text-primary">
-              Información de Zona
-            </h2>
-          </div>
-          <div className="px-5 pb-5 space-y-6">
-            <div>
-              <div className="text-[10px] text-text-faint tracking-[0.1em] uppercase mb-1">ID Zona</div>
-              <div className="text-[12px] font-mono text-text-secondary">{data.zone.id}</div>
-            </div>
-            <div>
-               <div className="text-[10px] text-text-faint tracking-[0.1em] uppercase mb-1">Nombre</div>
-               <div className="text-[14px] text-text-primary">{data.zone.name}</div>
-            </div>
-            <div>
-              <div className="text-[10px] text-text-faint tracking-[0.1em] uppercase mb-2">Resumen Nivel 2</div>
-              <p className="text-[11px] text-text-dim font-light leading-relaxed">
-                Este tablero consolida todas las operaciones y metas de las sucursales pertenecientes a la zona <strong className="font-medium text-text-muted">{data.zone.name}</strong>.
-              </p>
-            </div>
-          </div>
-        </div>
-
-      </div>
+        </section>
+      </main>
     </div>
   );
 }

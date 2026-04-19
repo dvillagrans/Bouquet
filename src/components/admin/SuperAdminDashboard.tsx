@@ -1,14 +1,66 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Layers, ShieldCheck, Zap } from "lucide-react";
 import { getSuperAdminDashboard, type SuperAdminDashboardData } from "@/actions/admin";
 import { CreateTenantDialog } from "@/components/admin/CreateTenantDialog";
+
+type KpiCardProps = {
+  label: string;
+  value: string | number;
+  helper: string;
+  footnote: string;
+  className?: string;
+  featured?: boolean;
+};
+
+function KpiCard({ label, value, helper, footnote, className, featured }: KpiCardProps) {
+  return (
+    <article
+      className={`group relative overflow-hidden rounded-2xl border transition-all duration-500 hover:-translate-y-1 ${
+        featured 
+          ? "border-gold/30 bg-[linear-gradient(135deg,rgba(183,146,93,0.1),rgba(0,0,0,0))] shadow-[0_32px_64px_-16px_rgba(183,146,93,0.15)]" 
+          : "border-white/5 bg-[linear-gradient(145deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.4)] hover:border-gold/20"
+      } p-6 sm:p-8 ${className ?? ""}`}
+    >
+      <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50" aria-hidden />
+      {featured && (
+        <div className="absolute top-0 right-0 p-6 opacity-20 transition-opacity duration-500 group-hover:opacity-40">
+          <Zap className="size-16 text-gold" />
+        </div>
+      )}
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-dim mb-4">{label}</p>
+      <p className="font-serif text-4xl font-semibold leading-none tracking-tight text-white tabular-nums sm:text-5xl">
+        {value}
+      </p>
+      <div className="mt-6 flex flex-col gap-1.5">
+        <p className="text-[13px] font-medium text-emerald-400 flex items-center gap-1.5">
+          <ShieldCheck className="size-3.5" />
+          {helper}
+        </p>
+        <p className="text-xs text-text-dim">{footnote}</p>
+      </div>
+    </article>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-4 lg:grid-rows-2">
+        <div className="lg:col-span-2 lg:row-span-2 h-[280px] animate-pulse rounded-2xl border border-white/5 bg-white/[0.02]" />
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-[130px] animate-pulse rounded-2xl border border-white/5 bg-white/[0.02]" />
+        ))}
+      </div>
+      <div className="h-[400px] animate-pulse rounded-2xl border border-white/5 bg-white/[0.02]" />
+    </div>
+  );
+}
 
 export default function SuperAdminDashboard() {
   const [data, setData] = useState<SuperAdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-
   const [isCreatingTenant, setIsCreatingTenant] = useState(false);
 
   const load = async () => {
@@ -31,265 +83,236 @@ export default function SuperAdminDashboard() {
   const fmtCurrency = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 0 });
 
   return (
-    <div className="flex flex-col flex-1 min-h-screen bg-bg-solid text-text-primary text-[13px] antialiased">
-      {/* TOPBAR */}
-      <div className="h-[52px] sticky top-0 z-10 shrink-0 border-b border-border-main bg-bg-bar/90 backdrop-blur-md flex items-center justify-between px-3 sm:px-8 gap-2">
-        {/* Left */}
-        <div className="flex items-center gap-2 min-w-0">
-          <div className="hidden sm:flex text-[11px] text-text-dim items-center gap-[6px]">
-            Bouquet OPS <span className="text-text-void">›</span>
-            <span className="text-text-muted font-medium">Dashboard SaaS</span>
+    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-bg-solid text-base text-text-primary antialiased selection:bg-gold/30 lg:text-[14px]">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40 mix-blend-color-dodge"
+        style={{
+          background:
+            "radial-gradient(circle at 10% 0%, rgba(183,146,93,0.15) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(183,146,93,0.1) 0%, transparent 50%)",
+        }}
+        aria-hidden
+      />
+      <div
+        className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
+        style={{
+          backgroundImage: "url('https://grainy-gradients.vercel.app/noise.svg')",
+          opacity: 0.03,
+          mixBlendMode: "overlay",
+        }}
+        aria-hidden
+      />
+
+      <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-white/5 bg-bg-solid/80 px-6 backdrop-blur-2xl sm:px-10">
+        <div className="flex items-center gap-3">
+          <Layers className="size-4 text-gold" />
+          <div className="flex items-center gap-2 text-[12px] font-medium text-text-dim">
+            <span className="text-white">Bouquet OPS</span>
+            <span className="text-white/20">/</span>
+            <span className="tracking-wide">CONSOLA MAESTRA</span>
           </div>
-          {loading ? (
-            <div className="flex items-center gap-[6px] text-[10px] text-gold tracking-[0.1em] uppercase bg-gold-faint border border-gold-dim/30 px-2 py-1 rounded-full shrink-0">
-              <span className="w-[5px] h-[5px] rounded-full bg-gold animate-pulse" />
-              <span className="hidden sm:inline">Sincronizando</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-[6px] text-[10px] text-dash-green tracking-[0.1em] uppercase bg-dash-green-bg border border-[#1e3824] px-2 py-1 rounded-full shrink-0">
-              <span className="w-[5px] h-[5px] rounded-full bg-dash-green animate-pulse" />
-              <span className="hidden sm:inline">Operativo</span>
-            </div>
-          )}
         </div>
 
-        {/* Right */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Refrescar — icon-only on mobile */}
-          <button
-            onClick={() => { setLoading(true); load(); }}
-            disabled={loading}
-            title="Refrescar"
-            className="flex h-8 w-8 sm:w-auto sm:px-3 items-center justify-center sm:gap-1.5 rounded border border-border-main bg-transparent text-[11px] font-medium text-text-muted transition-colors hover:border-border-bright hover:text-text-secondary disabled:opacity-50 cursor-pointer"
+        <div className="flex shrink-0 items-center gap-3">
+          <div
+            className={
+              loading
+                ? "hidden items-center gap-2 rounded-full bg-gold/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-gold sm:flex"
+                : "hidden items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-400 sm:flex"
+            }
           >
-            <RefreshCw className={`size-3.5 shrink-0 ${loading ? "animate-spin" : ""}`} aria-hidden />
-            <span className="hidden sm:inline">Refrescar</span>
+            <span className="relative flex size-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-current" />
+            </span>
+            {loading ? "Sincronizando" : "Operativo"}
+          </div>
+
+          <div className="h-4 w-px bg-white/10 hidden sm:block" />
+
+          <button
+            onClick={() => {
+              setLoading(true);
+              load();
+            }}
+            disabled={loading}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-transparent text-text-dim transition-colors hover:border-white/20 hover:text-white disabled:opacity-50 sm:w-auto sm:gap-2 sm:px-4"
+          >
+            <RefreshCw className={`size-4 shrink-0 col text-emerald-400 ${loading ? "animate-spin" : ""}`} aria-hidden />
+            <span className="hidden text-[12px] font-medium sm:inline">Actualizar</span>
           </button>
-          {/* Nuevo — icon + short label on mobile */}
+          
           <button
             onClick={() => setIsCreatingTenant(true)}
-            className="flex h-8 items-center gap-1.5 rounded border border-gold bg-gold px-3 text-[11px] font-medium text-bg-solid transition-opacity hover:opacity-80 cursor-pointer whitespace-nowrap"
+            className="inline-flex h-9 items-center gap-2 rounded-xl bg-white px-4 text-[12px] font-semibold text-black transition-all hover:bg-white/90 hover:scale-[0.98] active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
           >
-            <Plus className="size-3.5 shrink-0" aria-hidden />
-            <span className="hidden sm:inline">Nuevo Registro</span>
-            <span className="sm:hidden">Nuevo</span>
+            <Plus className="size-4 shrink-0" aria-hidden />
+            <span className="hidden sm:inline">Añadir Inquilino</span>
+            <span className="sm:hidden">Añadir</span>
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* CONTENT */}
-      <div className="flex-1 px-4 sm:px-8 pt-6 sm:pt-8 pb-12">
-        {/* PAGE HEADER */}
-        <div className="flex items-start justify-between mb-6 sm:mb-8 gap-4">
-          <div>
-            <div className="text-[10px] tracking-[0.2em] uppercase text-gold mb-2 flex items-center gap-2 font-medium">
-              <svg viewBox="0 0 24 24" className="w-3 h-3 stroke-gold fill-none stroke-[2px] rounded-none">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-              </svg>
-              Bouquet · Matrix
-            </div>
-            <h1 className="font-serif text-[22px] sm:text-[28px] font-bold tracking-tight text-text-primary leading-[1.1]">
-              Vista <em className="not-italic font-normal text-gold italic">global.</em>
-            </h1>
-            <div className="text-[12px] text-text-dim mt-1.5 font-light">
-              Métricas y consolidación de inquilinos SaaS
-            </div>
-          </div>
-        </div>
+      <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-6 pb-20 pt-10 sm:px-10 sm:pt-14">
+        <header className="mb-12 max-w-3xl">
+          <p className="mb-4 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-gold">
+            <span className="h-px w-6 bg-gold" /> Visión Global
+          </p>
+          <h1 className="font-serif text-4xl font-medium leading-[1.05] tracking-tight text-white sm:text-6xl text-balance">
+            Métricas de plataforma y consolas de clientes.
+          </h1>
+          <p className="mt-5 text-[15px] leading-relaxed text-text-dim max-w-xl">
+            Centro de control SaaS. Supervisa el crecimiento del MRR, consolida cadenas B2B y administra cuentas sin interrupciones.
+          </p>
+        </header>
 
         {!data ? (
-          <div className="text-text-dim text-sm py-10 opacity-70 font-light">Cargando núcleo de base de datos...</div>
+          <DashboardSkeleton />
         ) : (
-          <>
-            {/* KPI GRID */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-md transition-all hover:bg-white/[0.04]">
-                <div className="text-[10px] font-semibold tracking-[0.15em] uppercase text-neutral-500 mb-3 flex items-center justify-between">
-                  MRR proyectado
-                  <svg className="w-3.5 h-3.5 stroke-neutral-500 fill-none stroke-[2px]"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                </div>
-                <div className="font-serif text-[28px] sm:text-[36px] font-medium tracking-tight text-white mb-2 group-hover:text-gold transition-colors">
-                  {fmtCurrency(data.stats.mrr)}
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <div className="text-[11px] font-medium text-emerald-400">
-                    ↑ Modelo de cobranza auto.
-                  </div>
-                  <div className="text-[10px] text-neutral-500">USD · ciclo mensual</div>
+          <div className="space-y-12">
+            <section className="grid grid-cols-1 gap-5 lg:grid-cols-4 lg:grid-rows-2">
+              <KpiCard
+                className="lg:col-span-2 lg:row-span-2 flex flex-col justify-between"
+                label="Ingreso Recurrente Mensual"
+                value={fmtCurrency(data.stats.mrr)}
+                helper="Cobranza 100% automatizada vía Stripe."
+                footnote="MRR proyectado para el ciclo en curso en USD."
+                featured
+              />
+              <KpiCard
+                className="lg:col-span-1 lg:row-span-1"
+                label="Cadenas B2B"
+                value={data.stats.chains}
+                helper="Tenants activos"
+                footnote="Infraestructura aislada."
+              />
+              <KpiCard
+                className="lg:col-span-1 lg:row-span-1"
+                label="Sucursales"
+                value={data.stats.restaurants}
+                helper="Restaurantes operando"
+                footnote="Locaciones individuales."
+              />
+              <KpiCard
+                className="lg:col-span-2 lg:row-span-1"
+                label="Cobertura de Zonas"
+                value={data.stats.zones}
+                helper="Mapeo regional"
+                footnote="Ciudades físicas servidas."
+              />
+            </section>
+
+            <section className="rounded-2xl border border-white/5 bg-[#0a0a0a] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
+              <div className="flex items-center justify-between border-b border-white/5 px-6 py-5 sm:px-8">
+                <div>
+                  <h2 className="text-base font-medium tracking-tight text-white">Inquilinos Activos</h2>
+                  <p className="mt-1 text-[13px] text-text-dim">Acceso y administración por cuenta B2B</p>
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-md transition-all hover:bg-white/[0.04]">
-                <div className="text-[10px] font-semibold tracking-[0.15em] uppercase text-neutral-500 mb-3 flex items-center justify-between">
-                  Cadenas SaaS
-                  <svg className="w-3.5 h-3.5 stroke-neutral-500 fill-none stroke-[2px]"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                </div>
-                <div className="font-serif text-[28px] sm:text-[36px] font-medium tracking-tight text-white mb-2">
-                  {data.stats.chains}
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <div className="text-[11px] font-medium text-emerald-400">
-                    ↑ Base B2B
-                  </div>
-                  <div className="text-[10px] text-neutral-500">Inquilinos en el clúster</div>
-                </div>
-              </div>
-
-              <div className="relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-md transition-all hover:bg-white/[0.04]">
-                <div className="text-[10px] font-semibold tracking-[0.15em] uppercase text-neutral-500 mb-3 flex items-center justify-between">
-                  Restaurantes Totales
-                  <svg className="w-3.5 h-3.5 stroke-neutral-500 fill-none stroke-[2px]"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-                </div>
-                <div className="font-serif text-[28px] sm:text-[36px] font-medium tracking-tight text-white mb-2">
-                  {data.stats.restaurants}
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <div className="text-[11px] font-medium text-neutral-400">
-                    Activos en bd
-                  </div>
-                  <div className="text-[10px] text-neutral-500">Múltiples sucursales y franquicias</div>
-                </div>
-              </div>
-
-              <div className="relative overflow-hidden rounded-[1.5rem] border border-white/5 bg-white/[0.02] p-5 sm:p-6 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-md transition-all hover:bg-white/[0.04]">
-                <div className="text-[10px] font-semibold tracking-[0.15em] uppercase text-neutral-500 mb-3 flex items-center justify-between">
-                  Zonas Activas
-                  <svg className="w-3.5 h-3.5 stroke-neutral-500 fill-none stroke-[2px]"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                </div>
-                <div className="font-serif text-[28px] sm:text-[36px] font-medium tracking-tight text-white mb-2">
-                  {data.stats.zones}
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  <div className="text-[11px] font-medium text-neutral-400">
-                    Estructuración interna
-                  </div>
-                  <div className="text-[10px] text-neutral-500">Puntos de control (ciudades/regiones)</div>
-                </div>
-              </div>
-            </div>
-
-            {/* TENANTS TABLE */}
-            <div className="rounded-[1.5rem] border border-white/5 bg-white/[0.02] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] backdrop-blur-xl flex flex-col mb-10 overflow-hidden">
-              <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between gap-3 bg-white/[0.01]">
-                <div className="text-[12px] font-semibold tracking-[0.15em] uppercase text-white flex items-center gap-2">
-                  Inquilinos Activos
-                </div>
-                <button onClick={() => setIsCreatingTenant(true)} className="text-[11px] font-semibold tracking-[0.1em] text-gold uppercase hover:opacity-80 transition-opacity cursor-pointer whitespace-nowrap bg-gold/10 px-3 py-1.5 rounded-full ring-1 ring-gold/20">
-                  + Registrar Nuevo
-                </button>
-              </div>
-
-              {/* Mobile View */}
-              <div className="sm:hidden flex flex-col divide-y divide-white/5">
+              <div className="sm:hidden divide-y divide-white/5">
                 {data.chains.length === 0 ? (
-                  <div className="px-5 py-10 text-center text-[13px] text-neutral-500">
-                    Aún no hay clientes en la base de datos de Plataforma.
-                  </div>
+                  <div className="px-6 py-16 text-center text-[14px] text-text-dim">Base de datos plana. Añade el primer cliente para continuar.</div>
                 ) : (
                   data.chains.map((chain) => {
-                    const avatar = chain.name.substring(0, 2).toUpperCase();
+                    const avatar = chain.name.substring(0, 1).toUpperCase();
                     return (
-                      <article key={chain.id} className="group relative flex flex-col gap-4 bg-transparent p-5 transition-colors active:bg-white/[0.03]">
-                        <div className="flex items-start gap-4">
-                          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-gold/30 to-gold/10 text-[13px] font-bold text-gold shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] ring-1 ring-gold/20">
+                      <article key={chain.id} className="p-6 transition-colors hover:bg-white/[0.02]">
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/5 text-lg font-serif text-white border border-white/10">
                             {avatar}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h3 className="truncate font-serif text-[18px] font-medium tracking-tight text-white leading-tight">
-                              {chain.name}
-                            </h3>
-                            <p className="mt-1 text-[11px] font-mono tracking-widest text-neutral-500 uppercase">
-                              ID: {chain.id.split('-')[0]}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-3 mt-1">
-                          <div className="flex flex-col gap-1 rounded-[1rem] bg-white/[0.03] px-4 py-3 ring-1 ring-white/5">
-                            <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">
-                              Restaurantes
-                            </span>
-                            <span className="font-mono text-[14px] font-medium text-white">
-                              {chain.restaurantsCount}
-                            </span>
-                          </div>
-                          <div className="flex flex-col gap-1 rounded-[1rem] bg-white/[0.03] px-4 py-3 ring-1 ring-white/5">
-                            <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-neutral-500">
-                              PIN Maestro
-                            </span>
-                            <span className="font-mono text-[14px] font-medium text-gold">
-                              {chain.pin}
-                            </span>
+                            <h3 className="truncate text-base font-medium text-white">{chain.name}</h3>
+                            <p className="mt-0.5 text-[12px] font-mono text-text-dim">ID: {chain.id.split("-")[0]}</p>
                           </div>
                         </div>
 
-                        <div className="mt-2 flex flex-wrap items-center justify-between gap-3 border-t border-white/5 pt-4">
-                          <span className="inline-flex items-center rounded-full border border-[#1e3824] bg-[#0d1f13] px-3 py-1 text-[10px] font-medium tracking-wide text-emerald-400">
-                            {chain.adminName}
-                          </span>
-                          <a
-                            href={`/cadena?tenantId=${chain.id}`}
-                            target="_blank"
-                            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/[0.02] px-4 py-1.5 text-[11px] font-medium text-white transition-colors hover:bg-white/[0.05] hover:text-gold active:bg-white/[0.01]"
-                          >
-                            Abrir consola →
-                          </a>
+                        <div className="mt-5 grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-text-dim">Sucursales</p>
+                            <p className="mt-1 text-[15px] font-mono text-white">{chain.restaurantsCount}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-widest text-text-dim">Admin</p>
+                            <p className="mt-1 text-[13px] text-white truncate">{chain.adminName}</p>
+                          </div>
                         </div>
+
+                        <a
+                          href={`/cadena?tenantId=${chain.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-6 flex w-full items-center justify-center rounded-xl bg-white/5 px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-white/10"
+                        >
+                          Acceder a consola
+                        </a>
                       </article>
                     );
                   })
                 )}
               </div>
 
-              <div className="hidden sm:block w-full overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead className="hidden sm:table-header-group">
-                    <tr className="border-b border-border-main bg-bg-solid/30">
-                      <th className="hidden sm:table-cell font-normal text-[10px] text-text-dim px-4 sm:px-5 py-3 tracking-[0.06em] w-12 border-b-transparent">#</th>
-                      <th className="font-normal text-[10px] text-text-dim px-4 sm:px-5 py-3 tracking-[0.06em] border-b-transparent">Cadena</th>
-                      <th className="hidden md:table-cell font-normal text-[10px] text-text-dim px-4 sm:px-5 py-3 tracking-[0.06em] border-b-transparent">ID <span className="opacity-50">ref</span></th>
-                      <th className="hidden sm:table-cell font-normal text-[10px] text-text-dim px-4 sm:px-5 py-3 tracking-[0.06em] border-b-transparent">Admin</th>
-                      <th className="hidden sm:table-cell font-normal text-[10px] text-text-dim px-4 sm:px-5 py-3 tracking-[0.06em] border-b-transparent">PIN</th>
-                      <th className="font-normal text-[10px] text-text-dim px-4 sm:px-5 py-3 tracking-[0.06em] border-b-transparent">Acciones</th>
+              <div className="hidden w-full overflow-x-auto sm:block">
+                <table className="w-full text-left font-sans">
+                  <thead>
+                    <tr className="border-b border-white/5 bg-transparent">
+                      <th className="w-16 px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">#</th>
+                      <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Entidad B2B</th>
+                      <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Token / ID</th>
+                      <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Administrador</th>
+                      <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Security PIN</th>
+                      <th className="px-8 py-4 text-right text-[11px] font-bold uppercase tracking-widest text-text-dim">Flujo</th>
                     </tr>
                   </thead>
-                  <tbody className="align-middle [&>tr:last-child]:border-b-0">
+                  <tbody className="align-middle">
                     {data.chains.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="text-center py-12 text-text-dim text-xs">Aún no hay clientes en la base de datos de Plataforma.</td>
+                        <td colSpan={6} className="py-20 text-center text-sm text-text-dim">
+                          Plataforma vacía. Inicia añadiendo la primera entidad.
+                        </td>
                       </tr>
                     ) : (
                       data.chains.map((chain, i) => {
-                        const avatar = chain.name.substring(0, 2).toUpperCase();
+                        const avatar = chain.name.substring(0, 1).toUpperCase();
                         return (
-                          <tr key={chain.id} className="border-b border-border-main/40 hover:bg-bg-hover transition-colors">
-                            <td className="hidden sm:table-cell px-4 sm:px-5 py-3 text-text-faint font-mono text-xs">{(i + 1).toString().padStart(2, '0')}</td>
-                            <td className="px-4 sm:px-5 py-4 sm:py-3">
-                              <div className="flex items-center gap-3 sm:gap-3.5">
-                                <div className="w-[26px] h-[26px] sm:w-[28px] sm:h-[28px] rounded-md bg-gold-faint border border-gold-dim flex items-center justify-center text-[10px] font-bold text-gold shrink-0">
+                          <tr
+                            key={chain.id}
+                            className="group border-b border-white/5 transition-colors hover:bg-white/[0.02]"
+                          >
+                            <td className="px-8 py-5 text-[13px] text-text-dim">
+                              {(i + 1).toString().padStart(2, "0")}
+                            </td>
+                            <td className="px-8 py-5">
+                              <div className="flex items-center gap-4">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/5 border border-white/10 text-[14px] font-serif text-white">
                                   {avatar}
                                 </div>
-                                <div className="min-w-0">
-                                  <div className="text-[12px] font-medium text-text-primary leading-[1.3] truncate max-w-[150px] sm:max-w-none">{chain.name}</div>
-                                  <div className="mt-1.5 sm:hidden">
-                                    <span className="inline-flex items-center rounded border border-border-mid bg-bg-solid px-1.5 py-0.5 font-mono text-[10px] text-text-secondary">
-                                      PIN {chain.pin}
-                                    </span>
-                                  </div>
+                                <div>
+                                  <p className="text-[14px] font-medium text-white">{chain.name}</p>
+                                  <p className="mt-0.5 text-[12px] text-text-dim">{chain.restaurantsCount} sucursales físicas</p>
                                 </div>
                               </div>
                             </td>
-                            <td className="hidden md:table-cell px-4 sm:px-5 py-3 text-text-muted font-mono text-[10px]">{chain.id.split('-')[0]}</td>
-                            <td className="hidden sm:table-cell px-4 sm:px-5 py-3">
-                              <span className="text-[11px] text-dash-green bg-dash-green-bg px-2 py-0.5 rounded border border-[#1e3824]">{chain.adminName}</span>
+                            <td className="px-8 py-5">
+                              <span className="font-mono text-[12px] text-text-dim bg-white/5 px-2 py-1 rounded">
+                                {chain.id.split("-")[0]}
+                              </span>
                             </td>
-                            <td className="hidden sm:table-cell px-4 sm:px-5 py-3">
-                              <span className="text-text-primary font-mono text-[11px]">{chain.pin}</span>
+                            <td className="px-8 py-5">
+                              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[12px] font-medium text-emerald-400">
+                                <div className="size-1.5 rounded-full bg-emerald-400" />
+                                {chain.adminName}
+                              </span>
                             </td>
-                            <td className="px-3 sm:px-5 py-4 sm:py-3 text-right sm:text-left">
-                              <a href={`/cadena?tenantId=${chain.id}`} target="_blank" className="inline-flex items-center justify-center text-[11px] font-medium text-text-secondary hover:text-gold transition-colors border border-border-mid px-2.5 py-1.5 rounded hover:bg-bg-solid bg-transparent whitespace-nowrap">
-                                <span className="hidden sm:inline">Ir a Consola →</span>
-                                <span className="sm:hidden">Consola →</span>
+                            <td className="px-8 py-5 font-mono text-[13px] text-gold">{chain.pin}</td>
+                            <td className="px-8 py-5 text-right">
+                              <a
+                                href={`/cadena?tenantId=${chain.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-block rounded-lg px-4 py-2 text-[12px] font-medium text-text-dim transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95"
+                              >
+                                Entrar &rarr;
                               </a>
                             </td>
                           </tr>
@@ -299,12 +322,11 @@ export default function SuperAdminDashboard() {
                   </tbody>
                 </table>
               </div>
-            </div>
-          </>
+            </section>
+          </div>
         )}
-      </div>
+      </main>
 
-      {/* ── DIALOG NUEVO INQUILINO ── */}
       <CreateTenantDialog
         open={isCreatingTenant}
         onOpenChange={setIsCreatingTenant}

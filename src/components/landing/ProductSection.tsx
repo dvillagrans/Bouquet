@@ -1,113 +1,136 @@
 ﻿"use client";
 
-import { motion } from "framer-motion";
+import { useRef } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
 import { ProductMockup } from "@/components/landing/ProductMockup";
 
-const easeOutQuint = [0.22, 1, 0.36, 1] as const;
+const easeOutQuint = [0.32, 0.72, 0, 1] as const;
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.1 },
-  },
-};
+export const ProductSection = () => {
+  const sectionRef = useRef<HTMLElement>(null);
+  
+  // High-End Parallax & Scrubbing Effects
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start end", "end start"],
+  });
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  show: {
-    opacity: 1, y: 0,
-    transition: { duration: 0.8, ease: easeOutQuint },
-  },
-};
-
-export const ProductSection = () => (
-  <section
-    className="bg-cream py-24 lg:py-32 overflow-hidden"
-    id="producto"
-  >
-    <motion.div
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "-10% 0px" }}
-      variants={containerVariants}
-      className="mx-auto max-w-7xl px-6 lg:px-10"
+  // Heavy parallax on the mockup to give it a cinematic feel
+  const mockupY = useTransform(scrollYProgress, [0, 1], [150, -150]);
+  const textY = useTransform(scrollYProgress, [0, 1], [50, -50]);
+  
+  return (
+    <section
+      ref={sectionRef}
+      className="relative bg-charcoal text-cream py-32 lg:py-48 overflow-hidden z-10"
+      id="producto"
     >
-      {/* Section header */}
-      <motion.div variants={itemVariants} className="flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <span className="h-px w-6 bg-ember" />
-          <span className="text-[0.68rem] font-bold uppercase tracking-[0.32em] text-charcoal/40">
-            El producto
-          </span>
-        </div>
-        <h2 className="max-w-[22ch] font-serif text-[clamp(2rem,3.5vw,3.5rem)] font-medium italic leading-[1.1] text-charcoal">
-          Tu sala, tus órdenes y tus pagos. En un solo lugar.
-        </h2>
-        <p className="mt-2 max-w-lg text-[0.9rem] font-medium leading-[1.8] text-charcoal/50">
-          Bouquet conecta sala, cocina y caja en tiempo real. Sin tablets extra, sin hojas de Excel,
-          sin walkie-talkies.
-        </p>
-      </motion.div>
+      {/* Top bookend: fade from previous cream section → charcoal */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-cream/18 via-charcoal/0 to-charcoal/0" aria-hidden="true" />
 
-      {/* Step Process */}
-      <motion.div variants={itemVariants} className="mt-16 grid gap-8 sm:grid-cols-3 sm:gap-0 relative">
-        {/* Continuous background line */}
-        <div className="absolute top-[0.4rem] left-0 right-0 h-px bg-charcoal/10 hidden sm:block" />
+      {/* Cinematic Film Grain Overlay — fixed via background-attachment to avoid GPU repaints on scroll */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.035] mix-blend-screen"
+        style={{
+          backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')",
+          backgroundAttachment: "fixed",
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Subtle radial glow */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,#2a241f_0%,transparent_60%)]" aria-hidden="true" />
+
+      <div className="mx-auto max-w-[85rem] px-6 lg:px-10 relative">
         
-        {/* Animated progressive line */}
-        <motion.div 
-          className="absolute top-[0.4rem] left-0 h-px bg-ember hidden sm:block origin-left"
-          initial={{ scaleX: 0 }}
-          whileInView={{ scaleX: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1.5, delay: 0.5, ease: easeOutQuint }}
-        />
-
-        {[
-          { step: "01", title: "Sala toma la orden", desc: "El mesero captura una vez y queda visible para todo el turno." },
-          { step: "02", title: "Cocina y barra ejecutan", desc: "Cada estación recibe su parte con estado y prioridad." },
-          { step: "03", title: "Caja cierra sin fricción", desc: "Divide cuentas, cobra y libera mesa sin romper el flujo." },
-        ].map(({ step, title, desc }) => (
-          <div key={step} className="flex flex-col pr-8 pt-6 sm:pt-0 relative group">
-            {/* Dot marker */}
-            <div className="absolute left-0 top-0 sm:-top-[0.4rem] h-[0.8rem] w-[0.8rem] rounded-full border-[2px] border-cream bg-ember z-10 transition-transform duration-500 group-hover:scale-125" />
-            
-            <div className="mt-4 flex flex-col gap-2">
-              <span className="text-[0.65rem] font-bold text-ember">
-                {step}
+        {/* Elite Editorial Header */}
+        <motion.div style={{ y: textY }} className="flex flex-col gap-6 lg:gap-10 mb-32 lg:mb-48">
+          <div className="inline-flex">
+            {/* Double bezel pill for category */}
+            <div className="flex items-center gap-3 px-4 py-2 rounded-full ring-1 ring-white/10 bg-white/5 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+              <span className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+              <span className="text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white/70">
+                La Plataforma
               </span>
-              <p className="text-[0.85rem] font-bold uppercase tracking-[0.15em] text-charcoal">{title}</p>
             </div>
-            <p className="mt-4 text-[0.85rem] font-medium leading-relaxed text-charcoal/60">{desc}</p>
           </div>
-        ))}
-      </motion.div>
-
-      {/* Mockup */}
-      <motion.div variants={itemVariants} className="mt-20">
-        <ProductMockup />
-      </motion.div>
-
-      {/* Supporting facts */}
-      <motion.div variants={itemVariants} className="mt-16 grid grid-cols-2 gap-x-8 gap-y-10 border-t border-charcoal/10 pt-12 sm:grid-cols-4 sm:divide-x sm:divide-charcoal/10">
-        {[
-          { label: "Configuración",  value: "1 día",    sub: "Del onboarding al turno" },
-          { label: "Dispositivos",   value: "Todos", sub: "Tablets, cel, laptop"  },
-          { label: "Integraciones",  value: "Nativas",   sub: "POS, terminales, cash"      },
-          { label: "Soporte",        value: "24/7",      sub: "Humano y en español"      },
-        ].map(({ label, value, sub }) => (
-          <div key={label} className="flex flex-col sm:px-6 sm:first:pl-0 sm:last:pr-0 transition-opacity duration-300 hover:opacity-70">
-            <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-charcoal/40">
-              {label}
+          
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-12 lg:gap-20 items-end">
+            <h2 className="font-serif text-[clamp(3.5rem,7vw,6.5rem)] font-medium italic leading-[0.9] tracking-tight text-white m-0">
+              Control <br />
+              <span className="text-white/40">absoluto.</span>
+            </h2>
+            <p className="max-w-md text-[1.15rem] font-light leading-[1.8] text-white/50 pb-2">
+              Bouquet unifica cada vértice del restaurante. Sin hardware excesivo, sin cables, sin fricción entre estaciones.
             </p>
-            <p className="mt-2 font-serif text-[1.75rem] font-semibold leading-none text-charcoal">
-              {value}
-            </p>
-            <p className="mt-3 text-[0.78rem] font-medium leading-snug text-charcoal/50">{sub}</p>
           </div>
-        ))}
-      </motion.div>
-    </motion.div>
-  </section>
-);
+        </motion.div>
+
+        {/* Cinematic Mockup Core */}
+        <motion.div
+          style={{ y: mockupY }}
+           className="relative rounded-[2.5rem] lg:rounded-[3.5rem] bg-gradient-to-b from-white/[0.07] to-white/[0.02] ring-1 ring-white/10 p-4 lg:p-8 shadow-[0_40px_120px_-40px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.08)] mb-32 lg:mb-48 origin-bottom will-change-transform"
+        >
+           {/* Inner core — concentric radius */}
+           <div className="relative rounded-[calc(2.5rem-1rem)] lg:rounded-[calc(3.5rem-2rem)] overflow-hidden bg-black/60 ring-1 ring-white/5 shadow-[inset_0_4px_20px_rgba(255,255,255,0.05)]">
+             <ProductMockup />
+           </div>
+        </motion.div>
+
+        {/* Asymmetrical Bento Facts (Gapless Aesthetic) */}
+        <div className="relative">
+          <div className="flex items-center gap-4 mb-16">
+            <h3 className="text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white/40">Métricas & Soporte</h3>
+            <div className="h-px flex-1 bg-white/10" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-0 overflow-hidden rounded-[2.5rem] ring-1 ring-white/10 bg-white/[0.03] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+            {/* Feature 1 (Large) */}
+            <div className="col-span-1 md:col-span-7 p-10 lg:p-14 border-b md:border-b-0 md:border-r border-white/10 relative group">
+              <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.02]" />
+              <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-white/30 mb-8">Deploy Rápido</p>
+              <div className="flex items-baseline gap-4 mb-4">
+                <span className="font-serif text-[4.5rem] lg:text-[6rem] font-medium leading-[0.8] text-white tracking-tighter">1</span>
+                <span className="font-serif text-[2rem] lg:text-[2.5rem] italic text-white/40">Día</span>
+              </div>
+              <p className="text-[1.05rem] font-medium leading-relaxed text-white/60 max-w-[30ch]">
+                Del primer onboarding técnico a tu primer turno operativo real. Cero configuraciones traumáticas.
+              </p>
+            </div>
+
+            {/* Constraints Block (Vertical Stack) */}
+            <div className="col-span-1 md:col-span-5 flex flex-col divide-y divide-white/10">
+              
+              <div className="flex-1 p-10 lg:p-12 relative group">
+                <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.02]" />
+                <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-white/30 mb-4">Ecosistema</p>
+                <p className="font-serif text-[2.5rem] font-medium leading-[1] text-white mb-2 tracking-tight">API Abierta.</p>
+                <p className="text-[0.95rem] font-medium leading-snug text-white/50">
+                  Integraciones nativas automáticas con POS de caja y terminales bancarias.
+                </p>
+              </div>
+
+              <div className="flex-1 p-10 lg:p-12 relative group bg-gold/5">
+                <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.02]" />
+                <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-gold/60 mb-4">Respaldo</p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-serif text-[2.5rem] font-medium leading-[1] text-white mb-2 tracking-tight">24/7</p>
+                    <p className="text-[0.95rem] font-medium leading-snug text-white/50">Soporte humano en español.</p>
+                  </div>
+                  <div className="h-12 w-12 rounded-full border border-gold/30 flex items-center justify-center shrink-0 text-gold shadow-[0_0_20px_rgba(212,175,55,0.15)]">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+};

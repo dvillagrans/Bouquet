@@ -53,7 +53,7 @@ export function AppSidebar({
       <div className="px-6 py-5 border-b border-border-main shrink-0 flex items-center justify-between">
         <Link
           href="/"
-          className="font-sans font-light text-[14px] tracking-[0.18em] text-text-secondary hover:text-text-primary transition-colors flex items-baseline"
+          className="font-sans font-light text-base tracking-[0.18em] text-text-secondary hover:text-text-primary transition-colors flex items-baseline lg:text-[14px]"
         >
           bouquet{" "}
           <span className="text-gold text-[9px] tracking-[0.3em] ml-[2px] uppercase align-super font-medium">

@@ -424,7 +424,7 @@ export default function ChainStaffRoster({ initialTenantId }: { initialTenantId?
                 required
                 minLength={4}
                 placeholder="Mínimo 4 caracteres"
-                className="w-full max-w-md rounded-xl border border-border-bright bg-bg-solid px-4 py-2.5 font-mono text-[14px] tracking-[0.2em] text-text-primary outline-none placeholder:text-text-faint placeholder:tracking-normal focus:border-gold/45 focus:ring-1 focus:ring-gold/20"
+                className="w-full max-w-md rounded-xl border border-border-bright bg-bg-solid px-4 py-2.5 font-mono text-base tracking-[0.2em] text-text-primary outline-none placeholder:text-text-faint placeholder:tracking-normal focus:border-gold/45 focus:ring-1 focus:ring-gold/20 lg:text-[14px]"
               />
             </div>
 

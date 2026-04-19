@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 
 type TableStatus = "libre" | "activa" | "cierre" | "pagando";
 
@@ -33,11 +33,11 @@ const tables: TableEntry[] = [
 ];
 
 const orders: OrderEntry[] = [
-  { ticket: "#187", table: "03", detail: "Platos fuertes Â· 4 pax",  status: "Cocina" },
-  { ticket: "#185", table: "07", detail: "Carne, 2 cortes",          status: "Pase"   },
-  { ticket: "#183", table: "09", detail: "Mezcal Â· 2 cocteles",      status: "Barra"  },
-  { ticket: "#181", table: "06", detail: "Entradas confirmadas",     status: "Sala"   },
-  { ticket: "#179", table: "08", detail: "Cierre de cuenta",         status: "Caja"   },
+  { ticket: "#187", table: "03", detail: "Platos fuertes · 4 pax", status: "Cocina" },
+  { ticket: "#185", table: "07", detail: "Carne, 2 cortes",       status: "Pase"   },
+  { ticket: "#183", table: "09", detail: "Mezcal · 2 cócteles",    status: "Barra"  },
+  { ticket: "#181", table: "06", detail: "Entradas confirmadas",   status: "Sala"   },
+  { ticket: "#179", table: "08", detail: "Cierre de cuenta",       status: "Caja"   },
 ];
 
 const tableFrame: Record<TableStatus, string> = {
@@ -74,12 +74,12 @@ const timeFmt = (m: number) =>
 
 const pct = (m: number) => Math.min((m / 90) * 100, 100);
 
-const serviceModes = ["Taqueria alto flujo", "Casual dining", "Bar de cocteleria"] as const;
+const serviceModes = ["Taquería alto flujo", "Casual dining", "Bar de coctelería"] as const;
 
 const modeKpis = [
   { label: "Ticket promedio", value: "$286" },
   { label: "Tiempo a pase", value: "11m" },
-  { label: "Rotacion hora", value: "2.4x" },
+  { label: "Rotación hora", value: "2.4x" },
 ] as const;
 
 const itemVariant = {
@@ -87,10 +87,13 @@ const itemVariant = {
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const } }
 };
 
-export const ProductMockup = () => (
+export const ProductMockup = () => {
+  const reduceMotion = useReducedMotion();
+
+  return (
   <div className="relative w-full overflow-hidden border-y border-charcoal/10 bg-cream/50">
 
-    {/* â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+    {/* Header */}
     <div className="flex items-center justify-between gap-4 bg-charcoal px-4 py-3 sm:px-5">
       <div className="flex items-center gap-2.5">
         <span className="flex h-6 w-6 shrink-0 items-center justify-center bg-cream/[0.1] text-[0.55rem] font-bold uppercase tracking-[0.18em] text-cream/80">
@@ -108,8 +111,12 @@ export const ProductMockup = () => (
         <span className="flex items-center gap-1.5">
           <span
             className="h-1.5 w-1.5 rounded-full bg-sage-deep"
-            style={{ animation: "pulse-slow 2.4s ease-in-out infinite" }}
-              aria-hidden="true"
+            style={
+              reduceMotion
+                ? undefined
+                : { animation: "pulse-slow 2.4s ease-in-out infinite" }
+            }
+            aria-hidden="true"
           />
           <span className="text-[0.58rem] font-semibold text-cream/32">18 activas</span>
         </span>
@@ -143,20 +150,18 @@ export const ProductMockup = () => (
       </div>
     </div>
 
-    {/* â”€â”€ MAIN CONTENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+    {/* Main: floor + orders */}
     <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-charcoal/10">
 
-      {/* LEFT â€” Floor plan */}
+      {/* Left — floor plan list */}
       <div className="border-b border-charcoal/[0.07] p-4 sm:p-5 lg:border-b-0 lg:border-r">
         <p className="mb-3.5 text-[0.58rem] font-bold uppercase tracking-[0.28em] text-charcoal/30">
-          Piso Â· Sala principal
+          Piso · Sala principal
         </p>
 
         {/*
-         *  4-column grid. Each cell = one table.
-         *  wide=true tables span 2 columns, representing group/banquet tables.
-         *  Progress bar = time seated Ã· 90-min target.
-         */}
+          Grid de filas: una por mesa. Progress = min sentado / objetivo 90 min.
+        */}
         <motion.div
           initial="hidden"
           whileInView="show"
@@ -169,26 +174,24 @@ export const ProductMockup = () => (
               key={t.n}
               variants={itemVariant}
               className={[
-                "relative overflow-hidden border-b border-charcoal/5 p-3 hover:bg-charcoal/[0.02]",
+                "relative flex flex-row items-start gap-4 overflow-hidden border-b border-charcoal/5 p-3 hover:bg-charcoal/[0.02]",
                 "transition-all duration-300 hover:-translate-y-1 hover:shadow-lg",
-                "",
-                "",
               ].join(" ")}
             >
               {/* Number + time */}
-              <div className="flex items-center gap-4 w-1/4">
+              <div className="flex shrink-0 items-center gap-2 tabular-nums">
                 <span className="text-[0.6rem] font-bold text-charcoal/42">{t.n}</span>
                 {t.status !== "libre" && (
-                  <span className={["text-[0.5rem] font-bold tabular-nums", timeTextColor[t.status]].join(" ")}>
+                  <span className={["text-[0.5rem] font-bold", timeTextColor[t.status]].join(" ")}>
                     {timeFmt(t.mins)}
                   </span>
                 )}
               </div>
 
-              <div className="flex-1 flex flex-col justify-center">
+              <div className="min-w-0 flex-1 flex flex-col justify-center">
               {t.status !== "libre" ? (
                 <>
-                  <p className="truncate text-[0.65rem] font-medium text-charcoal/60 w-[30%]">
+                  <p className="truncate text-[0.65rem] font-medium text-charcoal/60">
                     {t.course}
                   </p>
                   <div className="mt-2.5 h-[2px] overflow-hidden rounded-full bg-charcoal/[0.06] w-full">
@@ -210,7 +213,7 @@ export const ProductMockup = () => (
         </motion.div>
       </div>
 
-      {/* RIGHT â€” Orders feed */}
+      {/* Right — orders feed */}
       <div className="p-4 sm:p-5">
         <p className="mb-3.5 text-[0.58rem] font-bold uppercase tracking-[0.28em] text-charcoal/30">
           Servicio en curso
@@ -231,7 +234,7 @@ export const ProductMockup = () => (
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-[0.6rem] font-bold text-charcoal/36">
-                    {o.ticket} Â· Mesa {o.table}
+                    {o.ticket} · Mesa {o.table}
                   </p>
                   <p className="mt-0.5 truncate text-[0.67rem] font-medium text-charcoal/70">
                     {o.detail}
@@ -252,7 +255,7 @@ export const ProductMockup = () => (
       </div>
     </div>
 
-    {/* â”€â”€ METRICS BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+    {/* Metrics bar */}
     <div className="grid grid-cols-4 border-t border-charcoal/[0.07] bg-charcoal/[0.02]">
       {(
         [
@@ -276,8 +279,5 @@ export const ProductMockup = () => (
       ))}
     </div>
   </div>
-);
-
-
-
-
+  );
+};

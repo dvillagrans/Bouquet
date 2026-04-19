@@ -1,4 +1,7 @@
+const fs = require('fs');
+const filePath = 'src/components/chain/ZoneBranchesConsole.tsx';
 
+let code = `
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -24,7 +27,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 
 function fmtMoney(n: number) {
-  return "\$" + n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return "\\$" + n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function occPct(active: number, total: number) {
@@ -83,11 +86,11 @@ function BranchRow({
     <button
       type="button"
       onClick={onSelect}
-      className={`group relative w-full text-left rounded-2xl border p-5 transition-all duration-500 ease-out animate-in fade-in slide-in-from-bottom-6 ${
+      className={\`group relative w-full text-left rounded-2xl border p-5 transition-all duration-500 ease-out animate-in fade-in slide-in-from-bottom-6 \${
         active
           ? "border-gold/40 bg-[linear-gradient(135deg,rgba(183,146,93,0.1),rgba(0,0,0,0))] shadow-[0_32px_64px_-16px_rgba(183,146,93,0.15)] -translate-y-1"
           : "border-white/5 bg-[#0a0a0a] hover:border-white/10 hover:bg-white/[0.02] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.4)] hover:-translate-y-0.5"
-      }`}
+      }\`}
       style={{ animationFillMode: "both", animationDelay: delay }}
     >
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between sm:gap-5">
@@ -126,17 +129,17 @@ function BranchRow({
         <div className="mt-5 sm:mt-0 flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-4">
           <div className="flex flex-col sm:items-end gap-2 w-full sm:w-auto">
             <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-dim">
-              <CircleDot className={`size-3.5 ${active ? 'text-gold' : 'text-white/50'}`} aria-hidden />
+              <CircleDot className={\`size-3.5 \${active ? 'text-gold' : 'text-white/50'}\`} aria-hidden />
               <span>{pct}% Ocupación</span>
             </span>
             <div className="h-1.5 w-full sm:w-28 rounded-full bg-white/5 overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-1000 ease-out ${color}`}
-                style={{ width: `${pct}%` }}
+                className={\`h-full rounded-full transition-all duration-1000 ease-out \${color}\`}
+                style={{ width: \\\`\${pct}%\\\` }}
               />
             </div>
           </div>
-          <span className={`hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors mt-4 ${active ? 'text-gold' : 'text-text-dim group-hover:text-gold'}`}>
+          <span className={\`hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider transition-colors mt-4 \${active ? 'text-gold' : 'text-text-dim group-hover:text-gold'}\`}>
             Detalles <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
           </span>
         </div>
@@ -244,7 +247,7 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
           <div className="flex items-center gap-2 text-[12px] font-medium text-text-dim uppercase tracking-wider">
             <span className="text-white">Bouquet OPS</span>
             <ChevronRight className="size-3 text-white/20" />
-            <Link href={`/zona?zoneId=${zoneId}`} className="text-white/60 hover:text-white transition-colors">
+            <Link href={\`/zona?zoneId=\${zoneId}\`} className="text-white/60 hover:text-white transition-colors">
               ZONAS
             </Link>
             <ChevronRight className="size-3 text-white/20" />
@@ -258,7 +261,7 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
           disabled={loading}
           className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-transparent text-text-dim transition-colors hover:border-white/20 hover:text-white disabled:opacity-50 sm:w-auto sm:gap-2 sm:px-4"
         >
-          <RefreshCw className={`size-4 shrink-0 ${loading ? "animate-spin text-gold" : ""}`} aria-hidden />
+          <RefreshCw className={\`size-4 shrink-0 \${loading ? "animate-spin text-gold" : ""}\`} aria-hidden />
           <span className="hidden text-[12px] font-medium sm:inline">Refrescar Consola</span>
         </button>
       </header>
@@ -324,7 +327,7 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
                   r={r}
                   active={r.id === selectedId}
                   onSelect={() => setSelectedId(r.id)}
-                  delay={`${1000 + (idx * 100)}ms`}
+                  delay={\`\${1000 + (idx * 100)}ms\`}
                 />
               ))
             )}
@@ -366,7 +369,7 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
                 </div>
 
                 <Link
-                  href={`/dashboard/impersonate/${selected.id}`}
+                  href={\`/dashboard/impersonate/\${selected.id}\`}
                   className="mt-8 flex w-full items-center justify-center gap-3 rounded-full bg-white text-[13px] font-bold text-black py-4 transition-all hover:bg-gold shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(183,146,93,0.3)] group"
                 >
                   IMPERSONAR OPERACIÓN
@@ -421,7 +424,7 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
                   </div>
 
                   <Link
-                    href={`/dashboard/impersonate/${selected.id}`}
+                    href={\`/dashboard/impersonate/\${selected.id}\`}
                     onClick={() => setSelectedId(null)}
                     className="flex w-full items-center justify-center gap-3 rounded-full bg-white py-4 text-[14px] font-bold text-black transition-all hover:bg-gold shadow-[0_0_20px_rgba(255,255,255,0.1)] active:scale-[0.98] group"
                   >
@@ -437,3 +440,7 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
     </div>
   );
 }
+`;
+
+fs.writeFileSync(filePath, code);
+console.log("Updated ZoneBranchesConsole.tsx");

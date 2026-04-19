@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { getChainDashboard } from "@/actions/chain";
 import type { ChainDashboardData, RestaurantSummary, ZoneSummary } from "@/actions/chain";
+import { useShellChrome } from "@/components/dashboard/ShellChromeContext";
 import ChainAuthGuard from "./ChainAuthGuard";
 import CreateRestaurantDialog from "./CreateRestaurantDialog";
 
@@ -316,10 +317,17 @@ function RestaurantCard({
 
 export default function ChainDashboard({ initialTenantId }: { initialTenantId?: string }) {
   const reduceMotion = useReducedMotion();
+  const { setHideDashboardChrome } = useShellChrome();
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [data, setData] = useState<ChainDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCreatingRest, setIsCreatingRest] = useState(false);
+
+  useEffect(() => {
+    if (!isCreatingRest) return;
+    setHideDashboardChrome(true);
+    return () => setHideDashboardChrome(false);
+  }, [isCreatingRest, setHideDashboardChrome]);
 
   const load = useCallback(async (tid: string) => {
     try {

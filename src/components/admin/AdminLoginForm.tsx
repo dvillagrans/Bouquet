@@ -140,7 +140,7 @@ export default function AdminLoginForm({
                     required
                     disabled={pending}
                     placeholder="admin@bouquet.com"
-                    className="h-11 border-[#f2dcc624] bg-[#231d15] pl-12 text-base text-[#f7efe3] placeholder:text-[#9b8d79] focus-visible:ring-[#d7ae62] md:text-sm"
+                    className="h-11 border-[#f2dcc624] bg-[#231d15] pl-12 text-base text-[#f7efe3] placeholder:text-[#9b8d79] focus-visible:ring-[#d7ae62] lg:text-sm"
                     style={{ paddingLeft: "3rem" }}
                   />
                 </div>
@@ -163,7 +163,7 @@ export default function AdminLoginForm({
                     required
                     disabled={pending}
                     placeholder="••••••••"
-                    className="h-11 border-[#f2dcc624] bg-[#231d15] pl-12 pr-11 font-mono text-base text-[#f7efe3] placeholder:text-[#9b8d79] focus-visible:ring-[#d7ae62] md:text-sm"
+                    className="h-11 border-[#f2dcc624] bg-[#231d15] pl-12 pr-11 font-mono text-base text-[#f7efe3] placeholder:text-[#9b8d79] focus-visible:ring-[#d7ae62] lg:text-sm"
                     style={{ paddingLeft: "3rem", paddingRight: "2.75rem" }}
                   />
                   <Button

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, Search, MapPin } from "lucide-react";
+import { X, Search, MapPin, Loader2 } from "lucide-react";
 import { createRestaurantInChain } from "@/actions/chain";
 import { Map, Marker, ZoomControl } from "pigeon-maps";
 
@@ -44,6 +44,22 @@ export default function CreateRestaurantDialog({
   const [zoom, setZoom] = useState(13);
 
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    const onEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onEscape);
+    return () => window.removeEventListener("keydown", onEscape);
+  }, [onClose]);
 
   const darkTiles = (x: number, y: number, z: number, dpr?: number) => {
     return `https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/${z}/${x}/${y}${dpr && dpr >= 2 ? '@2x' : ''}.png`;
@@ -126,217 +142,270 @@ export default function CreateRestaurantDialog({
         setError(res.error || "Error al crear la sucursal");
       }
     } catch (err: any) {
-      setError(err.message || "Error");
+      setError(err.message || "Error al conectar");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-[800px] h-[92vh] md:h-auto flex flex-col md:flex-row bg-[#222222] rounded-xl overflow-hidden shadow-2xl relative border border-[#333333] my-4 sm:my-8">
-        
-        {/* Left Col: MAP */}
-        <div className="hidden md:block w-full md:w-2/5 h-48 md:h-auto border-b md:border-b-0 md:border-r border-[#333333] relative">
-           <Map
-             provider={darkTiles}
-             center={center} 
-             zoom={zoom} 
-             onBoundsChanged={({ center, zoom }) => { setCenter(center); setZoom(zoom); }}
-             attribution={false}
-           >
-             <Marker width={30} anchor={center} color="#E5A85A" />
-             <ZoomControl style={{ bottom: 10, right: 10 }} />
-           </Map>
-           <div className="absolute bottom-1.5 left-1.5 z-[6] rounded bg-black/55 px-1.5 py-0.5 text-[7px] text-white/65 pointer-events-auto">
-             <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer noopener" className="hover:text-white hover:underline">© OSM</a>
-             <span className="text-white/35"> · </span>
-             <a href="https://carto.com/attributions" target="_blank" rel="noreferrer noopener" className="hover:text-white hover:underline">CARTO</a>
-           </div>
-           <div className="absolute top-4 left-4 z-10 pointer-events-none">
-             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-[#444] bg-[#2C2C2C]/80 backdrop-blur-sm text-[10px] text-[#DDDDDD] shadow-lg">
-               <div className="w-1.5 h-1.5 rounded-full bg-[#E5A85A] animate-pulse" />
-               Live Locator
-             </div>
-           </div>
+    <div
+      className="fixed inset-0 z-50 flex touch-none flex-col justify-end bg-[#0a0a0a]/80 backdrop-blur-md animate-in fade-in-0 duration-300 md:touch-auto md:items-center md:justify-center md:overflow-y-auto md:p-4"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        className="flex max-h-[min(96dvh,100%)] w-full max-w-4xl flex-col overflow-hidden rounded-t-[1.75rem] border border-white/10 border-b-0 bg-[#0a0a0a] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] animate-in fade-in-0 duration-300 md:my-4 md:max-h-[min(92vh,920px)] md:flex-row md:rounded-2xl md:border-b"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-restaurant-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Móvil: vista rápida del mapa (contexto espacial; desktop sigue en columna izquierda) */}
+        <div className="relative h-[min(11rem,28dvh)] shrink-0 border-b border-white/5 md:hidden">
+          <Map
+            provider={darkTiles}
+            center={center}
+            zoom={zoom}
+            onBoundsChanged={({ center, zoom }) => {
+              setCenter(center);
+              setZoom(zoom);
+            }}
+            attribution={false}
+          >
+            <Marker width={28} anchor={center} color="#b7925d" />
+            <ZoomControl style={{ bottom: 8, right: 8 }} />
+          </Map>
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0a0a0a] to-transparent py-6 pl-4">
+            <p className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-widest text-white/70">
+              <MapPin className="size-3.5 shrink-0 text-gold" aria-hidden />
+              Ubicación según dirección
+            </p>
+          </div>
         </div>
 
-        {/* Right Col: FORM */}
-        <div className="w-full md:w-3/5 p-5 sm:p-6 md:p-8 flex flex-col h-full overflow-y-auto relative">
-          <button 
-            onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 rounded-full text-[#888] hover:text-white transition-colors z-10 bg-[#333]/50"
+        {/* Desktop: MAP lateral */}
+        <div className="relative hidden h-auto w-full border-white/5 md:block md:w-2/5 md:border-r">
+          <Map
+            provider={darkTiles}
+            center={center} 
+            zoom={zoom} 
+            onBoundsChanged={({ center, zoom }) => { setCenter(center); setZoom(zoom); }}
+            attribution={false}
           >
-            <X className="w-5 h-5" />
+            <Marker width={30} anchor={center} color="#b7925d" />
+            <ZoomControl style={{ bottom: 10, right: 10 }} />
+          </Map>
+          <div className="absolute bottom-2 left-2 z-[6] rounded-md bg-[#0a0a0a]/80 backdrop-blur-md px-2 py-1 text-[9px] text-white/50 border border-white/10 pointer-events-auto">
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer noopener" className="hover:text-white transition-colors">© OSM</a>
+            <span className="mx-1">·</span>
+            <a href="https://carto.com/attributions" target="_blank" rel="noreferrer noopener" className="hover:text-white transition-colors">CARTO</a>
+          </div>
+          <div className="absolute top-4 left-4 z-10 pointer-events-none">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-[#0a0a0a]/80 backdrop-blur-md text-[10px] font-medium tracking-widest uppercase text-white shadow-xl">
+              <div className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live Locator
+            </div>
+          </div>
+        </div>
+
+        {/* Formulario */}
+        <div className="relative flex min-h-0 w-full flex-1 flex-col bg-[#0a0a0a] md:w-3/5">
+          <div
+            className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
+            style={{
+              backgroundImage: "url('https://grainy-gradients.vercel.app/noise.svg')",
+              opacity: 0.04,
+              mixBlendMode: "overlay",
+            }}
+            aria-hidden
+          />
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-50 flex size-11 min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-full bg-transparent text-white/45 ring-offset-background transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] sm:right-6 sm:top-6"
+          >
+            <X className="size-[1.125rem]" strokeWidth={2} aria-hidden />
           </button>
 
-          <h2 className="text-[20px] sm:text-[22px] font-semibold text-white mb-1 tracking-tight pr-6">
-            Registra tu sucursal
-          </h2>
-          <p className="text-[12px] sm:text-[13px] text-[#A0A0A0] mb-5 sm:mb-6 max-w-md">
-            Busca la dirección y autocompletaremos el formulario.
-          </p>
+          <div className="relative z-10 flex min-h-0 flex-1 touch-auto flex-col overflow-y-auto overscroll-contain px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(3.25rem,env(safe-area-inset-top))] sm:px-8 sm:pb-8 sm:pt-14">
+            <header className="mb-6 shrink-0 sm:mb-8">
+              <h2
+                id="create-restaurant-title"
+                className="mb-2 pr-12 font-serif text-[1.375rem] font-medium leading-tight tracking-tight text-white sm:text-2xl sm:pr-14"
+              >
+                Registra tu sucursal
+              </h2>
+              <p className="max-w-md text-base leading-relaxed text-text-dim lg:text-[14px]">
+                Busca la dirección y autocompletaremos la posición comercial.
+              </p>
+            </header>
 
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
-             {error && (
-               <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-[12px] rounded-md">
-                 {error}
-               </div>
-             )}
-             
-             {/* Name */}
-             <div className="space-y-1.5">
-               <label className="text-[10px] tracking-[0.1em] uppercase text-[#A0A0A0]">
-                 Nombre de la sucursal
-               </label>
-               <input
-                 required
-                 type="text" 
-                 value={name}
-                 onChange={(e) => setName(e.target.value)}
-                 placeholder="ej. Sucursal Polanco"
-                 className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-3 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[14px] placeholder:text-[#555]"
-               />
-             </div>
+            <form onSubmit={handleSubmit} className="relative flex flex-1 flex-col gap-5 pb-2 sm:gap-6">
+            {error && (
+              <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400 lg:text-[13px]">
+                <span className="w-1 h-3 bg-red-500 rounded-full" />
+                {error}
+              </div>
+            )}
+            
+            {/* Name */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-widest text-text-dim lg:text-[11px]">
+                Nombre de la sucursal
+              </label>
+              <input
+                required
+                type="text" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="ej. Sucursal Polanco"
+                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white outline-none transition-colors focus:border-gold/50 focus:bg-white/10 placeholder:text-white/20 lg:text-[14px]"
+              />
+            </div>
 
-             {/* Address Search */}
-             <div className="space-y-1.5 relative">
-               <label className="text-[10px] tracking-[0.1em] uppercase text-[#A0A0A0]">
-                 Dirección
-               </label>
-               <div className="relative">
-                 <input
-                   type="text" 
-                   value={addressSearch}
-                   onChange={(e) => setAddressSearch(e.target.value)}
-                   onFocus={() => { if(searchResults.length > 0) setShowResults(true); }}
-                   placeholder="Escribe tu calle y número..."
-                   className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-3 pl-3 pr-10 text-white focus:outline-none focus:border-[#777] transition-all text-[14px] placeholder:text-[#555]"
-                 />
-                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                   {isSearching ? (
-                     <span className="w-3.5 h-3.5 border-2 border-transparent border-t-[#888] rounded-full animate-spin" />
-                   ) : (
-                     <Search className="w-3.5 h-3.5 text-[#555]" />
-                   )}
-                 </div>
-               </div>
-
-               {/* Dropdown Results */}
-               {showResults && searchResults.length > 0 && (
-                 <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-[#2A2A2A] border border-[#444] rounded-md shadow-2xl overflow-hidden max-h-44 overflow-y-auto">
-                   {searchResults.map((item, idx) => (
-                     <button
-                       key={idx}
-                       type="button"
-                       onClick={() => selectAddress(item)}
-                       className="w-full text-left px-4 py-2.5 border-b border-[#333] hover:bg-[#333] transition-colors last:border-0"
-                     >
-                       <div className="text-[12px] text-white truncate">{item.display_name}</div>
-                     </button>
-                   ))}
-                 </div>
-               )}
-             </div>
-
-             {/* Geo Grid */}
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-               <div className="space-y-1.5">
-                 <label className="text-[10px] tracking-[0.1em] uppercase text-[#A0A0A0]">Colonia</label>
-                 <input
-                   type="text" 
-                   value={colonia}
-                   onChange={(e) => setColonia(e.target.value)}
-                   placeholder="—"
-                   className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-3 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[14px] placeholder:text-[#555]"
-                 />
-               </div>
-               <div className="space-y-1.5">
-                 <label className="text-[10px] tracking-[0.1em] uppercase text-[#A0A0A0]">Código Postal</label>
-                 <input
-                   type="text" 
-                   value={cp}
-                   onChange={(e) => setCp(e.target.value)}
-                   placeholder="—"
-                   className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-3 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[14px] placeholder:text-[#555]"
-                 />
-               </div>
-               <div className="space-y-1.5 col-span-2">
-                 <label className="text-[10px] tracking-[0.1em] uppercase text-[#A0A0A0]">Delegación / Estado</label>
-                 <div className="flex gap-2">
-                   <input
-                     type="text" 
-                     value={alcaldia}
-                     onChange={(e) => setAlcaldia(e.target.value)}
-                     placeholder="Alcaldía"
-                     className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-2.5 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[13px] placeholder:text-[#555]"
-                   />
-                   <input
-                     type="text" 
-                     value={estado}
-                     onChange={(e) => setEstado(e.target.value)}
-                     placeholder="Estado"
-                    className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-3 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[14px] placeholder:text-[#555]"
-                   />
-                 </div>
-               </div>
-             </div>
-
-             {/* Zone Block */}
-             <div className="space-y-1.5 pt-2 border-t border-[#333]">
-                <div className="flex items-center justify-between">
-                  <label className="text-[10px] tracking-[0.1em] uppercase text-[#A0A0A0]">
-                    Zona Geográfica (Agrupador)
-                  </label>
-                  {zones.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setIsNewZone(!isNewZone)}
-                      className="text-[10px] text-[#E5A85A] hover:text-[#FFCF84] transition-colors"
-                    >
-                      {isNewZone ? "Usar existente" : "+ Crear nueva"}
-                    </button>
+            {/* Address Search */}
+            <div className="space-y-2 relative">
+              <label className="text-xs font-bold uppercase tracking-widest text-text-dim lg:text-[11px]">
+                Dirección Base
+              </label>
+              <div className="relative">
+                <input
+                  type="text" 
+                  value={addressSearch}
+                  onChange={(e) => setAddressSearch(e.target.value)}
+                  onFocus={() => { if(searchResults.length > 0) setShowResults(true); }}
+                  placeholder="Escribe tu calle y número..."
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 pl-4 pr-10 text-base text-white outline-none transition-colors focus:border-gold/50 focus:bg-white/10 placeholder:text-white/20 lg:text-[14px]"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  {isSearching ? (
+                    <Loader2 className="size-4 text-text-dim animate-spin" />
+                  ) : (
+                    <Search className="size-4 text-text-dim" />
                   )}
                 </div>
+              </div>
 
-                {isNewZone ? (
+              {/* Dropdown Results */}
+              {showResults && searchResults.length > 0 && (
+                <div className="absolute left-0 right-0 top-full z-20 mt-2 max-h-[min(14rem,40dvh)] overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-[#0a0a0a] shadow-2xl">
+                  {searchResults.map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => selectAddress(item)}
+                      className="min-h-[48px] w-full border-b border-white/5 px-4 py-3.5 text-left transition-colors last:border-0 hover:bg-white/5 active:bg-white/10"
+                    >
+                      <div className="truncate text-sm text-white lg:text-[13px]">{item.display_name}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Geo Grid — una columna en móvil ancho; dos columnas desde sm */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-text-dim lg:text-[11px]">Colonia</label>
+                <input
+                  type="text" 
+                  value={colonia}
+                  onChange={(e) => setColonia(e.target.value)}
+                  placeholder="—"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white outline-none transition-colors focus:border-gold/50 focus:bg-white/10 placeholder:text-white/20 lg:text-[14px]"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-text-dim lg:text-[11px]">Código Postal</label>
+                <input
+                  type="text" 
+                  value={cp}
+                  onChange={(e) => setCp(e.target.value)}
+                  placeholder="—"
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white outline-none transition-colors focus:border-gold/50 focus:bg-white/10 placeholder:text-white/20 lg:text-[14px]"
+                />
+              </div>
+              <div className="col-span-1 space-y-2 sm:col-span-2">
+                <label className="text-xs font-bold uppercase tracking-widest text-text-dim lg:text-[11px]">Entidad Federativa</label>
+                <div className="flex flex-col gap-3 sm:flex-row sm:gap-3">
                   <input
-                    required
                     type="text" 
-                    value={newZoneName}
-                    onChange={(e) => setNewZoneName(e.target.value)}
-                    placeholder="Nombre de Zona (ej. Región Norte)"
-                    className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-2.5 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[13px] placeholder:text-[#555]"
+                    value={alcaldia}
+                    onChange={(e) => setAlcaldia(e.target.value)}
+                    placeholder="Alcaldía / Municipio"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white outline-none transition-colors focus:border-gold/50 focus:bg-white/10 placeholder:text-white/20 lg:text-[14px]"
                   />
-                ) : (
-                  <select
-                    required
-                    value={zoneId}
-                    onChange={(e) => setZoneId(e.target.value)}
-                    className="w-full bg-[#2A2A2A] border border-[#444] rounded-md py-2.5 px-3 text-white focus:outline-none focus:border-[#777] transition-all text-[13px] appearance-none"
-                  >
-                    <option value="" disabled>Selecciona la zona a la que pertenece</option>
-                    {zones.map(z => (
-                      <option key={z.id} value={z.id}>{z.name}</option>
-                    ))}
-                  </select>
-                )}
-             </div>
+                  <input
+                    type="text" 
+                    value={estado}
+                    onChange={(e) => setEstado(e.target.value)}
+                    placeholder="Estado"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white outline-none transition-colors focus:border-gold/50 focus:bg-white/10 placeholder:text-white/20 lg:text-[14px]"
+                  />
+                </div>
+              </div>
+            </div>
 
-             {/* Submit */}
-             <div className="pt-4">
-               <button
-                 type="submit"
-                 disabled={loading}
-                 className="w-full flex justify-center items-center py-3 px-4 rounded-md text-[#111] font-semibold bg-[#E5A85A] hover:bg-[#FFCF84] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-[13px]"
-               >
-                  {loading ? "Generando sucursal..." : "Confirmar Sucursal"}
-               </button>
-               <div className="text-center mt-3">
-                 <span className="text-[9px] text-[#666]">Powered by OpenStreetMap & Pigeon Maps</span>
+            {/* Zone Block */}
+            <div className="space-y-3 pt-4 mt-2">
+               <div className="flex flex-wrap items-center justify-between gap-2">
+                 <label className="text-xs font-bold uppercase tracking-widest text-text-dim lg:text-[11px]">
+                   Zona (Agrupador)
+                 </label>
+                 {zones.length > 0 && (
+                   <button
+                     type="button"
+                     onClick={() => setIsNewZone(!isNewZone)}
+                     className="min-h-[44px] shrink-0 rounded-lg px-2 py-2 text-xs font-medium uppercase tracking-wider text-gold transition-colors hover:text-gold/80 active:bg-white/5 lg:min-h-0 lg:px-0 lg:py-1 lg:text-[11px]"
+                   >
+                     {isNewZone ? "Usar existente" : "+ Crear nueva"}
+                   </button>
+                 )}
                </div>
-             </div>
+
+               {isNewZone ? (
+                 <input
+                   required
+                   type="text" 
+                   value={newZoneName}
+                   onChange={(e) => setNewZoneName(e.target.value)}
+                   placeholder="Nombre de Zona (ej. Región Norte)"
+                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white outline-none transition-colors focus:border-gold/50 focus:bg-white/10 placeholder:text-white/20 lg:text-[14px]"
+                 />
+               ) : (
+                 <select
+                   required
+                   value={zoneId}
+                   onChange={(e) => setZoneId(e.target.value)}
+                   className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white outline-none transition-colors focus:border-gold/50 focus:bg-white/10 appearance-none lg:text-[14px]"
+                 >
+                   <option value="" disabled className="text-black">Selecciona la zona a la que pertenece</option>
+                   {zones.map(z => (
+                     <option key={z.id} value={z.id} className="text-black">{z.name}</option>
+                   ))}
+                 </select>
+               )}
+            </div>
+
+            {/* Submit — área táctil cómoda (adapt ≥44px) */}
+            <div className="sticky bottom-0 mt-auto border-t border-white/[0.06] bg-[#0a0a0a]/95 pt-4 backdrop-blur-sm supports-[backdrop-filter]:bg-[#0a0a0a]/85">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-gold px-4 text-base font-medium text-bg-solid transition-transform active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 md:hover:scale-[1.01] lg:text-[14px]"
+              >
+                 {loading ? (
+                   <Loader2 className="size-5 animate-spin" />
+                 ) : (
+                   "Confirmar Sucursal"
+                 )}
+              </button>
+            </div>
           </form>
+          </div>
         </div>
       </div>
     </div>

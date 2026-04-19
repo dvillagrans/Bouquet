@@ -31,6 +31,11 @@ export const CtaBand = () => {
       id="contacto"
       className="relative border-t border-charcoal/10 bg-ivory py-24 lg:py-32 overflow-hidden"
     >
+      {/* Bookend: fade desde la banda charcoal superior */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-charcoal/8 via-charcoal/0 to-transparent"
+      />
       <motion.div
         initial="hidden"
         whileInView="show"
@@ -83,21 +88,35 @@ export const CtaBand = () => {
           </motion.div>
         </div>
 
+        {/* Double-bezel summary card */}
         <motion.div
           variants={itemVariants}
-          className="grid gap-4 rounded-[2rem] border border-charcoal/10 bg-white/70 p-6 shadow-[0_20px_50px_-34px_rgba(43,36,30,0.35)]"
+          className="relative rounded-[2rem] p-1.5 ring-1 ring-charcoal/10 bg-gradient-to-b from-white/80 to-cream/50 shadow-[0_30px_60px_-34px_rgba(43,36,30,0.4),inset_0_1px_0_rgba(255,255,255,0.9)]"
         >
-          {[
-            ["Configuración", "1 día"],
-            ["Dispositivos", "Cualquier"],
-            ["Integración", "Nativa"],
-            ["Soporte", "Humano"],
-          ].map(([label, value]) => (
-            <div key={label} className="flex items-center justify-between gap-8 border-b border-charcoal/8 pb-3 last:border-b-0 last:pb-0">
-              <span className="text-[0.65rem] font-bold uppercase tracking-[0.28em] text-charcoal/38">{label}</span>
-              <span className="font-serif text-[1.4rem] italic text-charcoal">{value}</span>
+          <div className="rounded-[calc(2rem-0.375rem)] bg-white/65 p-6 ring-1 ring-charcoal/[0.05]">
+            <p className="mb-5 flex items-center gap-3 text-[0.6rem] font-bold uppercase tracking-[0.32em] text-charcoal/40">
+              <span className="h-[2px] w-5 bg-gold/70" aria-hidden="true" />
+              Plan práctico
+            </p>
+            <div className="grid gap-3.5">
+              {[
+                ["Configuración", "1 día"],
+                ["Dispositivos", "Cualquier"],
+                ["Integración", "Nativa"],
+                ["Soporte", "Humano"],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  className="flex items-baseline justify-between gap-8 border-b border-charcoal/8 pb-3 last:border-b-0 last:pb-0"
+                >
+                  <span className="text-[0.62rem] font-bold uppercase tracking-[0.28em] text-charcoal/42">
+                    {label}
+                  </span>
+                  <span className="font-serif text-[1.4rem] italic text-charcoal">{value}</span>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </motion.div>
 
       </motion.div>

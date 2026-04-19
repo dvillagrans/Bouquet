@@ -55,7 +55,7 @@ function DashboardShellContent({
   const { hideDashboardChrome } = useShellChrome();
 
   return (
-    <div className="flex min-h-screen w-full bg-bg-solid text-text-primary antialiased selection:bg-gold selection:text-bg-solid font-sans">
+    <div className="flex min-h-screen w-full bg-bg-solid text-base text-text-primary antialiased selection:bg-gold selection:text-bg-solid font-sans lg:text-[14px]">
       {hideDashboardChrome ? null : (
         <AppSidebar
           groups={navGroups}

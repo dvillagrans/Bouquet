@@ -1,5 +1,6 @@
 import KDSBoard from "@/components/staff/KDSBoard";
 import { getLiveOrders } from "@/actions/orders";
+import { getDefaultRestaurant } from "@/actions/restaurant";
 
 export const metadata = {
   title: "Barra Display System | Bouquet",
@@ -9,6 +10,13 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function BarraPage() {
+  const restaurant = await getDefaultRestaurant();
   const initialOrders = await getLiveOrders();
-  return <KDSBoard initialOrders={initialOrders} defaultStation="barra" />;
+  return (
+    <KDSBoard
+      initialOrders={initialOrders}
+      defaultStation="barra"
+      restaurantId={restaurant.id}
+    />
+  );
 }

@@ -3,6 +3,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
   Plus,
@@ -20,6 +21,7 @@ import { createTable, deleteTable, joinTables, separateTable } from "@/actions/t
 import { TableStatus } from "@/generated/prisma";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import FloorMapClient from "./FloorMapClient";
+import MesaCapacityPreview from "./MesaCapacityPreview";
 import { createClient } from "@/lib/supabase/client";
 
 // Mantenemos la estructura requerida del backend
@@ -49,68 +51,14 @@ function mesaSizeLabel(cap: number): string {
   return "Gran mesa · grupo";
 }
 
-/** Vista previa: tablero que crece con la capacidad y “puestos” en órbita elíptica. */
-function MesaCapacityPreview({
-  capacity,
-  reduceMotion,
+export default function TableManagerClient({
+  initialTables,
+  restaurantId,
 }: {
-  capacity: number;
-  reduceMotion: boolean | null;
+  initialTables: Table[];
+  restaurantId: string;
 }) {
-  const spring = reduceMotion ? { duration: 0 } : { type: "spring" as const, stiffness: 280, damping: 28 };
-  const seatSpring = reduceMotion
-    ? { duration: 0 }
-    : { type: "spring" as const, stiffness: 400, damping: 22 };
-
-  const w = Math.min(76 + capacity * 7.5, 168);
-  const h = Math.min(46 + capacity * 3.8, 96);
-  const pad = 36;
-  const cw = w + pad * 2;
-  const ch = h + pad * 2;
-  const cx = cw / 2;
-  const cy = ch / 2;
-  const rx = w / 2 + 18;
-  const ry = h / 2 + 18;
-  const dot = Math.min(8, 6 + capacity * 0.18);
-
-  return (
-    <div
-      className="relative mx-auto select-none"
-      style={{ width: cw, height: ch }}
-      aria-hidden
-    >
-      <motion.div
-        className="absolute overflow-hidden rounded-[1.35rem] border-2 border-gold/40 bg-[linear-gradient(155deg,rgba(201,160,84,0.18)_0%,rgba(15,15,15,0.92)_48%,rgba(0,0,0,0.55)_100%)] shadow-[0_24px_48px_-16px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-20px_40px_-24px_rgba(201,160,84,0.06)]"
-        initial={false}
-        animate={{ width: w, height: h }}
-        style={{ left: pad, top: pad }}
-        transition={spring}
-      >
-        <div
-          className="pointer-events-none absolute inset-[10%] rounded-[1rem] border border-white/[0.07] bg-black/25"
-          style={{ opacity: capacity >= 8 ? 0.45 : 0.28 }}
-        />
-      </motion.div>
-      {Array.from({ length: capacity }).map((_, i) => {
-        const angle = -Math.PI / 2 + (i * 2 * Math.PI) / capacity;
-        const left = cx + Math.cos(angle) * rx - dot / 2;
-        const top = cy + Math.sin(angle) * ry - dot / 2;
-        return (
-          <motion.span
-            key={`${capacity}-${i}`}
-            initial={reduceMotion ? false : { scale: 0.65, opacity: 0.6 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ ...seatSpring, delay: reduceMotion ? 0 : i * 0.015 }}
-            className="absolute rounded-full border border-gold/50 bg-gradient-to-b from-gold/90 to-gold/40 shadow-[0_0_14px_rgba(201,160,84,0.45)]"
-            style={{ width: dot, height: dot, left, top }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-export default function TableManagerClient({ initialTables }: { initialTables: Table[] }) {
+  const router = useRouter();
   const [tables, setTables] = useState<Table[]>(initialTables);
   const [tab, setTab] = useState<Tab>("mapa");
   const [showMap, setShowMap] = useState(false);
@@ -133,6 +81,26 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
   useEffect(() => {
     setPortalReady(true);
   }, []);
+
+  useEffect(() => {
+    setTables(initialTables);
+  }, [initialTables]);
+
+  /** Mismo canal que cocina/mesero: anon no recibe postgres sobre Order; broadcast desde servidor. */
+  useEffect(() => {
+    const supabase = createClient();
+    const channelName = `kds-orders:${encodeURIComponent(restaurantId)}`;
+    const channel = supabase
+      .channel(channelName)
+      .on("broadcast", { event: "refresh" }, () => {
+        router.refresh();
+      })
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [router, restaurantId]);
 
   // Supabase real-time
   useEffect(() => {

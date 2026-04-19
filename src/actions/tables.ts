@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getDefaultRestaurant } from "./restaurant";
 import { TableStatus } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
+import { broadcastKdsOrdersRefresh } from "@/lib/supabase/broadcast-guest-orders";
 import { findTableByQrCode } from "@/lib/find-table-by-qr";
 import { generateSecureTableCode } from "@/lib/table-qr-code";
 import { signTableJoinProof } from "@/lib/table-join-proof";
@@ -58,6 +59,7 @@ export async function createTable(capacity: number) {
   });
 
   revalidatePath("/dashboard/mesas");
+  await broadcastKdsOrdersRefresh(restaurant.id);
   return newTable;
 }
 
@@ -68,12 +70,18 @@ export async function updateTableStatus(id: string, status: TableStatus) {
   });
   
   revalidatePath("/dashboard/mesas");
+  await broadcastKdsOrdersRefresh(table.restaurantId);
   return table;
 }
 
 export async function deleteTable(id: string) {
+  const existing = await prisma.table.findUnique({
+    where: { id },
+    select: { restaurantId: true },
+  });
   await prisma.table.delete({ where: { id } });
   revalidatePath("/dashboard/mesas");
+  if (existing) await broadcastKdsOrdersRefresh(existing.restaurantId);
 }
 
 export async function updateTablePositions(
@@ -88,6 +96,14 @@ export async function updateTablePositions(
     )
   );
   revalidatePath("/dashboard/mesas");
+  const firstId = positions[0]?.id;
+  if (firstId) {
+    const row = await prisma.table.findUnique({
+      where: { id: firstId },
+      select: { restaurantId: true },
+    });
+    if (row) await broadcastKdsOrdersRefresh(row.restaurantId);
+  }
 }
 
 export async function joinTables(parentTableId: string, childTableIds: string[]) {
@@ -96,14 +112,24 @@ export async function joinTables(parentTableId: string, childTableIds: string[])
     data: { parentTableId }
   });
   revalidatePath("/dashboard/mesas");
+  const parent = await prisma.table.findUnique({
+    where: { id: parentTableId },
+    select: { restaurantId: true },
+  });
+  if (parent) await broadcastKdsOrdersRefresh(parent.restaurantId);
 }
 
 export async function separateTable(tableId: string) {
+  const before = await prisma.table.findUnique({
+    where: { id: tableId },
+    select: { restaurantId: true },
+  });
   await prisma.table.update({
     where: { id: tableId },
     data: { parentTableId: null }
   });
   revalidatePath("/dashboard/mesas");
+  if (before) await broadcastKdsOrdersRefresh(before.restaurantId);
 }
 
 /** Vista previa firmada para staff (mapa / mesero): misma forma que el QR impreso. */

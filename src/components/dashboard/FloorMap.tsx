@@ -1,11 +1,13 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useReducedMotion } from "framer-motion";
 import { Stage, Layer, Rect, Circle, Text, Group } from "react-konva";
 import type Konva from "konva";
 import { Save, Edit3, Eye, Move, Circle as CircleIcon, Square, Activity } from "lucide-react";
 import type { Table, TableStatus } from "@/generated/prisma";
 import { getSignedGuestPreviewUrl } from "@/actions/tables";
+import MesaCapacityPreview from "./MesaCapacityPreview";
 
 /* ── Design tokens (mirrors CSS vars) ─────────────────────────── */
 const C = {
@@ -490,6 +492,7 @@ export default function FloorMap({ tables: initialTables, readOnly = false, onTa
   const [tables, setTables]     = useState<FloorMapTable[]>(initialTables);
   const [editMode, setEditMode] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  const prefersReducedMotion = useReducedMotion();
 
   // Sync when parent refreshes table data (e.g. waiter polling)
   useEffect(() => {
@@ -561,10 +564,6 @@ export default function FloorMap({ tables: initialTables, readOnly = false, onTa
   const selectedTable = selected ? tables.find(t => t.id === selected) : null;
 
   const handleTableSelect = (id: string | null) => {
-    if (readOnly) {
-      if (id && onTableClick) onTableClick(id);
-      return;
-    }
     setSelected(id);
   };
 
@@ -661,10 +660,24 @@ export default function FloorMap({ tables: initialTables, readOnly = false, onTa
       {/* ── Selected table panel ─────────────────────────────── */}
       {selectedTable && !editMode && (
         <div
-          className="flex items-center justify-between border border-wire px-5 py-4"
+          className="flex flex-wrap items-center justify-between gap-4 border border-wire px-5 py-4"
           style={{ animation: "reveal-up 0.25s cubic-bezier(0.22,1,0.36,1) both" }}
         >
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-5 sm:gap-6">
+            <div className="flex shrink-0 items-center gap-3 sm:gap-4">
+              <MesaCapacityPreview
+                capacity={selectedTable.capacity}
+                reduceMotion={prefersReducedMotion}
+                scale={0.62}
+              />
+              <div className="border-l border-wire/70 pl-3 sm:pl-4">
+                <p className="text-[0.52rem] font-bold uppercase tracking-[0.38em] text-dim">Capacidad</p>
+                <p className="mt-0.5 font-serif text-xl font-semibold tabular-nums leading-none text-light sm:text-2xl">
+                  {selectedTable.capacity}
+                </p>
+                <p className="mt-0.5 text-[0.62rem] text-dim">asientos</p>
+              </div>
+            </div>
             <div>
               <p className="text-[0.52rem] font-bold uppercase tracking-[0.38em] text-dim">Mesa</p>
               <p className="font-serif text-[2rem] font-semibold leading-none text-light">
@@ -680,45 +693,75 @@ export default function FloorMap({ tables: initialTables, readOnly = false, onTa
                 {STATUS_LABEL[selectedTable.status]}
               </p>
             </div>
-            <div>
-              <p className="text-[0.52rem] font-bold uppercase tracking-[0.38em] text-dim">Asientos</p>
-              <p className="mt-0.5 text-[0.75rem] font-semibold text-light">{selectedTable.capacity}</p>
-            </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-[0.52rem] font-bold uppercase tracking-[0.38em] text-dim">Código QR</p>
-              <p className="mt-0.5 font-mono text-[0.75rem] font-semibold text-light/50">
+              <p className="mt-0.5 truncate font-mono text-[0.75rem] font-semibold text-light/50">
                 {selectedTable.qrCode}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleShapeToggle(selectedTable.id, selectedTable.shape)}
-              className="inline-flex h-9 items-center gap-2 border border-wire px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
-              title="Cambiar forma"
-            >
-              {selectedTable.shape === "round"
-                ? <><Square className="h-3.5 w-3.5" /> Cuadrada</>
-                : <><CircleIcon className="h-3.5 w-3.5" /> Redonda</>
-              }
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                void (async () => {
-                  try {
-                    const url = await getSignedGuestPreviewUrl(selectedTable.qrCode);
-                    window.open(url, "_blank", "noopener,noreferrer");
-                  } catch {
-                    alert("No se pudo abrir la vista de comensal.");
+          <div className="flex flex-wrap items-center gap-2">
+            {readOnly ? (
+              <>
+                {onTableClick ? (
+                  <button
+                    type="button"
+                    onClick={() => onTableClick(selectedTable.id)}
+                    className="inline-flex h-9 items-center gap-2 border border-glow/35 bg-glow/[0.12] px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-glow transition-colors hover:border-glow/55 hover:bg-glow/20"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    Abrir mesa
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() =>
+                    void (async () => {
+                      try {
+                        const url = await getSignedGuestPreviewUrl(selectedTable.qrCode);
+                        window.open(url, "_blank", "noopener,noreferrer");
+                      } catch {
+                        alert("No se pudo abrir la vista de comensal.");
+                      }
+                    })()
                   }
-                })()
-              }
-              className="inline-flex h-9 items-center gap-2 border border-wire px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
-            >
-              Ver menú
-            </button>
+                  className="inline-flex h-9 items-center gap-2 border border-wire px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
+                >
+                  Ver menú
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => handleShapeToggle(selectedTable.id, selectedTable.shape)}
+                  className="inline-flex h-9 items-center gap-2 border border-wire px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
+                  title="Cambiar forma"
+                >
+                  {selectedTable.shape === "round"
+                    ? <><Square className="h-3.5 w-3.5" /> Cuadrada</>
+                    : <><CircleIcon className="h-3.5 w-3.5" /> Redonda</>
+                  }
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    void (async () => {
+                      try {
+                        const url = await getSignedGuestPreviewUrl(selectedTable.qrCode);
+                        window.open(url, "_blank", "noopener,noreferrer");
+                      } catch {
+                        alert("No se pudo abrir la vista de comensal.");
+                      }
+                    })()
+                  }
+                  className="inline-flex h-9 items-center gap-2 border border-wire px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
+                >
+                  Ver menú
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

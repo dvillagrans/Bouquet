@@ -5,6 +5,7 @@ import { Plus, Receipt, Lock, Copy, ExternalLink, CheckCheck, Loader2, Share2 } 
 import { QRCodeCanvas } from "qrcode.react";
 import { advanceOrderStatus } from "@/actions/orders";
 import { getTableDetail, closeTable } from "@/actions/waiter";
+import { createClient } from "@/lib/supabase/client";
 import WaiterTakeOrder from "./WaiterTakeOrder";
 import WaiterPayment from "./WaiterPayment";
 
@@ -36,10 +37,13 @@ interface TableDetailData {
 
 export default function WaiterTableDetail({
   tableId,
+  restaurantId,
   onClose,
   onRefresh,
 }: {
   tableId: string;
+  /** Mismo canal Realtime que cocina/listado mesero (`kds-orders:*`). */
+  restaurantId?: string;
   onClose: () => void;
   onRefresh: () => void;
 }) {
@@ -65,6 +69,21 @@ export default function WaiterTableDetail({
   useEffect(() => {
     loadTableDetail();
   }, [loadTableDetail]);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    const supabase = createClient();
+    const channelName = `kds-orders:${encodeURIComponent(restaurantId)}`;
+    const channel = supabase
+      .channel(channelName)
+      .on("broadcast", { event: "refresh" }, () => {
+        void loadTableDetail({ silent: true });
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [restaurantId, loadTableDetail]);
 
   useEffect(() => {
     setOrigin(typeof window !== "undefined" ? window.location.origin : "");

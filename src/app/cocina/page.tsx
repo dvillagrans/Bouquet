@@ -1,5 +1,6 @@
 import KDSBoard from "@/components/staff/KDSBoard";
 import { getLiveOrders } from "@/actions/orders";
+import { getDefaultRestaurant } from "@/actions/restaurant";
 
 export const metadata = {
   title: "Kitchen Display System | Boulevard",
@@ -9,6 +10,13 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function CocinaPage() {
+  const restaurant = await getDefaultRestaurant();
   const initialOrders = await getLiveOrders();
-  return <KDSBoard initialOrders={initialOrders} defaultStation="cocina" />;
+  return (
+    <KDSBoard
+      initialOrders={initialOrders}
+      defaultStation="cocina"
+      restaurantId={restaurant.id}
+    />
+  );
 }

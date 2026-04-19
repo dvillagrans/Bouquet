@@ -1,6 +1,6 @@
 /**
  * Sesión admin firmada con Web Crypto (HMAC-SHA256).
- * Sirve en middleware (Edge) y en route handlers (Node).
+ * Sirve en proxy (Edge) y en route handlers (Node).
  */
 
 const COOKIE_NAME = "bq_admin_session";
@@ -15,7 +15,7 @@ const COOKIE_NAME = "bq_admin_session";
  * 2. `NEXTAUTH_SECRET` (legado NextAuth v4)
  * 3. `BOUQUET_ADMIN_AUTH_SECRET` (compatibilidad con despliegues antiguos)
  *
- * - **Producción** (`NODE_ENV=production`): define `AUTH_SECRET`. Si falta, el middleware
+ * - **Producción** (`NODE_ENV=production`): define `AUTH_SECRET`. Si falta, el proxy
  *   usa `?error=missing_secret`.
  * - **`next dev`**: sin ninguna, fallback interno de desarrollo.
  * - **`next start` local** sin secret: `BOUQUET_ADMIN_ALLOW_DEV_AUTH_SECRET=1` (solo tu máquina).

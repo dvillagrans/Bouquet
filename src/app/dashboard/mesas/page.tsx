@@ -1,5 +1,6 @@
 import TableManager from "@/components/dashboard/TableManager";
 import { getTables } from "@/actions/tables";
+import { getDefaultRestaurant } from "@/actions/restaurant";
 
 export const metadata = {
   title: "Gestión de Mesas | Bouquet Dashboard",
@@ -9,7 +10,8 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function DashboardMesasPage() {
+  const restaurant = await getDefaultRestaurant();
   const tables = await getTables();
 
-  return <TableManager initialTables={tables} />;
+  return <TableManager initialTables={tables} restaurantId={restaurant.id} />;
 }

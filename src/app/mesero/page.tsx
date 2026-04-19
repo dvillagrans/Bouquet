@@ -10,6 +10,11 @@ export const dynamic = "force-dynamic";
 
 export default async function WaiterPage() {
   const restaurant = await getDefaultRestaurant();
-  return <WaiterDashboard allowJoinTables={restaurant.allowWaiterJoinTables} />;
+  return (
+    <WaiterDashboard
+      allowJoinTables={restaurant.allowWaiterJoinTables}
+      restaurantId={restaurant.id}
+    />
+  );
 }
 

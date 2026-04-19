@@ -1,15 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Users, ChefHat, Clock, RefreshCw, Sparkles, LayoutGrid, Map, Link as LinkIcon, Unlink, QrCode } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Users, RefreshCw, LayoutGrid, Map, Link as LinkIcon, Unlink, QrCode } from "lucide-react";
 import { getWaiterTablesSummary, regenerateTableQr, updateTableStatus } from "@/actions/waiter";
 import { getTables, joinTables, separateTable } from "@/actions/tables";
 import WaiterTableDetail from "./WaiterTableDetail";
 import FloorMapClient from "@/components/dashboard/FloorMapClient";
+import { createClient } from "@/lib/supabase/client";
 import type { FloorMapTable } from "@/components/dashboard/FloorMap";
 import type { TableStatus } from "@/generated/prisma";
 
-const NOISE_SVG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIj4KICA8ZmlsdGVyIGlkPSJub2lzZSI+CiAgICA8ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC44NSIgbnVtT2N0YXZlcz0iMyIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPgogIDwvZmlsdGVyPgogIDxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNub2lzZSkiIG9wYWNpdHk9IjAuMDgiIG1peC1ibGVuZC1tb2RlPSJvdmVybGF5IiAvPgo8L3N2Zz4=";
+const MXN_FORMATTER = new Intl.NumberFormat("es-MX", {
+  maximumFractionDigits: 0,
+});
 
 type FilterType = "todas" | "ocupadas" | "pendientes" | "listas" | "sucias";
 type ViewType = "lista" | "mapa";
@@ -32,7 +35,45 @@ function isTableBusy(status: TableStatus) {
   return status === "OCUPADA" || status === "CERRANDO";
 }
 
-export default function WaiterDashboard({ allowJoinTables = false }: { allowJoinTables?: boolean }) {
+function tableStatusLabel(status: TableStatus) {
+  if (status === "DISPONIBLE") return "Libre";
+  if (status === "OCUPADA") return "Activa";
+  if (status === "CERRANDO") return "Cuenta";
+  return "Limpieza";
+}
+
+function tableTone(status: TableStatus) {
+  if (status === "DISPONIBLE") {
+    return {
+      card: "border-border-main bg-bg-card border-l-4 border-l-dash-green hover:border-border-bright",
+      chip: "border-border-main bg-bg-solid/80 text-dash-green",
+    };
+  }
+  if (status === "OCUPADA") {
+    return {
+      card: "border-border-main bg-bg-card border-l-4 border-l-gold/80 hover:border-border-bright",
+      chip: "border-border-main bg-bg-solid/80 text-light",
+    };
+  }
+  if (status === "CERRANDO") {
+    return {
+      card: "border-border-main bg-bg-card border-l-4 border-l-gold hover:border-gold/50",
+      chip: "border-border-main bg-bg-solid/80 text-gold",
+    };
+  }
+  return {
+    card: "border-border-main bg-bg-card border-l-4 border-l-dash-red hover:border-dash-red/60",
+    chip: "border-border-main bg-bg-solid/80 text-dash-red",
+  };
+}
+
+export default function WaiterDashboard({
+  allowJoinTables = false,
+  restaurantId,
+}: {
+  allowJoinTables?: boolean;
+  restaurantId?: string;
+}) {
   const [tables, setTables] = useState<TableSummary[]>([]);
   const [mapTables, setMapTables] = useState<FloorMapTable[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +86,7 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
   const [isJoining, setIsJoining] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  const loadTables = async () => {
+  const loadTables = useCallback(async () => {
     try {
       setLoading(true);
       const [summary, full] = await Promise.all([
@@ -59,7 +100,7 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const handleCleanTable = async (tableId: string) => {
     try {
@@ -67,7 +108,7 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
       await loadTables();
     } catch (error) {
       console.error("Error cleaning table:", error);
-      alert("Error al limpiar la mesa");
+      setToast({ type: "error", message: "Error al liberar la mesa" });
     }
   };
 
@@ -97,24 +138,22 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
     setSelectedTable(table.id);
   };
 
+  const [confirmQr, setConfirmQr] = useState<{ id: string; number: number } | null>(null);
+
   const handleRegenerateQr = async (tableId: string, tableNumber: number) => {
-    if (!confirm("¿Generar nuevo QR para esta mesa? El código anterior dejará de servir.")) {
+    if (confirmQr?.id !== tableId) {
+      setConfirmQr({ id: tableId, number: tableNumber });
+      setTimeout(() => setConfirmQr(null), 4000);
       return;
     }
-
+    setConfirmQr(null);
     try {
       const result = await regenerateTableQr(tableId);
-      setToast({
-        type: "success",
-        message: `Mesa ${tableNumber}: nuevo QR ${result.qrCode}`,
-      });
+      setToast({ type: "success", message: `Mesa ${tableNumber}: nuevo QR ${result.qrCode}` });
       await loadTables();
     } catch (error) {
       console.error("Error regenerating table QR:", error);
-      setToast({
-        type: "error",
-        message: (error as Error).message || "Error regenerando el QR",
-      });
+      setToast({ type: "error", message: (error as Error).message || "Error regenerando el QR" });
     }
   };
 
@@ -136,7 +175,7 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
       setSelectedTablesToJoin([]);
     } catch(err) {
       console.error(err);
-      alert("Error al unir mesas");
+      setToast({ type: "error", message: "Error al unir mesas" });
     } finally {
       setIsJoining(false);
     }
@@ -148,16 +187,30 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
       await loadTables();
     } catch(err) {
       console.error(err);
-      alert("Error separando la mesa");
+      setToast({ type: "error", message: "Error al separar la mesa" });
     }
   };
 
   useEffect(() => {
     loadTables();
-    // Refresh every 10 seconds
     const interval = setInterval(loadTables, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadTables]);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    const supabase = createClient();
+    const channelName = `kds-orders:${encodeURIComponent(restaurantId)}`;
+    const channel = supabase
+      .channel(channelName)
+      .on("broadcast", { event: "refresh" }, () => {
+        void loadTables();
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [restaurantId, loadTables]);
 
   useEffect(() => {
     if (!toast) return;
@@ -183,402 +236,362 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
     revenue: tables.reduce((sum, t) => sum + t.billTotal, 0),
   };
 
-  return (
-    <div className="relative min-h-screen bg-bg-solid text-text-primary flex flex-col font-sans overflow-x-hidden">
-      {/* Background Noise & Lighting */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
-        <div
-          className="absolute inset-0 z-0 opacity-30 mix-blend-overlay"
-          style={{ backgroundImage: `url("${NOISE_SVG}")`, backgroundRepeat: "repeat" }}
-        />
-        <div className="absolute -left-[20%] -top-[20%] h-[min(80vh,600px)] w-[min(100vw,800px)] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(201,160,84,0.08),transparent_60%)] blur-[100px]" />
-        <div className="absolute top-[20%] -right-[10%] h-[60vh] w-[60vw] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(77,132,96,0.05),transparent_60%)] blur-[100px]" />
-      </div>
+  const filterItems: Array<{
+    id: FilterType;
+    label: string;
+    count?: number;
+  }> = [
+    { id: "todas", label: "Todas" },
+    { id: "ocupadas", label: "Ocupadas", count: stats.occupied },
+    { id: "pendientes", label: "En cocina", count: stats.pending },
+    { id: "listas", label: "Listos", count: stats.ready },
+    { id: "sucias", label: "Limpiar", count: stats.dirty },
+  ];
 
+  return (
+    <div className="min-h-screen overflow-x-hidden bg-bg-solid text-text-primary">
       {toast && (
         <div
           className="fixed inset-x-0 top-4 z-[80] flex justify-center px-4"
           role={toast.type === "error" ? "alert" : "status"}
           aria-live={toast.type === "error" ? "assertive" : "polite"}
-          style={{ animation: "fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both" }}
+          style={{ animation: "fade-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both" }}
         >
           <div
-            className={`flex items-center gap-3 backdrop-blur-md px-5 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.4)] rounded-full border ${
+            className={`flex items-center gap-3 rounded-full border px-5 py-2.5 shadow-[0_12px_35px_rgba(0,0,0,0.45)] backdrop-blur-md ${
               toast.type === "error"
-                ? "border-dash-red/40 bg-dash-red/10 text-dash-red"
-                : "border-dash-green/40 bg-dash-green/10 text-dash-green"
+                ? "border-dash-red/50 bg-dash-red/15 text-dash-red"
+                : "border-dash-green/50 bg-dash-green/15 text-dash-green"
             }`}
           >
             <span
-              className={`h-2 w-2 rounded-full ${
-                toast.type === "error" ? "bg-dash-red animate-pulse" : "bg-dash-green"
-              }`}
+              className={`h-2 w-2 rounded-full ${toast.type === "error" ? "animate-pulse bg-dash-red" : "bg-dash-green"}`}
               aria-hidden="true"
             />
-            <p className="text-[11px] font-mono font-bold uppercase tracking-[0.2em]">{toast.message}</p>
+            <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em]">{toast.message}</p>
           </div>
         </div>
       )}
 
-      {/* Header with Stats */}
-      <div className="relative z-10 border-b border-border-main bg-bg-card/40 backdrop-blur-md p-6 lg:p-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-8 flex flex-col gap-1.5">
-             <h1 className="font-serif text-3xl font-medium tracking-tight text-text-primary flex items-center gap-3">
-               Table Management
-             </h1>
-             <span className="font-mono text-[10px] uppercase tracking-[0.3em] font-bold text-text-muted mt-0.5">
-               Punto de Venta &copy; Boulevard
-             </span>
-          </div>
+      <main className="relative z-10 px-4 pb-10 pt-4 sm:px-6 lg:px-8 lg:pt-5">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
+          <header className="flex flex-col gap-3 border-b border-border-main/70 pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-baseline gap-3">
+                <h1 className="text-xl font-semibold tracking-tight text-light sm:text-2xl">Mesas</h1>
+                <span className="text-xs text-text-muted">
+                  <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${loading ? "animate-pulse bg-text-muted" : "bg-dash-green"}`} aria-hidden />
+                  {loading ? "Actualizando…" : "En vivo"}
+                </span>
+              </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {/* Occupied Tables */}
-            <div className="group flex items-center gap-4 rounded-xl border border-border-main bg-bg-card/30 p-5 backdrop-blur-sm transition-colors hover:border-gold/30 hover:bg-gold/5">
-              <div className="rounded-lg bg-gold/10 p-3.5 border border-gold/20 shadow-inner group-hover:scale-105 transition-transform">
-                <Users className="h-6 w-6 text-gold" strokeWidth={1.5} />
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-text-muted">Mesas Ocupadas</p>
-                <p className="font-serif text-3xl text-text-primary group-hover:text-gold transition-colors">{stats.occupied}</p>
-              </div>
-            </div>
-
-            {/* Pending Orders */}
-            <div className="group flex items-center gap-4 rounded-xl border border-border-main bg-bg-card/30 p-5 backdrop-blur-sm transition-colors hover:border-dash-blue/30 hover:bg-dash-blue/5">
-              <div className="rounded-lg bg-dash-blue/10 p-3.5 border border-dash-blue/20 shadow-inner group-hover:scale-105 transition-transform">
-                <Clock className="h-6 w-6 text-dash-blue" strokeWidth={1.5} />
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-text-muted">Pendientes</p>
-                <p className="font-serif text-3xl text-text-primary group-hover:text-dash-blue transition-colors">{stats.pending}</p>
-              </div>
-            </div>
-
-            {/* Ready Orders */}
-            <div className="group flex items-center gap-4 rounded-xl border border-border-main bg-bg-card/30 p-5 backdrop-blur-sm transition-colors hover:border-dash-green/30 hover:bg-dash-green/5">
-              <div className="rounded-lg bg-dash-green/10 p-3.5 border border-dash-green/20 shadow-inner group-hover:scale-105 transition-transform">
-                <ChefHat className="h-6 w-6 text-dash-green" strokeWidth={1.5} />
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-text-muted">Fuego (Listos)</p>
-                <p className="font-serif text-3xl text-text-primary group-hover:text-dash-green transition-colors">{stats.ready}</p>
-              </div>
-            </div>
-
-            {/* Dirty Tables */}
-            <div className="group flex items-center gap-4 rounded-xl border border-border-main bg-bg-card/30 p-5 backdrop-blur-sm transition-colors hover:border-dash-red/30 hover:bg-dash-red/5">
-              <div className="rounded-lg bg-dash-red/10 p-3.5 border border-dash-red/20 shadow-inner group-hover:scale-105 transition-transform">
-                <Sparkles className="h-6 w-6 text-dash-red" strokeWidth={1.5} />
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-text-muted">Limpieza Req.</p>
-                <p className="font-serif text-3xl text-text-primary group-hover:text-dash-red transition-colors">{stats.dirty}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters, View Toggle and Refresh */}
-      <div className="relative z-10 border-b border-border-main bg-bg-card/60 backdrop-blur-md py-4 px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
-          {/* Scrollable filter area */}
-          <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide flex-1 min-w-0 w-full sm:w-auto">
-            {/* View toggle */}
-            <div className="flex p-1 rounded-lg bg-bg-solid/50 border border-border-main shrink-0">
-              <button
-                onClick={() => setView("lista")}
-                className={`flex items-center gap-1.5 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] rounded transition-all ${
-                  view === "lista" ? "bg-bg-card border border-border-bright text-text-primary shadow-sm" : "text-text-muted hover:text-text-primary border border-transparent"
-                }`}
-              >
-                <LayoutGrid className="h-3.5 w-3.5" />
-                <span className="hidden xs:inline">Piso</span>
-              </button>
-              <button
-                onClick={() => setView("mapa")}
-                className={`flex items-center gap-1.5 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] rounded transition-all ${
-                  view === "mapa" ? "bg-bg-card border border-border-bright text-text-primary shadow-sm" : "text-text-muted hover:text-text-primary border border-transparent"
-                }`}
-              >
-                <Map className="h-3.5 w-3.5" />
-                <span className="hidden xs:inline">Mapa</span>
-              </button>
-            </div>
-
-            {/* Divider */}
-            {view === "lista" && (
-              <div className="hidden sm:block w-px h-6 bg-border-main/60 shrink-0 mx-1" />
-            )}
-
-            {/* Filters (only in list view) */}
-            {view === "lista" && (
-              <div className="flex bg-transparent rounded-lg p-0.5 border border-transparent gap-2">
-                {(["todas", "ocupadas", "pendientes", "listas", "sucias"] as const).map((f) => (
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex rounded-lg border border-border-main bg-bg-card p-0.5">
                   <button
-                    key={f}
-                    onClick={() => setFilter(f)}
-                    className={`shrink-0 px-3 py-1.5 rounded-lg text-[10px] tabular-nums font-bold uppercase tracking-[0.1em] transition-all border ${
-                      filter === f
-                        ? "bg-bg-card border-border-bright text-gold shadow-sm"
-                        : "border-border-main/50 bg-bg-solid/30 text-text-muted hover:border-gold/30 hover:text-text-primary"
+                    type="button"
+                    onClick={() => setView("lista")}
+                    className={`inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-xs font-medium ${
+                      view === "lista" ? "bg-bg-solid text-light" : "text-text-muted hover:text-light"
                     }`}
                   >
-                    {f === "todas" && "Todas"}
-                    {f === "ocupadas" && `Tránsito${stats.occupied ? ` (${stats.occupied})` : ""}`}
-                    {f === "pendientes" && `Coci.${stats.pending ? ` (${stats.pending})` : ""}`}
-                    {f === "listas" && `Fuego${stats.ready ? ` (${stats.ready})` : ""}`}
-                    {f === "sucias" && `Limp.${stats.dirty ? ` (${stats.dirty})` : ""}`}
+                    <LayoutGrid className="h-3.5 w-3.5" aria-hidden /> Lista
                   </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto justify-end">
-            {/* Join Tables */}
-            {allowJoinTables && (
-              <button
-                onClick={() => {
-                  setIsJoinMode(!isJoinMode);
-                  setSelectedTablesToJoin([]);
-                }}
-                className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.2em] transition-all border ${
-                  isJoinMode ? "border-gold bg-gold/10 text-gold shadow-[0_0_10px_rgba(201,160,84,0.2)]" : "border-border-main bg-bg-solid/50 text-text-muted hover:text-text-primary hover:border-gold/50"
-                }`}
-                title="Juntar mesas"
-              >
-                <LinkIcon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{isJoinMode ? "Cancelar Unión" : "Unir Mesas"}</span>
-              </button>
-            )}
-            {isJoinMode && selectedTablesToJoin.length >= 2 && (
-              <button
-                onClick={handleConfirmJoin}
-                disabled={isJoining}
-                className="shrink-0 flex items-center gap-2 border border-gold bg-gold px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.2em] text-bg-solid shadow-[0_0_15px_rgba(201,160,84,0.4)] hover:bg-white transition-all disabled:opacity-50"
-              >
-                <span className="hidden sm:inline">Ejecutar Unión</span>
-                <span className="sm:hidden">Unir</span>
-              </button>
-            )}
-
-            <button
-              onClick={() => {
-                setLoading(true);
-                loadTables();
-              }}
-              disabled={loading}
-              className="shrink-0 flex items-center justify-center p-2 rounded-lg border border-border-main bg-bg-solid/50 hover:bg-bg-card hover:border-border-bright text-text-muted hover:text-text-primary transition-all disabled:opacity-50"
-              title="Sincronizar"
-            >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} strokeWidth={1.5} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Floor Map View */}
-      {view === "mapa" && (
-        <div className="relative z-10 p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl">
-            {loading && mapTables.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 opacity-50">
-                <RefreshCw className="h-8 w-8 animate-spin text-gold mb-4 stroke-[1.5]" />
-                <p className="text-[11px] uppercase tracking-[0.3em] font-bold text-text-muted">Desplegando Piso...</p>
-              </div>
-            ) : (
-              <FloorMapClient
-                tables={mapTables}
-                readOnly
-                onTableClick={(id) => {
-                  const t = tables.find((x) => x.id === id);
-                  if (t) void openTableDetail(t);
-                }}
-              />
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Table Grid */}
-      {view === "lista" && <div className="relative z-10 p-6 lg:p-8">
-        <div className="mx-auto max-w-7xl">
-          {loading && tables.length === 0 ? (
-             <div className="flex flex-col items-center justify-center py-20 opacity-50">
-               <RefreshCw className="h-8 w-8 animate-spin text-gold mb-4 stroke-[1.5]" />
-               <p className="text-[11px] uppercase tracking-[0.3em] font-bold text-text-muted">Cargando Zonas...</p>
-             </div>
-          ) : filteredTables.length === 0 ? (
-             <div className="flex flex-col items-center justify-center py-20">
-               <div className="p-6 rounded-full border border-dashed border-border-main/50 mb-3 bg-bg-card/30">
-                 <LayoutGrid className="w-8 h-8 text-text-muted/30" />
-               </div>
-               <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-text-muted">Sin mesas activas</p>
-             </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-              {filteredTables.map((table) => {
-                const isSelectedToJoin = selectedTablesToJoin.includes(table.id);
-                const isChild = !!table.parentTableId;
-                const hasChildren = tables.some((t) => t.parentTableId === table.id);
-
-                return (
-                <div
-                  key={table.id}
-                  onClick={() => {
-                    if (isJoinMode) {
-                      handleToggleJoinTable(table.id, isChild);
-                    } else {
-                      void openTableDetail(table);
-                    }
-                  }}
-                  className={`relative flex flex-col items-center justify-between rounded-2xl border p-4 sm:p-5 transition-all duration-300 cursor-pointer aspect-square active:scale-[0.98] overflow-hidden backdrop-blur-md ${
-                    isSelectedToJoin ? "border-gold bg-gold/10 shadow-[0_0_20px_rgba(201,160,84,0.3)]" :
-                    isChild ? "opacity-50 grayscale-[0.6] cursor-not-allowed border-border-main bg-bg-solid/40" :
-                    table.status === "DISPONIBLE"
-                      ? "border-dash-green/30 bg-dash-green/5 hover:border-dash-green/60 hover:bg-dash-green/[0.08]"
-                      : table.status === "OCUPADA"
-                      ? "border-text-primary/10 bg-bg-card/40 hover:border-text-primary/30 hover:bg-bg-card/60 shadow-lg"
-                      : table.status === "CERRANDO"
-                      ? "border-gold/40 bg-gold/[0.08] hover:border-gold shadow-[0_0_15px_rgba(201,160,84,0.1)]"
-                      : "border-dash-red/40 bg-dash-red/10 hover:border-dash-red shadow-[0_0_15px_rgba(239,68,68,0.15)]"
-                  }`}
-                >
-                  {/* Subtle Gradient overlay for premium feel */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-
-                  {/* Join Table Elements */}
-                  {isSelectedToJoin && (
-                    <div className="absolute right-3 top-3 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-bg-solid text-[10px] font-bold font-mono shadow-md">
-                      {selectedTablesToJoin.indexOf(table.id) + 1}
-                    </div>
-                  )}
-                  {isChild && (
-                    <div className="absolute -left-1 top-0 w-[calc(100%+8px)] bg-bg-solid/80 px-2 py-1 text-center text-[8px] font-bold font-mono uppercase tracking-[0.2em] text-text-muted border-b border-border-main">
-                      Vinculada
-                      {allowJoinTables && (
-                         <button 
-                         onClick={(e) => { e.stopPropagation(); handleSeparate(table.id); }}
-                         className="ml-2 hover:text-dash-red transition-colors"
-                         title="Separar"
-                       >
-                         <Unlink size={10} className="inline mb-[2px]" />
-                       </button>
-                      )}
-                    </div>
-                  )}
-                  {hasChildren && (
-                    <div className="absolute left-3 top-3 z-10 rounded shadow-sm border border-gold/40 bg-gold/10 px-1.5 py-0.5 text-[8px] font-bold font-mono uppercase tracking-[0.2em] text-gold">
-                      Master
-                    </div>
-                  )}
-
-                  {/* Status Badge + pax */}
-                  <div className="relative z-10 flex w-full items-center justify-between mt-1">
-                    <span
-                      className={`text-[8px] font-bold font-mono uppercase tracking-[0.2em] px-1.5 py-0.5 rounded shadow-sm border ${
-                        table.status === "DISPONIBLE"
-                          ? "bg-dash-green/10 text-dash-green border-dash-green/20"
-                          : table.status === "OCUPADA"
-                          ? "bg-text-primary/10 text-text-primary border-border-bright"
-                          : table.status === "CERRANDO"
-                          ? "bg-gold/10 text-gold border-gold/20"
-                          : "bg-dash-red/10 text-dash-red border-dash-red/20 font-bold animate-pulse text-shadow-sm"
-                      }`}
-                    >
-                      {table.status === "DISPONIBLE"
-                        ? "Libre"
-                        : table.status === "OCUPADA"
-                          ? "Ocupada"
-                          : table.status === "CERRANDO"
-                            ? "Cuenta"
-                            : "Sucia"}
-                    </span>
-                    {isTableBusy(table.status) && (
-                      <div className="flex items-center gap-1 text-[10px] font-bold text-text-primary font-mono">
-                        <Users className="h-3 w-3 text-text-muted" strokeWidth={2} />
-                        {table.activeSession?.pax}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Table Number + Guest Name */}
-                  <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-1 w-full">
-                    <span className="font-serif text-4xl sm:text-5xl font-medium text-text-primary drop-shadow-md">
-                      {table.number}
-                    </span>
-                    {table.activeSession && (
-                      <span className="text-[10px] font-bold tracking-[0.2em] text-gold uppercase text-center line-clamp-1 px-2 py-0.5 bg-gold/5 border border-gold/10 rounded">
-                        {table.activeSession.guestName}
-                      </span>
-                    )}
-                    {/* Bill total — always visible for busy tables */}
-                    {isTableBusy(table.status) && table.billTotal > 0 && (
-                      <span className="text-[11px] font-mono tabular-nums font-bold tracking-widest text-text-primary mt-1 px-2 py-1 rounded bg-bg-solid/60 border border-border-main shadow-inner">
-                        ${table.billTotal.toLocaleString("es-MX", { minimumFractionDigits: 0 })}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Order Badges */}
-                  {table.orderCount > 0 && (
-                    <div className="relative z-10 flex gap-2 w-full justify-center text-[9px] font-mono uppercase tracking-[0.1em] mt-1">
-                      {table.pendingCount > 0 && (
-                        <div className="bg-dash-blue/10 border border-dash-blue/20 text-dash-blue px-2 py-[2px] rounded-sm shadow-sm font-bold flex items-center gap-1 group-hover:bg-dash-blue hover:text-white transition-colors">
-                          <span className="tabular-nums">{table.pendingCount}</span> Coc.
-                        </div>
-                      )}
-                      {table.readyCount > 0 && (
-                        <div className="bg-dash-green/10 border border-dash-green/30 text-dash-green px-2 py-[2px] rounded-sm shadow-sm font-bold flex items-center gap-1 group-hover:bg-dash-green hover:text-white transition-colors">
-                          <span className="tabular-nums">{table.readyCount}</span> Fueg.
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Limpiar button — always visible for dirty tables (no hover required) */}
-                  {table.status === "SUCIA" && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCleanTable(table.id);
-                      }}
-                      className="relative z-10 mt-2 flex items-center justify-center gap-1.5 w-full bg-dash-red/10 border border-dash-red/30 hover:bg-dash-red hover:text-white active:scale-95 text-dash-red px-2 py-1.5 rounded-lg font-bold tracking-[0.2em] uppercase text-[9px] transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)]"
-                    >
-                      <Sparkles className="h-3 w-3" strokeWidth={2} />
-                      Atender Mesa
-                    </button>
-                  )}
-
-                  {/* QR rotation is explicit and controlled by waiter */}
-                  {table.status === "DISPONIBLE" && !isChild && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRegenerateQr(table.id, table.number);
-                      }}
-                      className="relative z-10 mt-2 w-[90%] mx-auto flex items-center justify-center gap-1.5 border border-gold/30 bg-gold/5 hover:bg-gold/20 active:scale-95 text-gold/80 hover:text-gold px-2 py-1 rounded shadow-sm font-bold tracking-[0.1em] uppercase text-[8px] transition-all"
-                      title="Generar nuevo QR"
-                    >
-                      <QrCode className="h-2.5 w-2.5" />
-                      Código Nuevo
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => setView("mapa")}
+                    className={`inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-xs font-medium ${
+                      view === "mapa" ? "bg-bg-solid text-light" : "text-text-muted hover:text-light"
+                    }`}
+                  >
+                    <Map className="h-3.5 w-3.5" aria-hidden /> Mapa
+                  </button>
                 </div>
-              );
-              })}
+
+                {allowJoinTables && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsJoinMode(!isJoinMode);
+                      setSelectedTablesToJoin([]);
+                    }}
+                    className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium ${
+                      isJoinMode ? "border-gold bg-gold/15 text-gold" : "border-border-main text-text-muted hover:border-border-bright hover:text-light"
+                    }`}
+                  >
+                    <LinkIcon className="h-3.5 w-3.5" aria-hidden />
+                    {isJoinMode ? "Cancelar unión" : "Unir mesas"}
+                  </button>
+                )}
+
+                {isJoinMode && selectedTablesToJoin.length >= 2 && (
+                  <button
+                    type="button"
+                    onClick={handleConfirmJoin}
+                    disabled={isJoining}
+                    className="inline-flex min-h-9 items-center rounded-lg border border-gold bg-gold px-3 text-xs font-semibold text-bg-solid hover:bg-gold-light disabled:opacity-50"
+                  >
+                    {isJoining ? "Uniendo…" : "Confirmar unión"}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLoading(true);
+                    void loadTables();
+                  }}
+                  disabled={loading}
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border-main px-3 text-xs font-medium text-text-muted hover:border-border-bright hover:text-light disabled:opacity-50"
+                  title="Actualizar datos"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} strokeWidth={1.7} aria-hidden />
+                  Actualizar
+                </button>
+              </div>
             </div>
+
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs tabular-nums text-text-muted">
+              <span>
+                Activas <strong className="font-semibold text-light">{stats.occupied}</strong>
+              </span>
+              <span aria-hidden className="text-border-main">
+                ·
+              </span>
+              <span>
+                Cocina <strong className="font-semibold text-light">{stats.pending}</strong>
+              </span>
+              <span aria-hidden className="text-border-main">
+                ·
+              </span>
+              <span>
+                Listos <strong className="font-semibold text-light">{stats.ready}</strong>
+              </span>
+              <span aria-hidden className="text-border-main">
+                ·
+              </span>
+              <span>
+                Limpiar <strong className="font-semibold text-light">{stats.dirty}</strong>
+              </span>
+              <span aria-hidden className="text-border-main">
+                ·
+              </span>
+              <span className="text-text-muted/90">
+                Ingresos{" "}
+                <strong className="font-semibold text-light">${MXN_FORMATTER.format(stats.revenue)}</strong>
+              </span>
+            </div>
+          </header>
+
+          {view === "lista" && (
+            <section className="rounded-lg border border-border-main bg-bg-card p-3 sm:p-4">
+              <div className="overflow-x-auto scrollbar-hide">
+                <div className="inline-flex min-w-max gap-1.5">
+                  {filterItems.map((item) => {
+                    const active = filter === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setFilter(item.id)}
+                        className={`inline-flex min-h-9 items-center gap-2 rounded-md border px-3 text-xs font-medium transition ${
+                          active
+                            ? "border-border-bright bg-bg-solid text-light"
+                            : "border-transparent bg-transparent text-text-muted hover:bg-bg-solid/80 hover:text-light"
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        {item.count !== undefined ? (
+                          <span className="tabular-nums opacity-80">{item.count}</span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {view === "mapa" && (
+            <section className="rounded-lg border border-border-main bg-bg-card p-4 sm:p-5">
+              {loading && mapTables.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-text-muted">
+                  <RefreshCw className="mb-3 h-7 w-7 animate-spin" strokeWidth={1.6} aria-hidden />
+                  <p className="text-sm">Cargando mapa…</p>
+                </div>
+              ) : (
+                <FloorMapClient
+                  tables={mapTables}
+                  readOnly
+                  onTableClick={(id) => {
+                    const t = tables.find((x) => x.id === id);
+                    if (t) void openTableDetail(t);
+                  }}
+                />
+              )}
+            </section>
+          )}
+
+          {view === "lista" && (
+            <section className="space-y-4">
+              {loading && tables.length === 0 ? (
+                <div className="rounded-lg border border-border-main bg-bg-card py-16 text-center text-text-muted">
+                  <RefreshCw className="mx-auto mb-3 h-7 w-7 animate-spin" strokeWidth={1.6} aria-hidden />
+                  <p className="text-sm">Cargando mesas…</p>
+                </div>
+              ) : filteredTables.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border-main bg-bg-card px-6 py-14 text-center text-sm text-text-muted">
+                  No hay mesas con este filtro.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {filteredTables.map((table) => {
+                    const isSelectedToJoin = selectedTablesToJoin.includes(table.id);
+                    const isChild = !!table.parentTableId;
+                    const hasChildren = tables.some((t) => t.parentTableId === table.id);
+                    const tone = tableTone(table.status);
+
+                    return (
+                      <article
+                        key={table.id}
+                        onClick={() => {
+                          if (isJoinMode) {
+                            handleToggleJoinTable(table.id, isChild);
+                          } else {
+                            void openTableDetail(table);
+                          }
+                        }}
+                        className={`relative overflow-hidden rounded-xl border p-4 sm:p-5 ${tone.card} ${
+                          isSelectedToJoin ? "ring-2 ring-gold ring-offset-2 ring-offset-bg-solid" : ""
+                        } ${isChild ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-border-bright"}`}
+                      >
+                        {isSelectedToJoin && (
+                          <div className="absolute right-3 top-3 z-20 inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-gold bg-gold px-1.5 font-mono text-[10px] font-bold text-bg-solid">
+                            {selectedTablesToJoin.indexOf(table.id) + 1}
+                          </div>
+                        )}
+
+                        {isChild && (
+                          <div className="absolute left-3 top-3 z-20 inline-flex items-center gap-1 rounded-full border border-border-main/70 bg-bg-solid/70 px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-text-muted">
+                            Vinculada
+                            {allowJoinTables && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleSeparate(table.id);
+                                }}
+                                className="text-text-muted transition hover:text-dash-red"
+                                title="Separar"
+                              >
+                                <Unlink size={11} />
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {hasChildren && (
+                          <div className="absolute right-3 top-3 z-20 rounded-full border border-gold/35 bg-gold/15 px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-gold">
+                            Master
+                          </div>
+                        )}
+
+                        <div className="relative z-10 flex h-full flex-col gap-4">
+                          <header className="flex items-start justify-between gap-3">
+                            <span
+                              className={`inline-flex rounded-full border px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] ${tone.chip}`}
+                            >
+                              {tableStatusLabel(table.status)}
+                            </span>
+                            {isTableBusy(table.status) && (
+                              <div className="inline-flex items-center gap-1 rounded-full border border-border-main/70 bg-bg-solid/60 px-2 py-1 font-mono text-[10px] font-bold text-light">
+                                <Users className="h-3.5 w-3.5 text-text-muted" strokeWidth={1.8} />
+                                {table.activeSession?.pax ?? 0}
+                              </div>
+                            )}
+                          </header>
+
+                          <div className="space-y-1">
+                            <p className="text-[11px] font-medium text-text-muted">Mesa</p>
+                            <p className="text-3xl font-semibold tabular-nums leading-none tracking-tight text-light sm:text-4xl">{table.number}</p>
+                            {table.activeSession ? (
+                              <p className="line-clamp-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-gold">
+                                {table.activeSession.guestName}
+                              </p>
+                            ) : (
+                              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                                Esperando comensales
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="mt-auto space-y-3">
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="rounded-md border border-border-main bg-bg-solid/80 px-2 py-1.5 tabular-nums text-text-muted">
+                                Cocina <span className="ml-1 font-semibold text-light">{table.pendingCount}</span>
+                              </div>
+                              <div className="rounded-md border border-border-main bg-bg-solid/80 px-2 py-1.5 tabular-nums text-text-muted">
+                                Listos <span className="ml-1 font-semibold text-light">{table.readyCount}</span>
+                              </div>
+                            </div>
+
+                            {isTableBusy(table.status) && table.billTotal > 0 && (
+                              <div className="rounded-md border border-border-main bg-bg-solid/80 px-3 py-2 text-sm font-semibold tabular-nums text-light">
+                                ${MXN_FORMATTER.format(table.billTotal)}
+                              </div>
+                            )}
+
+                            {table.status === "SUCIA" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleCleanTable(table.id);
+                                }}
+                                className="inline-flex min-h-10 w-full items-center justify-center rounded-md border border-border-main bg-bg-solid px-2.5 text-xs font-medium text-light transition hover:border-dash-red hover:bg-dash-red/10"
+                              >
+                                Marcar libre
+                              </button>
+                            )}
+
+                            {table.status === "DISPONIBLE" && !isChild && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleRegenerateQr(table.id, table.number);
+                                }}
+                                className={`inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition ${
+                                  confirmQr?.id === table.id
+                                    ? "border-gold bg-gold text-bg-solid"
+                                    : "border-border-main text-text-muted hover:border-gold hover:text-gold"
+                                }`}
+                                title="Generar nuevo QR"
+                              >
+                                <QrCode className="h-3.5 w-3.5" />
+                                {confirmQr?.id === table.id ? "Confirmar QR" : "Renovar QR"}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
           )}
         </div>
-      </div>}
+      </main>
+
+      <style dangerouslySetInnerHTML={{__html:`
+        @keyframes fade-in {
+          from { opacity: 0; transform: translateY(-8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+      `}} />
 
       {/* Table Detail Modal */}
       {selectedTable && (
         <WaiterTableDetail
           tableId={selectedTable}
+          restaurantId={restaurantId}
           onClose={() => setSelectedTable(null)}
           onRefresh={() => {
             loadTables();

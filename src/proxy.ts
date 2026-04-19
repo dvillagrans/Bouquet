@@ -9,7 +9,7 @@ const RESTAURANT_COOKIE = "bq_restaurant_id";
  * `/restaurant/[id]/...` reescribe al route handler real y fija `bq_restaurant_id`.
  * Rutas tipo `/restaurant/[id]/cocina` → `/cocina`, `/restaurant/[id]/mesero` → `/mesero`; el resto → `/dashboard/...`.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/restaurant/")) {

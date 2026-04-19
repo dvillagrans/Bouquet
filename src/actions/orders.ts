@@ -4,7 +4,10 @@ import { prisma } from "@/lib/prisma";
 import { getDefaultRestaurant } from "./restaurant";
 import { OrderStatus } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
-import { broadcastGuestOrdersRefresh } from "@/lib/supabase/broadcast-guest-orders";
+import {
+  broadcastGuestOrdersRefresh,
+  broadcastKdsOrdersRefresh,
+} from "@/lib/supabase/broadcast-guest-orders";
 
 async function notifyGuestMenuOrderUpdated(orderId: string) {
   const order = await prisma.order.findUnique({
@@ -12,6 +15,7 @@ async function notifyGuestMenuOrderUpdated(orderId: string) {
     include: { table: { select: { qrCode: true } } },
   });
   if (order?.table) await broadcastGuestOrdersRefresh(order.table.qrCode);
+  if (order) await broadcastKdsOrdersRefresh(order.restaurantId);
 }
 
 export async function getLiveOrders() {

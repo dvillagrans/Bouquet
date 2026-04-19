@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-async function broadcast(tableQrCode: string, event: string) {
+async function broadcastOnChannel(channelName: string, event: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return;
@@ -9,7 +9,6 @@ async function broadcast(tableQrCode: string, event: string) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const channelName = `guest-orders:${encodeURIComponent(tableQrCode)}`;
   const channel = supabase.channel(channelName);
 
   try {
@@ -43,9 +42,17 @@ async function broadcast(tableQrCode: string, event: string) {
  * Requiere SUPABASE_SERVICE_ROLE_KEY en el servidor (opcional).
  */
 export function broadcastGuestOrdersRefresh(tableQrCode: string) {
-  return broadcast(tableQrCode, "refresh");
+  return broadcastOnChannel(`guest-orders:${encodeURIComponent(tableQrCode)}`, "refresh");
 }
 
 export function broadcastBillRequested(tableQrCode: string) {
-  return broadcast(tableQrCode, "bill-requested");
+  return broadcastOnChannel(`guest-orders:${encodeURIComponent(tableQrCode)}`, "bill-requested");
+}
+
+/**
+ * Despierta cocina/barra (KDS) para un restaurante vía Realtime Broadcast.
+ * El cliente usa la anon key; no recibe `postgres_changes` en `Order` por RLS.
+ */
+export function broadcastKdsOrdersRefresh(restaurantId: string) {
+  return broadcastOnChannel(`kds-orders:${encodeURIComponent(restaurantId)}`, "refresh");
 }

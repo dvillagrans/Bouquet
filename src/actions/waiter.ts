@@ -3,7 +3,10 @@
 import type { Prisma } from "@/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { parseVariantsJson } from "@/lib/menu-variants";
-import { broadcastGuestOrdersRefresh } from "@/lib/supabase/broadcast-guest-orders";
+import {
+  broadcastGuestOrdersRefresh,
+  broadcastKdsOrdersRefresh,
+} from "@/lib/supabase/broadcast-guest-orders";
 import { revalidatePath } from "next/cache";
 import { getDefaultRestaurant } from "./restaurant";
 import { generateSecureTableCode } from "@/lib/table-qr-code";
@@ -43,10 +46,11 @@ export async function updateTableStatus(tableId: string, status: "DISPONIBLE" | 
     data.joinCode = null;
   }
 
-  await prisma.table.update({ where: { id: tableId }, data });
+  const updated = await prisma.table.update({ where: { id: tableId }, data });
 
   revalidatePath("/mesero");
   revalidatePath("/dashboard/mesas");
+  await broadcastKdsOrdersRefresh(updated.restaurantId);
 }
 
 /**
@@ -75,13 +79,14 @@ export async function regenerateTableQr(tableId: string) {
   }
   if (!newCode) throw new Error("No se pudo regenerar el código QR.");
 
-  await prisma.table.update({
+  const rotated = await prisma.table.update({
     where: { id: tableId },
     data: { qrCode: newCode, joinCode: null },
   });
 
   revalidatePath("/mesero");
   revalidatePath("/dashboard/mesas");
+  await broadcastKdsOrdersRefresh(rotated.restaurantId);
 
   return { qrCode: newCode };
 }
@@ -104,13 +109,14 @@ export async function closeTable(tableId: string) {
   }
 
   // 3. Update table status to SUCIA
-  await prisma.table.update({
+  const closed = await prisma.table.update({
     where: { id: tableId },
     data: { status: "SUCIA" }
   });
 
   revalidatePath("/mesero");
   revalidatePath("/dashboard/mesas");
+  await broadcastKdsOrdersRefresh(closed.restaurantId);
 }
 
 /**
@@ -342,6 +348,7 @@ export async function waiterCreateOrder(
     select: { qrCode: true },
   });
   if (tableRow) await broadcastGuestOrdersRefresh(tableRow.qrCode);
+  await broadcastKdsOrdersRefresh(table.restaurantId);
 
   revalidatePath("/mesero");
   revalidatePath("/cocina");

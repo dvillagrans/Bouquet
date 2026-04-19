@@ -5,7 +5,11 @@ import { requireGuestSessionRow, requireTableJoinGate } from "@/lib/guest-table-
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { broadcastGuestOrdersRefresh, broadcastBillRequested } from "@/lib/supabase/broadcast-guest-orders";
+import {
+  broadcastGuestOrdersRefresh,
+  broadcastBillRequested,
+  broadcastKdsOrdersRefresh,
+} from "@/lib/supabase/broadcast-guest-orders";
 
 export async function submitComensalOrder({
   tableCode,
@@ -79,6 +83,7 @@ export async function submitComensalOrder({
   });
 
   await broadcastGuestOrdersRefresh(table.qrCode);
+  await broadcastKdsOrdersRefresh(table.restaurantId);
 
   revalidatePath("/cocina"); // Despertar el KDS!
 
@@ -182,6 +187,7 @@ export async function guestJoinTable(tableCode: string, guestName: string, pax: 
   if (Object.keys(tableUpdates).length > 0) {
     await prisma.table.update({ where: { id: table.id }, data: tableUpdates });
     revalidatePath("/dashboard/mesas");
+    await broadcastKdsOrdersRefresh(table.restaurantId);
   }
 
   let session = await prisma.session.findFirst({
@@ -307,6 +313,7 @@ export async function payGuestShare(input: {
 
   revalidatePath("/mesero");
   revalidatePath("/dashboard/mesas");
+  await broadcastKdsOrdersRefresh(table.restaurantId);
   return true;
 }
 
@@ -411,6 +418,7 @@ export async function requestBillAndPay(input: RequestBillAndPayInput) {
 
   revalidatePath("/mesero");
   revalidatePath("/dashboard/mesas");
+  await broadcastKdsOrdersRefresh(table.restaurantId);
   return true;
 }
 
@@ -458,6 +466,7 @@ export async function requestBill(tableCode: string, guestName: string) {
 
   revalidatePath("/dashboard/mesas");
   await broadcastBillRequested(tableCode);
+  await broadcastKdsOrdersRefresh(table.restaurantId);
 }
 
 export async function getGuestTableState(tableCode: string, guestName: string) {
@@ -514,6 +523,7 @@ export async function cancelGuestOrder(orderId: string, tableCode: string, guest
   });
 
   await broadcastGuestOrdersRefresh(tableCode);
+  await broadcastKdsOrdersRefresh(table.restaurantId);
 
   revalidatePath("/cocina");
   revalidatePath("/mesero");

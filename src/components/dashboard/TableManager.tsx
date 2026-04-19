@@ -2,7 +2,13 @@
 import { Table } from "@/generated/prisma";
 import TableManagerClient from "./TableManagerClient";
 
-export default function TableManager({ initialTables }: { initialTables: Table[] }) {
+export default function TableManager({
+  initialTables,
+  restaurantId,
+}: {
+  initialTables: Table[];
+  restaurantId: string;
+}) {
   const NOISE_SVG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIj4KICA8ZmlsdGVyIGlkPSJub2lzZSI+CiAgICA8ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC44NSIgbnVtT2N0YXZlcz0iMyIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPgogIDwvZmlsdGVyPgogIDxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNub2lzZSkiIG9wYWNpdHk9IjAuMDgiIG1peC1ibGVuZC1tb2RlPSJvdmVybGF5IiAvPgo8L3N2Zz4=";
 
   return (
@@ -17,7 +23,7 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
       </div>
 
       <div className="relative z-10 px-6 py-12 md:px-12 md:py-16 mx-auto max-w-[1600px]">
-        <TableManagerClient initialTables={initialTables} />
+        <TableManagerClient initialTables={initialTables} restaurantId={restaurantId} />
       </div>
     </div>
   );

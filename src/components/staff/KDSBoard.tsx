@@ -376,14 +376,16 @@ export default function KDSBoard({
   initialOrders,
   defaultStation,
   restaurantId,
+  initialNowMs,
 }: {
   initialOrders: Order[];
   defaultStation?: "cocina" | "barra";
   restaurantId?: string;
+  initialNowMs?: number;
 }) {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>(initialOrders);
-  const [now, setNow] = useState(new Date());
+  const [now, setNow] = useState<Date>(() => new Date(initialNowMs ?? Date.now()));
   const [showHistory, setShowHistory] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mobileColumn, setMobileColumn] = useState<ColumnId>("pending");

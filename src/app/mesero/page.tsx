@@ -14,7 +14,7 @@ export default async function WaiterPage() {
     <WaiterDashboard
       allowJoinTables={restaurant.allowWaiterJoinTables}
       restaurantId={restaurant.id}
+      restaurantName={restaurant.name}
     />
   );
 }
-

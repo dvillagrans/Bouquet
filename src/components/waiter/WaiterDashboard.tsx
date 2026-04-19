@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Users, RefreshCw, LayoutGrid, Map, Link as LinkIcon, Unlink, QrCode } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "framer-motion";
+import { RefreshCw, LayoutGrid, Link as LinkIcon } from "lucide-react";
 import { getWaiterTablesSummary, regenerateTableQr, updateTableStatus } from "@/actions/waiter";
 import { getTables, joinTables, separateTable } from "@/actions/tables";
 import WaiterTableDetail from "./WaiterTableDetail";
@@ -9,116 +10,110 @@ import FloorMapClient from "@/components/dashboard/FloorMapClient";
 import { createClient } from "@/lib/supabase/client";
 import type { FloorMapTable } from "@/components/dashboard/FloorMap";
 import type { TableStatus } from "@/generated/prisma";
-
-const MXN_FORMATTER = new Intl.NumberFormat("es-MX", {
-  maximumFractionDigits: 0,
-});
+import type { WaiterTableSummary } from "./types";
+import { WaiterMesaCard } from "./WaiterMesaCard";
+import { DynamicIsland } from "./ui/dynamic-island";
+import { SegmentedControl, type SegmentedItem } from "./ui/segmented-control";
+import { AnimatedNumber } from "./ui/animated-number";
+import { MesaCardSkeleton } from "./ui/mesa-card-skeleton";
+import { FloatingActionBar, FloatingActionPrimary } from "./ui/floating-action-bar";
+import { MapLegend } from "./ui/map-legend";
 
 type FilterType = "todas" | "ocupadas" | "pendientes" | "listas" | "sucias";
 type ViewType = "lista" | "mapa";
-
-interface TableSummary {
-  id: string;
-  number: number;
-  capacity: number;
-  status: TableStatus;
-  parentTableId: string | null;
-  qrCode: string;
-  activeSession: { guestName: string; pax: number; createdAt: Date } | null;
-  orderCount: number;
-  pendingCount: number;
-  readyCount: number;
-  billTotal: number;
-}
 
 function isTableBusy(status: TableStatus) {
   return status === "OCUPADA" || status === "CERRANDO";
 }
 
-function tableStatusLabel(status: TableStatus) {
-  if (status === "DISPONIBLE") return "Libre";
-  if (status === "OCUPADA") return "Activa";
-  if (status === "CERRANDO") return "Cuenta";
-  return "Limpieza";
-}
-
-function tableTone(status: TableStatus) {
-  if (status === "DISPONIBLE") {
-    return {
-      card: "border-border-main bg-bg-card border-l-4 border-l-dash-green hover:border-border-bright",
-      chip: "border-border-main bg-bg-solid/80 text-dash-green",
-    };
-  }
-  if (status === "OCUPADA") {
-    return {
-      card: "border-border-main bg-bg-card border-l-4 border-l-gold/80 hover:border-border-bright",
-      chip: "border-border-main bg-bg-solid/80 text-light",
-    };
-  }
-  if (status === "CERRANDO") {
-    return {
-      card: "border-border-main bg-bg-card border-l-4 border-l-gold hover:border-gold/50",
-      chip: "border-border-main bg-bg-solid/80 text-gold",
-    };
-  }
-  return {
-    card: "border-border-main bg-bg-card border-l-4 border-l-dash-red hover:border-dash-red/60",
-    chip: "border-border-main bg-bg-solid/80 text-dash-red",
-  };
+function matchesFilter(t: WaiterTableSummary, filter: FilterType) {
+  if (filter === "ocupadas") return isTableBusy(t.status);
+  if (filter === "pendientes") return t.pendingCount > 0;
+  if (filter === "listas") return t.readyCount > 0;
+  if (filter === "sucias") return t.status === "SUCIA";
+  return true;
 }
 
 export default function WaiterDashboard({
   allowJoinTables = false,
   restaurantId,
+  restaurantName,
 }: {
   allowJoinTables?: boolean;
   restaurantId?: string;
+  restaurantName?: string;
 }) {
-  const [tables, setTables] = useState<TableSummary[]>([]);
+  const reduceMotion = useReducedMotion();
+  const [tables, setTables] = useState<WaiterTableSummary[]>([]);
   const [mapTables, setMapTables] = useState<FloorMapTable[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterType>("todas");
   const [view, setView] = useState<ViewType>("lista");
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [showMapSeatGlyphs, setShowMapSeatGlyphs] = useState(true);
 
   const [isJoinMode, setIsJoinMode] = useState(false);
   const [selectedTablesToJoin, setSelectedTablesToJoin] = useState<string[]>([]);
   const [isJoining, setIsJoining] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
-  const loadTables = useCallback(async () => {
+  const [banner, setBanner] = useState<string | null>(null);
+  const prevReadySum = useRef(-1);
+
+  const [confirmQr, setConfirmQr] = useState<{ id: string; number: number } | null>(null);
+  const [qrErrorByTable, setQrErrorByTable] = useState<Record<string, string>>({});
+
+  const loadTables = useCallback(async (opts?: { silent?: boolean }) => {
     try {
-      setLoading(true);
-      const [summary, full] = await Promise.all([
-        getWaiterTablesSummary(),
-        getTables(),
-      ]);
-      setTables(summary);
+      if (!opts?.silent) setLoading(true);
+      const [summary, full] = await Promise.all([getWaiterTablesSummary(), getTables()]);
+      setTables(summary as WaiterTableSummary[]);
       setMapTables(full);
     } catch (error) {
       console.error("Error loading tables:", error);
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    const sum = tables.reduce((s, t) => s + t.readyCount, 0);
+    if (prevReadySum.current === -1) {
+      prevReadySum.current = sum;
+      return;
+    }
+    if (sum > prevReadySum.current) {
+      setBanner("Hay platos listos para servir");
+      const t = window.setTimeout(() => setBanner(null), 3200);
+      prevReadySum.current = sum;
+      return () => window.clearTimeout(t);
+    }
+    prevReadySum.current = sum;
+  }, [tables]);
+
+  const handleManualRefresh = () => {
+    setRefreshing(true);
+    void loadTables({ silent: true }).finally(() => setRefreshing(false));
+  };
 
   const handleCleanTable = async (tableId: string) => {
     try {
       await updateTableStatus(tableId, "DISPONIBLE");
-      await loadTables();
+      await loadTables({ silent: true });
     } catch (error) {
       console.error("Error cleaning table:", error);
       setToast({ type: "error", message: "Error al liberar la mesa" });
     }
   };
 
-  const openTableDetail = async (table: TableSummary) => {
+  const openTableDetail = async (table: WaiterTableSummary) => {
     if (isJoinMode) return;
 
     if (table.status === "DISPONIBLE") {
       try {
         await regenerateTableQr(table.id);
-        await loadTables();
+        await loadTables({ silent: true });
         setToast({
           type: "success",
           message: `Mesa ${table.number}: código QR actualizado`,
@@ -138,29 +133,40 @@ export default function WaiterDashboard({
     setSelectedTable(table.id);
   };
 
-  const [confirmQr, setConfirmQr] = useState<{ id: string; number: number } | null>(null);
-
   const handleRegenerateQr = async (tableId: string, tableNumber: number) => {
     if (confirmQr?.id !== tableId) {
       setConfirmQr({ id: tableId, number: tableNumber });
-      setTimeout(() => setConfirmQr(null), 4000);
+      window.setTimeout(() => setConfirmQr(null), 4000);
       return;
     }
     setConfirmQr(null);
     try {
       const result = await regenerateTableQr(tableId);
       setToast({ type: "success", message: `Mesa ${tableNumber}: nuevo QR ${result.qrCode}` });
-      await loadTables();
+      setQrErrorByTable((prev) => {
+        const n = { ...prev };
+        delete n[tableId];
+        return n;
+      });
+      await loadTables({ silent: true });
     } catch (error) {
       console.error("Error regenerating table QR:", error);
-      setToast({ type: "error", message: (error as Error).message || "Error regenerando el QR" });
+      const msg = (error as Error).message || "Error regenerando el QR";
+      setQrErrorByTable((prev) => ({ ...prev, [tableId]: msg }));
+      window.setTimeout(() => {
+        setQrErrorByTable((prev) => {
+          const n = { ...prev };
+          delete n[tableId];
+          return n;
+        });
+      }, 4000);
     }
   };
 
   const handleToggleJoinTable = (tableId: string, isParent: boolean) => {
     if (isParent) return;
-    setSelectedTablesToJoin((prev) => 
-      prev.includes(tableId) ? prev.filter((id) => id !== tableId) : [...prev, tableId]
+    setSelectedTablesToJoin((prev) =>
+      prev.includes(tableId) ? prev.filter((id) => id !== tableId) : [...prev, tableId],
     );
   };
 
@@ -170,10 +176,11 @@ export default function WaiterDashboard({
     const [parentId, ...childIds] = selectedTablesToJoin;
     try {
       await joinTables(parentId, childIds);
-      await loadTables();
+      await loadTables({ silent: true });
       setIsJoinMode(false);
       setSelectedTablesToJoin([]);
-    } catch(err) {
+      setToast({ type: "success", message: "Mesas unidas correctamente" });
+    } catch (err) {
       console.error(err);
       setToast({ type: "error", message: "Error al unir mesas" });
     } finally {
@@ -184,29 +191,27 @@ export default function WaiterDashboard({
   const handleSeparate = async (childId: string) => {
     try {
       await separateTable(childId);
-      await loadTables();
-    } catch(err) {
+      await loadTables({ silent: true });
+    } catch (err) {
       console.error(err);
       setToast({ type: "error", message: "Error al separar la mesa" });
     }
   };
 
   useEffect(() => {
-    loadTables();
-    const interval = setInterval(loadTables, 10000);
-    return () => clearInterval(interval);
+    void loadTables({ silent: false });
+    const interval = window.setInterval(() => void loadTables({ silent: true }), 10000);
+    return () => window.clearInterval(interval);
   }, [loadTables]);
 
   useEffect(() => {
     if (!restaurantId) return;
     const supabase = createClient();
     const channelName = `kds-orders:${encodeURIComponent(restaurantId)}`;
-    const channel = supabase
-      .channel(channelName)
-      .on("broadcast", { event: "refresh" }, () => {
-        void loadTables();
-      })
-      .subscribe();
+    const channel = supabase.channel(channelName).on("broadcast", { event: "refresh" }, () => {
+      void loadTables({ silent: true });
+    });
+    void channel.subscribe();
     return () => {
       void supabase.removeChannel(channel);
     };
@@ -214,51 +219,92 @@ export default function WaiterDashboard({
 
   useEffect(() => {
     if (!toast) return;
-    const timeout = setTimeout(() => setToast(null), 3500);
-    return () => clearTimeout(timeout);
+    const timeout = window.setTimeout(() => setToast(null), 3500);
+    return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  // Filter tables
-  const filteredTables = tables.filter((t) => {
-    if (filter === "ocupadas") return isTableBusy(t.status);
-    if (filter === "pendientes") return t.pendingCount > 0;
-    if (filter === "listas") return t.readyCount > 0;
-    if (filter === "sucias") return t.status === "SUCIA";
-    return true;
-  });
+  const filteredTables = useMemo(() => tables.filter((t) => matchesFilter(t, filter)), [tables, filter]);
 
-  // Calculate stats
-  const stats = {
-    occupied: tables.filter((t) => isTableBusy(t.status)).length,
-    pending: tables.reduce((sum, t) => sum + t.pendingCount, 0),
-    ready: tables.reduce((sum, t) => sum + t.readyCount, 0),
-    dirty: tables.filter((t) => t.status === "SUCIA").length,
-    revenue: tables.reduce((sum, t) => sum + t.billTotal, 0),
-  };
+  const sortedFilteredTables = useMemo(() => {
+    const list = [...filteredTables];
+    list.sort((a, b) => {
+      const score = (t: WaiterTableSummary) =>
+        (t.readyCount > 0 ? 1000 : 0) +
+        (t.pendingCount > 0 ? 120 : 0) +
+        (t.status === "SUCIA" ? 80 : 0) +
+        (isTableBusy(t.status) ? 40 : 0);
+      return score(b) - score(a);
+    });
+    return list;
+  }, [filteredTables]);
 
-  const filterItems: Array<{
-    id: FilterType;
-    label: string;
-    count?: number;
-  }> = [
+  const filteredMapTables = useMemo(() => {
+    const ids = new Set(filteredTables.map((t) => t.id));
+    return mapTables.filter((t) => ids.has(t.id));
+  }, [mapTables, filteredTables]);
+
+  const stats = useMemo(() => {
+    const occupied = tables.filter((t) => isTableBusy(t.status)).length;
+    const pending = tables.reduce((sum, t) => sum + t.pendingCount, 0);
+    const ready = tables.reduce((sum, t) => sum + t.readyCount, 0);
+    const dirty = tables.filter((t) => t.status === "SUCIA").length;
+    return { occupied, pending, ready, dirty };
+  }, [tables]);
+
+  const weekdayLabel = useMemo(() => {
+    const raw = new Intl.DateTimeFormat("es-MX", { weekday: "long" }).format(new Date());
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }, []);
+
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((x) => x + 1), 60000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const clockLive = useMemo(() => {
+    void tick;
+    return new Intl.DateTimeFormat("es-MX", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date());
+  }, [tick]);
+
+  const filterItems: SegmentedItem<FilterType>[] = [
     { id: "todas", label: "Todas" },
-    { id: "ocupadas", label: "Ocupadas", count: stats.occupied },
-    { id: "pendientes", label: "En cocina", count: stats.pending },
-    { id: "listas", label: "Listos", count: stats.ready },
-    { id: "sucias", label: "Limpiar", count: stats.dirty },
+    { id: "ocupadas", label: "Ocupadas", count: stats.occupied, dotClass: "bg-gold" },
+    { id: "pendientes", label: "Cocina", count: stats.pending, dotClass: "bg-gold/70" },
+    { id: "listas", label: "Listos", count: stats.ready, dotClass: "bg-dash-green" },
+    { id: "sucias", label: "Limpiar", count: stats.dirty, dotClass: "bg-dash-red" },
+  ];
+
+  const viewItems: SegmentedItem<ViewType>[] = [
+    { id: "lista", label: "Lista", dotClass: "bg-text-muted" },
+    { id: "mapa", label: "Mapa", dotClass: "bg-text-muted" },
   ];
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-bg-solid text-text-primary">
+    <div className="relative min-h-[100dvh] overflow-x-hidden bg-bg-solid text-text-primary">
+      {refreshing && tables.length > 0 && (
+        <div
+          className="pointer-events-none fixed inset-x-0 top-0 z-[75] h-px overflow-hidden"
+          aria-hidden
+        >
+          <div className="waiter-sync-scan h-full w-[45%] bg-gradient-to-r from-transparent via-gold/55 to-transparent" />
+        </div>
+      )}
+
       {toast && (
         <div
           className="fixed inset-x-0 top-4 z-[80] flex justify-center px-4"
           role={toast.type === "error" ? "alert" : "status"}
           aria-live={toast.type === "error" ? "assertive" : "polite"}
-          style={{ animation: "fade-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both" }}
+          style={{
+            animation: reduceMotion ? undefined : "fade-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both",
+          }}
         >
           <div
-            className={`flex items-center gap-3 rounded-full border px-5 py-2.5 shadow-[0_12px_35px_rgba(0,0,0,0.45)] backdrop-blur-md ${
+            className={`flex items-center gap-3 rounded-full border px-5 py-2.5 shadow-[0_14px_36px_rgba(9,9,7,0.55)] backdrop-blur-md ${
               toast.type === "error"
                 ? "border-dash-red/50 bg-dash-red/15 text-dash-red"
                 : "border-dash-green/50 bg-dash-green/15 text-dash-green"
@@ -266,46 +312,41 @@ export default function WaiterDashboard({
           >
             <span
               className={`h-2 w-2 rounded-full ${toast.type === "error" ? "animate-pulse bg-dash-red" : "bg-dash-green"}`}
-              aria-hidden="true"
+              aria-hidden
             />
             <p className="font-mono text-[11px] font-bold uppercase tracking-[0.16em]">{toast.message}</p>
           </div>
         </div>
       )}
 
-      <main className="relative z-10 px-4 pb-10 pt-4 sm:px-6 lg:px-8 lg:pt-5">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-          <header className="flex flex-col gap-3 border-b border-border-main/70 pb-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-baseline gap-3">
-                <h1 className="text-xl font-semibold tracking-tight text-light sm:text-2xl">Mesas</h1>
-                <span className="text-xs text-text-muted">
-                  <span className={`mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle ${loading ? "animate-pulse bg-text-muted" : "bg-dash-green"}`} aria-hidden />
-                  {loading ? "Actualizando…" : "En vivo"}
-                </span>
+      <main className="relative z-10 px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pt-5">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
+          <header className="flex flex-col gap-4 border-b border-border-main/70 pb-5">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="space-y-3">
+                <div className="inline-flex flex-wrap items-center gap-2">
+                  <span className="rounded-full border border-border-main/60 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-text-muted">
+                    {restaurantName ?? "Restaurante"} · {weekdayLabel}
+                  </span>
+                  <DynamicIsland loading={refreshing} banner={banner} />
+                </div>
+                <div>
+                  <h1 className="text-[32px] font-semibold leading-[0.95] tracking-tight text-light sm:text-[40px]">
+                    Mesas
+                  </h1>
+                  <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.18em] text-text-muted">
+                    <AnimatedNumber value={stats.occupied} /> en piso · {clockLive}
+                  </p>
+                </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex rounded-lg border border-border-main bg-bg-card p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setView("lista")}
-                    className={`inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-xs font-medium ${
-                      view === "lista" ? "bg-bg-solid text-light" : "text-text-muted hover:text-light"
-                    }`}
-                  >
-                    <LayoutGrid className="h-3.5 w-3.5" aria-hidden /> Lista
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setView("mapa")}
-                    className={`inline-flex min-h-9 items-center gap-1.5 rounded-md px-3 text-xs font-medium ${
-                      view === "mapa" ? "bg-bg-solid text-light" : "text-text-muted hover:text-light"
-                    }`}
-                  >
-                    <Map className="h-3.5 w-3.5" aria-hidden /> Mapa
-                  </button>
-                </div>
+              <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                <SegmentedControl
+                  pillLayoutId="waiter-view-pill"
+                  items={viewItems}
+                  value={view}
+                  onChange={setView}
+                />
 
                 {allowJoinTables && (
                   <button
@@ -314,291 +355,263 @@ export default function WaiterDashboard({
                       setIsJoinMode(!isJoinMode);
                       setSelectedTablesToJoin([]);
                     }}
-                    className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg border px-3 text-xs font-medium ${
-                      isJoinMode ? "border-gold bg-gold/15 text-gold" : "border-border-main text-text-muted hover:border-border-bright hover:text-light"
+                    className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-xs font-medium transition active:scale-[0.98] ${
+                      isJoinMode
+                        ? "border-gold bg-gold/15 text-gold"
+                        : "border-border-main text-text-muted hover:border-border-bright hover:text-light"
                     }`}
                   >
-                    <LinkIcon className="h-3.5 w-3.5" aria-hidden />
+                    <LinkIcon className="h-4 w-4 shrink-0" aria-hidden strokeWidth={1.8} />
                     {isJoinMode ? "Cancelar unión" : "Unir mesas"}
-                  </button>
-                )}
-
-                {isJoinMode && selectedTablesToJoin.length >= 2 && (
-                  <button
-                    type="button"
-                    onClick={handleConfirmJoin}
-                    disabled={isJoining}
-                    className="inline-flex min-h-9 items-center rounded-lg border border-gold bg-gold px-3 text-xs font-semibold text-bg-solid hover:bg-gold-light disabled:opacity-50"
-                  >
-                    {isJoining ? "Uniendo…" : "Confirmar unión"}
                   </button>
                 )}
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setLoading(true);
-                    void loadTables();
-                  }}
-                  disabled={loading}
-                  className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-border-main px-3 text-xs font-medium text-text-muted hover:border-border-bright hover:text-light disabled:opacity-50"
+                  onClick={() => void handleManualRefresh()}
+                  disabled={refreshing}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border-main px-4 text-xs font-medium text-text-muted transition hover:border-border-bright hover:text-light disabled:opacity-50 active:scale-[0.98]"
                   title="Actualizar datos"
                 >
-                  <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} strokeWidth={1.7} aria-hidden />
+                  <RefreshCw className={`h-4 w-4 shrink-0 ${refreshing ? "animate-spin" : ""}`} strokeWidth={1.7} aria-hidden />
                   Actualizar
                 </button>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs tabular-nums text-text-muted">
-              <span>
-                Activas <strong className="font-semibold text-light">{stats.occupied}</strong>
-              </span>
-              <span aria-hidden className="text-border-main">
-                ·
-              </span>
-              <span>
-                Cocina <strong className="font-semibold text-light">{stats.pending}</strong>
-              </span>
-              <span aria-hidden className="text-border-main">
-                ·
-              </span>
-              <span>
-                Listos <strong className="font-semibold text-light">{stats.ready}</strong>
-              </span>
-              <span aria-hidden className="text-border-main">
-                ·
-              </span>
-              <span>
-                Limpiar <strong className="font-semibold text-light">{stats.dirty}</strong>
-              </span>
-              <span aria-hidden className="text-border-main">
-                ·
-              </span>
-              <span className="text-text-muted/90">
-                Ingresos{" "}
-                <strong className="font-semibold text-light">${MXN_FORMATTER.format(stats.revenue)}</strong>
-              </span>
+            <div className="flex flex-wrap items-stretch divide-x divide-border-main/70 overflow-hidden rounded-2xl border border-border-main/80 bg-bg-card">
+              {(
+                [
+                  ["Activas", stats.occupied, "text-light", false],
+                  ["Cocina", stats.pending, "text-light", false],
+                  ["Listos", stats.ready, "text-light", true],
+                  ["Limpiar", stats.dirty, "text-light", false],
+                ] as const
+              ).map(([label, val, color, pulseDot]) => (
+                <div
+                  key={label}
+                  className="min-w-[calc(50%-1px)] flex-1 px-4 py-3 text-center sm:min-w-0"
+                >
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                    {label}
+                  </p>
+                  <p className={`mt-1 flex items-center justify-center gap-2 font-mono text-2xl font-semibold tabular-nums ${color}`}>
+                    {pulseDot && val > 0 ? (
+                      <span className="h-2 w-2 animate-pulse rounded-full bg-dash-green" aria-hidden />
+                    ) : null}
+                    <AnimatedNumber value={val as number} />
+                  </p>
+                </div>
+              ))}
             </div>
           </header>
 
           {view === "lista" && (
-            <section className="rounded-lg border border-border-main bg-bg-card p-3 sm:p-4">
-              <div className="overflow-x-auto scrollbar-hide">
-                <div className="inline-flex min-w-max gap-1.5">
-                  {filterItems.map((item) => {
-                    const active = filter === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setFilter(item.id)}
-                        className={`inline-flex min-h-9 items-center gap-2 rounded-md border px-3 text-xs font-medium transition ${
-                          active
-                            ? "border-border-bright bg-bg-solid text-light"
-                            : "border-transparent bg-transparent text-text-muted hover:bg-bg-solid/80 hover:text-light"
-                        }`}
-                      >
-                        <span>{item.label}</span>
-                        {item.count !== undefined ? (
-                          <span className="tabular-nums opacity-80">{item.count}</span>
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+            <section className="overflow-x-auto scrollbar-hide pb-1">
+              <SegmentedControl
+                pillLayoutId="waiter-filter-pill"
+                items={filterItems}
+                value={filter}
+                onChange={setFilter}
+                scrollClassName="snap-x overflow-x-auto scrollbar-hide pb-1"
+              />
             </section>
           )}
 
           {view === "mapa" && (
-            <section className="rounded-lg border border-border-main bg-bg-card p-4 sm:p-5">
-              {loading && mapTables.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-text-muted">
-                  <RefreshCw className="mb-3 h-7 w-7 animate-spin" strokeWidth={1.6} aria-hidden />
-                  <p className="text-sm">Cargando mapa…</p>
+            <section className="relative overflow-hidden rounded-[1.25rem] border border-border-main bg-bg-card">
+              <div className="sticky top-0 z-20 border-b border-border-main/80 bg-bg-solid/90 px-3 py-2 backdrop-blur-md">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">
+                    Mapa · {filteredMapTables.length} mesas
+                  </p>
+                  <div className="flex flex-wrap gap-3 font-mono text-[11px] tabular-nums text-light">
+                    <span className="text-text-muted">
+                      Cocina <strong className="text-light">{stats.pending}</strong>
+                    </span>
+                    <span className="text-text-muted">
+                      Listos <strong className="text-dash-green">{stats.ready}</strong>
+                    </span>
+                  </div>
                 </div>
-              ) : (
-                <FloorMapClient
-                  tables={mapTables}
-                  readOnly
-                  onTableClick={(id) => {
-                    const t = tables.find((x) => x.id === id);
-                    if (t) void openTableDetail(t);
-                  }}
-                />
-              )}
+              </div>
+              <div className="relative">
+                {loading && mapTables.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-text-muted">
+                    <RefreshCw className="mb-3 h-7 w-7 animate-spin" strokeWidth={1.6} aria-hidden />
+                    <p className="text-sm">Cargando mapa…</p>
+                  </div>
+                ) : (
+                  <>
+                    <FloorMapClient
+                      tables={filteredMapTables}
+                      readOnly
+                      showSeatGlyphs={showMapSeatGlyphs}
+                      onTableClick={(id) => {
+                        const t = tables.find((x) => x.id === id);
+                        if (t) void openTableDetail(t);
+                      }}
+                    />
+                    <MapLegend
+                      showCapacity={showMapSeatGlyphs}
+                      onToggleCapacity={() => setShowMapSeatGlyphs((s) => !s)}
+                    />
+                  </>
+                )}
+              </div>
             </section>
           )}
 
           {view === "lista" && (
-            <section className="space-y-4">
-              {loading && tables.length === 0 ? (
-                <div className="rounded-lg border border-border-main bg-bg-card py-16 text-center text-text-muted">
-                  <RefreshCw className="mx-auto mb-3 h-7 w-7 animate-spin" strokeWidth={1.6} aria-hidden />
-                  <p className="text-sm">Cargando mesas…</p>
-                </div>
-              ) : filteredTables.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border-main bg-bg-card px-6 py-14 text-center text-sm text-text-muted">
-                  No hay mesas con este filtro.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                  {filteredTables.map((table) => {
-                    const isSelectedToJoin = selectedTablesToJoin.includes(table.id);
-                    const isChild = !!table.parentTableId;
-                    const hasChildren = tables.some((t) => t.parentTableId === table.id);
-                    const tone = tableTone(table.status);
+            <LayoutGroup>
+              <section className="space-y-4">
+                {loading && tables.length === 0 ? (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <MesaCardSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : sortedFilteredTables.length === 0 ? (
+                  <div className="rounded-[1.25rem] border border-dashed border-border-main bg-bg-card px-6 py-16 text-center">
+                    <LayoutGrid className="mx-auto mb-4 h-12 w-12 text-text-muted/50" strokeWidth={1.2} aria-hidden />
+                    <p className="text-sm text-text-muted">No hay mesas con este filtro.</p>
+                    <button
+                      type="button"
+                      onClick={() => setFilter("todas")}
+                      className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full border border-border-bright bg-bg-solid px-6 text-xs font-semibold text-light transition hover:border-gold hover:text-gold active:scale-[0.98]"
+                    >
+                      Ver todas las mesas
+                    </button>
+                  </div>
+                ) : (
+                  <motion.div
+                    className="grid grid-cols-1 items-stretch gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                    initial={reduceMotion ? false : "hidden"}
+                    animate="show"
+                    variants={{
+                      hidden: {},
+                      show: {
+                        transition: { staggerChildren: reduceMotion ? 0 : 0.04 },
+                      },
+                    }}
+                  >
+                    {sortedFilteredTables.map((table) => {
+                      const isSelectedToJoin = selectedTablesToJoin.includes(table.id);
+                      const isChild = !!table.parentTableId;
+                      const hasChildren = tables.some((t) => t.parentTableId === table.id);
 
-                    return (
-                      <article
-                        key={table.id}
-                        onClick={() => {
-                          if (isJoinMode) {
-                            handleToggleJoinTable(table.id, isChild);
-                          } else {
-                            void openTableDetail(table);
-                          }
-                        }}
-                        className={`relative overflow-hidden rounded-xl border p-4 sm:p-5 ${tone.card} ${
-                          isSelectedToJoin ? "ring-2 ring-gold ring-offset-2 ring-offset-bg-solid" : ""
-                        } ${isChild ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:border-border-bright"}`}
-                      >
-                        {isSelectedToJoin && (
-                          <div className="absolute right-3 top-3 z-20 inline-flex h-6 min-w-6 items-center justify-center rounded-full border border-gold bg-gold px-1.5 font-mono text-[10px] font-bold text-bg-solid">
-                            {selectedTablesToJoin.indexOf(table.id) + 1}
-                          </div>
-                        )}
-
-                        {isChild && (
-                          <div className="absolute left-3 top-3 z-20 inline-flex items-center gap-1 rounded-full border border-border-main/70 bg-bg-solid/70 px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-text-muted">
-                            Vinculada
-                            {allowJoinTables && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void handleSeparate(table.id);
-                                }}
-                                className="text-text-muted transition hover:text-dash-red"
-                                title="Separar"
-                              >
-                                <Unlink size={11} />
-                              </button>
-                            )}
-                          </div>
-                        )}
-
-                        {hasChildren && (
-                          <div className="absolute right-3 top-3 z-20 rounded-full border border-gold/35 bg-gold/15 px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-gold">
-                            Master
-                          </div>
-                        )}
-
-                        <div className="relative z-10 flex h-full flex-col gap-4">
-                          <header className="flex items-start justify-between gap-3">
-                            <span
-                              className={`inline-flex rounded-full border px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] ${tone.chip}`}
-                            >
-                              {tableStatusLabel(table.status)}
-                            </span>
-                            {isTableBusy(table.status) && (
-                              <div className="inline-flex items-center gap-1 rounded-full border border-border-main/70 bg-bg-solid/60 px-2 py-1 font-mono text-[10px] font-bold text-light">
-                                <Users className="h-3.5 w-3.5 text-text-muted" strokeWidth={1.8} />
-                                {table.activeSession?.pax ?? 0}
-                              </div>
-                            )}
-                          </header>
-
-                          <div className="space-y-1">
-                            <p className="text-[11px] font-medium text-text-muted">Mesa</p>
-                            <p className="text-3xl font-semibold tabular-nums leading-none tracking-tight text-light sm:text-4xl">{table.number}</p>
-                            {table.activeSession ? (
-                              <p className="line-clamp-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-gold">
-                                {table.activeSession.guestName}
-                              </p>
-                            ) : (
-                              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-text-muted">
-                                Esperando comensales
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="mt-auto space-y-3">
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div className="rounded-md border border-border-main bg-bg-solid/80 px-2 py-1.5 tabular-nums text-text-muted">
-                                Cocina <span className="ml-1 font-semibold text-light">{table.pendingCount}</span>
-                              </div>
-                              <div className="rounded-md border border-border-main bg-bg-solid/80 px-2 py-1.5 tabular-nums text-text-muted">
-                                Listos <span className="ml-1 font-semibold text-light">{table.readyCount}</span>
-                              </div>
-                            </div>
-
-                            {isTableBusy(table.status) && table.billTotal > 0 && (
-                              <div className="rounded-md border border-border-main bg-bg-solid/80 px-3 py-2 text-sm font-semibold tabular-nums text-light">
-                                ${MXN_FORMATTER.format(table.billTotal)}
-                              </div>
-                            )}
-
-                            {table.status === "SUCIA" && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void handleCleanTable(table.id);
-                                }}
-                                className="inline-flex min-h-10 w-full items-center justify-center rounded-md border border-border-main bg-bg-solid px-2.5 text-xs font-medium text-light transition hover:border-dash-red hover:bg-dash-red/10"
-                              >
-                                Marcar libre
-                              </button>
-                            )}
-
-                            {table.status === "DISPONIBLE" && !isChild && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  void handleRegenerateQr(table.id, table.number);
-                                }}
-                                className={`inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition ${
-                                  confirmQr?.id === table.id
-                                    ? "border-gold bg-gold text-bg-solid"
-                                    : "border-border-main text-text-muted hover:border-gold hover:text-gold"
-                                }`}
-                                title="Generar nuevo QR"
-                              >
-                                <QrCode className="h-3.5 w-3.5" />
-                                {confirmQr?.id === table.id ? "Confirmar QR" : "Renovar QR"}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
+                      return (
+                        <motion.div
+                          key={table.id}
+                          className="h-full min-h-0"
+                          variants={{
+                            hidden: { opacity: 0, y: 8 },
+                            show: {
+                              opacity: 1,
+                              y: 0,
+                              transition: { type: "spring", stiffness: 380, damping: 28 },
+                            },
+                          }}
+                        >
+                          <WaiterMesaCard
+                            table={table}
+                            allowJoinTables={allowJoinTables}
+                            isJoinMode={isJoinMode}
+                            isSelectedToJoin={isSelectedToJoin}
+                            joinOrderIndex={selectedTablesToJoin.indexOf(table.id)}
+                            isChild={isChild}
+                            hasChildren={
+                              hasChildren && !(isJoinMode && isSelectedToJoin)
+                            }
+                            qrError={qrErrorByTable[table.id]}
+                            confirmQrId={confirmQr?.id ?? null}
+                            onCardClick={() => {
+                              if (isJoinMode) {
+                                handleToggleJoinTable(table.id, !!table.parentTableId);
+                              } else {
+                                void openTableDetail(table);
+                              }
+                            }}
+                            onClean={() => void handleCleanTable(table.id)}
+                            onRegenerateQr={() => void handleRegenerateQr(table.id, table.number)}
+                            onSeparate={() => void handleSeparate(table.id)}
+                          />
+                        </motion.div>
+                      );
+                    })}
+                  </motion.div>
+                )}
+              </section>
+            </LayoutGroup>
           )}
         </div>
       </main>
 
-      <style dangerouslySetInnerHTML={{__html:`
+      <AnimatePresence>
+        {isJoinMode && (
+          <FloatingActionBar key="fab-join">
+            <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsJoinMode(false);
+                  setSelectedTablesToJoin([]);
+                }}
+                className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full border border-border-main px-4 text-xs font-semibold text-text-muted transition hover:border-border-bright hover:text-light active:scale-[0.98]"
+              >
+                Cancelar
+              </button>
+              <div className="flex min-h-11 flex-1 flex-wrap items-center gap-2">
+                <AnimatePresence>
+                  {selectedTablesToJoin.map((id) => {
+                    const num = tables.find((t) => t.id === id)?.number ?? "?";
+                    return (
+                      <motion.span
+                        key={id}
+                        layout
+                        initial={{ opacity: 0, scale: 0.85 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gold/40 bg-gold/15 font-mono text-sm font-bold text-gold"
+                      >
+                        {num}
+                      </motion.span>
+                    );
+                  })}
+                </AnimatePresence>
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-text-muted">
+                  {selectedTablesToJoin.length} seleccionadas
+                </span>
+              </div>
+              <FloatingActionPrimary
+                label="Confirmar unión"
+                disabled={selectedTablesToJoin.length < 2}
+                busy={isJoining}
+                onClick={() => void handleConfirmJoin()}
+              />
+            </div>
+          </FloatingActionBar>
+        )}
+      </AnimatePresence>
+
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes fade-in {
           from { opacity: 0; transform: translateY(-8px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-      `}} />
+      ` }} />
 
-      {/* Table Detail Modal */}
       {selectedTable && (
         <WaiterTableDetail
           tableId={selectedTable}
           restaurantId={restaurantId}
+          presentation={view === "mapa" ? "sheetMd" : "modal"}
           onClose={() => setSelectedTable(null)}
           onRefresh={() => {
-            loadTables();
+            void loadTables({ silent: true });
           }}
         />
       )}
     </div>
   );
 }
-

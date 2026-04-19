@@ -1,15 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Plus, Receipt, Lock, Copy, ExternalLink, CheckCheck, Loader2, Share2 } from "lucide-react";
+import { Plus, Lock, Copy, ExternalLink, CheckCheck, Loader2, Share2, X } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { advanceOrderStatus } from "@/actions/orders";
 import { getTableDetail, closeTable } from "@/actions/waiter";
 import { createClient } from "@/lib/supabase/client";
 import WaiterTakeOrder from "./WaiterTakeOrder";
 import WaiterPayment from "./WaiterPayment";
+import { SegmentedControl, type SegmentedItem } from "./ui/segmented-control";
+import { cn } from "@/lib/utils";
 
-type TabType = "orders" | "add-items" | "payment" | "close";
+type TabType = "orders" | "add-items" | "payment";
 
 interface OrderItem {
   id: string;
@@ -38,12 +40,13 @@ interface TableDetailData {
 export default function WaiterTableDetail({
   tableId,
   restaurantId,
+  presentation = "modal",
   onClose,
   onRefresh,
 }: {
   tableId: string;
-  /** Mismo canal Realtime que cocina/listado mesero (`kds-orders:*`). */
   restaurantId?: string;
+  presentation?: "modal" | "sheetMd";
   onClose: () => void;
   onRefresh: () => void;
 }) {
@@ -67,7 +70,7 @@ export default function WaiterTableDetail({
   }, [tableId]);
 
   useEffect(() => {
-    loadTableDetail();
+    void loadTableDetail();
   }, [loadTableDetail]);
 
   useEffect(() => {
@@ -88,6 +91,12 @@ export default function WaiterTableDetail({
   useEffect(() => {
     setOrigin(typeof window !== "undefined" ? window.location.origin : "");
   }, []);
+
+  useEffect(() => {
+    if (!tableData?.session && (activeTab === "add-items" || activeTab === "payment")) {
+      setActiveTab("orders");
+    }
+  }, [tableData?.session, activeTab]);
 
   const handleAddItems = async () => {
     setActiveTab("add-items");
@@ -131,9 +140,11 @@ export default function WaiterTableDetail({
 
   if (loading || !tableData) {
     return (
-      <div className="fixed inset-0 bg-canvas/90 backdrop-blur-sm flex items-center justify-center z-50">
-        <div className="bg-panel border border-wire p-6 rounded text-light">
-          Cargando detalles de mesa...
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-solid/90 backdrop-blur-sm">
+        <div className="rounded-[1.75rem] border border-border-main bg-bg-card p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <div className="rounded-[calc(1.75rem-0.375rem)] border border-border-main/50 bg-bg-solid px-8 py-10 font-mono text-xs uppercase tracking-[0.18em] text-text-muted shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
+            Cargando detalles…
+          </div>
         </div>
       </div>
     );
@@ -141,7 +152,6 @@ export default function WaiterTableDetail({
 
   const { table, session, orders } = tableData;
 
-  /** Enlace de invitados (incluye `?k=`); el QR impreso debe coincidir con lo que espera la app. */
   const guestMenuUrl =
     origin && tableData.guestEntryRelativePath ? `${origin}${tableData.guestEntryRelativePath}` : "";
 
@@ -149,6 +159,16 @@ export default function WaiterTableDetail({
     session && new Date(session.createdAt)
       ? Math.floor((Date.now() - new Date(session.createdAt).getTime()) / 60000)
       : 0;
+
+  const tabItems: SegmentedItem<TabType>[] = [
+    { id: "orders", label: `Órdenes (${orders.length})`, dotClass: "bg-text-muted" },
+  ];
+  if (session) {
+    tabItems.push(
+      { id: "add-items", label: "Agregar", dotClass: "bg-gold/70" },
+      { id: "payment", label: "Pagar", dotClass: "bg-dash-green/80" },
+    );
+  }
 
   const handleShareGuestQr = async () => {
     const url = guestMenuUrl;
@@ -209,235 +229,227 @@ export default function WaiterTableDetail({
     }
   };
 
+  const sheet = presentation === "sheetMd";
+
   return (
-    <div className="fixed inset-0 bg-canvas/90 backdrop-blur-sm z-50 flex items-end md:items-center md:justify-center">
-      <div className="w-full md:max-w-2xl bg-panel border border-wire rounded-t-2xl md:rounded-2xl max-h-[90vh] overflow-hidden flex flex-col animation:fade-in">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-wire p-4 sticky top-0 bg-canvas">
-          <div>
-            <h2 className="text-xl font-bold text-light">Mesa {table.number}</h2>
-            {session && (
-              <p className="text-sm text-dim mt-1">
-                {session.guestName} • {session.pax} personas • {seatedMinutes} min
-              </p>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="text-dim hover:text-light transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center rounded active:bg-wire/20"
-            aria-label="Cerrar"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* QR menú — mesa libre */}
-        {table.status === "DISPONIBLE" && !session && guestMenuUrl && (
-          <div className="border-b border-wire bg-gradient-to-b from-glow/10 to-transparent px-4 py-6">
-            <p className="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-glow">
-              Escanear para entrar a la mesa y ver el menú
-            </p>
-            <div className="mx-auto mt-4 flex max-w-sm flex-col items-center gap-4">
-              <div className="rounded-2xl bg-white p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)]">
-                <QRCodeCanvas
-                  ref={qrCanvasRef}
-                  value={guestMenuUrl}
-                  size={224}
-                  level="M"
-                  marginSize={2}
-                  bgColor="#FFFFFF"
-                  fgColor="#000000"
-                  title={`Código QR de acceso — Mesa ${table.number}`}
-                />
-              </div>
-              <p className="break-all text-center font-mono text-[10px] leading-relaxed text-dim">
-                {guestMenuUrl}
-              </p>
-              <div className="flex w-full flex-wrap justify-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => void handleShareGuestQr()}
-                  className="inline-flex items-center gap-2 rounded-lg border border-glow bg-glow/15 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-glow transition-colors hover:bg-glow/25"
-                  aria-label="Compartir código QR o enlace"
-                >
-                  <Share2 className="h-3.5 w-3.5" />
-                  Compartir
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(guestMenuUrl);
-                    } catch {
-                      alert("No se pudo copiar el enlace");
-                    }
-                  }}
-                  className="inline-flex items-center gap-2 rounded-lg border border-glow/40 bg-glow/10 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-glow transition-colors hover:bg-glow/20"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                  Copiar enlace
-                </button>
-                <button
-                  type="button"
-                  onClick={() => window.open(guestMenuUrl, "_blank", "noopener,noreferrer")}
-                  className="inline-flex items-center gap-2 rounded-lg border border-wire bg-wire/10 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-light transition-colors hover:bg-wire/20"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  Probar acceso
-                </button>
-              </div>
-            </div>
-          </div>
+    <div
+      className={cn(
+        "fixed inset-0 z-50 flex",
+        sheet ? "items-end justify-center md:items-stretch md:justify-end md:bg-transparent" : "items-end justify-center md:items-center",
+      )}
+    >
+      <button
+        type="button"
+        className={cn(
+          "absolute inset-0 bg-bg-solid/90 backdrop-blur-sm",
+          sheet && "md:bg-black/35 md:backdrop-blur-none",
         )}
+        aria-label="Cerrar panel"
+        onClick={onClose}
+      />
 
-        {/* Tabs */}
-        <div className="flex gap-1 border-b border-wire px-4 pt-3 overflow-x-auto scrollbar-hide">
-          <button
-            onClick={() => setActiveTab("orders")}
-            className={`pb-3 px-3 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-colors min-h-[44px] flex items-end ${
-              activeTab === "orders" ? "text-glow border-b-2 border-glow" : "text-dim hover:text-light"
-            }`}
-          >
-            Órdenes ({orders.length})
-          </button>
-          {session && (
-            <>
-              <button
-                onClick={() => setActiveTab("add-items")}
-                className={`pb-3 px-3 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-colors min-h-[44px] flex items-end gap-1 ${
-                  activeTab === "add-items" ? "text-glow border-b-2 border-glow" : "text-dim hover:text-light"
-                }`}
-              >
-                <Plus className="h-3 w-3 mb-0.5" /> Agregar
-              </button>
-              <button
-                onClick={() => setActiveTab("payment")}
-                className={`pb-3 px-3 text-sm font-bold uppercase tracking-wider whitespace-nowrap transition-colors min-h-[44px] flex items-end gap-1 ${
-                  activeTab === "payment" ? "text-glow border-b-2 border-glow" : "text-dim hover:text-light"
-                }`}
-              >
-                <Receipt className="h-3 w-3 mb-0.5" /> Pagar
-              </button>
-            </>
-          )}
-        </div>
+      <div
+        className={cn(
+          "relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden border border-border-main bg-bg-card shadow-[0_24px_60px_-20px_rgba(9,9,7,0.65)] sm:max-h-[90vh]",
+          sheet
+            ? "rounded-t-[1.75rem] md:my-4 md:mr-4 md:max-h-[calc(100vh-2rem)] md:w-full md:max-w-md md:rounded-[1.75rem]"
+            : "rounded-t-[1.75rem] md:max-w-2xl md:rounded-[1.75rem]",
+        )}
+      >
+        <div className="rounded-[calc(1.75rem-0.125rem)] border border-border-main/35 bg-bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border-main/70 bg-bg-solid/95 px-4 py-3 backdrop-blur-md">
+            <div className="min-w-0">
+              <h2 className="truncate text-xl font-semibold tracking-tight text-light">Mesa {table.number}</h2>
+              {session ? (
+                <p className="mt-1 truncate font-mono text-[11px] uppercase tracking-[0.14em] text-text-muted">
+                  {session.guestName} · {session.pax} pax · {seatedMinutes} min
+                </p>
+              ) : null}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-full border border-border-main text-text-muted transition hover:border-border-bright hover:text-light active:scale-[0.98]"
+              aria-label="Cerrar"
+            >
+              <X className="h-5 w-5" strokeWidth={1.8} />
+            </button>
+          </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {/* Orders Tab */}
-          {activeTab === "orders" && (
-            <div className="space-y-3">
-              {orders.length === 0 ? (
-                <div className="text-center py-8 text-dim">
-                  <p className="text-sm">No hay órdenes en esta mesa</p>
-                </div>
-              ) : (
-                orders.map((order) => (
-                  <div
-                    key={order.id}
-                    className={`border rounded p-4 ${
-                      order.status === "PENDING"
-                        ? "border-glow/40 bg-glow/5"
-                        : order.status === "PREPARING"
-                        ? "border-glow/20 bg-glow/3"
-                        : order.status === "READY"
-                        ? "border-sage-deep/40 bg-sage-deep/5"
-                        : "border-wire/40 bg-wire/5"
-                    }`}
-                  >
-                    {/* Order header */}
-                    <div className="flex items-center gap-2 mb-3">
-                      <span
-                        className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded ${
-                          order.status === "PENDING"
-                            ? "bg-glow/20 text-glow"
-                            : order.status === "PREPARING"
-                            ? "bg-glow/10 text-glow"
-                            : order.status === "READY"
-                            ? "bg-sage-deep/20 text-sage-deep"
-                            : "bg-wire/20 text-dim"
-                        }`}
-                      >
-                        {order.status === "PENDING"
-                          ? "Pendiente"
-                          : order.status === "PREPARING"
-                          ? "Preparando"
-                          : order.status === "READY"
-                          ? "Listo"
-                          : "Entregado"}
-                      </span>
-                      <span className="text-xs text-dim">
-                        {new Date(order.createdAt).toLocaleTimeString("es-MX", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-
-                    {/* Items always visible */}
-                    <div className="space-y-2">
-                      {order.items.map((item) => (
-                        <div key={item.id} className="flex justify-between text-sm">
-                          <div>
-                            <p className="text-light">
-                              {item.quantity}x {item.name}
-                            </p>
-                            {item.notes && <p className="text-xs text-dim italic">{item.notes}</p>}
-                          </div>
-                          <p className="text-light font-mono">${item.totalPrice.toFixed(2)}</p>
-                        </div>
-                      ))}
-                    </div>
-
-                    {order.status === "READY" && (
-                      <button
-                        type="button"
-                        onClick={() => void handleMarkDelivered(order.id)}
-                        disabled={deliveringOrderId === order.id}
-                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-sage-deep px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-canvas transition-colors hover:bg-sage-deep/90 disabled:opacity-60 active:scale-[0.98]"
-                      >
-                        {deliveringOrderId === order.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                        ) : (
-                          <CheckCheck className="h-4 w-4" aria-hidden />
-                        )}
-                        Marcar entregado
-                      </button>
-                    )}
+          {table.status === "DISPONIBLE" && !session && guestMenuUrl ? (
+            <div className="border-b border-border-main/70 bg-gradient-to-b from-gold/10 to-transparent px-4 py-6">
+              <p className="text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-gold">
+                Escanear para entrar a la mesa y ver el menú
+              </p>
+              <div className="mx-auto mt-5 flex max-w-sm flex-col items-center gap-4">
+                <div className="rounded-[1.25rem] border border-border-main bg-bg-solid p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                  <div className="rounded-[calc(1.25rem-0.375rem)] border border-border-main/40 bg-white p-4 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]">
+                    <QRCodeCanvas
+                      ref={qrCanvasRef}
+                      value={guestMenuUrl}
+                      size={224}
+                      level="M"
+                      marginSize={2}
+                      bgColor="#FFFFFF"
+                      fgColor="#000000"
+                      title={`Código QR de acceso — Mesa ${table.number}`}
+                    />
                   </div>
-                ))
-              )}
+                </div>
+                <p className="break-all text-center font-mono text-[10px] leading-relaxed text-text-muted">
+                  {guestMenuUrl}
+                </p>
+                <div className="flex w-full flex-wrap justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleShareGuestQr()}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-gold/45 bg-gold/12 px-4 text-[11px] font-bold uppercase tracking-wider text-gold transition hover:bg-gold/20"
+                    aria-label="Compartir código QR o enlace"
+                  >
+                    <Share2 className="h-4 w-4" strokeWidth={1.8} />
+                    Compartir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await navigator.clipboard.writeText(guestMenuUrl);
+                      } catch {
+                        alert("No se pudo copiar el enlace");
+                      }
+                    }}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border-main px-4 text-[11px] font-bold uppercase tracking-wider text-light transition hover:border-border-bright"
+                  >
+                    <Copy className="h-4 w-4" strokeWidth={1.8} />
+                    Copiar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => window.open(guestMenuUrl, "_blank", "noopener,noreferrer")}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border-main px-4 text-[11px] font-bold uppercase tracking-wider text-text-muted transition hover:border-border-bright hover:text-light"
+                  >
+                    <ExternalLink className="h-4 w-4" strokeWidth={1.8} />
+                    Probar
+                  </button>
+                </div>
+              </div>
             </div>
-          )}
+          ) : null}
 
-          {/* Add Items Tab */}
-          {activeTab === "add-items" && session && (
-            <WaiterTakeOrder tableId={tableId} onOrderAdded={handleOrderAdded} />
-          )}
-
-          {/* Payment Tab */}
-          {activeTab === "payment" && session && (
-            <WaiterPayment tableCode={table.qrCode} onPaymentComplete={handlePaymentComplete} />
-          )}
-        </div>
-
-        {/* Footer Actions */}
-        {session && (
-          <div className="border-t border-wire p-4 bg-canvas flex gap-3 flex-wrap">
-            <button
-              onClick={handleAddItems}
-              className="flex-1 min-w-32 flex items-center justify-center gap-2 bg-glow hover:bg-glow/90 text-canvas px-4 py-2 rounded text-sm font-bold uppercase transition-colors"
-            >
-              <Plus className="h-4 w-4" /> Agregar Items
-            </button>
-            <button
-              onClick={handleCloseTable}
-              className="flex-1 min-w-32 border border-wire hover:bg-wire/20 text-light px-4 py-2 rounded text-sm font-bold uppercase transition-colors"
-            >
-              <Lock className="inline h-4 w-4 mr-2" /> Cerrar Mesa
-            </button>
+          <div className="overflow-x-auto border-b border-border-main/70 px-3 pb-3 pt-3 scrollbar-hide">
+            <SegmentedControl
+              pillLayoutId="waiter-detail-tab-pill"
+              items={tabItems}
+              value={activeTab}
+              onChange={(id) => {
+                if (!session && (id === "add-items" || id === "payment")) return;
+                setActiveTab(id);
+              }}
+              scrollClassName="min-w-max"
+            />
           </div>
-        )}
+
+          <div className="max-h-[min(52vh,520px)] overflow-y-auto p-4">
+            {activeTab === "orders" && (
+              <div className="divide-y divide-border-main/60 rounded-xl border border-border-main/50 bg-bg-solid/40">
+                {orders.length === 0 ? (
+                  <div className="px-4 py-12 text-center text-sm text-text-muted">No hay órdenes en esta mesa</div>
+                ) : (
+                  orders.map((order) => (
+                    <div key={order.id} className="px-4 py-4">
+                      <div className="mb-3 flex flex-wrap items-center gap-2">
+                        <span
+                          className={cn(
+                            "rounded-full px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em]",
+                            order.status === "PENDING" && "bg-gold/15 text-gold",
+                            order.status === "PREPARING" && "bg-gold/10 text-gold",
+                            order.status === "READY" && "bg-dash-green/15 text-dash-green",
+                            order.status === "DELIVERED" && "bg-bg-hover text-text-muted",
+                          )}
+                        >
+                          {order.status === "PENDING"
+                            ? "Pendiente"
+                            : order.status === "PREPARING"
+                              ? "Preparando"
+                              : order.status === "READY"
+                                ? "Listo"
+                                : "Entregado"}
+                        </span>
+                        <span className="font-mono text-[11px] text-text-muted">
+                          {new Date(order.createdAt).toLocaleTimeString("es-MX", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+
+                      <div className="space-y-2">
+                        {order.items.map((item) => (
+                          <div key={item.id} className="flex justify-between gap-3 text-sm">
+                            <div className="min-w-0">
+                              <p className="text-light">
+                                {item.quantity}x {item.name}
+                              </p>
+                              {item.notes ? (
+                                <p className="text-xs italic text-text-muted">{item.notes}</p>
+                              ) : null}
+                            </div>
+                            <p className="shrink-0 font-mono text-light">${item.totalPrice.toFixed(2)}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {order.status === "READY" ? (
+                        <button
+                          type="button"
+                          onClick={() => void handleMarkDelivered(order.id)}
+                          disabled={deliveringOrderId === order.id}
+                          className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-dash-green px-4 text-sm font-bold uppercase tracking-wide text-bg-solid transition hover:opacity-95 disabled:opacity-60 active:scale-[0.98]"
+                        >
+                          {deliveringOrderId === order.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                          ) : (
+                            <CheckCheck className="h-4 w-4" aria-hidden />
+                          )}
+                          Marcar entregado
+                        </button>
+                      ) : null}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {activeTab === "add-items" && session ? (
+              <WaiterTakeOrder tableId={tableId} onOrderAdded={handleOrderAdded} />
+            ) : null}
+
+            {activeTab === "payment" && session ? (
+              <WaiterPayment tableCode={table.qrCode} onPaymentComplete={handlePaymentComplete} />
+            ) : null}
+          </div>
+
+          {session ? (
+            <div className="border-t border-border-main/70 bg-bg-solid px-4 py-4">
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleAddItems}
+                  className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full bg-gold px-4 text-sm font-bold uppercase tracking-wide text-bg-solid transition hover:bg-gold-light active:scale-[0.98]"
+                >
+                  <Plus className="h-4 w-4" strokeWidth={2} /> Agregar ítems
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCloseTable}
+                  className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full border border-border-main px-4 text-sm font-bold uppercase tracking-wide text-light transition hover:border-dash-red hover:bg-dash-red/10 hover:text-dash-red active:scale-[0.98]"
+                >
+                  <Lock className="h-4 w-4" strokeWidth={2} /> Cerrar mesa
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );

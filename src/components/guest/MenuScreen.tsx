@@ -5,14 +5,28 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { submitComensalOrder, getGuestOrders, requestBill, transferHost, getGuestTableState, cancelGuestOrder } from "@/actions/comensal";
-import { GuestMenuThemeToggle } from "@/components/guest/GuestMenuThemeToggle";
+import {
+  CartSummaryBar,
+  CategoryHeading,
+  CategoryTabs,
+  ContextIsland,
+  GuestAvatar,
+  GuestCartPanel,
+  GuestMasthead,
+  GuestToast,
+  MenuRow,
+  OrderSheet,
+  type GuestCartLine,
+  type MenuRowItem,
+  type CategoryTabItem,
+} from "@/components/guest/ui";
 import { createClient } from "@/lib/supabase/client";
 import type { GuestMenuTheme } from "@/lib/guest-menu-theme";
 import { useGuestMenuTheme } from "@/hooks/useGuestMenuTheme";
 import { ChevronDown, Clock, CookingPot, Bell, CheckCircle2, XCircle, AlertTriangle, Share2, X } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { getSignedGuestPreviewUrl } from "@/actions/tables";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface Category {
@@ -20,17 +34,9 @@ interface Category {
   name: string;
 }
 
-interface MenuItem {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
+interface MenuItem extends MenuRowItem {
   categoryId: string;
   categoryName?: string;
-  note?: string;
-  variants: { name: string; price: number }[];
-  isSoldOut?: boolean;
-  isPopular?: boolean;
 }
 
 /** Clave de línea en el carrito: id suelto o JSON { m, v } si hay tamaño. */
@@ -51,95 +57,6 @@ function decodeLineKey(key: string): { menuItemId: string; variantName: string |
   return { menuItemId: key, variantName: null };
 }
 
-// ─── QtyControl ──────────────────────────────────────────────────────────────
-
-function QtyControl({
-  qty,
-  onAdd,
-  onInc,
-  onDec,
-  name,
-}: {
-  qty: number;
-  onAdd: () => void;
-  onInc: () => void;
-  onDec: () => void;
-  name: string;
-}) {
-  const [rippleTick, setRippleTick] = useState(0);
-
-  if (qty === 0) {
-    return (
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => {
-          setRippleTick((t) => t + 1);
-          onAdd();
-        }}
-        aria-label={`Agregar ${name}`}
-        className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl border-2 border-gold/20 bg-gold/5 text-gold transition-all duration-150 hover:border-gold/60 hover:bg-gold/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 guest-dark:border-gold/50 guest-dark:bg-gold/95/40 guest-dark:text-gold/30 guest-dark:hover:border-gold/60/70 guest-dark:hover:bg-gold/95/65"
-      >
-        {rippleTick > 0 && (
-          <motion.span
-            key={rippleTick}
-            className="pointer-events-none absolute inset-0 rounded-xl bg-gold/60/35"
-            initial={{ scale: 0, opacity: 0.6 }}
-            animate={{ scale: 2.2, opacity: 0 }}
-            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
-          />
-        )}
-        <svg viewBox="0 0 16 16" fill="none" className="relative z-[1] h-4 w-4" aria-hidden="true">
-          <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      </motion.button>
-    );
-  }
-  return (
-    <div className="flex items-center gap-2">
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95, opacity: 0.85 }}
-        onClick={onDec}
-        aria-label={`Quitar uno de ${name}`}
-        className="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-gold/30 bg-gold/10 text-gold transition-all hover:border-gold/60 hover:bg-gold/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 guest-dark:border-gold/55 guest-dark:bg-gold/95/55 guest-dark:text-gold/20 guest-dark:hover:border-gold/60 guest-dark:hover:bg-gold/90/60"
-      >
-        <svg viewBox="0 0 16 16" fill="none" className="h-4 w-4" aria-hidden="true">
-          <path d="M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      </motion.button>
-      <span className="w-8 text-center text-sm font-mono font-bold tabular-nums text-gold guest-dark:text-gold/30">
-        {qty}
-      </span>
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 1.05 }}
-        onClick={() => {
-          setRippleTick((t) => t + 1);
-          onInc();
-        }}
-        aria-label={`Agregar otro de ${name}`}
-        className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl border-2 border-gold/30 bg-gold/10 text-gold transition-all hover:border-gold/60 hover:bg-gold/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 guest-dark:border-gold/55 guest-dark:bg-gold/95/55 guest-dark:text-gold/20 guest-dark:hover:border-gold/60 guest-dark:hover:bg-gold/90/60"
-      >
-        {rippleTick > 0 && (
-          <motion.span
-            key={`p-${rippleTick}`}
-            className="pointer-events-none absolute inset-0 rounded-xl bg-gold/60/35"
-            initial={{ scale: 0, opacity: 0.55 }}
-            animate={{ scale: 2.2, opacity: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          />
-        )}
-        <svg viewBox="0 0 16 16" fill="none" className="relative z-[1] h-4 w-4" aria-hidden="true">
-          <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      </motion.button>
-    </div>
-  );
-}
-
-// ─── CartPanel ───────────────────────────────────────────────────────────────
-
 type CartLine = {
   key: string;
   item: MenuItem;
@@ -147,114 +64,6 @@ type CartLine = {
   qty: number;
   unitPrice: number;
 };
-
-interface CartPanelProps {
-  cartLines: CartLine[];
-  cartCount: number;
-  cartTotal: number;
-  partySize: number;
-  tableCode: string;
-  scrollable?: boolean;
-  onRemove: (lineKey: string) => void;
-  onClear: () => void;
-  onClose?: () => void;
-  onCheckout: () => void;
-  isSubmitting?: boolean;
-}
-
-function CartPanel({
-  cartLines, cartCount, cartTotal, partySize, tableCode,
-  scrollable, onRemove, onClear, onClose, onCheckout, isSubmitting
-}: CartPanelProps) {
-  return (
-    <>
-      <div className="flex items-end justify-between border-b border-border-main pb-4">
-        <div>
-          <h2 className="text-2xl font-serif text-text-primary">Tu orden</h2>
-          <p className="text-sm text-text-muted mt-1">
-            Mesa {tableCode}
-          </p>
-        </div>
-        {onClose && (
-          <button
-            onClick={onClose}
-            aria-label="Cerrar orden"
-            className="text-sm font-medium text-text-muted transition-colors hover:text-text-primary"
-          >
-            Cerrar
-          </button>
-        )}
-      </div>
-
-      {cartCount === 0 ? (
-        <p className="mt-8 text-sm text-text-muted italic">
-          Selecciona platillos del menú para agregarlos a tu orden.
-        </p>
-      ) : (
-        <>
-          <div className={`mt-6 divide-y divide-slate-200/30 guest-dark:divide-wire/40 ${scrollable ? "max-h-[38vh] overflow-y-auto" : ""}`}>
-            {cartLines.map((line, idx) => (
-              <motion.div
-                key={line.key}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="flex items-start justify-between gap-4 py-4"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold leading-snug text-slate-900 guest-dark:text-light">{line.item.name}</p>
-                  {line.variantName && (
-                    <p className="mt-1 text-xs font-medium text-gold guest-dark:text-gold/60">{line.variantName}</p>
-                  )}
-                  <p className="mt-2 text-xs text-slate-500 font-mono guest-dark:text-dim">
-                    {line.qty}× · ${(line.unitPrice * line.qty).toLocaleString("es-MX")}
-                  </p>
-                </div>
-                <button
-                  onClick={() => onRemove(line.key)}
-                  aria-label={`Eliminar ${line.item.name}${line.variantName ? ` (${line.variantName})` : ""}`}
-                  className="mt-0.5 shrink-0 text-xs text-slate-400 transition-colors hover:text-red-500 guest-dark:text-dim guest-dark:hover:text-red-400"
-                >
-                  ✕
-                </button>
-              </motion.div>
-            ))}
-          </div>
-
-          <div className="mt-6 border-t border-slate-200/30 pt-6 guest-dark:border-wire/40">
-            <div className="flex items-baseline justify-between">
-              <span className="text-xs font-semibold uppercase tracking-widest text-slate-500 guest-dark:text-dim">Total</span>
-              <span className="font-mono text-2xl font-bold leading-none text-gold guest-dark:text-gold/60">
-                ${cartTotal.toLocaleString("es-MX")}
-              </span>
-            </div>
-            <p className="mt-2 text-xs text-slate-500 guest-dark:text-dim">
-              {cartCount} platillo{cartCount !== 1 ? "s" : ""} · {partySize} comensal{partySize !== 1 ? "es" : ""}
-            </p>
-          </div>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onCheckout}
-            disabled={isSubmitting}
-            className="mt-7 block w-full bg-gold/50 hover:bg-gold py-4 text-center text-sm font-semibold uppercase tracking-wider text-white transition-all duration-200 rounded-xl shadow-lg shadow-gold/50/30 hover:shadow-gold/50/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 disabled:opacity-50 disabled:hover:bg-gold/50 guest-dark:bg-gold guest-dark:hover:bg-gold/50"
-          >
-            {isSubmitting ? "Enviando..." : "Enviar orden"}
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={onClear}
-            className="mt-3 w-full border-2 border-slate-200 hover:border-slate-300 bg-transparent hover:bg-slate-50 py-3 text-xs font-semibold uppercase tracking-widest text-slate-600 transition-all rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50 guest-dark:border-wire guest-dark:text-dim guest-dark:hover:border-glow/40 guest-dark:hover:bg-panel/60 guest-dark:hover:text-light"
-          >
-            Vaciar
-          </motion.button>
-        </>
-      )}
-    </>
-  );
-}
 
 // ─── OrderTracker ────────────────────────────────────────────────────────────
 
@@ -330,52 +139,10 @@ function guestOrderSummaryPreview(order: any): string {
   return summary + (items.length > 2 ? ` +${items.length - 2}` : "");
 }
 
-/** Franja superior: pipeline Pendiente → Preparando → Listo (invitado / tema light). */
-function CookingPipelineBar({
-  pending,
-  preparing,
-  ready,
-}: {
-  pending: number;
-  preparing: number;
-  ready: number;
-}) {
-  if (pending + preparing + ready === 0) return null;
-
-  return (
-    <div className="mt-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 rounded-none border border-border-main bg-bg-solid px-5 py-4 shadow-sm">
-      <span className="text-[0.7rem] uppercase tracking-widest font-medium text-text-muted whitespace-nowrap">
-        Estado de órdenes:
-      </span>
-      <div className="flex flex-wrap items-center gap-5">
-        {pending > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-slate-300"></span>
-            <span className="text-[0.65rem] font-medium text-text-muted uppercase tracking-wider">{pending} Pendiente{pending !== 1 && 's'}</span>
-          </div>
-        )}
-        {preparing > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
-            <span className="text-[0.65rem] font-medium text-text-muted uppercase tracking-wider">{preparing} Preparando</span>
-          </div>
-        )}
-        {ready > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-gold shadow-[0_0_8px_rgba(202,138,4,0.3)]"></span>
-            <span className="text-[0.65rem] font-bold text-text-primary uppercase tracking-wider">{ready} Listo{ready !== 1 && 's'}</span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function OrderTracker({
   orders,
   tableCode,
   guestName,
-  partySize,
   isHost,
   billRequested,
   onRefreshOrders,
@@ -385,7 +152,6 @@ function OrderTracker({
   orders: any[];
   tableCode: string;
   guestName: string;
-  partySize: number;
   isHost: boolean;
   billRequested: boolean;
   onRefreshOrders: () => void | Promise<void>;
@@ -475,23 +241,24 @@ function OrderTracker({
   ).filter(([, n]) => n > 0);
 
   return (
-    <div className="border-b border-slate-200/50 guest-dark:border-wire/50">
+    <div className="border-b border-[var(--guest-divider)]">
       {/* Summary bar — always visible */}
       <button
+        type="button"
         onClick={() => setOpen(v => !v)}
-        className="flex w-full items-center justify-between gap-4 py-6 text-left hover:bg-slate-50/40 transition-colors rounded-lg guest-dark:hover:bg-panel/30"
+        className="flex min-h-[52px] w-full items-center justify-between gap-4 rounded-xl py-5 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--guest-bg-surface)_70%,transparent)]"
         aria-expanded={open}
       >
-        <div className="flex flex-wrap items-center gap-3 min-w-0">
-          <span className="shrink-0 text-xs font-bold uppercase tracking-widest text-slate-600 guest-dark:text-light/85">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <span className="shrink-0 text-xs font-bold uppercase tracking-widest text-[var(--guest-text)]">
             {hasOrderPipeline ? "Detalle de pedidos" : "Tus pedidos"}
           </span>
-          <span className="shrink-0 font-mono text-base font-semibold text-slate-500 guest-dark:text-dim">
+          <span className="shrink-0 font-mono text-base font-semibold text-[var(--guest-muted)]">
             ({orders.length})
           </span>
 
           {active.length === 0 ? (
-            <span className="text-xs font-medium text-gold guest-dark:text-gold/60">
+            <span className="text-xs font-medium text-[var(--guest-gold)]">
               {delivered.length > 0
                 ? "· todos entregados"
                 : cancelledList.length > 0
@@ -503,37 +270,31 @@ function OrderTracker({
               const st = normalizeOrderStatus(status);
               const meta = ORDER_STATUS[st];
               return (
-              <motion.span
-                key={status}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={`inline-flex items-center gap-2 border px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg ${cls}`}
-              >
-                {status === "READY" && (
-                  <motion.span
-                    className="h-2 w-2 rounded-full bg-gold/50 guest-dark:bg-gold/60"
-                    animate={{ opacity: [0.5, 1] }}
-                    transition={{ duration: 1.2, repeat: Infinity }}
-                    aria-hidden="true"
-                  />
-                )}
-                {status === "PREPARING" && (
-                  <motion.span
-                    className="h-2 w-2 rounded-full bg-amber-500 guest-dark:bg-amber-400"
-                    animate={{ opacity: [0.5, 1] }}
-                    transition={{ duration: 1.8, repeat: Infinity }}
-                    aria-hidden="true"
-                  />
-                )}
-                {count} {meta.summary}
-              </motion.span>
+                <span
+                  key={status}
+                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-bold uppercase tracking-wider ${cls}`}
+                >
+                  {status === "READY" && (
+                    <span
+                      className="h-2 w-2 rounded-full bg-[var(--guest-gold)] guest-status-dot-pulse"
+                      aria-hidden="true"
+                    />
+                  )}
+                  {status === "PREPARING" && (
+                    <span
+                      className="h-2 w-2 rounded-full bg-amber-500 guest-status-dot-pulse"
+                      aria-hidden="true"
+                    />
+                  )}
+                  {count} {meta.summary}
+                </span>
               );
             })
           )}
         </div>
 
         <ChevronDown
-          className={`h-5 w-5 shrink-0 text-slate-400 transition-transform duration-300 guest-dark:text-dim ${open ? "rotate-180" : ""}`}
+          className={`h-5 w-5 shrink-0 text-[var(--guest-muted)] transition-transform duration-300 ${open ? "rotate-180" : ""}`}
           aria-hidden="true"
         />
       </button>
@@ -750,21 +511,21 @@ function OrderRow({
       className={[
         "rounded-xl border px-4 py-3.5 transition-all",
         st === "DELIVERED"
-          ? "border-slate-200 bg-slate-50/40 opacity-60 guest-dark:border-wire/50 guest-dark:bg-panel/25"
-          : "border-slate-200/50 bg-white/40 backdrop-blur-sm guest-dark:border-wire/45 guest-dark:bg-panel/35",
+          ? "border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] opacity-60"
+          : "border-[var(--guest-divider)] bg-[var(--guest-bg-surface)]",
         st === "CANCELLED" ? "opacity-50" : "",
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="font-mono text-xs text-slate-400 guest-dark:text-dim">#{order.id.slice(-4)}</span>
+            <span className="font-mono text-xs text-[var(--guest-muted)]">#{order.id.slice(-4)}</span>
             {order.items[0]?.session?.guestName && (
-              <span className="text-xs font-medium text-gold guest-dark:text-gold/60">{order.items[0].session.guestName}</span>
+              <span className="text-xs font-medium text-[var(--guest-gold)]">{order.items[0].session.guestName}</span>
             )}
           </div>
-          <p className="mt-1.5 truncate text-sm font-semibold leading-snug text-slate-900 guest-dark:text-light">{summary}</p>
-          <p className="mt-1.5 text-xs leading-snug text-slate-600 guest-dark:text-dim">{meta.hint}</p>
+          <p className="mt-1.5 truncate text-sm font-semibold leading-snug text-[var(--guest-text)]">{summary}</p>
+          <p className="mt-1.5 text-xs leading-snug text-[var(--guest-muted)]">{meta.hint}</p>
           {canCancel && (
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -804,6 +565,8 @@ interface MenuScreenProps {
   guestName: string;
   partySize: number;
   tableCode: string;
+  tableNumber: number;
+  restaurantName: string;
   initialCategories: Category[];
   initialItems: MenuItem[];
   initialOrders?: any[];
@@ -815,8 +578,22 @@ interface MenuScreenProps {
 
 type CartMap = Record<string, number>;
 
-export function MenuScreen({ guestName, partySize, tableCode, initialCategories, initialItems, initialOrders = [], isHost = false, initialBillRequested = false, initialGuests = [], joinCode }: MenuScreenProps) {
+export function MenuScreen({
+  guestName,
+  partySize,
+  tableCode,
+  tableNumber,
+  restaurantName,
+  initialCategories,
+  initialItems,
+  initialOrders = [],
+  isHost = false,
+  initialBillRequested = false,
+  initialGuests = [],
+  joinCode,
+}: MenuScreenProps) {
   const router = useRouter();
+  const reducedMotion = useReducedMotion();
   const [cart, setCart]               = useState<CartMap>({});
   /** Tamaño elegido por platillo (solo ítems con variantes). */
   const [variantChoice, setVariantChoice] = useState<Record<string, string>>({});
@@ -1101,23 +878,27 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
     cat => visibleItems.some(i => i.categoryId === cat.id)
   );
 
-  const cartPanelProps = {
-    cartLines, cartCount, cartTotal, partySize, tableCode,
-    onRemove: (lineKey: string) => setQty(lineKey, 0),
-    onClear:  () => setCart({}),
-    onCheckout: handleCheckout,
-    isSubmitting: isPending,
-  } satisfies Omit<CartPanelProps, "onClose" | "scrollable">;
+  const guestCartLines: GuestCartLine[] = useMemo(
+    () =>
+      cartLines.map((l) => ({
+        key: l.key,
+        name: l.item.name,
+        variantLabel: l.variantName,
+        qty: l.qty,
+        lineTotal: l.unitPrice * l.qty,
+      })),
+    [cartLines],
+  );
 
-  const active = orders.filter((o) => {
-    const s = normalizeOrderStatus(o.status);
-    return s !== "DELIVERED" && s !== "CANCELLED";
-  });
-  const orderCounts = {
-    PENDING: orders.filter((o) => normalizeOrderStatus(o.status) === "PENDING").length,
-    PREPARING: orders.filter((o) => normalizeOrderStatus(o.status) === "PREPARING").length,
-    READY: orders.filter((o) => normalizeOrderStatus(o.status) === "READY").length,
-  };
+  const categoryTabItems: CategoryTabItem[] = useMemo(() => {
+    const todosCount = initialItems.length;
+    const tabs: CategoryTabItem[] = [{ id: "todos", label: "Todo", count: todosCount }];
+    for (const c of initialCategories) {
+      const n = initialItems.filter((i) => i.categoryId === c.id).length;
+      tabs.push({ id: c.id, label: c.name, count: n });
+    }
+    return tabs;
+  }, [initialCategories, initialItems]);
 
   return (
     <div
@@ -1131,71 +912,54 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
           (
             <div data-guest-theme={menuTheme}>
               <AnimatePresence>
-            {toast && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="fixed inset-x-0 top-8 z-[260] flex justify-center px-4 pointer-events-none"
-                role={toast.type === "error" ? "alert" : "status"}
-                aria-live={toast.type === "error" ? "assertive" : "polite"}
-              >
-                {toast.type === "error" ? (
-                  <div className="pointer-events-auto flex items-center gap-3 border border-red-400/40 bg-white/95 backdrop-blur-sm px-6 py-4 rounded-xl shadow-lg shadow-red-500/20 guest-dark:border-red-500/35 guest-dark:bg-panel/95 guest-dark:shadow-red-950/30">
-                    <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse guest-dark:bg-red-400" aria-hidden="true" />
-                    <p className="text-sm font-semibold uppercase tracking-wider text-red-600 guest-dark:text-red-300">
+                {toast && (
+                  <motion.div
+                    key={`toast-${toast.type}-${toast.message}`}
+                    initial={{ opacity: reducedMotion ? 1 : 0, y: reducedMotion ? 0 : -16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: reducedMotion ? 1 : 0, y: reducedMotion ? 0 : -16 }}
+                    transition={{ duration: reducedMotion ? 0 : 0.22 }}
+                    className="fixed inset-x-0 top-8 z-[260] flex justify-center px-4 pointer-events-none"
+                    role={toast.type === "error" ? "alert" : "status"}
+                    aria-live={toast.type === "error" ? "assertive" : "polite"}
+                  >
+                    <GuestToast tone={toast.type === "error" ? "error" : "success"}>
                       {toast.message}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="pointer-events-auto flex items-center gap-3 border border-gold/60/40 bg-white/95 backdrop-blur-sm px-6 py-4 rounded-xl shadow-lg shadow-gold/50/20 guest-dark:border-gold/50/35 guest-dark:bg-panel/95 guest-dark:shadow-gold/95/40">
-                    <motion.span
-                      className="h-2 w-2 rounded-full bg-gold/50 guest-dark:bg-gold/60"
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 1, repeat: Infinity }}
-                      aria-hidden="true"
-                    />
-                    <p className="text-sm font-semibold uppercase tracking-wider text-gold guest-dark:text-gold/30">
-                      {toast.message}
-                    </p>
-                  </div>
+                    </GuestToast>
+                  </motion.div>
                 )}
-              </motion.div>
-            )}
-            {orderSuccess && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="fixed inset-x-0 top-8 z-[260] flex justify-center px-4 pointer-events-none"
-                role="status"
-                aria-live="polite"
-              >
-                <div className="pointer-events-auto flex items-center gap-3 border border-gold/60/40 bg-white/95 backdrop-blur-sm px-6 py-4 rounded-xl shadow-lg shadow-gold/50/20 guest-dark:border-gold/50/35 guest-dark:bg-panel/95 guest-dark:shadow-gold/95/40">
-                  <motion.span className="h-2 w-2 rounded-full bg-gold/50 guest-dark:bg-gold/60" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1, repeat: Infinity }} aria-hidden="true" />
-                  <p className="text-sm font-semibold uppercase tracking-wider text-gold guest-dark:text-gold/30">
-                    Orden enviada a cocina
-                  </p>
-                </div>
-              </motion.div>
-            )}
-            {orderError && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="fixed inset-x-0 top-8 z-[260] flex justify-center px-4 pointer-events-none"
-                role="alert"
-                aria-live="assertive"
-              >
-                <div className="pointer-events-auto flex items-center gap-3 border border-red-400/40 bg-white/95 backdrop-blur-sm px-6 py-4 rounded-xl shadow-lg shadow-red-500/20 guest-dark:border-red-500/35 guest-dark:bg-panel/95 guest-dark:shadow-red-950/30">
-                  <span className="h-2 w-2 rounded-full bg-red-500 guest-dark:bg-red-400" aria-hidden="true" />
-                  <p className="text-sm font-semibold uppercase tracking-wider text-red-600 guest-dark:text-red-300">
-                    {orderError}
-                  </p>
-                </div>
-              </motion.div>
-            )}
+                {orderSuccess && (
+                  <motion.div
+                    key="order-success"
+                    initial={{ opacity: reducedMotion ? 1 : 0, y: reducedMotion ? 0 : -16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: reducedMotion ? 1 : 0, y: reducedMotion ? 0 : -16 }}
+                    transition={{ duration: reducedMotion ? 0 : 0.22 }}
+                    className="fixed inset-x-0 top-8 z-[260] flex justify-center px-4 pointer-events-none"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <GuestToast tone="success">
+                      Orden enviada a cocina
+                    </GuestToast>
+                  </motion.div>
+                )}
+                {orderError && (
+                  <motion.div
+                    key={`err-${orderError}`}
+                    initial={{ opacity: reducedMotion ? 1 : 0, y: reducedMotion ? 0 : -16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: reducedMotion ? 1 : 0, y: reducedMotion ? 0 : -16 }}
+                    transition={{ duration: reducedMotion ? 0 : 0.22 }}
+                    className="fixed inset-x-0 top-8 z-[260] flex justify-center px-4 pointer-events-none"
+                    role="alert"
+                    aria-live="assertive"
+                  >
+                    <GuestToast tone="error">
+                      {orderError}
+                    </GuestToast>
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
           ),
@@ -1205,251 +969,91 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
 
 
       {/* ── BODY ─────────────────────────────────────────────────────── */}
-      <div className="relative z-10 mx-auto max-w-7xl px-8 pb-32 lg:px-12 lg:pb-24">
-        <div className="lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(260px,3fr)] lg:gap-12 lg:items-start">
-
-          {/* LEFT: carta primero; mesa/cuenta como secundario */}
+      <div className="relative z-10 mx-auto max-w-7xl px-4 pb-36 sm:px-8 lg:px-12 lg:pb-24">
+        <div className="lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(280px,3fr)] lg:gap-12 lg:items-start">
           <div>
-            {/* Carta + cuenta + tema en una sola fila (sin barra sticky extra) */}
-            <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 border-b border-slate-200 pb-4 pt-1 guest-dark:border-wire/50">
-              <div className="min-w-0 flex-1">
-                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-slate-400 guest-dark:text-dim">
-                  Carta
-                </p>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-800 guest-dark:text-light">
-                  <span className="max-w-[min(100%,18rem)] truncate font-semibold" title={guestName}>
-                    {guestName}
-                  </span>
-                  {isHostLive && (
-                    <span className="text-[0.6rem] font-bold uppercase tracking-[0.18em] text-gold guest-dark:text-gold/60">
-                      Anfitrión
-                    </span>
-                  )}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-                {!billRequested ? (
-                  <Link
-                    href={cuentaHref}
-                    className="flex h-8 items-center justify-center rounded-full bg-text-primary px-5 text-[0.65rem] font-bold uppercase tracking-widest text-bg-solid transition-colors hover:bg-text-primary/90"
-                  >
-                    Cuenta y pago
-                  </Link>
-                ) : (
-                  <span className="flex h-8 items-center justify-center rounded-full border border-border-main px-5 text-[0.65rem] font-bold uppercase tracking-widest text-text-muted">
-                    Cuenta solicitada
-                  </span>
-                )}
-                <GuestMenuThemeToggle
-                  mode={menuTheme}
-                  onChange={changeGuestMenuTheme}
-                  className="size-8 border-slate-200/70 bg-slate-50/80 shadow-none hover:bg-slate-100/90 guest-dark:border-wire/55 guest-dark:bg-panel/60 guest-dark:hover:bg-panel"
-                />
-              </div>
+            <GuestMasthead
+              restaurantName={restaurantName}
+              tableNumber={tableNumber}
+              guestName={guestName}
+              isHost={isHostLive}
+              billRequested={billRequested}
+            />
+
+            <div className="sticky top-0 z-30 mt-6 space-y-4 border-b border-[var(--guest-divider)] bg-[color-mix(in_srgb,var(--guest-bg-page)_92%,transparent)] py-4 backdrop-blur-xl">
+              <ContextIsland
+                displayTableCode={displayTableCode}
+                joinCode={joinCode}
+                cuentaHref={cuentaHref}
+                billRequested={billRequested}
+                menuTheme={menuTheme}
+                onThemeChange={changeGuestMenuTheme}
+                onShareQr={() => setQrInviteFullscreenOpen(true)}
+                qrOpen={qrInviteFullscreenOpen}
+                showTransferHost={
+                  Boolean(isHostLive && guests.filter((g) => g.name !== guestName).length > 0 && !billRequested)
+                }
+                onTransferHost={() => setHostTransferDialogOpen(true)}
+              />
+              <CategoryTabs
+                tabs={categoryTabItems}
+                activeId={activeCategory}
+                onChange={setCategory}
+                layoutId="guest-menu-cat"
+              />
             </div>
 
-            {/* Códigos de mesa vs acceso — tarjeta ancho completo de la columna */}
-            <section
-              className="mt-4 flex flex-wrap items-end justify-between gap-4 border-b border-border-main pb-4"
-              aria-label="Identificación de la mesa"
-            >
-              <div className="flex gap-8">
-                <div>
-                  <p className="text-[0.65rem] font-medium text-text-muted">
-                    Código de mesa
-                  </p>
-                  <p
-                    className="mt-1 font-mono text-lg font-normal tracking-wider text-text-primary"
-                    aria-label={`Código de mesa: ${displayTableCode}`}
-                  >
-                    {displayTableCode}
-                  </p>
-                </div>
-                {joinCode && (
-                  <div>
-                    <p className="text-[0.65rem] font-medium text-text-muted">
-                      Código de acceso
-                    </p>
-                    <p
-                      className="mt-1 font-mono text-lg font-normal tracking-wider text-text-primary"
-                      aria-label={`Código de acceso: ${joinCode}`}
-                    >
-                      {joinCode}
-                    </p>
-                  </div>
-                )}
-              </div>
-              <div className="flex shrink-0 flex-wrap items-center justify-end gap-x-3 gap-y-1">
-                <button
-                  type="button"
-                  onClick={() => setQrInviteFullscreenOpen(true)}
-                  className="inline-flex items-center gap-2 text-[0.7rem] font-medium text-text-muted transition-colors hover:text-text-primary"
-                  aria-haspopup="dialog"
-                  aria-expanded={qrInviteFullscreenOpen}
-                  aria-label="Abrir código QR para compartir la mesa"
-                >
-                  <Share2 className="h-3.5 w-3.5" aria-hidden />
-                  Compartir
-                </button>
-                {isHostLive &&
-                  guests.filter((g) => g.name !== guestName).length > 0 &&
-                  !billRequested && (
-                    <>
-                      <span className="text-[0.65rem] text-text-muted/40 select-none" aria-hidden>
-                        ·
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setHostTransferDialogOpen(true)}
-                        className="inline-flex items-center gap-1.5 text-[0.7rem] font-medium text-text-muted underline-offset-4 transition-colors hover:text-gold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/40"
-                        aria-haspopup="dialog"
-                        aria-expanded={hostTransferDialogOpen}
-                      >
-                        Pasar anfitrión
-                      </button>
-                    </>
-                  )}
-              </div>
-            </section>
-
-            {/* Category tabs */}
-            <div
-              className="scrollbar-hide -mx-6 mt-3 flex overflow-x-auto border-b border-slate-200 px-6 lg:mx-0 lg:px-0 guest-dark:border-wire/50"
-              role="tablist"
-              aria-label="Categorías del menú"
-            >
-              {[ { id: "todos", name: "Todo" }, ...initialCategories ].map(({ id, name: label }) => (
-                <button
-                  key={id}
-                  role="tab"
-                  aria-selected={activeCategory === id}
-                  onClick={() => setCategory(id)}
-                  className={[
-                    "shrink-0 px-4 py-3.5 text-xs font-semibold uppercase tracking-widest transition-colors duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                    activeCategory === id
-                      ? "border-b-[2px] border-gold/50 text-gold guest-dark:border-gold/60 guest-dark:text-gold/60"
-                      : "text-slate-600 hover:text-slate-900 guest-dark:text-dim guest-dark:hover:text-light",
-                  ].join(" ")}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {/* Menu rows */}
-            <div role="tabpanel">
+            <div role="tabpanel" className="mt-8">
               {visibleItems.length === 0 && (
-                <p className="py-16 text-center text-[0.75rem] font-medium text-slate-600/60 guest-dark:text-dim/70">
-                  No hay platillos disponibles en esta categoría.
-                </p>
+                <div className="rounded-2xl border border-dashed border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] px-6 py-16 text-center">
+                  <p className="font-serif text-2xl text-[var(--guest-text)]">Sin platillos aquí</p>
+                  <p className="mt-2 text-sm text-[var(--guest-muted)]">
+                    Prueba otra categoría o vuelve a ver toda la carta.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setCategory("todos")}
+                    className="mt-6 min-h-11 rounded-full border border-[var(--guest-divider)] bg-[var(--guest-bg-page)] px-6 text-sm font-semibold text-[var(--guest-text)] transition-colors hover:border-[color-mix(in_srgb,var(--guest-gold)_35%,transparent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color-mix(in_srgb,var(--guest-gold)_45%,transparent)]"
+                  >
+                    Ver toda la carta
+                  </button>
+                </div>
               )}
-              {visibleCats.map(cat => {
-                const items = visibleItems.filter(i => i.categoryId === cat.id);
+              {visibleCats.map((cat) => {
+                const items = visibleItems.filter((i) => i.categoryId === cat.id);
                 if (items.length === 0) return null;
                 return (
-                  <div key={cat.id}>
-                    {activeCategory === "todos" && (
-                      <p className="pb-3 pt-8 text-xs font-semibold uppercase tracking-widest text-slate-500 guest-dark:text-dim">
-                        {cat.name}
-                      </p>
-                    )}
-                    {activeCategory !== "todos" && <div className="pt-8" />}
-                    <div className="flex flex-col gap-4">
-                      {items.map(item => {
-                        const hasVariants = item.variants && item.variants.length > 0;
-                        const selectedVariantName = hasVariants
-                          ? (variantChoice[item.id] ?? item.variants[0]!.name)
-                          : null;
-                        const lineKey = encodeLineKey(item.id, selectedVariantName);
-                        const qty = cart[lineKey] ?? 0;
-                        const unitPrice = hasVariants
-                          ? item.variants.find(v => v.name === selectedVariantName)?.price ?? item.price
-                          : item.price;
-                        const qtyLabel = hasVariants && selectedVariantName
-                          ? `${item.name} (${selectedVariantName})`
-                          : item.name;
-                        return (
-                          <motion.div
-                            key={item.id}
-                            layout
-                            whileHover={{ y: -4, rotateZ: 0.5, transition: { type: "spring", stiffness: 400, damping: 25 } }}
-                            className={[
-                              "flex items-start justify-between gap-6 rounded-2xl border border-slate-200/30 bg-white/40 p-5 shadow-[0_8px_32px_rgba(15,23,42,0.08)] backdrop-blur-md transition-shadow duration-200 hover:shadow-[0_20px_40px_rgba(15,23,42,0.14)] guest-dark:border-wire/45 guest-dark:bg-panel/55 guest-dark:shadow-[0_12px_40px_rgba(0,0,0,0.35)] guest-dark:hover:shadow-[0_20px_48px_rgba(0,0,0,0.45)]",
-                              item.isSoldOut ? "opacity-50" : "",
-                            ].join(" ")}
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-baseline gap-2">
-                                <p className="text-lg font-semibold leading-tight text-slate-900 guest-dark:text-light">
-                                  {item.name}
-                                </p>
-                                {item.isPopular && !item.isSoldOut && (
-                                  <span className="inline-flex items-center rounded-md border border-gold/50/30 bg-gold/50/[0.07] px-2 py-0.5 text-xs font-medium uppercase tracking-wider text-gold guest-dark:border-gold/50/35 guest-dark:bg-gold/95/40 guest-dark:text-gold/30">
-                                    Popular
-                                  </span>
-                                )}
-                                {item.isSoldOut && (
-                                  <span className="inline-flex items-center rounded-md border border-slate-200 px-2 py-0.5 text-xs font-medium uppercase tracking-wider text-slate-500 guest-dark:border-wire guest-dark:text-dim">
-                                    Agotado
-                                  </span>
-                                )}
-                              </div>
-                              <p className="mt-2 text-sm font-medium leading-relaxed text-slate-600 guest-dark:text-dim/90">
-                                {item.description}
-                              </p>
-                              {hasVariants && (
-                                <div
-                                  className="mt-4 flex flex-wrap gap-2"
-                                  role="group"
-                                  aria-label="Tamaño o presentación"
-                                >
-                                  {item.variants.map(v => {
-                                    const active = selectedVariantName === v.name;
-                                    return (
-                                      <button
-                                        key={v.name}
-                                        type="button"
-                                        onClick={() =>
-                                          setVariantChoice(prev => ({ ...prev, [item.id]: v.name }))
-                                        }
-                                        className={[
-                                          "rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]",
-                                          active
-                                            ? "border-0 bg-gold/50 text-white shadow-[0_4px_12px_rgba(16,185,129,0.35)] guest-dark:bg-gold guest-dark:shadow-[0_4px_14px_rgba(16,185,129,0.25)]"
-                                            : "border-0 bg-slate-100 text-slate-700 hover:bg-slate-200/90 guest-dark:bg-panel guest-dark:text-light guest-dark:hover:bg-wire/80",
-                                        ].join(" ")}
-                                      >
-                                        {v.name} ·{" "}
-                                        <span className="font-mono tabular-nums">${v.price.toLocaleString("es-MX")}</span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                              {item.note && (
-                                <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-gold/80 guest-dark:text-gold/60/90">
-                                  {item.note}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex shrink-0 flex-col items-end gap-3">
-                              <span className="font-mono text-base font-semibold tabular-nums text-slate-900 guest-dark:text-light">
-                                ${unitPrice.toLocaleString("es-MX")}
-                              </span>
-                              {!item.isSoldOut && (
-                                <QtyControl
-                                  qty={qty}
-                                  name={qtyLabel}
-                                  onAdd={() => setQty(lineKey, 1)}
-                                  onInc={() => setQty(lineKey, qty + 1)}
-                                  onDec={() => setQty(lineKey, qty - 1)}
-                                />
-                              )}
-                            </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
+                  <div key={cat.id} className="divide-y divide-[var(--guest-divider)]">
+                    <CategoryHeading title={cat.name} count={items.length} />
+                    {items.map((item) => {
+                      const hasVariants = item.variants && item.variants.length > 0;
+                      const selectedVariantName = hasVariants
+                        ? (variantChoice[item.id] ?? item.variants[0]!.name)
+                        : null;
+                      const lineKey = encodeLineKey(item.id, selectedVariantName);
+                      const qty = cart[lineKey] ?? 0;
+                      const unitPrice = hasVariants
+                        ? item.variants.find((v) => v.name === selectedVariantName)?.price ?? item.price
+                        : item.price;
+                      const qtyLabel =
+                        hasVariants && selectedVariantName ? `${item.name} (${selectedVariantName})` : item.name;
+                      return (
+                        <MenuRow
+                          key={item.id}
+                          item={item}
+                          categoryInitial={cat.name}
+                          selectedVariantName={selectedVariantName}
+                          onVariantChange={(name) => setVariantChoice((prev) => ({ ...prev, [item.id]: name }))}
+                          unitPrice={unitPrice}
+                          qty={qty}
+                          qtyLabel={qtyLabel}
+                          onAdd={() => setQty(lineKey, 1)}
+                          onInc={() => setQty(lineKey, qty + 1)}
+                          onDec={() => setQty(lineKey, qty - 1)}
+                          disabledQty={billRequested}
+                        />
+                      );
+                    })}
                   </div>
                 );
               })}
@@ -1460,7 +1064,6 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
                 orders={orders}
                 tableCode={tableCode}
                 guestName={guestName}
-                partySize={partySize}
                 isHost={isHostLive}
                 billRequested={billRequested}
                 onRefreshOrders={refreshOrders}
@@ -1469,34 +1072,39 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
               />
             )}
 
-            <details className="group mt-14 border-t border-slate-200 pt-8 guest-dark:border-wire/50">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-left text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-slate-500 guest-dark:text-dim [&::-webkit-details-marker]:hidden">
+            <details className="group mt-14 border-t border-[var(--guest-divider)] pt-8">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--guest-muted)] [&::-webkit-details-marker]:hidden">
                 <span>Tu mesa y compañeros</span>
-                <ChevronDown className="size-4 shrink-0 text-slate-400 transition-transform duration-200 group-open:rotate-180 guest-dark:text-dim" aria-hidden />
+                <ChevronDown
+                  className="size-4 shrink-0 text-[var(--guest-muted)] transition-transform duration-200 group-open:rotate-180"
+                  aria-hidden
+                />
               </summary>
               <div className="mt-5 space-y-5">
                 {guests.length > 0 && (
                   <div>
-                    <p className="text-[0.52rem] font-bold uppercase tracking-[0.36em] text-slate-500/70 guest-dark:text-dim/70">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--guest-muted)]">
                       En la mesa
                     </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {guests.map(g => (
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      {guests.map((g) => (
                         <span
                           key={g.name}
-                          className={[
-                            "inline-flex items-center gap-1.5 border px-2.5 py-1 text-[0.58rem] font-semibold uppercase tracking-[0.16em]",
-                            g.name === guestName
-                              ? "border-slate-300/20 text-slate-900 guest-dark:border-wire/60 guest-dark:text-light"
-                              : "border-slate-200/50 text-slate-600/50 guest-dark:border-wire/35 guest-dark:text-dim/70",
-                          ].join(" ")}
+                          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] py-1.5 pl-1.5 pr-4 text-sm font-medium text-[var(--guest-text)]"
+                          aria-label={g.isHost ? `${g.name}, anfitrión` : g.name}
                         >
+                          <GuestAvatar name={g.name} size="sm" />
+                          <span className="min-w-0 truncate">{g.name}</span>
                           {g.isHost && (
-                            <svg viewBox="0 0 10 10" fill="none" className="h-2 w-2 shrink-0 text-gold guest-dark:text-gold/60" aria-hidden="true">
-                              <path d="M5 1l1.2 2.5L9 4.1 7 6l.5 2.9L5 7.5 2.5 8.9 3 6 1 4.1l2.8-.6L5 1z" fill="currentColor"/>
+                            <svg
+                              viewBox="0 0 10 10"
+                              fill="none"
+                              className="h-3 w-3 shrink-0 text-[var(--guest-gold)]"
+                              aria-hidden="true"
+                            >
+                              <path d="M5 1l1.2 2.5L9 4.1 7 6l.5 2.9L5 7.5 2.5 8.9 3 6 1 4.1l2.8-.6L5 1z" fill="currentColor" />
                             </svg>
                           )}
-                          {g.name}
                         </span>
                       ))}
                     </div>
@@ -1506,15 +1114,16 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
             </details>
 
             {!billRequested && (
-              <div className="mt-10 border-t border-slate-200/90 pt-6 text-center text-[0.72rem] leading-relaxed text-slate-500 guest-dark:border-wire/45 guest-dark:text-dim">
+              <div className="mt-10 border-t border-[var(--guest-divider)] pt-6 text-center text-sm leading-relaxed text-[var(--guest-muted)]">
                 {isHostLive && guests.filter((g) => g.name !== guestName).length > 0 ? (
                   <p>
                     Si sales antes y sigues como anfitrión,{" "}
-                    <strong className="font-semibold text-slate-700 guest-dark:text-light/90">
-                      pulsa «Pasar anfitrión»
-                    </strong>{" "}
-                    para elegir quién sigue. También puedes{" "}
-                    <Link href={cuentaHref} className="font-medium text-gold underline-offset-2 hover:underline guest-dark:text-gold/60">
+                    <strong className="font-semibold text-[var(--guest-text)]">pulsa «Pasar anfitrión»</strong> para
+                    elegir quién sigue. También puedes{" "}
+                    <Link
+                      href={cuentaHref}
+                      className="font-medium text-[var(--guest-gold)] underline-offset-2 hover:underline"
+                    >
                       pagar solo tu parte
                     </Link>
                     .
@@ -1522,7 +1131,10 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
                 ) : (
                   <p>
                     Si sales antes, puedes{" "}
-                    <Link href={cuentaHref} className="font-medium text-gold underline-offset-2 hover:underline guest-dark:text-gold/60">
+                    <Link
+                      href={cuentaHref}
+                      className="font-medium text-[var(--guest-gold)] underline-offset-2 hover:underline"
+                    >
                       pagar solo tu parte
                     </Link>
                     .
@@ -1532,73 +1144,47 @@ export function MenuScreen({ guestName, partySize, tableCode, initialCategories,
             )}
           </div>
 
-          {/* RIGHT: Sticky order panel (desktop only) */}
-          <aside className="z-20 hidden lg:block lg:self-start lg:sticky lg:top-28">
-            <div className="mt-8 rounded-none border border-border-main bg-bg-solid p-6 shadow-sm">
-              <CartPanel {...cartPanelProps} />
-              {!billRequested && (
-                <div className="mt-6 border-t border-border-main pt-4 flex justify-end">
-                  <Link
-                    href={cuentaHref}
-                    className="text-sm font-medium text-text-primary hover:text-gold transition-colors"
-                  >
-                    Pagar solo tu parte →
-                  </Link>
-                </div>
-              )}
+          <aside className="z-20 hidden lg:block lg:self-start lg:sticky lg:top-8">
+            <div className="mt-8 rounded-[22px] border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] p-6 shadow-[inset_0_1px_0_var(--guest-panel-edge)]">
+              <GuestCartPanel
+                cartLines={guestCartLines}
+                cartCount={cartCount}
+                cartTotal={cartTotal}
+                partySize={partySize}
+                tableCode={tableCode}
+                onRemove={(lineKey) => setQty(lineKey, 0)}
+                onClear={() => setCart({})}
+                onCheckout={handleCheckout}
+                isSubmitting={isPending}
+                cuentaHref={billRequested ? undefined : cuentaHref}
+                showCelebration={orderSuccess}
+              />
             </div>
           </aside>
-
         </div>
       </div>
 
-      {/* ── MOBILE BOTTOM BAR (shown when cart has items) ────────────── */}
-      {cartCount > 0 && (
-        <div
-          className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/40 backdrop-blur-sm px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:hidden guest-dark:border-wire/60 guest-dark:bg-panel/85"
-          style={{ animation: "slide-from-bottom 0.25s cubic-bezier(0.25,0.46,0.45,0.94) both" }}
-        >
-          <button
-            onClick={() => setDrawerOpen(true)}
-            className="flex w-full items-center justify-between rounded-xl bg-gold/50 px-5 py-4 text-white shadow-[0_8px_24px_rgba(16,185,129,0.35)] transition-all active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold/50"
-          >
-            <span className="text-[0.7rem] font-bold uppercase tracking-[0.22em]">
-              {cartCount} platillo{cartCount !== 1 ? "s" : ""} · ${cartTotal.toLocaleString("es-MX")}
-            </span>
-            <span className="flex items-center gap-1.5 text-[0.7rem] font-bold uppercase tracking-[0.22em]">
-              Ver orden
-              <svg viewBox="0 0 16 16" fill="none" className="h-3 w-3" aria-hidden="true">
-                <path d="M3 8h10m-4-4 4 4-4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-          </button>
-        </div>
+      {cartCount > 0 && !drawerOpen && (
+        <CartSummaryBar cartCount={cartCount} cartTotal={cartTotal} onOpen={() => setDrawerOpen(true)} />
       )}
 
-      {/* ── MOBILE DRAWER ────────────────────────────────────────────── */}
-      {drawerOpen && (
-        <div
-          className="fixed inset-0 z-50 lg:hidden"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Tu orden"
-        >
-          <div
-            className="absolute inset-0 bg-white/75 guest-dark:bg-black/65"
-            style={{ animation: "fade-in 0.2s ease-out both" }}
-            onClick={() => setDrawerOpen(false)}
-            aria-hidden="true"
-          />
-          <div
-            className="absolute inset-x-0 bottom-0 border-t border-border-main bg-bg-solid px-6 pt-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-[0_-12px_40px_rgba(0,0,0,0.06)]"
-            style={{ animation: "slide-from-bottom 0.28s cubic-bezier(0.25,0.46,0.45,0.94) both" }}
-          >
-            <div className="mx-auto max-w-lg">
-              <CartPanel {...cartPanelProps} scrollable onClose={() => setDrawerOpen(false)} />
-            </div>
-          </div>
-        </div>
-      )}
+      <OrderSheet open={drawerOpen} onClose={() => setDrawerOpen(false)} titleId="guest-cart-title">
+        <GuestCartPanel
+          cartLines={guestCartLines}
+          cartCount={cartCount}
+          cartTotal={cartTotal}
+          partySize={partySize}
+          tableCode={tableCode}
+          scrollable
+          onRemove={(lineKey) => setQty(lineKey, 0)}
+          onClear={() => setCart({})}
+          onClose={() => setDrawerOpen(false)}
+          onCheckout={handleCheckout}
+          isSubmitting={isPending}
+          cuentaHref={billRequested ? undefined : cuentaHref}
+          showCelebration={orderSuccess}
+        />
+      </OrderSheet>
 
       {qrInviteFullscreenOpen &&
         typeof document !== "undefined" &&

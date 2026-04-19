@@ -5,6 +5,7 @@ import { getMenuData } from "@/actions/menu";
 import { getGuestOrders, getGuestTableState } from "@/actions/comensal";
 import { consumeTableJoinProofQuery } from "@/lib/consume-table-join-proof";
 import { resolveGuestTableAccess } from "@/lib/guest-table-access";
+import { prisma } from "@/lib/prisma";
 
 type MenuPageProps = {
   params: Promise<{ codigo: string }>;
@@ -42,17 +43,26 @@ export default async function MesaMenuPage({ params, searchParams }: MenuPagePro
 
   const { table, guestName, partySize } = access;
 
-  const [{ categories, items }, initialOrders, { isHost, billRequested, guests, joinCode }] = await Promise.all([
+  const [
+    { categories, items },
+    initialOrders,
+    { isHost, billRequested, guests, joinCode },
+    restaurant,
+  ] = await Promise.all([
     getMenuData({ restaurantId: table.restaurantId }),
     getGuestOrders(table.qrCode),
     getGuestTableState(table.qrCode, guestName),
+    prisma.restaurant.findUnique({
+      where: { id: table.restaurantId },
+      select: { name: true },
+    }),
   ]);
 
   return (
-    <div className="min-h-screen bg-bg-solid text-text-primary">
-      {/* Premium Texture */}
-      <div 
-        className="pointer-events-none fixed inset-0 z-0 opacity-40 mix-blend-overlay"
+    <div className="min-h-screen">
+      {/* Textura muy sutil — no compite con la carta */}
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.14] mix-blend-overlay"
         style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
           backgroundRepeat: 'repeat',
@@ -64,6 +74,8 @@ export default async function MesaMenuPage({ params, searchParams }: MenuPagePro
         guestName={guestName}
         partySize={partySize}
         tableCode={table.qrCode}
+        tableNumber={table.number}
+        restaurantName={restaurant?.name ?? "Restaurante"}
         initialCategories={categories}
         initialItems={items}
         initialOrders={initialOrders}

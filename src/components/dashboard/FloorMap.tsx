@@ -76,9 +76,10 @@ interface TableNodeProps {
   selected: string | null;
   onSelect: (id: string | null) => void;
   onDragEnd: (id: string, x: number, y: number) => void;
+  showSeatGlyphs?: boolean;
 }
 
-function TableNode({ table, editMode, selected, onSelect, onDragEnd }: TableNodeProps) {
+function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGlyphs = true }: TableNodeProps) {
   const isSelected = selected === table.id;
   const fill   = STATUS_FILL[table.status];
   const stroke = STATUS_STROKE[table.status];
@@ -152,22 +153,23 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd }: TableNode
       )}
 
       {/* Seat indicators (small dots around the table) */}
-      {Array.from({ length: seatCount }).map((_, i) => {
-        const angle = (i / seatCount) * Math.PI * 2 - Math.PI / 2;
-        const r = half + 11;
-        return (
-          <Circle
-            key={i}
-            x={half + Math.cos(angle) * r}
-            y={half + Math.sin(angle) * r}
-            radius={4}
-            fill={fill + "60"}
-            stroke={stroke}
-            strokeWidth={1}
-            listening={false}
-          />
-        );
-      })}
+      {showSeatGlyphs &&
+        Array.from({ length: seatCount }).map((_, i) => {
+          const angle = (i / seatCount) * Math.PI * 2 - Math.PI / 2;
+          const r = half + 11;
+          return (
+            <Circle
+              key={i}
+              x={half + Math.cos(angle) * r}
+              y={half + Math.sin(angle) * r}
+              radius={4}
+              fill={fill + "60"}
+              stroke={stroke}
+              strokeWidth={1}
+              listening={false}
+            />
+          );
+        })}
 
       {/* Table number */}
       <Text
@@ -203,6 +205,7 @@ const MemoizedTableNode = memo(
     if (prev.editMode !== next.editMode) return false;
     if (prev.onSelect !== next.onSelect) return false;
     if (prev.onDragEnd !== next.onDragEnd) return false;
+    if (prev.showSeatGlyphs !== next.showSeatGlyphs) return false;
 
     const prevIsSelected = prev.selected === prev.table.id;
     const nextIsSelected = next.selected === next.table.id;
@@ -486,9 +489,16 @@ interface FloorMapProps {
   tables: FloorMapTable[];
   readOnly?: boolean;
   onTableClick?: (tableId: string) => void;
+  /** Mostrar puntos de capacidad alrededor de cada mesa (mapa mesero). */
+  showSeatGlyphs?: boolean;
 }
 
-export default function FloorMap({ tables: initialTables, readOnly = false, onTableClick }: FloorMapProps) {
+export default function FloorMap({
+  tables: initialTables,
+  readOnly = false,
+  onTableClick,
+  showSeatGlyphs = true,
+}: FloorMapProps) {
   const [tables, setTables]     = useState<FloorMapTable[]>(initialTables);
   const [editMode, setEditMode] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
@@ -636,6 +646,7 @@ export default function FloorMap({ tables: initialTables, readOnly = false, onTa
                 selected={selected}
                 onSelect={handleTableSelect}
                 onDragEnd={handleDragEnd}
+                showSeatGlyphs={showSeatGlyphs}
               />
             ))}
           </Layer>

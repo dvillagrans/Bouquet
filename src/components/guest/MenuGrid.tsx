@@ -181,7 +181,7 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="space-y-8">
+    <div data-guest-theme="light" className="space-y-8">
       {/* Header con info de la sesión */}
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-4">
@@ -189,7 +189,7 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
             <p className="text-[0.63rem] font-semibold uppercase tracking-[0.28em] text-dim">
               Sesión activa
             </p>
-            <h1 className="mt-2 font-serif text-4xl leading-tight text-light lg:text-5xl">
+            <h1 className="mt-2 font-sans text-4xl leading-tight text-light lg:text-5xl">
               Menú de{" "}
               <span className="bg-gradient-to-r from-glow via-light to-glow bg-clip-text text-transparent">
                 {tableCode}
@@ -290,7 +290,7 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
 
                 {/* Content */}
                 <div className="space-y-2">
-                  <h3 className={`font-serif text-lg leading-tight ${item.isSoldOut ? "text-dim" : "text-light"}`}>{item.name}</h3>
+                  <h3 className={`font-sans text-lg leading-tight ${item.isSoldOut ? "text-dim" : "text-light"}`}>{item.name}</h3>
                   <p className="text-xs leading-relaxed text-light/65 line-clamp-2">{item.description}</p>
 
                   {/* Tags */}
@@ -310,7 +310,7 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
 
                 {/* Price + Add button */}
                 <div className="mt-4 flex items-center justify-between pt-4 border-t border-wire">
-                  <div className={`font-serif text-lg font-semibold ${item.isSoldOut ? "text-dim" : "text-glow"}`}>${item.price}</div>
+                  <div className={`font-mono text-lg font-semibold ${item.isSoldOut ? "text-dim" : "text-glow"}`}>${item.price}</div>
                   <button
                     onClick={() => addToCart(item)}
                     disabled={item.isSoldOut}
@@ -333,7 +333,7 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
         {/* Carrito (Sticky) */}
         <div className="lg:h-fit lg:sticky lg:top-6">
           <div className="space-y-4 rounded-xl border border-wire bg-panel p-5">
-            <h2 className="font-serif text-xl text-light">Tu orden</h2>
+            <h2 className="font-sans text-xl text-light">Tu orden</h2>
 
             {cart.length === 0 ? (
               <p className="text-center text-sm text-light/65 py-8">
@@ -410,10 +410,10 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
                 <div className="space-y-3 border-t border-wire pt-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-light/70">Subtotal ({cartCount} item{cartCount === 1 ? "" : "s"})</span>
-                    <span className="font-serif text-sm font-semibold text-light">${cartTotal}</span>
+                    <span className="font-sans text-sm font-semibold text-light">${cartTotal}</span>
                   </div>
                   <Link 
-                    href={`/mesa/${encodeURIComponent(tableCode)}/cuenta?guest=${encodeURIComponent(guestName)}`}
+                    href={`/mesa/${encodeURIComponent(tableCode)}/cuenta`}
                     className="flex w-full items-center justify-center rounded-lg bg-glow px-4 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-ink transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-glow"
                   >
                     Enviar orden a cocina
@@ -436,7 +436,7 @@ export function MenuGrid({ guestName, partySize, tableCode }: MenuGridProps) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/80 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-[2rem] border border-wire bg-panel p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-serif text-xl text-light">Añadir instrucciones</h3>
+              <h3 className="font-sans text-xl text-light">Añadir instrucciones</h3>
               <button onClick={() => setNoteModalItem(null)} className="text-dim hover:text-light">✕</button>
             </div>
             <p className="text-sm text-dim mb-4">

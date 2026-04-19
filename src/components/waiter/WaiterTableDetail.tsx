@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Plus, Receipt, Lock, Copy, ExternalLink, CheckCheck, Loader2 } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Plus, Receipt, Lock, Copy, ExternalLink, CheckCheck, Loader2, Share2 } from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react";
 import { advanceOrderStatus } from "@/actions/orders";
 import { getTableDetail, closeTable } from "@/actions/waiter";
 import WaiterTakeOrder from "./WaiterTakeOrder";
@@ -27,6 +27,7 @@ interface Order {
 }
 
 interface TableDetailData {
+  guestEntryRelativePath?: string;
   table: { id: string; number: number; capacity: number; status: string; qrCode: string };
   session: { id: string; guestName: string; pax: number; createdAt: Date } | null;
   orders: Order[];
@@ -47,6 +48,7 @@ export default function WaiterTableDetail({
   const [loading, setLoading] = useState(true);
   const [origin, setOrigin] = useState("");
   const [deliveringOrderId, setDeliveringOrderId] = useState<string | null>(null);
+  const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const loadTableDetail = useCallback(async (opts?: { silent?: boolean }) => {
     try {
@@ -118,16 +120,75 @@ export default function WaiterTableDetail({
     );
   }
 
-  const { table, session, orders, billTotal } = tableData;
+  const { table, session, orders } = tableData;
 
-  /** Enlace de invitados: pantalla de acceso (nombre/comensales); el menú abre después del registro. */
+  /** Enlace de invitados (incluye `?k=`); el QR impreso debe coincidir con lo que espera la app. */
   const guestMenuUrl =
-    origin && table.qrCode ? `${origin}/mesa/${encodeURIComponent(table.qrCode)}` : "";
+    origin && tableData.guestEntryRelativePath ? `${origin}${tableData.guestEntryRelativePath}` : "";
 
   const seatedMinutes =
     session && new Date(session.createdAt)
       ? Math.floor((Date.now() - new Date(session.createdAt).getTime()) / 60000)
       : 0;
+
+  const handleShareGuestQr = async () => {
+    const url = guestMenuUrl;
+    if (!url) return;
+    const title = `Mesa ${table.number} · Bouquet`;
+    const text = `Entra al menú de esta mesa en Bouquet.\n${url}`;
+    try {
+      const canvas = qrCanvasRef.current;
+      const pngFile =
+        canvas &&
+        (await new Promise<File | null>((resolve) => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                resolve(null);
+                return;
+              }
+              resolve(
+                new File([blob], `mesa-${table.number}-bouquet-qr.png`, {
+                  type: "image/png",
+                }),
+              );
+            },
+            "image/png",
+            1,
+          );
+        }));
+
+      if (
+        pngFile &&
+        typeof navigator.canShare === "function" &&
+        navigator.canShare({ files: [pngFile] })
+      ) {
+        await navigator.share({
+          files: [pngFile],
+          title,
+          text,
+        });
+        return;
+      }
+
+      if (typeof navigator.share === "function") {
+        await navigator.share({ title, text, url });
+        return;
+      }
+
+      await navigator.clipboard.writeText(url);
+      alert("Enlace copiado (este navegador no abre el menú de compartir).");
+    } catch (err) {
+      const e = err as { name?: string };
+      if (e?.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(url);
+        alert("Enlace copiado al portapapeles.");
+      } catch {
+        alert("No se pudo compartir. Copia el enlace manualmente desde abajo.");
+      }
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-canvas/90 backdrop-blur-sm z-50 flex items-end md:items-center md:justify-center">
@@ -159,12 +220,30 @@ export default function WaiterTableDetail({
             </p>
             <div className="mx-auto mt-4 flex max-w-sm flex-col items-center gap-4">
               <div className="rounded-2xl bg-white p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)]">
-                <QRCodeSVG value={guestMenuUrl} size={224} level="M" marginSize={2} />
+                <QRCodeCanvas
+                  ref={qrCanvasRef}
+                  value={guestMenuUrl}
+                  size={224}
+                  level="M"
+                  marginSize={2}
+                  bgColor="#FFFFFF"
+                  fgColor="#000000"
+                  title={`Código QR de acceso — Mesa ${table.number}`}
+                />
               </div>
               <p className="break-all text-center font-mono text-[10px] leading-relaxed text-dim">
                 {guestMenuUrl}
               </p>
               <div className="flex w-full flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleShareGuestQr()}
+                  className="inline-flex items-center gap-2 rounded-lg border border-glow bg-glow/15 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-glow transition-colors hover:bg-glow/25"
+                  aria-label="Compartir código QR o enlace"
+                >
+                  <Share2 className="h-3.5 w-3.5" />
+                  Compartir
+                </button>
                 <button
                   type="button"
                   onClick={async () => {

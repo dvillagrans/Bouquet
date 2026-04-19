@@ -1,4 +1,8 @@
+import { GuestScanQrGate } from "@/components/guest/GuestScanQrGate";
 import { TableAccessScreen } from "@/components/guest/TableAccessScreen";
+import { consumeTableJoinProofQuery } from "@/lib/consume-table-join-proof";
+import { findTableByQrCode } from "@/lib/find-table-by-qr";
+import { hasTableJoinGate } from "@/lib/guest-table-access";
 import { prisma } from "@/lib/prisma";
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
@@ -8,48 +12,70 @@ type TablePageProps = {
   params: Promise<{
     codigo: string;
   }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
-export default async function TableAccessPage({ params }: TablePageProps) {
+export default async function TableAccessPage({ params, searchParams }: TablePageProps) {
   const { codigo } = await params;
+  const sp = await searchParams;
   const decodedCode = decodeURIComponent(codigo);
 
-  // Check if they already have an active session for this table
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get(`bq_session_${decodedCode}`)?.value;
-  const guestName = cookieStore.get(`bq_guest_${decodedCode}`)?.value;
+  consumeTableJoinProofQuery(decodedCode, sp, `/mesa/${encodeURIComponent(decodedCode)}/`);
 
-  if (sessionId && guestName) {
+  const tableResolved = await findTableByQrCode(decodedCode);
+  const canonicalQr = tableResolved?.qrCode ?? decodedCode;
+
+  // Cookies se guardan con el código QR canónico de BD; también probamos la variante de la URL)
+  const cookieStore = await cookies();
+  const sessionId =
+    cookieStore.get(`bq_session_${canonicalQr}`)?.value ??
+    cookieStore.get(`bq_session_${decodedCode}`)?.value;
+  const guestNameCookie =
+    cookieStore.get(`bq_guest_${canonicalQr}`)?.value ??
+    cookieStore.get(`bq_guest_${decodedCode}`)?.value;
+
+  if (sessionId && guestNameCookie) {
     const activeSession = await prisma.session.findUnique({
       where: { id: sessionId },
       select: { isActive: true, pax: true }
     });
 
     if (activeSession?.isActive) {
-      // Direct pass
-      const query = new URLSearchParams({
-        guest: guestName,
-        pax: String(activeSession.pax),
-        from: "qr",
-      });
-      redirect(`/mesa/${encodeURIComponent(decodedCode)}/menu?${query.toString()}`);
+      redirect(`/mesa/${encodeURIComponent(canonicalQr)}/menu`);
     }
   }
 
-  // Revisamos si la mesa YA tiene una sesion activa
-  const existingSessionForTable = await prisma.session.findFirst({
-    where: { 
-      table: { qrCode: decodedCode }, 
-      isActive: true 
-    },
-    select: { pax: true }
-  });
+  const existingSessionForTable = tableResolved
+    ? await prisma.session.findFirst({
+        where: { tableId: tableResolved.id, isActive: true },
+        select: { pax: true },
+      })
+    : null;
 
-  const table = await prisma.table.findUnique({
-    where: { qrCode: decodedCode }
-  });
+  if (!tableResolved) {
+    return (
+      <TableAccessScreen
+        tableCode={decodedCode}
+        isLikelyValid={false}
+        existingPax={existingSessionForTable?.pax}
+        requiresJoinCode={!!existingSessionForTable}
+      />
+    );
+  }
 
-  return <TableAccessScreen tableCode={decodedCode} isLikelyValid={!!table && table.status !== "SUCIA"} tableNumber={table?.number} existingPax={existingSessionForTable?.pax} requiresJoinCode={!!existingSessionForTable} />;
+  const gateOk = await hasTableJoinGate(tableResolved.qrCode, decodedCode);
+  if (!gateOk) {
+    return <GuestScanQrGate tableNumber={tableResolved.number} />;
+  }
+
+  return (
+    <TableAccessScreen
+      tableCode={decodedCode}
+      isLikelyValid={tableResolved.status !== "SUCIA"}
+      existingPax={existingSessionForTable?.pax}
+      requiresJoinCode={!!existingSessionForTable}
+    />
+  );
 }
 
 export async function generateMetadata({ params }: TablePageProps): Promise<Metadata> {

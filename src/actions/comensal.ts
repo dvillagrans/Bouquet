@@ -1,7 +1,8 @@
 "use server";
 
+import { findTableByQrCode } from "@/lib/find-table-by-qr";
+import { requireGuestSessionRow, requireTableJoinGate } from "@/lib/guest-table-access";
 import { prisma } from "@/lib/prisma";
-import { getDefaultRestaurant } from "./restaurant";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { broadcastGuestOrdersRefresh, broadcastBillRequested } from "@/lib/supabase/broadcast-guest-orders";
@@ -9,55 +10,24 @@ import { broadcastGuestOrdersRefresh, broadcastBillRequested } from "@/lib/supab
 export async function submitComensalOrder({
   tableCode,
   guestName,
-  pax,
+  pax: _pax,
   items
 }: {
   tableCode: string;
   guestName: string;
+  /** Conservado por compatibilidad con el cliente; la sesión define el comensal. */
   pax: number;
   items: { menuItemId: string; quantity: number; variantName?: string | null }[];
 }) {
-  const restaurant = await getDefaultRestaurant();
-
   // Buscar mesa por código
-  const table = await prisma.table.findUnique({
-    where: { qrCode: tableCode }
-  });
+  const table = await findTableByQrCode(tableCode);
 
   if (!table) throw new Error("Mesa no encontrada: " + tableCode);
   if (table.status === "SUCIA") throw new Error("La mesa está siendo limpiada, pide al personal que la habilite.");
   if (table.status === "CERRANDO") throw new Error("El anfitrión ya pidió la cuenta. No se pueden agregar más órdenes.");
 
-  // Buscar o crear la sesión del comensal
-  let session = await prisma.session.findFirst({
-    where: { tableId: table.id, isActive: true, guestName },
-    orderBy: { createdAt: "desc" }
-  });
-
-  if (!session) {
-    // ¿Es el primer comensal en esta mesa?
-    const existingSessions = await prisma.session.count({
-      where: { tableId: table.id, isActive: true }
-    });
-    session = await prisma.session.create({
-      data: {
-        tableId: table.id,
-        guestName,
-        pax,
-        isActive: true,
-        isHost: existingSessions === 0,
-      }
-    });
-
-    // Actualizar mesa a ocupada
-    if (table.status === "DISPONIBLE") {
-      await prisma.table.update({
-        where: { id: table.id },
-        data: { status: "OCUPADA" }
-      });
-      revalidatePath("/dashboard/mesas");
-    }
-  }
+  /** La sesión solo debe existir vía `guestJoinTable`; el nombre efectivo viene de la fila Session. */
+  const sessionRow = await requireGuestSessionRow(table, tableCode, guestName);
 
   // Pre-fetch items para asegurar el precio historico (priceAtTime)
   const itemIds = items.map(i => i.menuItemId);
@@ -87,9 +57,10 @@ export async function submitComensalOrder({
   // Crear la Orden
   const newOrder = await prisma.order.create({
     data: {
-      restaurantId: restaurant.id,
+      /** Debe coincidir con la mesa (no `getDefaultRestaurant`: cookie/sucursal puede diferir del QR). */
+      restaurantId: table.restaurantId,
       tableId: table.id,
-      guestName,
+      guestName: sessionRow.guestName,
       status: "PENDING",
       items: {
         create: items.map(cartItem => {
@@ -100,14 +71,14 @@ export async function submitComensalOrder({
             quantity: cartItem.quantity,
             variantName: vn,
             priceAtTime: dbItem ? priceAtTimeForItem(dbItem, vn) : 0,
-            sessionId: session!.id,
+            sessionId: sessionRow.id,
           };
         })
       }
     }
   });
 
-  await broadcastGuestOrdersRefresh(tableCode);
+  await broadcastGuestOrdersRefresh(table.qrCode);
 
   revalidatePath("/cocina"); // Despertar el KDS!
 
@@ -115,7 +86,7 @@ export async function submitComensalOrder({
 }
 
 export async function getTableBill(tableCode: string) {
-  const table = await prisma.table.findUnique({ where: { qrCode: tableCode } });
+  const table = await findTableByQrCode(tableCode);
   if (!table) throw new Error("Mesa no encontrada");
 
   const activeSessions = await prisma.session.findMany({
@@ -129,7 +100,10 @@ export async function getTableBill(tableCode: string) {
   const sessionIds = activeSessions.map(s => s.id);
 
   const allItems = await prisma.orderItem.findMany({
-    where: { sessionId: { in: sessionIds } },
+    where: {
+      sessionId: { in: sessionIds },
+      order: { status: { not: "CANCELLED" } },
+    },
     include: { menuItem: true },
   });
 
@@ -168,18 +142,35 @@ function generateJoinCode(): string {
   return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
 }
 
+/** Une comensal a la mesa y devuelve el código QR canónico (como en BD) para URL y cookies. */
 export async function guestJoinTable(tableCode: string, guestName: string, pax: number, joinCode?: string) {
-  const table = await prisma.table.findUnique({ where: { qrCode: tableCode } });
-  if (!table) return false;
+  const table = await findTableByQrCode(tableCode);
+  if (!table) {
+    throw new Error("No encontramos esta mesa. Comprueba el código del QR.");
+  }
+  if (table.status === "SUCIA") {
+    throw new Error("La mesa está siendo limpiada. Pide al personal que la habilite.");
+  }
+
+  await requireTableJoinGate(table, tableCode);
+
+  const canonicalQr = table.qrCode;
 
   const existingSessions = await prisma.session.count({
     where: { tableId: table.id, isActive: true }
   });
   const isFirstGuest = existingSessions === 0;
 
-  // Si ya hay alguien en la mesa, verificar el código de acceso
+  // Si ya hay alguien en la mesa, verificar el código de acceso (comparación insensible a mayúsculas)
   if (!isFirstGuest) {
-    if (!joinCode || joinCode.toUpperCase().trim() !== table.joinCode) {
+    const input = (joinCode ?? "").toUpperCase().trim();
+    if (!table.joinCode) {
+      throw new Error(
+        "Esta mesa tiene la sesión incompleta (sin código de acceso). Pide al personal que reinicie la mesa.",
+      );
+    }
+    const stored = table.joinCode.toUpperCase();
+    if (!input || input !== stored) {
       throw new Error("Código de acceso incorrecto.");
     }
   }
@@ -205,19 +196,19 @@ export async function guestJoinTable(tableCode: string, guestName: string, pax: 
   }
 
   const cookieStore = await cookies();
-  cookieStore.set(`bq_session_${tableCode}`, session.id, {
+  cookieStore.set(`bq_session_${canonicalQr}`, session.id, {
     maxAge: 60 * 60 * 12,
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/",
   });
-  cookieStore.set(`bq_guest_${tableCode}`, encodeURIComponent(guestName), {
+  cookieStore.set(`bq_guest_${canonicalQr}`, encodeURIComponent(guestName), {
     maxAge: 60 * 60 * 12,
     httpOnly: false, // para leer en cliente si hace falta
     path: "/",
   });
 
-  return true;
+  return canonicalQr;
 }
 
 // Pago parcial de un comensal sin cerrar la mesa.
@@ -229,23 +220,29 @@ export async function payGuestShare(input: {
   tipRate: number;
   paymentMethod?: "CASH" | "CARD" | "TRANSFER" | "OTHER";
 }) {
+  const base = await findTableByQrCode(input.tableCode);
+  if (!base) throw new Error("Mesa no encontrada");
+
+  const sessionAuth = await requireGuestSessionRow(base, input.tableCode, input.guestName);
+
   const table = await prisma.table.findUnique({
-    where: { qrCode: input.tableCode },
+    where: { id: base.id },
     include: { restaurant: true },
   });
   if (!table) throw new Error("Mesa no encontrada");
 
   const session = await prisma.session.findFirst({
-    where: { tableId: table.id, isActive: true, guestName: input.guestName },
-    orderBy: { createdAt: "desc" },
+    where: { id: sessionAuth.id, tableId: table.id, isActive: true },
   });
   if (!session) throw new Error("El comensal ya no tiene sesión activa.");
+
+  const effectiveGuest = sessionAuth.guestName;
 
   // Calcular subtotal de este comensal
   const myItems = await prisma.orderItem.findMany({
     where: {
       sessionId: session.id,
-      order: { guestName: input.guestName },
+      order: { guestName: effectiveGuest, status: { not: "CANCELLED" } },
     },
     select: { quantity: true, priceAtTime: true },
   });
@@ -283,7 +280,7 @@ export async function payGuestShare(input: {
         allocations: {
           create: {
             sessionId: session.id,
-            guestName: input.guestName,
+            guestName: effectiveGuest,
             amount: amountPaid,
           },
         },
@@ -340,8 +337,11 @@ export async function requestBillAndPay(input: RequestBillAndPayInput) {
   if (!activeSessions.length) throw new Error("No hay sesion activa");
 
   const billItems = await prisma.orderItem.findMany({
-    where: { sessionId: { in: activeSessions.map((s) => s.id) } },
-    select: { quantity: true, priceAtTime: true }
+    where: {
+      sessionId: { in: activeSessions.map((s) => s.id) },
+      order: { status: { not: "CANCELLED" } },
+    },
+    select: { quantity: true, priceAtTime: true },
   });
 
   const subtotal = billItems.reduce((sum, item) => sum + (item.quantity * item.priceAtTime), 0);
@@ -417,8 +417,10 @@ export async function requestBillAndPay(input: RequestBillAndPayInput) {
 // ─── Host: transferir y pedir la cuenta ──────────────────────────────────────
 
 export async function transferHost(tableCode: string, fromGuest: string, toGuest: string) {
-  const table = await prisma.table.findUnique({ where: { qrCode: tableCode } });
+  const table = await findTableByQrCode(tableCode);
   if (!table) throw new Error("Mesa no encontrada");
+
+  await requireGuestSessionRow(table, tableCode, fromGuest);
 
   const [fromSession, toSession] = await Promise.all([
     prisma.session.findFirst({ where: { tableId: table.id, isActive: true, guestName: fromGuest, isHost: true } }),
@@ -439,8 +441,10 @@ export async function transferHost(tableCode: string, fromGuest: string, toGuest
 // ─── Host: pedir la cuenta ───────────────────────────────────────────────────
 
 export async function requestBill(tableCode: string, guestName: string) {
-  const table = await prisma.table.findUnique({ where: { qrCode: tableCode } });
+  const table = await findTableByQrCode(tableCode);
   if (!table) throw new Error("Mesa no encontrada");
+
+  await requireGuestSessionRow(table, tableCode, guestName);
 
   const mySession = await prisma.session.findFirst({
     where: { tableId: table.id, isActive: true, guestName, isHost: true }
@@ -457,8 +461,14 @@ export async function requestBill(tableCode: string, guestName: string) {
 }
 
 export async function getGuestTableState(tableCode: string, guestName: string) {
-  const table = await prisma.table.findUnique({ where: { qrCode: tableCode } });
+  const table = await findTableByQrCode(tableCode);
   if (!table) return { isHost: false, billRequested: false, guests: [] as { name: string; isHost: boolean }[], joinCode: null as string | null };
+
+  try {
+    await requireGuestSessionRow(table, tableCode, guestName);
+  } catch {
+    return { isHost: false, billRequested: false, guests: [] as { name: string; isHost: boolean }[], joinCode: null as string | null };
+  }
 
   const activeSessions = await prisma.session.findMany({
     where: { tableId: table.id, isActive: true },
@@ -472,12 +482,48 @@ export async function getGuestTableState(tableCode: string, guestName: string) {
     isHost,
     billRequested: table.status === "CERRANDO",
     guests: activeSessions.map(s => ({ name: s.guestName, isHost: s.isHost })),
-    joinCode: isHost ? table.joinCode : null, // solo el anfitrión recibe el código
+    /** Misma mesa misma sesión: todos ven el código para invitar (no exponemos si no hay sesión activa). */
+    joinCode: mySession ? table.joinCode : null,
   };
 }
 
+/** Solo mientras está PENDING; mismo comensal que creó el pedido. */
+export async function cancelGuestOrder(orderId: string, tableCode: string, guestName: string) {
+  const table = await findTableByQrCode(tableCode);
+  if (!table) throw new Error("Mesa no encontrada");
+  if (table.status === "CERRANDO") {
+    throw new Error("Ya se pidió la cuenta; no puedes cancelar pedidos.");
+  }
+
+  await requireGuestSessionRow(table, tableCode, guestName);
+
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, tableId: table.id },
+  });
+  if (!order) throw new Error("Pedido no encontrado");
+  if (order.guestName !== guestName) {
+    throw new Error("Solo puedes cancelar tus propios pedidos.");
+  }
+  if (order.status !== "PENDING") {
+    throw new Error("Este pedido ya está en preparación y no puede cancelarse aquí.");
+  }
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { status: "CANCELLED" },
+  });
+
+  await broadcastGuestOrdersRefresh(tableCode);
+
+  revalidatePath("/cocina");
+  revalidatePath("/mesero");
+  revalidatePath("/mesa/[codigo]/menu", "page");
+
+  return { ok: true as const };
+}
+
 export async function getGuestOrders(tableCode: string) {
-  const table = await prisma.table.findUnique({ where: { qrCode: tableCode } });
+  const table = await findTableByQrCode(tableCode);
   if (!table) return [];
 
   const sessions = await prisma.session.findMany({

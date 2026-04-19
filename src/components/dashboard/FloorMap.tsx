@@ -5,6 +5,7 @@ import { Stage, Layer, Rect, Circle, Text, Group } from "react-konva";
 import type Konva from "konva";
 import { Save, Edit3, Eye, Move, Circle as CircleIcon, Square, Activity } from "lucide-react";
 import type { Table, TableStatus } from "@/generated/prisma";
+import { getSignedGuestPreviewUrl } from "@/actions/tables";
 
 /* ── Design tokens (mirrors CSS vars) ─────────────────────────── */
 const C = {
@@ -703,7 +704,17 @@ export default function FloorMap({ tables: initialTables, readOnly = false, onTa
               }
             </button>
             <button
-              onClick={() => window.open(`/mesa/${selectedTable.qrCode}`, "_blank")}
+              type="button"
+              onClick={() =>
+                void (async () => {
+                  try {
+                    const url = await getSignedGuestPreviewUrl(selectedTable.qrCode);
+                    window.open(url, "_blank", "noopener,noreferrer");
+                  } catch {
+                    alert("No se pudo abrir la vista de comensal.");
+                  }
+                })()
+              }
               className="inline-flex h-9 items-center gap-2 border border-wire px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
             >
               Ver menú

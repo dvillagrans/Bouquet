@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Manrope, Geist } from "next/font/google";
-import Script from "next/script";
+import { Cormorant_Garamond, Manrope, Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
+import { ReactGrabDevLoader } from "@/components/dev/ReactGrabDevLoader";
+import { ThemePreferenceSync } from "@/components/theme/theme-preference-sync";
+import { APP_THEME_STORAGE_KEY } from "@/lib/theme-storage";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
 
 const serif = Cormorant_Garamond({
   variable: "--font-cormorant",
@@ -33,23 +42,24 @@ export const viewport = {
   viewportFit: "cover" as const,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const themeCookie = cookieStore.get(APP_THEME_STORAGE_KEY)?.value;
+  const isLight = themeCookie === "light";
+
   return (
-    <html lang="es" className={cn("font-sans", geist.variable)}>
-      <head>
-        {process.env.NODE_ENV === "development" && (
-          <Script
-            src="//unpkg.com/react-grab/dist/index.global.js"
-            crossOrigin="anonymous"
-            strategy="beforeInteractive"
-          />
-        )}
-      </head>
-      <body className={`${serif.variable} ${sans.variable} font-sans antialiased`}>
+    <html
+      lang="es"
+      suppressHydrationWarning
+      className={cn("font-sans", geist.variable, geistMono.variable, !isLight && "dark")}
+    >
+      <body className={`${serif.variable} ${sans.variable} ${geistMono.variable} font-sans antialiased`}>
+        {process.env.NODE_ENV === "development" && <ReactGrabDevLoader />}
+        <ThemePreferenceSync />
         {children}
       </body>
     </html>

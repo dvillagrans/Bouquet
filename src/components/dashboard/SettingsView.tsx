@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Save } from "lucide-react";
 import { updateRestaurantSettings } from "@/actions/restaurant";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export default function SettingsView({ initialSettings }: { initialSettings?: { id: string; allowWaiterJoinTables: boolean } }) {
   const [allowOrders,    setAllowOrders]    = useState(true);
@@ -30,14 +31,17 @@ export default function SettingsView({ initialSettings }: { initialSettings?: { 
           <h1 className="font-serif text-[clamp(2rem,4vw,3rem)] font-medium leading-[0.92] tracking-[-0.02em] text-light">
             Configuración
           </h1>
-          <button 
-            onClick={handleSave}
-            disabled={isSaving}
-            className="inline-flex h-10 items-center gap-2 bg-light px-5 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-ink transition-colors hover:bg-light/90 self-start sm:self-auto disabled:opacity-50"
-          >
-            <Save className="h-3.5 w-3.5" aria-hidden="true" />
-            {isSaving ? "Guardando..." : "Guardar cambios"}
-          </button>
+          <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
+            <ThemeToggle className="border-wire/80 bg-panel/40 shadow-none backdrop-blur-sm" />
+            <button 
+              onClick={handleSave}
+              disabled={isSaving}
+              className="inline-flex h-10 items-center gap-2 bg-light px-5 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-ink transition-colors hover:bg-light/90 disabled:opacity-50"
+            >
+              <Save className="h-3.5 w-3.5" aria-hidden="true" />
+              {isSaving ? "Guardando..." : "Guardar cambios"}
+            </button>
+          </div>
         </div>
       </div>
 

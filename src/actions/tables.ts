@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { getDefaultRestaurant } from "./restaurant";
 import { TableStatus } from "@/generated/prisma";
 import { revalidatePath } from "next/cache";
+import { findTableByQrCode } from "@/lib/find-table-by-qr";
+import { generateSecureTableCode } from "@/lib/table-qr-code";
+import { signTableJoinProof } from "@/lib/table-join-proof";
 
 export async function getTables() {
   const restaurant = await getDefaultRestaurant();
@@ -13,8 +16,13 @@ export async function getTables() {
   });
 }
 
-function generateCode() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
+async function allocateUniqueQrCode(): Promise<string> {
+  for (let attempt = 0; attempt < 24; attempt++) {
+    const candidate = generateSecureTableCode(10);
+    const clash = await prisma.table.findUnique({ where: { qrCode: candidate } });
+    if (!clash) return candidate;
+  }
+  throw new Error("No se pudo generar un código QR único.");
 }
 
 export async function createTable(capacity: number) {
@@ -35,12 +43,14 @@ export async function createTable(capacity: number) {
   const posX = MARGIN + (idx % COLS) * STEP;
   const posY = MARGIN + Math.floor(idx / COLS) * STEP;
 
+  const qrCode = await allocateUniqueQrCode();
+
   const newTable = await prisma.table.create({
     data: {
       restaurantId: restaurant.id,
       number: nextNumber,
       capacity,
-      qrCode: generateCode(),
+      qrCode,
       status: "DISPONIBLE",
       posX,
       posY,
@@ -94,4 +104,12 @@ export async function separateTable(tableId: string) {
     data: { parentTableId: null }
   });
   revalidatePath("/dashboard/mesas");
+}
+
+/** Vista previa firmada para staff (mapa / mesero): misma forma que el QR impreso. */
+export async function getSignedGuestPreviewUrl(qrCode: string) {
+  const table = await findTableByQrCode(qrCode);
+  if (!table) throw new Error("Mesa no encontrada");
+  const k = signTableJoinProof(table.qrCode);
+  return `/mesa/${encodeURIComponent(table.qrCode)}?k=${encodeURIComponent(k)}`;
 }

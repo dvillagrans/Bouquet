@@ -17,11 +17,30 @@ async function notifyGuestMenuOrderUpdated(orderId: string) {
 export async function getLiveOrders() {
   const restaurant = await getDefaultRestaurant();
 
+  const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
+
+  const activeSessions = await prisma.session.findMany({
+    where: {
+      isActive: true,
+      table: { restaurantId: restaurant.id },
+    },
+    select: { id: true },
+  });
+  const activeSessionIds = activeSessions.map((s) => s.id);
+
+  if (activeSessionIds.length === 0) {
+    return [];
+  }
+
   const orders = await prisma.order.findMany({
-    where: { 
-      restaurantId: restaurant.id,
-      // Solo tomamos las ordenes del dia, o que no esten de dias pasados
-      createdAt: { gte: new Date(new Date().setHours(0,0,0,0)) }
+    where: {
+      /** El alcance del restaurante ya viene de `activeSessionIds` (mesas de esta sucursal). No filtrar por `order.restaurantId`: órdenes antiguas o mal asignadas seguirían ocultas en cocina. */
+      createdAt: { gte: startOfDay },
+      items: {
+        some: {
+          sessionId: { in: activeSessionIds },
+        },
+      },
     },
     include: {
       table: true,
@@ -38,17 +57,27 @@ export async function getLiveOrders() {
   return orders.map(order => ({
     id: order.id,
     tableCode: `Mesa ${order.table.number}`, // Mapeo para el frontend
-    status: order.status.toLowerCase() as "pending" | "preparing" | "ready" | "delivered",
+    status: order.status.toLowerCase() as
+      | "pending"
+      | "preparing"
+      | "ready"
+      | "delivered"
+      | "cancelled",
     createdAt: order.createdAt,
     deliveredAt: order.deliveredAt || undefined,
-    items: order.items.map(item => ({
-      id: item.id,
-      name: item.menuItem.name,
-      quantity: item.quantity,
-      notes: item.notes || undefined,
-      variantName: item.variantName ?? undefined,
-      station: item.menuItem.station.toLowerCase() as "cocina" | "barra"
-    }))
+    guestName: order.guestName,
+    items: order.items.map((item) => {
+      const raw = String(item.menuItem.station ?? "COCINA").toLowerCase();
+      const station: "cocina" | "barra" = raw === "barra" ? "barra" : "cocina";
+      return {
+        id: item.id,
+        name: item.menuItem.name,
+        quantity: item.quantity,
+        notes: item.notes || undefined,
+        variantName: item.variantName ?? undefined,
+        station,
+      };
+    }),
   }));
 }
 

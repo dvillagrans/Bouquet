@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { getZoneSettings, rotateZonePin } from "@/actions/chain";
 import type { ZoneSettingsData } from "@/actions/chain";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import ZoneAuthGuard from "./ZoneAuthGuard";
 
 function shortId(id: string) {
@@ -135,15 +136,18 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => load(zoneId)}
-            disabled={loading}
-            className="group inline-flex items-center justify-center gap-2 self-start rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.1em] text-neutral-300 transition-all hover:border-gold/30 hover:text-gold disabled:opacity-50"
-          >
-            <RefreshCw className={`size-3.5 transition-transform ${loading ? "animate-spin" : "group-hover:rotate-180"}`} />
-            {loading ? "Sincronizando..." : "Refrescar datos"}
-          </button>
+          <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
+            <ThemeToggle className="border-white/15 bg-white/[0.06] text-neutral-200 shadow-none backdrop-blur-sm hover:bg-white/[0.1]" />
+            <button
+              type="button"
+              onClick={() => load(zoneId)}
+              disabled={loading}
+              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.1em] text-neutral-300 transition-all hover:border-gold/30 hover:text-gold disabled:opacity-50"
+            >
+              <RefreshCw className={`size-3.5 transition-transform ${loading ? "animate-spin" : "group-hover:rotate-180"}`} />
+              {loading ? "Sincronizando..." : "Refrescar datos"}
+            </button>
+          </div>
         </header>
 
         {/* Grid Stats / Staggered entry 2 */}

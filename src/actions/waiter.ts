@@ -6,6 +6,29 @@ import { parseVariantsJson } from "@/lib/menu-variants";
 import { broadcastGuestOrdersRefresh } from "@/lib/supabase/broadcast-guest-orders";
 import { revalidatePath } from "next/cache";
 import { getDefaultRestaurant } from "./restaurant";
+import { generateSecureTableCode } from "@/lib/table-qr-code";
+import { signTableJoinProof } from "@/lib/table-join-proof";
+
+function startOfToday(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/** Solo pedidos del día cuyos ítems pertenecen a sesiones activas en esa mesa (no arrastra turnos ya cerrados). */
+function ordersWhereActiveSessionsForTable(tableId: string): Prisma.OrderWhereInput {
+  return {
+    createdAt: { gte: startOfToday() },
+    items: {
+      some: {
+        session: {
+          isActive: true,
+          tableId,
+        },
+      },
+    },
+  };
+}
 
 /**
  * Update the status of a table.
@@ -41,10 +64,16 @@ export async function regenerateTableQr(tableId: string) {
     throw new Error("Solo puedes regenerar QR en mesas libres.");
   }
 
-  let newCode: string;
-  do {
-    newCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-  } while (await prisma.table.findUnique({ where: { qrCode: newCode } }));
+  let newCode: string | undefined;
+  for (let attempt = 0; attempt < 24; attempt++) {
+    const candidate = generateSecureTableCode(10);
+    const clash = await prisma.table.findUnique({ where: { qrCode: candidate } });
+    if (!clash) {
+      newCode = candidate;
+      break;
+    }
+  }
+  if (!newCode) throw new Error("No se pudo regenerar el código QR.");
 
   await prisma.table.update({
     where: { id: tableId },
@@ -106,7 +135,14 @@ export async function getWaiterTablesSummary() {
       },
       orders: {
         where: {
-          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+          createdAt: { gte: startOfToday() },
+          items: {
+            some: {
+              session: {
+                isActive: true,
+              },
+            },
+          },
         },
         select: {
           id: true,
@@ -122,11 +158,13 @@ export async function getWaiterTablesSummary() {
   // Transform and aggregate data
   return tables.map((table) => {
     const activeSession = table.sessions[0] || null;
-    const billTotal = table.orders.reduce(
-      (sum, order) =>
-        sum + order.items.reduce((orderSum, item) => orderSum + item.priceAtTime * item.quantity, 0),
-      0
-    );
+    const billTotal = table.orders
+      .filter((order) => order.status !== "CANCELLED")
+      .reduce(
+        (sum, order) =>
+          sum + order.items.reduce((orderSum, item) => orderSum + item.priceAtTime * item.quantity, 0),
+        0
+      );
     const pendingOrders = table.orders.filter((o) => o.status === "PENDING").length;
     const readyOrders = table.orders.filter((o) => o.status === "READY").length;
 
@@ -158,14 +196,13 @@ export async function getTableDetail(tableId: string) {
         take: 1,
         include: {
           orderItems: {
+            where: { order: { status: { not: "CANCELLED" } } },
             select: { id: true, quantity: true, notes: true, priceAtTime: true },
           },
         },
       },
       orders: {
-        where: {
-          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
-        },
+        where: ordersWhereActiveSessionsForTable(tableId),
         include: {
           items: {
             include: { menuItem: true, session: { select: { guestName: true } } },
@@ -189,6 +226,8 @@ export async function getTableDetail(tableId: string) {
     );
   }
 
+  const guestEntryRelativePath = `/mesa/${encodeURIComponent(table.qrCode)}?k=${encodeURIComponent(signTableJoinProof(table.qrCode))}`;
+
   return {
     table: {
       id: table.id,
@@ -197,6 +236,7 @@ export async function getTableDetail(tableId: string) {
       status: table.status,
       qrCode: table.qrCode,
     },
+    guestEntryRelativePath,
     session: activeSession
       ? {
         id: activeSession.id,

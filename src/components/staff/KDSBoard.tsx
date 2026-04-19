@@ -1,7 +1,7 @@
 /** @jsxImportSource react */
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { RotateCcw, Utensils, Coffee, History, GripVertical, Clock, CheckCircle2, ChevronRight, Flame } from "lucide-react";
 import {
@@ -33,13 +33,13 @@ type OrderItem = {
   station: "cocina" | "barra";
 };
 
-type OrderStatus = "pending" | "preparing" | "ready" | "delivered";
+type OrderStatus = "pending" | "preparing" | "ready" | "delivered" | "cancelled";
 type ColumnId    = "pending" | "preparing" | "ready";
 
 /** Estado normalizado para filtros (DB/caché pueden variar mayúsculas). */
 function normalizeBoardStatus(status: string): OrderStatus {
   const s = status.toLowerCase();
-  if (s === "pending" || s === "preparing" || s === "ready" || s === "delivered") return s;
+  if (s === "pending" || s === "preparing" || s === "ready" || s === "delivered" || s === "cancelled") return s;
   return "pending";
 }
 
@@ -58,7 +58,7 @@ type Order = {
 type Urgency = "normal" | "warning" | "critical";
 
 function getUrgency(mins: number, status: OrderStatus): Urgency {
-  if (status === "delivered") return "normal";
+  if (status === "delivered" || status === "cancelled") return "normal";
   if (mins >= 30) return "critical";
   if (mins >= 15) return "warning";
   return "normal";
@@ -135,8 +135,11 @@ function SortableTicket({
   const urgency = getUrgency(mins, order.status);
 
   // Group items by station for better scannability
-  const kitchenItems = order.items.filter(i => i.station === "cocina");
-  const barItems = order.items.filter(i => i.station === "barra");
+  const kitchenItems = order.items.filter((i) => i.station === "cocina");
+  const barItems = order.items.filter((i) => i.station === "barra");
+  const otherItems = order.items.filter(
+    (i) => i.station !== "cocina" && i.station !== "barra",
+  );
 
   return (
     <div
@@ -199,6 +202,23 @@ function SortableTicket({
               <span>Barra</span>
             </div>
             {barItems.map(it => <KDSItemRow key={it.id} it={it} />)}
+          </div>
+        )}
+
+        {otherItems.length > 0 && (
+          <div
+            className={`${
+              kitchenItems.length + barItems.length > 0
+                ? "mt-2 pt-2 border-t border-dashed border-border-main/50"
+                : ""
+            }`}
+          >
+            <div className="text-[10px] uppercase font-bold text-text-muted tracking-[0.2em] mb-2 border-b border-border-main/30 pb-1.5">
+              <span>General</span>
+            </div>
+            {otherItems.map((it) => (
+              <KDSItemRow key={it.id} it={{ ...it, station: "cocina" }} />
+            ))}
           </div>
         )}
       </div>
@@ -288,12 +308,28 @@ function KDSColumn({
 
 // ─── Main Board ───────────────────────────────────────────────────────────────
 
-export default function KDSBoard({ initialOrders, defaultStation }: { initialOrders: Order[], defaultStation?: string }) {
+function orderTouchesStation(order: Order, scope: "cocina" | "barra"): boolean {
+  return order.items.some((it) => it.station === scope);
+}
+
+export default function KDSBoard({
+  initialOrders,
+  defaultStation,
+}: {
+  initialOrders: Order[];
+  /** Solo tickets que incluyan ítems de esa estación (cocina vs barra ven tableros distintos). */
+  defaultStation?: "cocina" | "barra";
+}) {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [now, setNow] = useState(new Date());
   const [showHistory, setShowHistory] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  const boardScopedOrders = useMemo(() => {
+    if (!defaultStation) return orders;
+    return orders.filter((o) => orderTouchesStation(o, defaultStation));
+  }, [orders, defaultStation]);
 
   // Time refresher
   useEffect(() => {
@@ -317,7 +353,7 @@ export default function KDSBoard({ initialOrders, defaultStation }: { initialOrd
 
   useEffect(() => setOrders(initialOrders), [initialOrders]);
 
-  const activeOrder = activeId ? orders.find(o => o.id === activeId) : null;
+  const activeOrder = activeId ? boardScopedOrders.find((o) => o.id === activeId) : null;
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -330,13 +366,14 @@ export default function KDSBoard({ initialOrders, defaultStation }: { initialOrd
     if (!over) return;
 
     const orderId = active.id as string;
-    const newStatus = over.id as OrderStatus;
-    const order = orders.find((o) => o.id === orderId);
+    const newStatus = over.id as ColumnId;
+    const order = boardScopedOrders.find((o) => o.id === orderId);
+    if (!order) return;
+    const lo = String(order.status).toLowerCase();
     if (
-      !order ||
-      normalizeBoardStatus(order.status) === "delivered" ||
-      normalizeBoardStatus(order.status) === newStatus ||
-      newStatus === "delivered"
+      lo === "delivered" ||
+      lo === "cancelled" ||
+      normalizeBoardStatus(order.status) === newStatus
     )
       return;
 
@@ -351,8 +388,11 @@ export default function KDSBoard({ initialOrders, defaultStation }: { initialOrd
     }
   }
 
-  // Solo tablero activo: nunca mostrar entregadas en columnas (p. ej. tras marcar desde mesero).
-  const boardOrders = orders.filter((o) => normalizeBoardStatus(o.status) !== "delivered");
+  // Sin entregadas ni canceladas en columnas (cancelación desde comensal).
+  const boardOrders = boardScopedOrders.filter((o) => {
+    const s = String(o.status).toLowerCase();
+    return s !== "delivered" && s !== "cancelled";
+  });
 
   const pending = boardOrders
     .filter((o) => normalizeBoardStatus(o.status) === "pending")
@@ -364,7 +404,7 @@ export default function KDSBoard({ initialOrders, defaultStation }: { initialOrd
     .filter((o) => normalizeBoardStatus(o.status) === "ready")
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-  const recentHist = orders
+  const recentHist = boardScopedOrders
     .filter((o) => normalizeBoardStatus(o.status) === "delivered")
     .sort((a, b) => new Date(b.deliveredAt || b.createdAt).getTime() - new Date(a.deliveredAt || a.createdAt).getTime())
     .slice(0, 15);

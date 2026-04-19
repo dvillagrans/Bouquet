@@ -9,6 +9,8 @@ import FloorMapClient from "@/components/dashboard/FloorMapClient";
 import type { FloorMapTable } from "@/components/dashboard/FloorMap";
 import type { TableStatus } from "@/generated/prisma";
 
+const NOISE_SVG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIj4KICA8ZmlsdGVyIGlkPSJub2lzZSI+CiAgICA8ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC44NSIgbnVtT2N0YXZlcz0iMyIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPgogIDwvZmlsdGVyPgogIDxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNub2lzZSkiIG9wYWNpdHk9IjAuMDgiIG1peC1ibGVuZC1tb2RlPSJvdmVybGF5IiAvPgo8L3N2Zz4=";
+
 type FilterType = "todas" | "ocupadas" | "pendientes" | "listas" | "sucias";
 type ViewType = "lista" | "mapa";
 
@@ -182,87 +184,97 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
   };
 
   return (
-    <div className="min-h-screen bg-ink">
+    <div className="relative min-h-screen bg-bg-solid text-text-primary flex flex-col font-sans overflow-x-hidden">
+      {/* Background Noise & Lighting */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
+        <div
+          className="absolute inset-0 z-0 opacity-30 mix-blend-overlay"
+          style={{ backgroundImage: `url("${NOISE_SVG}")`, backgroundRepeat: "repeat" }}
+        />
+        <div className="absolute -left-[20%] -top-[20%] h-[min(80vh,600px)] w-[min(100vw,800px)] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(201,160,84,0.08),transparent_60%)] blur-[100px]" />
+        <div className="absolute top-[20%] -right-[10%] h-[60vh] w-[60vw] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(77,132,96,0.05),transparent_60%)] blur-[100px]" />
+      </div>
+
       {toast && (
         <div
           className="fixed inset-x-0 top-4 z-[80] flex justify-center px-4"
           role={toast.type === "error" ? "alert" : "status"}
           aria-live={toast.type === "error" ? "assertive" : "polite"}
-          style={{ animation: "fade-in 0.2s ease-out both" }}
+          style={{ animation: "fade-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both" }}
         >
           <div
-            className={`flex items-center gap-3 border bg-ink px-5 py-3 shadow-lg ${
+            className={`flex items-center gap-3 backdrop-blur-md px-5 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.4)] rounded-full border ${
               toast.type === "error"
-                ? "border-ember/50 text-ember"
-                : "border-sage-deep/50 text-sage-deep"
+                ? "border-dash-red/40 bg-dash-red/10 text-dash-red"
+                : "border-dash-green/40 bg-dash-green/10 text-dash-green"
             }`}
           >
             <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                toast.type === "error" ? "bg-ember" : "bg-sage-deep"
+              className={`h-2 w-2 rounded-full ${
+                toast.type === "error" ? "bg-dash-red animate-pulse" : "bg-dash-green"
               }`}
               aria-hidden="true"
             />
-            <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em]">{toast.message}</p>
+            <p className="text-[11px] font-mono font-bold uppercase tracking-[0.2em]">{toast.message}</p>
           </div>
         </div>
       )}
 
       {/* Header with Stats */}
-      <div className="border-b border-wire bg-canvas p-4 sm:p-6">
+      <div className="relative z-10 border-b border-border-main bg-bg-card/40 backdrop-blur-md p-6 lg:p-8">
         <div className="mx-auto max-w-7xl">
-          <div className="mb-4 sm:mb-6">
-            <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-[0.2em] text-light">
-              Panel del Mesero
-            </h1>
-            <p className="mt-1 text-sm text-dim uppercase tracking-[0.1em]">
-              Punto de Venta • Gestión de Mesas
-            </p>
+          <div className="mb-8 flex flex-col gap-1.5">
+             <h1 className="font-serif text-3xl font-medium tracking-tight text-text-primary flex items-center gap-3">
+               Table Management
+             </h1>
+             <span className="font-mono text-[10px] uppercase tracking-[0.3em] font-bold text-text-muted mt-0.5">
+               Punto de Venta &copy; Boulevard
+             </span>
           </div>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {/* Occupied Tables */}
-            <div className="flex items-center gap-3 rounded border border-wire/40 bg-glow/5 p-4">
-              <div className="rounded-lg bg-glow/20 p-3">
-                <Users className="h-6 w-6 text-glow" />
+            <div className="group flex items-center gap-4 rounded-xl border border-border-main bg-bg-card/30 p-5 backdrop-blur-sm transition-colors hover:border-gold/30 hover:bg-gold/5">
+              <div className="rounded-lg bg-gold/10 p-3.5 border border-gold/20 shadow-inner group-hover:scale-105 transition-transform">
+                <Users className="h-6 w-6 text-gold" strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-dim">Mesas Ocupadas</p>
-                <p className="text-2xl font-bold text-glow">{stats.occupied}</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-text-muted">Mesas Ocupadas</p>
+                <p className="font-serif text-3xl text-text-primary group-hover:text-gold transition-colors">{stats.occupied}</p>
               </div>
             </div>
 
             {/* Pending Orders */}
-            <div className="flex items-center gap-3 rounded border border-wire/40 bg-glow/5 p-4">
-              <div className="rounded-lg bg-glow/20 p-3">
-                <Clock className="h-6 w-6 text-glow" />
+            <div className="group flex items-center gap-4 rounded-xl border border-border-main bg-bg-card/30 p-5 backdrop-blur-sm transition-colors hover:border-dash-blue/30 hover:bg-dash-blue/5">
+              <div className="rounded-lg bg-dash-blue/10 p-3.5 border border-dash-blue/20 shadow-inner group-hover:scale-105 transition-transform">
+                <Clock className="h-6 w-6 text-dash-blue" strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-dim">Órdenes Pendientes</p>
-                <p className="text-2xl font-bold text-glow">{stats.pending}</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-text-muted">Pendientes</p>
+                <p className="font-serif text-3xl text-text-primary group-hover:text-dash-blue transition-colors">{stats.pending}</p>
               </div>
             </div>
 
             {/* Ready Orders */}
-            <div className="flex items-center gap-3 rounded border border-wire/40 bg-sage-deep/5 p-4">
-              <div className="rounded-lg bg-sage-deep/20 p-3">
-                <ChefHat className="h-6 w-6 text-sage-deep" />
+            <div className="group flex items-center gap-4 rounded-xl border border-border-main bg-bg-card/30 p-5 backdrop-blur-sm transition-colors hover:border-dash-green/30 hover:bg-dash-green/5">
+              <div className="rounded-lg bg-dash-green/10 p-3.5 border border-dash-green/20 shadow-inner group-hover:scale-105 transition-transform">
+                <ChefHat className="h-6 w-6 text-dash-green" strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-dim">Listos para Servir</p>
-                <p className="text-2xl font-bold text-sage-deep">{stats.ready}</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-text-muted">Fuego (Listos)</p>
+                <p className="font-serif text-3xl text-text-primary group-hover:text-dash-green transition-colors">{stats.ready}</p>
               </div>
             </div>
 
             {/* Dirty Tables */}
-            <div className="flex items-center gap-3 rounded border border-wire/40 bg-ember/5 p-4">
-              <div className="rounded-lg bg-ember/20 p-3">
-                <Sparkles className="h-6 w-6 text-ember" />
+            <div className="group flex items-center gap-4 rounded-xl border border-border-main bg-bg-card/30 p-5 backdrop-blur-sm transition-colors hover:border-dash-red/30 hover:bg-dash-red/5">
+              <div className="rounded-lg bg-dash-red/10 p-3.5 border border-dash-red/20 shadow-inner group-hover:scale-105 transition-transform">
+                <Sparkles className="h-6 w-6 text-dash-red" strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-dim">Mesas por Limpiar</p>
-                <p className="text-2xl font-bold text-ember">{stats.dirty}</p>
+                <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-text-muted">Limpieza Req.</p>
+                <p className="font-serif text-3xl text-text-primary group-hover:text-dash-red transition-colors">{stats.dirty}</p>
               </div>
             </div>
           </div>
@@ -270,25 +282,25 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
       </div>
 
       {/* Filters, View Toggle and Refresh */}
-      <div className="border-b border-wire bg-panel py-3 px-4">
-        <div className="mx-auto max-w-7xl flex items-center gap-2">
+      <div className="relative z-10 border-b border-border-main bg-bg-card/60 backdrop-blur-md py-4 px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
           {/* Scrollable filter area */}
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-1 min-w-0 pb-0.5">
+          <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide flex-1 min-w-0 w-full sm:w-auto">
             {/* View toggle */}
-            <div className="flex border border-wire rounded overflow-hidden shrink-0">
+            <div className="flex p-1 rounded-lg bg-bg-solid/50 border border-border-main shrink-0">
               <button
                 onClick={() => setView("lista")}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-bold uppercase transition-all ${
-                  view === "lista" ? "bg-glow text-canvas" : "text-dim hover:text-light"
+                className={`flex items-center gap-1.5 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] rounded transition-all ${
+                  view === "lista" ? "bg-bg-card border border-border-bright text-text-primary shadow-sm" : "text-text-muted hover:text-text-primary border border-transparent"
                 }`}
               >
                 <LayoutGrid className="h-3.5 w-3.5" />
-                <span className="hidden xs:inline">Lista</span>
+                <span className="hidden xs:inline">Piso</span>
               </button>
               <button
                 onClick={() => setView("mapa")}
-                className={`flex items-center gap-1.5 px-3 py-2 text-sm font-bold uppercase transition-all border-l border-wire ${
-                  view === "mapa" ? "bg-glow text-canvas" : "text-dim hover:text-light"
+                className={`flex items-center gap-1.5 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.1em] rounded transition-all ${
+                  view === "mapa" ? "bg-bg-card border border-border-bright text-text-primary shadow-sm" : "text-text-muted hover:text-text-primary border border-transparent"
                 }`}
               >
                 <Map className="h-3.5 w-3.5" />
@@ -298,77 +310,84 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
 
             {/* Divider */}
             {view === "lista" && (
-              <div className="w-px h-5 bg-wire/50 shrink-0" />
+              <div className="hidden sm:block w-px h-6 bg-border-main/60 shrink-0 mx-1" />
             )}
 
             {/* Filters (only in list view) */}
-            {view === "lista" && (["todas", "ocupadas", "pendientes", "listas", "sucias"] as const).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={`shrink-0 px-3 py-2 rounded text-sm font-bold uppercase transition-all ${
-                  filter === f
-                    ? "bg-glow text-canvas"
-                    : "border border-wire text-light hover:border-glow"
-                }`}
-              >
-                {f === "todas" && "Todas"}
-                {f === "ocupadas" && `Ocupadas${stats.occupied ? ` (${stats.occupied})` : ""}`}
-                {f === "pendientes" && `Pend.${stats.pending ? ` (${stats.pending})` : ""}`}
-                {f === "listas" && `Listas${stats.ready ? ` (${stats.ready})` : ""}`}
-                {f === "sucias" && `Limpiar${stats.dirty ? ` (${stats.dirty})` : ""}`}
-              </button>
-            ))}
+            {view === "lista" && (
+              <div className="flex bg-transparent rounded-lg p-0.5 border border-transparent gap-2">
+                {(["todas", "ocupadas", "pendientes", "listas", "sucias"] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setFilter(f)}
+                    className={`shrink-0 px-3 py-1.5 rounded-lg text-[10px] tabular-nums font-bold uppercase tracking-[0.1em] transition-all border ${
+                      filter === f
+                        ? "bg-bg-card border-border-bright text-gold shadow-sm"
+                        : "border-border-main/50 bg-bg-solid/30 text-text-muted hover:border-gold/30 hover:text-text-primary"
+                    }`}
+                  >
+                    {f === "todas" && "Todas"}
+                    {f === "ocupadas" && `Tránsito${stats.occupied ? ` (${stats.occupied})` : ""}`}
+                    {f === "pendientes" && `Coci.${stats.pending ? ` (${stats.pending})` : ""}`}
+                    {f === "listas" && `Fuego${stats.ready ? ` (${stats.ready})` : ""}`}
+                    {f === "sucias" && `Limp.${stats.dirty ? ` (${stats.dirty})` : ""}`}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Refresh - always visible, icon-only on mobile */}
-          {allowJoinTables && (
+          <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto justify-end">
+            {/* Join Tables */}
+            {allowJoinTables && (
+              <button
+                onClick={() => {
+                  setIsJoinMode(!isJoinMode);
+                  setSelectedTablesToJoin([]);
+                }}
+                className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.2em] transition-all border ${
+                  isJoinMode ? "border-gold bg-gold/10 text-gold shadow-[0_0_10px_rgba(201,160,84,0.2)]" : "border-border-main bg-bg-solid/50 text-text-muted hover:text-text-primary hover:border-gold/50"
+                }`}
+                title="Juntar mesas"
+              >
+                <LinkIcon className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{isJoinMode ? "Cancelar Unión" : "Unir Mesas"}</span>
+              </button>
+            )}
+            {isJoinMode && selectedTablesToJoin.length >= 2 && (
+              <button
+                onClick={handleConfirmJoin}
+                disabled={isJoining}
+                className="shrink-0 flex items-center gap-2 border border-gold bg-gold px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-[0.2em] text-bg-solid shadow-[0_0_15px_rgba(201,160,84,0.4)] hover:bg-white transition-all disabled:opacity-50"
+              >
+                <span className="hidden sm:inline">Ejecutar Unión</span>
+                <span className="sm:hidden">Unir</span>
+              </button>
+            )}
+
             <button
               onClick={() => {
-                setIsJoinMode(!isJoinMode);
-                setSelectedTablesToJoin([]);
+                setLoading(true);
+                loadTables();
               }}
-              className={`shrink-0 flex items-center gap-2 border px-3 py-2 rounded text-sm font-bold uppercase transition-colors ${
-                isJoinMode ? "border-glow bg-glow/10 text-glow" : "border-wire text-dim hover:text-light hover:border-glow"
-              }`}
-              title="Juntar mesas"
+              disabled={loading}
+              className="shrink-0 flex items-center justify-center p-2 rounded-lg border border-border-main bg-bg-solid/50 hover:bg-bg-card hover:border-border-bright text-text-muted hover:text-text-primary transition-all disabled:opacity-50"
+              title="Sincronizar"
             >
-              <LinkIcon className="h-4 w-4" />
-              <span className="hidden sm:inline">{isJoinMode ? "Cancelar" : "Unir"}</span>
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} strokeWidth={1.5} />
             </button>
-          )}
-          {isJoinMode && selectedTablesToJoin.length >= 2 && (
-            <button
-              onClick={handleConfirmJoin}
-              disabled={isJoining}
-              className="shrink-0 flex items-center gap-2 border border-glow bg-glow px-3 py-2 rounded text-sm font-bold uppercase text-ink hover:bg-glow/90 transition-colors disabled:opacity-50"
-            >
-              <span className="hidden sm:inline">Confirmar Unwin</span>
-              <span className="sm:hidden">Unir</span>
-            </button>
-          )}
-
-          <button
-            onClick={() => {
-              setLoading(true);
-              loadTables();
-            }}
-            disabled={loading}
-            className="shrink-0 flex items-center gap-2 border border-wire hover:border-glow px-3 py-2 rounded text-sm font-bold uppercase text-dim hover:text-light transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            <span className="hidden sm:inline">Actualizar</span>
-          </button>
+          </div>
         </div>
       </div>
 
       {/* Floor Map View */}
       {view === "mapa" && (
-        <div className="p-6">
+        <div className="relative z-10 p-6 lg:p-8">
           <div className="mx-auto max-w-7xl">
             {loading && mapTables.length === 0 ? (
-              <div className="flex items-center justify-center py-12">
-                <p className="text-dim">Cargando mapa...</p>
+              <div className="flex flex-col items-center justify-center py-20 opacity-50">
+                <RefreshCw className="h-8 w-8 animate-spin text-gold mb-4 stroke-[1.5]" />
+                <p className="text-[11px] uppercase tracking-[0.3em] font-bold text-text-muted">Desplegando Piso...</p>
               </div>
             ) : (
               <FloorMapClient
@@ -385,18 +404,22 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
       )}
 
       {/* Table Grid */}
-      {view === "lista" && <div className="p-6">
+      {view === "lista" && <div className="relative z-10 p-6 lg:p-8">
         <div className="mx-auto max-w-7xl">
           {loading && tables.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-dim">Cargando mesas...</p>
-            </div>
+             <div className="flex flex-col items-center justify-center py-20 opacity-50">
+               <RefreshCw className="h-8 w-8 animate-spin text-gold mb-4 stroke-[1.5]" />
+               <p className="text-[11px] uppercase tracking-[0.3em] font-bold text-text-muted">Cargando Zonas...</p>
+             </div>
           ) : filteredTables.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-dim">No hay mesas para este filtro</p>
-            </div>
+             <div className="flex flex-col items-center justify-center py-20">
+               <div className="p-6 rounded-full border border-dashed border-border-main/50 mb-3 bg-bg-card/30">
+                 <LayoutGrid className="w-8 h-8 text-text-muted/30" />
+               </div>
+               <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-text-muted">Sin mesas activas</p>
+             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-4 sm:gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {filteredTables.map((table) => {
                 const isSelectedToJoin = selectedTablesToJoin.includes(table.id);
                 const isChild = !!table.parentTableId;
@@ -412,55 +435,58 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
                       void openTableDetail(table);
                     }
                   }}
-                  className={`relative flex flex-col items-center justify-between rounded-lg border p-3 sm:p-4 transition-all duration-200 cursor-pointer aspect-square active:scale-[0.97] ${
-                    isSelectedToJoin ? "border-glow bg-glow/10 shadow-[0_0_10px_rgba(var(--glow-rgb),0.3)]" :
-                    isChild ? "opacity-60 grayscale-[0.5] cursor-not-allowed border-wire bg-wire/10" :
+                  className={`relative flex flex-col items-center justify-between rounded-2xl border p-4 sm:p-5 transition-all duration-300 cursor-pointer aspect-square active:scale-[0.98] overflow-hidden backdrop-blur-md ${
+                    isSelectedToJoin ? "border-gold bg-gold/10 shadow-[0_0_20px_rgba(201,160,84,0.3)]" :
+                    isChild ? "opacity-50 grayscale-[0.6] cursor-not-allowed border-border-main bg-bg-solid/40" :
                     table.status === "DISPONIBLE"
-                      ? "border-sage/40 bg-sage/5 hover:border-sage"
+                      ? "border-dash-green/30 bg-dash-green/5 hover:border-dash-green/60 hover:bg-dash-green/[0.08]"
                       : table.status === "OCUPADA"
-                      ? "border-glow/40 bg-glow/5 hover:border-glow"
+                      ? "border-text-primary/10 bg-bg-card/40 hover:border-text-primary/30 hover:bg-bg-card/60 shadow-lg"
                       : table.status === "CERRANDO"
-                      ? "border-gold/40 bg-gold/5 hover:border-gold"
-                      : "border-ember/40 bg-ember/5 hover:border-ember"
+                      ? "border-gold/40 bg-gold/[0.08] hover:border-gold shadow-[0_0_15px_rgba(201,160,84,0.1)]"
+                      : "border-dash-red/40 bg-dash-red/10 hover:border-dash-red shadow-[0_0_15px_rgba(239,68,68,0.15)]"
                   }`}
                 >
+                  {/* Subtle Gradient overlay for premium feel */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+
                   {/* Join Table Elements */}
                   {isSelectedToJoin && (
-                    <div className="absolute right-2 top-2 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-glow text-ink text-[9px] font-bold">
+                    <div className="absolute right-3 top-3 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-bg-solid text-[10px] font-bold font-mono shadow-md">
                       {selectedTablesToJoin.indexOf(table.id) + 1}
                     </div>
                   )}
                   {isChild && (
-                    <div className="absolute left-0 top-0 w-full bg-wire/50 px-1 py-0.5 text-center text-[0.5rem] font-bold uppercase tracking-wider text-dim rounded-t-lg">
-                      Mesa Unida
+                    <div className="absolute -left-1 top-0 w-[calc(100%+8px)] bg-bg-solid/80 px-2 py-1 text-center text-[8px] font-bold font-mono uppercase tracking-[0.2em] text-text-muted border-b border-border-main">
+                      Vinculada
                       {allowJoinTables && (
                          <button 
                          onClick={(e) => { e.stopPropagation(); handleSeparate(table.id); }}
-                         className="ml-1 hover:text-ember"
+                         className="ml-2 hover:text-dash-red transition-colors"
                          title="Separar"
                        >
-                         <Unlink size={8} className="inline" />
+                         <Unlink size={10} className="inline mb-[2px]" />
                        </button>
                       )}
                     </div>
                   )}
                   {hasChildren && (
-                    <div className="absolute left-2 top-2 z-10 rounded border border-glow/50 bg-glow/20 px-1 py-0.5 text-[0.5rem] font-bold uppercase tracking-wider text-glow">
-                      Mesa Princ.
+                    <div className="absolute left-3 top-3 z-10 rounded shadow-sm border border-gold/40 bg-gold/10 px-1.5 py-0.5 text-[8px] font-bold font-mono uppercase tracking-[0.2em] text-gold">
+                      Master
                     </div>
                   )}
 
                   {/* Status Badge + pax */}
-                  <div className="flex w-full items-center justify-between mt-2">
+                  <div className="relative z-10 flex w-full items-center justify-between mt-1">
                     <span
-                      className={`text-[0.55rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                      className={`text-[8px] font-bold font-mono uppercase tracking-[0.2em] px-1.5 py-0.5 rounded shadow-sm border ${
                         table.status === "DISPONIBLE"
-                          ? "bg-sage/20 text-sage"
+                          ? "bg-dash-green/10 text-dash-green border-dash-green/20"
                           : table.status === "OCUPADA"
-                          ? "bg-glow/20 text-glow"
+                          ? "bg-text-primary/10 text-text-primary border-border-bright"
                           : table.status === "CERRANDO"
-                          ? "bg-gold/20 text-gold"
-                          : "bg-ember/20 text-ember"
+                          ? "bg-gold/10 text-gold border-gold/20"
+                          : "bg-dash-red/10 text-dash-red border-dash-red/20 font-bold animate-pulse text-shadow-sm"
                       }`}
                     >
                       {table.status === "DISPONIBLE"
@@ -472,40 +498,42 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
                             : "Sucia"}
                     </span>
                     {isTableBusy(table.status) && (
-                      <div className="flex items-center gap-0.5 text-[0.55rem] text-light">
-                        <Users className="h-2.5 w-2.5" />
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-text-primary font-mono">
+                        <Users className="h-3 w-3 text-text-muted" strokeWidth={2} />
                         {table.activeSession?.pax}
                       </div>
                     )}
                   </div>
 
                   {/* Table Number + Guest Name */}
-                  <div className="flex-1 flex flex-col items-center justify-center gap-0.5">
-                    <span className="font-serif text-3xl sm:text-4xl text-light">{table.number}</span>
+                  <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-1 w-full">
+                    <span className="font-serif text-4xl sm:text-5xl font-medium text-text-primary drop-shadow-md">
+                      {table.number}
+                    </span>
                     {table.activeSession && (
-                      <span className="text-[0.6rem] font-medium tracking-wider text-light/70 uppercase text-center line-clamp-1">
+                      <span className="text-[10px] font-bold tracking-[0.2em] text-gold uppercase text-center line-clamp-1 px-2 py-0.5 bg-gold/5 border border-gold/10 rounded">
                         {table.activeSession.guestName}
                       </span>
                     )}
                     {/* Bill total — always visible for busy tables */}
                     {isTableBusy(table.status) && table.billTotal > 0 && (
-                      <span className="text-[0.65rem] font-mono text-light/50 mt-0.5">
-                        ${table.billTotal.toFixed(0)}
+                      <span className="text-[11px] font-mono tabular-nums font-bold tracking-widest text-text-primary mt-1 px-2 py-1 rounded bg-bg-solid/60 border border-border-main shadow-inner">
+                        ${table.billTotal.toLocaleString("es-MX", { minimumFractionDigits: 0 })}
                       </span>
                     )}
                   </div>
 
                   {/* Order Badges */}
                   {table.orderCount > 0 && (
-                    <div className="flex gap-1.5 w-full justify-center text-[0.5rem]">
+                    <div className="relative z-10 flex gap-2 w-full justify-center text-[9px] font-mono uppercase tracking-[0.1em] mt-1">
                       {table.pendingCount > 0 && (
-                        <div className="bg-glow/20 text-glow px-1.5 py-0.5 rounded font-bold">
-                          {table.pendingCount} Pend
+                        <div className="bg-dash-blue/10 border border-dash-blue/20 text-dash-blue px-2 py-[2px] rounded-sm shadow-sm font-bold flex items-center gap-1 group-hover:bg-dash-blue hover:text-white transition-colors">
+                          <span className="tabular-nums">{table.pendingCount}</span> Coc.
                         </div>
                       )}
                       {table.readyCount > 0 && (
-                        <div className="bg-sage-deep/20 text-sage-deep px-1.5 py-0.5 rounded font-bold">
-                          {table.readyCount} List
+                        <div className="bg-dash-green/10 border border-dash-green/30 text-dash-green px-2 py-[2px] rounded-sm shadow-sm font-bold flex items-center gap-1 group-hover:bg-dash-green hover:text-white transition-colors">
+                          <span className="tabular-nums">{table.readyCount}</span> Fueg.
                         </div>
                       )}
                     </div>
@@ -518,10 +546,10 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
                         e.stopPropagation();
                         handleCleanTable(table.id);
                       }}
-                      className="mt-1 flex items-center gap-1 bg-sage-deep hover:bg-sage-deep/90 active:scale-95 text-canvas px-2 py-1 rounded font-bold uppercase text-[0.6rem] transition-all"
+                      className="relative z-10 mt-2 flex items-center justify-center gap-1.5 w-full bg-dash-red/10 border border-dash-red/30 hover:bg-dash-red hover:text-white active:scale-95 text-dash-red px-2 py-1.5 rounded-lg font-bold tracking-[0.2em] uppercase text-[9px] transition-all shadow-[0_0_10px_rgba(239,68,68,0.2)]"
                     >
-                      <Sparkles className="h-2.5 w-2.5" />
-                      Limpiar
+                      <Sparkles className="h-3 w-3" strokeWidth={2} />
+                      Atender Mesa
                     </button>
                   )}
 
@@ -532,11 +560,11 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
                         e.stopPropagation();
                         handleRegenerateQr(table.id, table.number);
                       }}
-                      className="mt-1 flex items-center gap-1 border border-glow/50 bg-glow/10 hover:bg-glow/20 active:scale-95 text-glow px-2 py-1 rounded font-bold uppercase text-[0.6rem] transition-all"
+                      className="relative z-10 mt-2 w-[90%] mx-auto flex items-center justify-center gap-1.5 border border-gold/30 bg-gold/5 hover:bg-gold/20 active:scale-95 text-gold/80 hover:text-gold px-2 py-1 rounded shadow-sm font-bold tracking-[0.1em] uppercase text-[8px] transition-all"
                       title="Generar nuevo QR"
                     >
                       <QrCode className="h-2.5 w-2.5" />
-                      Nuevo QR
+                      Código Nuevo
                     </button>
                   )}
                 </div>

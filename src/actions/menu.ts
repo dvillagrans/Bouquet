@@ -12,8 +12,15 @@ function normalizeCategoryName(name: string) {
   return name.trim().replace(/\s+/g, " ");
 }
 
-export async function getMenuData() {
-  const restaurant = await getDefaultRestaurant();
+export async function getMenuData(options?: { restaurantId?: string }) {
+  const restaurant =
+    options?.restaurantId != null
+      ? await prisma.restaurant.findUnique({ where: { id: options.restaurantId } })
+      : await getDefaultRestaurant();
+
+  if (!restaurant) {
+    throw new Error("Restaurante no encontrado");
+  }
   
   // Buscar categorías
   let categories = await prisma.category.findMany({

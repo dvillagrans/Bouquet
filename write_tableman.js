@@ -1,4 +1,6 @@
+const fs = require('fs');
 
+const manager = `
 import { Table } from "@/generated/prisma";
 import TableManagerClient from "./TableManagerClient";
 
@@ -11,7 +13,7 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div
           className="absolute inset-0 z-0 opacity-30 mix-blend-overlay"
-          style={{ backgroundImage: `url("${NOISE_SVG}")`, backgroundRepeat: "repeat" }}
+          style={{ backgroundImage: \`url("\${NOISE_SVG}")\`, backgroundRepeat: "repeat" }}
         />
         <div className="absolute top-0 right-0 h-[min(80vh,600px)] w-[min(100vw,800px)] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(201,160,84,0.06),transparent_60%)] blur-3xl opacity-60" />
       </div>
@@ -22,3 +24,6 @@ export default function TableManager({ initialTables }: { initialTables: Table[]
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/components/dashboard/TableManager.tsx', manager);

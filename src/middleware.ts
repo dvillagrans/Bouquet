@@ -6,8 +6,8 @@ const RESTAURANT_COOKIE = "bq_restaurant_id";
  * Admin: la cookie se valida en layout de servidor (Node), donde `AUTH_SECRET` sí está
  * disponible en Vercel. Aquí solo pasamos la ruta para el redirect `?from=` en login.
  *
- * `/restaurant/[id]/...` reescribe a `/dashboard/...` y fija `bq_restaurant_id` para que
- * la barra de direcciones refleje la capa sucursal.
+ * `/restaurant/[id]/...` reescribe al route handler real y fija `bq_restaurant_id`.
+ * Rutas tipo `/restaurant/[id]/cocina` → `/cocina`, `/restaurant/[id]/mesero` → `/mesero`; el resto → `/dashboard/...`.
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -19,8 +19,14 @@ export function middleware(request: NextRequest) {
     }
     const restaurantId = segments[1]!;
     const rest = segments.slice(2);
-    const internalPath =
-      rest.length === 0 ? "/dashboard" : `/dashboard/${rest.join("/")}`;
+    let internalPath: string;
+    if (rest.length === 0) {
+      internalPath = "/dashboard";
+    } else if (rest[0] === "cocina" || rest[0] === "mesero") {
+      internalPath = `/${rest.join("/")}`;
+    } else {
+      internalPath = `/dashboard/${rest.join("/")}`;
+    }
     const url = request.nextUrl.clone();
     url.pathname = internalPath;
     const res = NextResponse.rewrite(url);

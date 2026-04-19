@@ -1,20 +1,12 @@
-/** @jsxImportSource react */
+const fs = require('fs');
 
+const code = `
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
-import { createPortal } from "react-dom";
-import {
-  Plus,
-  Search,
-  LayoutGrid,
-  Map,
-  Link as LinkIcon,
-  AlertCircle,
-  RefreshCw,
-  X,
-  Loader2,
-  Users,
+import { 
+  Plus, Search, LayoutGrid, Map, 
+  Link as LinkIcon, AlertCircle, RefreshCw, X, Loader2
 } from "lucide-react";
 import { createTable, deleteTable, joinTables, separateTable } from "@/actions/tables";
 import { TableStatus } from "@/generated/prisma";
@@ -41,75 +33,6 @@ const STATUS_LABEL: Record<TableStatus, string> = {
   CERRANDO: "En Cuenta",
 };
 
-const CAP_OPTIONS = [2, 4, 6, 8, 10, 12] as const;
-
-function mesaSizeLabel(cap: number): string {
-  if (cap <= 4) return "Mesa íntima";
-  if (cap <= 8) return "Estándar de sala";
-  return "Gran mesa · grupo";
-}
-
-/** Vista previa: tablero que crece con la capacidad y “puestos” en órbita elíptica. */
-function MesaCapacityPreview({
-  capacity,
-  reduceMotion,
-}: {
-  capacity: number;
-  reduceMotion: boolean | null;
-}) {
-  const spring = reduceMotion ? { duration: 0 } : { type: "spring" as const, stiffness: 280, damping: 28 };
-  const seatSpring = reduceMotion
-    ? { duration: 0 }
-    : { type: "spring" as const, stiffness: 400, damping: 22 };
-
-  const w = Math.min(76 + capacity * 7.5, 168);
-  const h = Math.min(46 + capacity * 3.8, 96);
-  const pad = 36;
-  const cw = w + pad * 2;
-  const ch = h + pad * 2;
-  const cx = cw / 2;
-  const cy = ch / 2;
-  const rx = w / 2 + 18;
-  const ry = h / 2 + 18;
-  const dot = Math.min(8, 6 + capacity * 0.18);
-
-  return (
-    <div
-      className="relative mx-auto select-none"
-      style={{ width: cw, height: ch }}
-      aria-hidden
-    >
-      <motion.div
-        className="absolute overflow-hidden rounded-[1.35rem] border-2 border-gold/40 bg-[linear-gradient(155deg,rgba(201,160,84,0.18)_0%,rgba(15,15,15,0.92)_48%,rgba(0,0,0,0.55)_100%)] shadow-[0_24px_48px_-16px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.07),inset_0_-20px_40px_-24px_rgba(201,160,84,0.06)]"
-        initial={false}
-        animate={{ width: w, height: h }}
-        style={{ left: pad, top: pad }}
-        transition={spring}
-      >
-        <div
-          className="pointer-events-none absolute inset-[10%] rounded-[1rem] border border-white/[0.07] bg-black/25"
-          style={{ opacity: capacity >= 8 ? 0.45 : 0.28 }}
-        />
-      </motion.div>
-      {Array.from({ length: capacity }).map((_, i) => {
-        const angle = -Math.PI / 2 + (i * 2 * Math.PI) / capacity;
-        const left = cx + Math.cos(angle) * rx - dot / 2;
-        const top = cy + Math.sin(angle) * ry - dot / 2;
-        return (
-          <motion.span
-            key={`${capacity}-${i}`}
-            initial={reduceMotion ? false : { scale: 0.65, opacity: 0.6 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ ...seatSpring, delay: reduceMotion ? 0 : i * 0.015 }}
-            className="absolute rounded-full border border-gold/50 bg-gradient-to-b from-gold/90 to-gold/40 shadow-[0_0_14px_rgba(201,160,84,0.45)]"
-            style={{ width: dot, height: dot, left, top }}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
 export default function TableManagerClient({ initialTables }: { initialTables: Table[] }) {
   const [tables, setTables] = useState<Table[]>(initialTables);
   const [tab, setTab] = useState<Tab>("mapa");
@@ -128,11 +51,6 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
 
   const [isPending, startTransition] = useTransition();
   const reduceMotion = useReducedMotion();
-  const [portalReady, setPortalReady] = useState(false);
-
-  useEffect(() => {
-    setPortalReady(true);
-  }, []);
 
   // Supabase real-time
   useEffect(() => {
@@ -309,7 +227,7 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
                 placeholder="Mesa o UUID (código)..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-border-main bg-bg-card/45 py-2.5 pl-11 pr-4 text-[13px] text-text-primary placeholder:text-text-dim backdrop-blur-md transition-colors focus:border-border-bright focus:outline-none"
+                className="w-full rounded-xl border border-border-main bg-bg-card/45 py-2.5 pl-11 pr-4 text-[13px] text-text-primary placeholder:text-text-dim backdrop-blur-sm transition-colors focus:border-border-bright focus:outline-none"
               />
             </div>
 
@@ -326,11 +244,11 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
               <button
                 onClick={toggleJoinMode}
                 disabled={isPending}
-                className={`inline-flex h-[42px] items-center gap-2 rounded-xl border px-5 text-[11px] font-semibold uppercase tracking-[0.1em] transition-all disabled:opacity-50 ${
+                className={\`inline-flex h-[42px] items-center gap-2 rounded-xl border px-5 text-[11px] font-semibold uppercase tracking-[0.1em] transition-all disabled:opacity-50 \${
                   isJoinMode 
                     ? "border-dash-red bg-dash-red/10 text-dash-red hover:bg-dash-red/20 hover:border-dash-red/50" 
                     : "border-border-bright bg-bg-card text-text-secondary hover:border-gold/30 hover:text-gold"
-                }`}
+                }\`}
               >
                 <LinkIcon className="size-3.5" aria-hidden="true" />
                 {isJoinMode ? "Cancelar Unión" : "Juntar Mesas"}
@@ -341,17 +259,17 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
           <div className="flex rounded-xl border border-border-main bg-bg-card/50 p-1">
             <button
               onClick={() => setTab("mapa")}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition-colors ${
+              className={\`flex items-center gap-2 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition-colors \${
                 tab === "mapa" ? "bg-bg-solid text-gold shadow-sm" : "text-text-dim hover:text-text-primary"
-              }`}
+              }\`}
             >
               <Map className="size-3.5" /> Mapa
             </button>
             <button
               onClick={() => setTab("lista")}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition-colors ${
+              className={\`flex items-center gap-2 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition-colors \${
                 tab === "lista" ? "bg-bg-solid text-gold shadow-sm" : "text-text-dim hover:text-text-primary"
-              }`}
+              }\`}
             >
               <LayoutGrid className="size-3.5" /> Lista
             </button>
@@ -383,7 +301,7 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
         {/* Stats Strip */}
         <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {stats.map((stat, idx) => (
-            <div key={idx} className="flex flex-col rounded-2xl border border-border-main bg-bg-card/30 p-5 backdrop-blur-md">
+            <div key={idx} className="flex flex-col rounded-2xl border border-border-main bg-bg-card/30 p-5 backdrop-blur-sm">
               <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-text-dim">
                 {stat.label}
               </p>
@@ -395,7 +313,7 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
         {/* Views */}
         <motion.div variants={itemVariants} className="min-h-[500px]">
           {tab === "mapa" && (
-            <div className="overflow-hidden rounded-2xl border border-border-main bg-bg-card/45 backdrop-blur-md p-4 relative min-h-[550px]">
+            <div className="overflow-hidden rounded-2xl border border-border-main bg-bg-card/45 backdrop-blur-sm p-4 relative min-h-[550px]">
               {showMap ? (
                 <FloorMapClient tables={tables} />
               ) : (
@@ -439,16 +357,16 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
                       onClick={() => {
                         if (isJoinMode && !isChild) toggleTableSelection(table.id, false);
                       }}
-                      className={`group relative flex flex-col overflow-hidden rounded-2xl border ${
+                      className={\`group relative flex flex-col overflow-hidden rounded-2xl border \${
                         isSelectedToJoin 
                           ? "border-gold bg-gold/5 shadow-[0_0_15px_rgba(201,160,84,0.15)]" 
                           : "border-border-main bg-bg-card/45 hover:border-border-bright"
-                      } p-5 backdrop-blur-md transition-all duration-200 ${isJoinMode && !isChild ? "cursor-pointer" : ""}`}
+                      } p-5 backdrop-blur-sm transition-all duration-200 \${isJoinMode && !isChild ? "cursor-pointer" : ""}\`}
                     >
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <div className={`flex size-10 items-center justify-center rounded-full ${statusInfo.bg}`}>
-                            <span className={`font-serif text-lg font-medium ${statusInfo.text}`}>{table.number}</span>
+                          <div className={\`flex size-10 items-center justify-center rounded-full \${statusInfo.bg}\`}>
+                            <span className={\`font-serif text-lg font-medium \${statusInfo.text}\`}>{table.number}</span>
                           </div>
                           <div>
                             <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-text-faint">Capacidad</p>
@@ -457,7 +375,7 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
                         </div>
 
                         {/* Status Label Pill */}
-                        <div className={`rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] ${statusInfo.border} ${statusInfo.bg} ${statusInfo.text}`}>
+                        <div className={\`rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] \${statusInfo.border} \${statusInfo.bg} \${statusInfo.text}\`}>
                           {STATUS_LABEL[table.status]}
                         </div>
                       </div>
@@ -510,140 +428,77 @@ export default function TableManagerClient({ initialTables }: { initialTables: T
         </motion.div>
       </motion.div>
 
-      {/* Agregar Nueva Mesa Modal: portal a body para cubrir sidebar (stacking fuera de <main>) */}
-      {portalReady
-        ? createPortal(
-            <AnimatePresence>
-              {isAdding && (
-                <div
-                  key="mesa-modal-overlay"
-                  className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-6"
-                >
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => setIsAdding(false)}
-                    className="absolute inset-0 bg-black/50 backdrop-blur-2xl backdrop-saturate-150 [-webkit-backdrop-filter:blur(40px)_saturate(1.15)]"
-                  />
-                  <motion.div
-                    role="dialog"
-                    aria-labelledby="mesa-nueva-title"
-                    aria-modal="true"
-                    initial={{ opacity: 0, scale: 0.96, y: 14 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.96, y: 14 }}
-                    transition={{ type: "spring", stiffness: 320, damping: 28 }}
-                    className="relative z-10 w-full max-w-lg overflow-hidden rounded-[1.75rem] border border-white/[0.08] bg-bg-card/92 shadow-[0_40px_80px_-24px_rgba(0,0,0,0.85)] backdrop-blur-xl backdrop-saturate-125 [-webkit-backdrop-filter:blur(20px)_saturate(1.1)]"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-              {/* Encabezado */}
-              <div className="relative overflow-hidden px-6 pb-5 pt-7 sm:px-8 sm:pb-6 sm:pt-8">
-                <div
-                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_100%_at_50%_-30%,rgba(201,160,84,0.14),transparent_55%)]"
-                  aria-hidden
-                />
-                <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-gold/35 to-transparent" aria-hidden />
-                <div className="relative flex items-start justify-between gap-4">
-                  <div className="min-w-0 space-y-2 pr-2">
-                    <span className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-gold/90">
-                      <LayoutGrid className="size-3.5 shrink-0 opacity-90" aria-hidden />
-                      Plano de sala
-                    </span>
-                    <h3
-                      id="mesa-nueva-title"
-                      className="font-serif text-[1.65rem] font-medium tracking-tight text-white sm:text-[1.85rem]"
+      {/* Agregar Nueva Mesa Modal */}
+      <AnimatePresence>
+        {isAdding && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsAdding(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-border-main bg-bg-card shadow-2xl"
+            >
+              <div className="border-b border-border-main bg-bg-solid/30 px-6 py-4 flex items-center justify-between">
+                <h3 className="font-serif text-xl font-medium text-text-primary">Añadir nueva mesa</h3>
+                <button onClick={() => setIsAdding(false)} className="text-text-muted hover:text-white transition-colors">
+                  <X className="size-4" />
+                </button>
+              </div>
+              
+              <div className="p-6">
+                <p className="mb-4 text-[11px] font-medium uppercase tracking-[0.2em] text-text-dim">Capacidad esperada (Pax)</p>
+                <div className="flex gap-2">
+                  {[2, 4, 6, 8, 10, 12].map((cap) => (
+                    <button
+                      key={cap}
+                      onClick={() => setNewTableCap(cap)}
+                      className={\`flex-1 rounded-xl py-3 font-serif text-xl transition-colors \${
+                        newTableCap === cap
+                          ? "bg-gold text-bg-solid font-medium shadow-[0_0_15px_rgba(201,160,84,0.3)]"
+                          : "border border-border-bright text-text-secondary hover:border-gold/50"
+                      }\`}
                     >
-                      Nueva mesa
-                    </h3>
-                  </div>
+                      {cap}
+                    </button>
+                  ))}
+                </div>
+
+                <p className="mt-8 text-[12px] leading-relaxed text-text-muted border-l-2 border-gold/30 pl-3">
+                  Se generará una cadena UUID alfanumérica única para esta mesa automáticamente. El QR podrá descargarse en la vista detallada.
+                </p>
+
+                <div className="mt-8 flex gap-3">
                   <button
-                    type="button"
                     onClick={() => setIsAdding(false)}
-                    className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-text-muted transition-colors hover:border-gold/35 hover:bg-white/[0.08] hover:text-white"
-                    aria-label="Cerrar"
-                  >
-                    <X className="size-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Vista previa creativa */}
-              <div className="border-y border-border-main/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,transparent_45%,rgba(0,0,0,0.2)_100%)] px-6 py-7 sm:px-8 sm:py-8">
-                <div className="flex flex-col items-center gap-4">
-                  <MesaCapacityPreview capacity={newTableCap} reduceMotion={reduceMotion} />
-                  <motion.div
-                    key={newTableCap}
-                    initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: reduceMotion ? 0 : 0.25 }}
-                    className="text-center"
-                  >
-                    <p className="font-serif text-lg text-white sm:text-xl">{mesaSizeLabel(newTableCap)}</p>
-                    <p className="mt-1 inline-flex items-center justify-center gap-2 text-[12px] font-medium tabular-nums text-gold/90">
-                      <Users className="size-3.5 opacity-90" aria-hidden />
-                      <span>{newTableCap} personas</span>
-                    </p>
-                  </motion.div>
-                </div>
-              </div>
-
-              {/* Capacidad */}
-              <div className="space-y-4 px-6 py-6 sm:px-8">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-text-dim">Capacidad</p>
-                <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
-                  {CAP_OPTIONS.map((cap) => {
-                    const selected = newTableCap === cap;
-                    return (
-                      <button
-                        key={cap}
-                        type="button"
-                        onClick={() => setNewTableCap(cap)}
-                        className={[
-                          "relative flex min-h-[52px] flex-col items-center justify-center rounded-2xl border py-3 transition-all",
-                          selected
-                            ? "border-gold/50 bg-gold/[0.12] text-gold shadow-[inset_0_0_0_1px_rgba(201,160,84,0.25),0_0_24px_-8px_rgba(201,160,84,0.35)]"
-                            : "border-border-main bg-bg-solid/40 text-text-secondary hover:border-gold/30 hover:text-text-primary",
-                        ].join(" ")}
-                      >
-                        <span className="font-serif text-2xl font-medium tabular-nums leading-none">{cap}</span>
-                        <span className="mt-1.5 text-[9px] font-medium uppercase tracking-wider text-text-dim">
-                          pax
-                        </span>
-                        {selected ? (
-                          <span className="pointer-events-none absolute -right-1 -top-1 size-2 rounded-full bg-gold shadow-[0_0_10px_rgba(201,160,84,0.9)]" />
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsAdding(false)}
-                    className="flex-1 rounded-2xl border border-border-main py-3.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-text-dim transition-colors hover:bg-bg-solid hover:text-text-primary"
+                    className="flex-1 rounded-xl border border-border-main py-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-text-dim hover:bg-bg-solid hover:text-text-primary transition-colors"
                   >
                     Cancelar
                   </button>
                   <button
-                    type="button"
                     onClick={handleCreate}
                     disabled={isPending}
-                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-gold py-3.5 text-[11px] font-bold uppercase tracking-[0.1em] text-bg-solid transition-all hover:bg-white hover:shadow-[0_0_28px_rgba(201,160,84,0.35)] disabled:opacity-50"
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-gold py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-bg-solid transition-all hover:bg-white hover:shadow-[0_0_20px_rgba(201,160,84,0.3)] disabled:opacity-50"
                   >
                     {isPending ? <Loader2 className="size-4 animate-spin" /> : null}
-                    {isPending ? "Configurando…" : "Activar mesa"}
+                    {isPending ? "Configurando..." : "Activar Mesa"}
                   </button>
                 </div>
               </div>
-                  </motion.div>
-                </div>
-              )}
-            </AnimatePresence>,
-            document.body
-          )
-        : null}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
+`;
+
+fs.writeFileSync('src/components/dashboard/TableManagerClient.tsx', Buffer.from(code).toString('utf-8'));

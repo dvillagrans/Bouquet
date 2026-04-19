@@ -74,7 +74,7 @@ export async function advanceOrderStatus(orderId: string, currentStatus: string)
 
   revalidatePath("/cocina");
   revalidatePath("/mesa/[codigo]/menu", "page");
-
+  revalidatePath("/mesero");
 }
 
 export async function undoOrderStatus(orderId: string, currentStatus: string) {
@@ -95,7 +95,7 @@ export async function undoOrderStatus(orderId: string, currentStatus: string) {
 
   revalidatePath("/cocina");
   revalidatePath("/mesa/[codigo]/menu", "page");
-
+  revalidatePath("/mesero");
 }
 
 export async function moveOrderToStatus(

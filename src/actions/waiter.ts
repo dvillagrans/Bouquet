@@ -136,6 +136,7 @@ export async function getWaiterTablesSummary() {
       capacity: table.capacity,
       status: table.status,
       parentTableId: table.parentTableId,
+      qrCode: table.qrCode,
       activeSession,
       orderCount: table.orders.length,
       pendingCount: pendingOrders,

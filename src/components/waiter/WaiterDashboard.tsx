@@ -18,6 +18,7 @@ interface TableSummary {
   capacity: number;
   status: TableStatus;
   parentTableId: string | null;
+  qrCode: string;
   activeSession: { guestName: string; pax: number; createdAt: Date } | null;
   orderCount: number;
   pendingCount: number;
@@ -66,6 +67,32 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
       console.error("Error cleaning table:", error);
       alert("Error al limpiar la mesa");
     }
+  };
+
+  const openTableDetail = async (table: TableSummary) => {
+    if (isJoinMode) return;
+
+    if (table.status === "DISPONIBLE") {
+      try {
+        await regenerateTableQr(table.id);
+        await loadTables();
+        setToast({
+          type: "success",
+          message: `Mesa ${table.number}: código QR actualizado`,
+        });
+      } catch (error) {
+        console.error(error);
+        setToast({
+          type: "error",
+          message: (error as Error).message || "No se pudo generar el QR",
+        });
+        return;
+      }
+    } else if (!isTableBusy(table.status)) {
+      return;
+    }
+
+    setSelectedTable(table.id);
   };
 
   const handleRegenerateQr = async (tableId: string, tableNumber: number) => {
@@ -347,7 +374,10 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
               <FloorMapClient
                 tables={mapTables}
                 readOnly
-                onTableClick={(id) => setSelectedTable(id)}
+                onTableClick={(id) => {
+                  const t = tables.find((x) => x.id === id);
+                  if (t) void openTableDetail(t);
+                }}
               />
             )}
           </div>
@@ -378,8 +408,8 @@ export default function WaiterDashboard({ allowJoinTables = false }: { allowJoin
                   onClick={() => {
                     if (isJoinMode) {
                       handleToggleJoinTable(table.id, isChild);
-                    } else if (isTableBusy(table.status)) {
-                      setSelectedTable(table.id);
+                    } else {
+                      void openTableDetail(table);
                     }
                   }}
                   className={`relative flex flex-col items-center justify-between rounded-lg border p-3 sm:p-4 transition-all duration-200 cursor-pointer aspect-square active:scale-[0.97] ${

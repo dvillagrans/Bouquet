@@ -1,8 +1,10 @@
-/** @jsxImportSource react */
+import sys
+
+content = """/** @jsxImportSource react */
 "use client";
 
 import { useState } from "react";
-import { TrendingUp, TrendingDown, Minus, BarChart3, Clock, DollarSign, Receipt, ArrowUpRight, Flame, Trophy, Coffee, Activity } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, BarChart3, Clock, DollarSign, Receipt, ArrowUpRight, Flame, Trophy, Coffee } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { DashboardReportData, Period } from "@/actions/reports";
 
@@ -138,15 +140,15 @@ function BarChart({ data }: { data: { label: string; value: number }[] }) {
 
 // ─── Stat Card Premium ─────────────────────────────────────────────────────────
 function StatCard({ stat, delay }: { stat: any, delay: number }) {
-  const isPos = stat.up === true;
-  const isNeg = stat.up === false;
+  const isPos = stat.trend > 0;
+  const isNeg = stat.trend < 0;
   const TIcon = isPos ? TrendingUp : isNeg ? TrendingDown : Minus;
   
   // Icon Mapping heuristics
   let Icon = Activity;
-  if (stat.label.toLowerCase().includes("ingreso") || stat.label.toLowerCase().includes("venta")) Icon = DollarSign;
-  else if (stat.label.toLowerCase().includes("ticket")) Icon = Receipt;
-  else if (stat.label.toLowerCase().includes("orden") || stat.label.toLowerCase().includes("comanda")) Icon = Flame;
+  if (stat.title.toLowerCase().includes("ingreso") || stat.title.toLowerCase().includes("venta")) Icon = DollarSign;
+  else if (stat.title.toLowerCase().includes("ticket")) Icon = Receipt;
+  else if (stat.title.toLowerCase().includes("orden") || stat.title.toLowerCase().includes("comanda")) Icon = Flame;
 
   return (
     <motion.div
@@ -160,10 +162,10 @@ function StatCard({ stat, delay }: { stat: any, delay: number }) {
       <div className="flex items-start justify-between relative z-10">
         <div>
           <p className="text-white/40 text-xs font-bold tracking-widest uppercase mb-1">
-            {stat.label}
+            {stat.title}
           </p>
           <h3 className="text-3xl font-black text-white tracking-tight">
-            {stat.label.includes("Ingreso") || stat.label.includes("Ticket") ? fmtK(stat.value as number) : stat.value}
+            {stat.title.includes("Ingreso") || stat.title.includes("Ticket") ? fmtK(stat.value as number) : stat.value}
           </h3>
         </div>
         <div className="p-3 bg-black/40 rounded-xl border border-white/5 text-gold">
@@ -177,7 +179,7 @@ function StatCard({ stat, delay }: { stat: any, delay: number }) {
           ${isPos ? "text-dash-green bg-dash-green/10" : isNeg ? "text-dash-red bg-dash-red/10" : "text-white/50 bg-white/5"}
         `}>
           <TIcon className="w-3 h-3" />
-          {stat.change.replace("%", "")}%
+          {Math.abs(stat.trend)}%
         </div>
         <span className="text-xs text-white/30 uppercase tracking-wider">vs prev</span>
       </div>
@@ -253,7 +255,7 @@ export default function ReportsView({
       {/* KPI Grid */}
       <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map((s, i) => (
-          <StatCard key={s.label} stat={s} delay={i * 0.1} />
+          <StatCard key={s.title} stat={s} delay={i * 0.1} />
         ))}
       </div>
 
@@ -311,11 +313,11 @@ export default function ReportsView({
                     </span>
                     <div>
                       <p className="text-sm font-bold text-gray-200">{item.name}</p>
-                      <p className="text-xs text-dash-green font-semibold mt-0.5 tracking-widest">{item.sold} vnd</p>
+                      <p className="text-xs text-dash-green font-semibold mt-0.5 tracking-widest">{item.qty} vnd</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-black text-white/90">{item.revenue}</p>
+                    <p className="text-sm font-black text-white/90">{fmtK(item.revenue)}</p>
                   </div>
                 </motion.div>
               ))
@@ -327,3 +329,7 @@ export default function ReportsView({
     </div>
   );
 }
+"""
+
+with open("src/components/dashboard/ReportsView.tsx", "w") as f:
+    f.write(content)

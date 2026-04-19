@@ -1,9 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import {
-  ArrowLeft,
   Copy,
   KeyRound,
   MapPin,
@@ -47,13 +45,6 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
     const iv = setInterval(() => load(zoneId), 60000);
     return () => clearInterval(iv);
   }, [zoneId, load]);
-
-  const status = useMemo(() => {
-    if (!data) return null;
-    const { restaurants, staffActive, staffTotal } = data.stats;
-    const ok = restaurants > 0 && staffActive > 0;
-    return { ok, staffActive, staffTotal };
-  }, [data]);
 
   const copy = async (text: string) => {
     try {
@@ -105,7 +96,7 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
     );
   }
 
-  if (!data || !status) {
+  if (!data) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] p-8 text-center text-[13px] text-red-500/80">
         <p>Esta zona no existe o fue eliminada.</p>
@@ -133,28 +124,6 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
         {/* Header / Staggered entry 1 */}
         <header className="mb-14 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between animate-in fade-in slide-in-from-bottom-[20px] duration-700 ease-out" style={{ animationFillMode: "both", animationDelay: "150ms" }}>
           <div className="max-w-2xl space-y-5">
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/zona"
-                className="group flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-400 transition-all hover:bg-white/[0.08] hover:text-gold"
-              >
-                <ArrowLeft className="size-3.5 transition-transform group-hover:-translate-x-1" />
-                Panel de Zona
-              </Link>
-              <div className="flex h-1 w-1 rounded-full bg-white/20" />
-              <span className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-neutral-300">
-                <MapPin className="size-3" />
-                {data.zone.name}
-              </span>
-              <div className="flex h-1 w-1 rounded-full bg-white/20" />
-              <span
-                className={`flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-[0.18em] ${status.ok ? "text-emerald-400/90" : "text-gold/90"}`}
-              >
-                <ShieldCheck className="size-3" />
-                {status.ok ? "Operativa" : "Revisar"}
-              </span>
-            </div>
-
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-gold/60 mb-3">Settings · Perfil</p>
               <h1 className="font-serif text-4xl md:text-5xl lg:text-[3.5rem] font-medium leading-[1.05] tracking-tight text-white">

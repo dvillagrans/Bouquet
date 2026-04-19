@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   X, LayoutGrid, BookOpen, ChefHat,
-  BarChart3, Users, Settings2, Store,
+  BarChart3, Users, Settings2, Store, UserRound,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,6 +24,7 @@ export const defaultRestaurantGroups: NavGroup[] = [
       { label: "Mesas & QR",     href: "/dashboard/mesas",   icon: LayoutGrid },
       { label: "Menú digital",   href: "/dashboard/menu",    icon: BookOpen   },
       { label: "Monitor cocina", href: "/cocina",             icon: ChefHat    },
+      { label: "Vista mesero",   href: "/mesero",             icon: UserRound  },
     ],
   },
   {

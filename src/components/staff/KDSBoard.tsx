@@ -1,8 +1,9 @@
+/** @jsxImportSource react */
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { RotateCcw, Utensils, Coffee, History, GripVertical } from "lucide-react";
+import { RotateCcw, Utensils, Coffee, History, GripVertical, Clock, CheckCircle2, ChevronRight, Flame } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -12,11 +13,14 @@ import {
   useSensors,
   useDroppable,
   useDraggable,
-  type DragEndEvent,
-  type DragStartEvent,
 } from "@dnd-kit/core";
-import { advanceOrderStatus, undoOrderStatus, moveOrderToStatus, getLiveOrders } from "@/actions/orders";
+import { motion, AnimatePresence } from "framer-motion";
+import { advanceOrderStatus, undoOrderStatus, moveOrderToStatus } from "@/actions/orders";
 import { createClient } from "@/lib/supabase/client";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const NOISE_SVG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MDAiIGhlaWdodD0iNDAwIj4KICA8ZmlsdGVyIGlkPSJub2lzZSI+CiAgICA8ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC44NSIgbnVtT2N0YXZlcz0iMyIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPgogIDwvZmlsdGVyPgogIDxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbHRlcj0idXJsKCNub2lzZSkiIG9wYWNpdHk9IjAuMDgiIG1peC1ibGVuZC1tb2RlPSJvdmVybGF5IiAvPgo8L3N2Zz4=";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,6 +36,13 @@ type OrderItem = {
 type OrderStatus = "pending" | "preparing" | "ready" | "delivered";
 type ColumnId    = "pending" | "preparing" | "ready";
 
+/** Estado normalizado para filtros (DB/caché pueden variar mayúsculas). */
+function normalizeBoardStatus(status: string): OrderStatus {
+  const s = status.toLowerCase();
+  if (s === "pending" || s === "preparing" || s === "ready" || s === "delivered") return s;
+  return "pending";
+}
+
 type Order = {
   id: string;
   tableCode: string;
@@ -39,6 +50,7 @@ type Order = {
   items: OrderItem[];
   createdAt: Date;
   deliveredAt?: Date;
+  guestName?: string | null;
 };
 
 // ─── Urgency helpers ──────────────────────────────────────────────────────────
@@ -52,500 +64,455 @@ function getUrgency(mins: number, status: OrderStatus): Urgency {
   return "normal";
 }
 
-const CARD_BORDER: Record<Urgency, string> = {
-  normal:   "border-wire",
-  warning:  "border-glow/70",
-  critical: "border-ember",
+const URGENGY_STYLES = {
+  normal:   "border-border-main bg-bg-card/45 hover:border-border-bright hover:bg-bg-card/60",
+  warning:  "border-gold/40 bg-gold/5 hover:border-gold/60",
+  critical: "border-dash-red/50 bg-dash-red/10 shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:border-dash-red/70",
 };
 
-const TIME_COLOR: Record<Urgency, string> = {
-  normal:   "text-dim",
-  warning:  "text-glow",
-  critical: "text-ember",
+const STATUS_ICONS = {
+  pending: Clock,
+  preparing: Flame,
+  ready: CheckCircle2,
 };
 
-const ADVANCE_BTN: Record<Urgency, string> = {
-  normal:   "border-wire text-dim hover:border-light/30 hover:text-light",
-  warning:  "border-glow/50 text-glow hover:border-glow hover:bg-glow/[0.06]",
-  critical: "border-ember/60 text-ember hover:border-ember hover:bg-ember/[0.06]",
-};
+// ─── Item Badge ───────────────────────────────────────────────────────────────
 
-// ─── Live clock ───────────────────────────────────────────────────────────────
-
-function LiveClock() {
-  const [time, setTime] = useState(() => new Date());
-  useEffect(() => {
-    const id = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
+function KDSItemRow({ it, mode = "normal" }: { it: OrderItem; mode?: "normal" | "compact" }) {
+  const isCocina = it.station === "cocina";
+  const Icon = isCocina ? Utensils : Coffee;
+  const icColor = isCocina ? "text-gold" : "text-dash-blue";
+  
   return (
-    <span className="font-mono text-[0.9rem] font-semibold tabular-nums text-light/70">
-      {time.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}
-    </span>
+    <div className="flex flex-col gap-1 py-3 border-b border-border-main/20 last:border-0">
+      <div className="flex items-start gap-3 justify-between">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 bg-bg-card p-1.5 rounded-md border border-border-main shadow-sm">
+            <span className="text-text-primary text-[11px] font-mono tracking-wider font-bold leading-none">{it.quantity}x</span>
+          </div>
+          <div className="flex flex-col">
+            <span className={`text-[13px] text-text-primary font-medium leading-relaxed ${mode === "compact" && "truncate w-32"}`}>{it.name}</span>
+            {it.variantName && (
+              <span className="text-[11px] text-gold/80 italic mt-1 flex items-center before:content-[''] before:w-1 before:h-[1px] before:bg-gold/40 before:mr-1.5">
+                {it.variantName}
+              </span>
+            )}
+            {it.notes && (
+              <span className="text-[10px] text-dash-red/90 bg-dash-red/10 px-1.5 py-[2px] rounded uppercase tracking-wider font-bold mt-1.5 w-fit leading-tight break-words border border-dash-red/20 shadow-sm">
+                ⚠ {it.notes}
+              </span>
+            )}
+          </div>
+        </div>
+        <Icon className={`w-4 h-4 shrink-0 ${icColor} opacity-50`} />
+      </div>
+    </div>
   );
 }
 
-// ─── OrderCard ────────────────────────────────────────────────────────────────
+// ─── Draggable Ticket ────────────────────────────────────────────────────────
 
-function OrderCard({
+function SortableTicket({
   order,
-  currentTime,
-  onAdvance,
-  onUndo,
-  isDragging = false,
+  now,
+  isOverlay = false,
 }: {
   order: Order;
-  currentTime: Date;
-  onAdvance: (id: string, status: OrderStatus) => void;
-  onUndo:    (id: string, status: OrderStatus) => void;
-  isDragging?: boolean;
+  now: Date;
+  isOverlay?: boolean;
 }) {
-  const mins    = Math.floor((currentTime.getTime() - order.createdAt.getTime()) / 60000);
+  const [isPending, startTransition] = useTransition();
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: order.id,
+    data: { status: order.status },
+  });
+
+  const style = transform
+    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
+    : undefined;
+
+  const mins = Math.floor((now.getTime() - new Date(order.createdAt).getTime()) / 60000);
   const urgency = getUrgency(mins, order.status);
 
-  const { attributes, listeners, setNodeRef } = useDraggable({ id: order.id });
-
-  const ADVANCE_LABEL: Record<OrderStatus, string> = {
-    pending:   "Empezar",
-    preparing: "Listo para salir",
-    ready:     "Entregar a mesa",
-    delivered: "",
-  };
+  // Group items by station for better scannability
+  const kitchenItems = order.items.filter(i => i.station === "cocina");
+  const barItems = order.items.filter(i => i.station === "barra");
 
   return (
     <div
       ref={setNodeRef}
-      className={[
-        "flex flex-col border bg-ink transition-all duration-200 select-none",
-        CARD_BORDER[urgency],
-        urgency === "critical" ? "bg-ember/[0.04]" : "",
-        isDragging ? "opacity-30 border-dashed" : "",
-      ].join(" ")}
-      style={isDragging ? undefined : { animation: "dash-row-enter 0.3s cubic-bezier(0.22,1,0.36,1) both" }}
+      style={style}
+      className={`
+        relative group rounded-xl overflow-hidden backdrop-blur-sm border outline-none select-none
+        transition-colors duration-300
+        ${URGENGY_STYLES[urgency]}
+        ${isOverlay ? "scale-[1.02] shadow-[0_0_30px_rgba(0,0,0,0.4)] opacity-95 z-50 cursor-grabbing bg-bg-card border-gold" : "shadow-md hover:shadow-lg"}
+        ${isDragging ? "opacity-30" : "opacity-100"}
+        ${isPending ? "opacity-50 grayscale" : ""}
+      `}
     >
-      {/* Card header — drag handle */}
-      <div
-        className="flex items-start justify-between border-b border-wire px-4 py-3 cursor-grab active:cursor-grabbing touch-none"
-        {...listeners}
+      {/* Top Header / Drag Handle */}
+      <div 
         {...attributes}
+        {...listeners}
+        className={`
+          flex items-center justify-between p-4 border-b border-border-main cursor-grab active:cursor-grabbing
+          ${urgency === "critical" ? "bg-dash-red/10" : urgency === "warning" ? "bg-gold/5" : "bg-bg-card/40"}
+        `}
       >
-        <div>
-          <div className="flex items-center gap-2">
-            {urgency === "critical" && (
-              <span
-                className="h-2 w-2 rounded-full bg-ember"
-                aria-hidden="true"
-                style={{ animation: "pulse-slow 1.6s ease-in-out infinite" }}
-              />
-            )}
-            {urgency === "warning" && (
-              <span className="h-2 w-2 rounded-full bg-glow" aria-hidden="true" />
-            )}
-            <span className="text-[0.75rem] font-bold uppercase tracking-[0.22em] text-light">
-              {order.tableCode}
-            </span>
-          </div>
-          <p className="mt-0.5 text-[0.58rem] font-medium text-dim/50">#{order.id.slice(-6)}</p>
-        </div>
-
         <div className="flex items-center gap-3">
-          <div className={`flex items-baseline gap-1 ${TIME_COLOR[urgency]}`}>
-            <span className="font-serif text-[1.6rem] font-semibold leading-none tabular-nums">
-              {mins}
-            </span>
-            <span className="text-[0.58rem] font-bold uppercase tracking-wider">min</span>
-          </div>
-
-          {order.status !== "pending" && order.status !== "delivered" && (
-            <button
-              onPointerDown={e => e.stopPropagation()}
-              onClick={() => onUndo(order.id, order.status)}
-              aria-label="Deshacer estado"
-              className="flex h-8 w-8 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light"
-            >
-              <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-            </button>
+          <GripVertical className="w-4 h-4 text-text-primary/20" />
+          <span className="font-serif font-medium text-2xl text-text-primary bg-bg-solid/60 px-3 py-0.5 rounded-lg shadow-sm border border-border-bright">
+            {order.tableCode}
+          </span>
+          {order.guestName && (
+             <span className="text-[9px] text-gold uppercase tracking-[0.2em] font-bold border border-gold/20 bg-gold/5 px-2 py-1 rounded shadow-sm">
+                {order.guestName}
+             </span>
           )}
-
-          <GripVertical className="h-4 w-4 text-dim/20 shrink-0" aria-hidden="true" />
+        </div>
+        
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-mono font-bold tracking-widest tabular-nums
+          ${urgency === "critical" ? "bg-dash-red text-text-primary border-dash-red-bg animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.2)]" :
+            urgency === "warning" ? "bg-gold text-bg-solid border-gold-light shadow-sm" :
+            "bg-bg-solid/80 text-text-muted border-border-bright shadow-sm"}
+        `}>
+          <Clock className="w-3.5 h-3.5" />
+          {mins}M
         </div>
       </div>
 
-      {/* Items list */}
-      <div className="flex flex-col divide-y divide-wire/50 px-4">
-        {order.items.map(item => (
-          <div key={item.id} className="py-3">
-            <div className="flex items-start gap-3">
-              <span className="w-7 shrink-0 pt-0.5 text-center text-[0.72rem] font-bold tabular-nums text-dim">
-                {item.quantity}×
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[0.9rem] font-semibold text-light leading-snug">{item.name}</p>
-                {item.variantName && (
-                  <p className="mt-0.5 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-glow/75">
-                    {item.variantName}
-                  </p>
-                )}
-              </div>
-              <span className="shrink-0 pt-0.5 text-dim/40" title={`Estación: ${item.station}`}>
-                {item.station === "cocina"
-                  ? <Utensils className="h-3 w-3" aria-hidden="true" />
-                  : <Coffee   className="h-3 w-3" aria-hidden="true" />}
-              </span>
+      {/* Items List */}
+      <div className="p-4 bg-transparent flex flex-col max-h-[350px] overflow-y-auto custom-scrollbar">
+        {kitchenItems.length > 0 && (
+          <div className="mb-4">
+            <div className="text-[10px] uppercase font-bold text-gold tracking-[0.2em] mb-2 border-b border-gold/10 pb-1.5 flex items-center justify-between">
+              <span>Cocina</span>
             </div>
-            {item.notes && (
-              <p className="ml-10 mt-1.5 border-l-2 border-glow/50 pl-2.5 text-[0.68rem] font-medium text-glow/80">
-                {item.notes}
-              </p>
-            )}
+            {kitchenItems.map(it => <KDSItemRow key={it.id} it={it} />)}
           </div>
-        ))}
-      </div>
-
-      {/* Action button */}
-      <div className="mt-auto border-t border-wire p-3">
-        {order.status !== "delivered" ? (
-          <button
-            onPointerDown={e => e.stopPropagation()}
-            onClick={() => onAdvance(order.id, order.status)}
-            className={[
-              "flex min-h-[48px] w-full items-center justify-center border",
-              "text-[0.72rem] font-bold uppercase tracking-[0.18em] transition-all duration-150 active:scale-[0.99]",
-              ADVANCE_BTN[urgency],
-            ].join(" ")}
-          >
-            {ADVANCE_LABEL[order.status]}
-          </button>
-        ) : (
-          <div className="flex min-h-[40px] w-full items-center justify-center border border-sage-deep/30 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-sage-deep/70">
-            Entregada · {Math.floor((currentTime.getTime() - (order.deliveredAt?.getTime() ?? 0)) / 60000)} min
+        )}
+        
+        {barItems.length > 0 && (
+          <div className={`${kitchenItems.length > 0 ? "mt-2 pt-2 border-t border-dashed border-border-main/50" : ""}`}>
+            <div className="text-[10px] uppercase font-bold text-dash-blue tracking-[0.2em] mb-2 border-b border-dash-blue/10 pb-1.5 flex items-center justify-between">
+              <span>Barra</span>
+            </div>
+            {barItems.map(it => <KDSItemRow key={it.id} it={it} />)}
           </div>
         )}
       </div>
+
+      {/* Footer Actions (Optional on Tap/Hold) */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
     </div>
   );
 }
 
-// ─── Drag overlay ghost ───────────────────────────────────────────────────────
-
-function GhostCard({ order }: { order: Order }) {
-  return (
-    <div className="flex flex-col border border-glow/60 bg-ink shadow-2xl -rotate-1 w-72 pointer-events-none">
-      <div className="border-b border-wire px-4 py-3">
-        <span className="text-[0.75rem] font-bold uppercase tracking-[0.22em] text-light">
-          {order.tableCode}
-        </span>
-        <p className="mt-0.5 text-[0.6rem] text-dim">
-          {order.items.length} platillo{order.items.length !== 1 ? "s" : ""}
-        </p>
-      </div>
-      <div className="px-4 py-2">
-        <p className="text-[0.72rem] font-medium text-dim/70 truncate">
-          {order.items.slice(0, 2).map(i =>
-            `${i.quantity}× ${i.name}${i.variantName ? ` (${i.variantName})` : ""}`
-          ).join(", ")}
-          {order.items.length > 2 ? ` +${order.items.length - 2}` : ""}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Droppable column ─────────────────────────────────────────────────────────
+// ─── Droppable Column ─────────────────────────────────────────────────────────
 
 function KDSColumn({
-  columnId,
-  label,
-  dot,
-  count,
-  children,
-  empty,
+  id,
+  title,
+  orders,
+  now,
 }: {
-  columnId?: ColumnId;
-  label: string;
-  dot: string;
-  count: number;
-  children: React.ReactNode;
-  empty: string;
+  id: ColumnId;
+  title: string;
+  orders: Order[];
+  now: Date;
 }) {
-  const droppable = columnId ? useDroppable({ id: columnId }) : null; // eslint-disable-line react-hooks/rules-of-hooks
+  const { setNodeRef, isOver } = useDroppable({ id });
+  const Icon = STATUS_ICONS[id];
 
   return (
-    <div
-      ref={droppable?.setNodeRef}
-      className={[
-        "flex min-h-0 flex-col border border-wire bg-canvas transition-all duration-150",
-        droppable?.isOver ? "border-glow/50 bg-glow/[0.025] ring-1 ring-glow/20 ring-inset" : "",
-      ].join(" ")}
-    >
-      {/* Column header */}
-      <div className="flex items-center justify-between border-b border-wire px-5 py-4">
-        <div className="flex items-center gap-2.5">
-          <span className={`h-2 w-2 rounded-full ${dot}`} aria-hidden="true" />
-          <span className="text-[0.6rem] font-bold uppercase tracking-[0.32em] text-dim">{label}</span>
-        </div>
-        <span className="font-serif text-[1.1rem] font-semibold leading-none text-light">{count}</span>
+    <div className="flex flex-col h-full bg-bg-card/30 backdrop-blur-md rounded-2xl border border-border-main overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)] relative">
+      {/* Heavy shadow for drop affordance */}
+      {isOver && <div className="absolute inset-0 ring-1 ring-gold/40 border border-gold/40 bg-gold/5 z-0 pointer-events-none transition-all duration-300"></div>}
+
+      <div className={`
+        relative px-6 py-4 flex items-center justify-between border-b z-10 backdrop-blur-sm
+        ${id === "pending" ? "border-border-bright bg-bg-card/80" : 
+          id === "preparing" ? "border-gold/20 bg-gold/[0.08]" : 
+          "border-dash-green/20 bg-dash-green/[0.05]"}
+      `}>
+            <div className="flex items-center gap-3">
+              <Icon className={`w-5 h-5 ${
+                id === "pending" ? "text-text-muted" :
+                id === "preparing" ? "text-gold" :
+                "text-dash-green"
+              }`} />
+              <h2 className="text-[11px] font-bold tracking-[0.2em] font-mono uppercase text-text-primary drop-shadow-md">
+                {title}
+              </h2>
+            </div>
+            <span className="flex items-center justify-center bg-bg-solid/90 border border-border-main shadow-inner text-gold font-mono text-[11px] font-bold px-3 py-1 rounded-sm min-w-[32px] tabular-nums">
+              {orders.length}
+            </span>
       </div>
 
-      {/* Cards */}
-      <div className="flex flex-col gap-3 overflow-y-auto p-4 flex-1">
-        {count === 0
-          ? <p className="mt-8 text-center text-[0.72rem] font-medium text-dim/40 italic">{empty}</p>
-          : children}
+      <div
+        ref={setNodeRef}
+        className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5 relative z-10 custom-scrollbar"
+      >
+        <AnimatePresence>
+          {orders.length === 0 ? (
+             <motion.div 
+               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+               className="h-full flex flex-col items-center justify-center text-center text-text-primary/20 italic space-y-3"
+             >
+                <div className="p-6 rounded-full border border-dashed border-border-main/50 mb-2">
+                  <Icon className="w-8 h-8 opacity-20" />
+                </div>
+                <span className="text-[10px] tracking-[0.2em] font-bold uppercase">Sin comandas</span>
+             </motion.div>
+          ) : (
+            orders.map(o => (
+              <motion.div
+                key={o.id}
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.15 } }}
+                layout
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              >
+                <SortableTicket order={o} now={now} />
+              </motion.div>
+            ))
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
 }
 
-// ─── KDSBoard ─────────────────────────────────────────────────────────────────
+// ─── Main Board ───────────────────────────────────────────────────────────────
 
-type StationFilter = "todas" | "cocina" | "barra";
-type ViewMode      = "activas" | "historial";
-
-export default function KDSBoard({
-  initialOrders,
-  defaultStation = "todas",
-}: {
-  initialOrders: Order[];
-  defaultStation?: "todas" | "cocina" | "barra";
-}) {
+export default function KDSBoard({ initialOrders, defaultStation }: { initialOrders: Order[], defaultStation?: string }) {
   const router = useRouter();
-  const [orders, setOrders]             = useState<Order[]>(initialOrders);
-  const [activeId, setActiveId]         = useState<string | null>(null);
-  const [, startTransition]             = useTransition();
-  const [currentTime, setCurrentTime]   = useState(new Date());
-  const [view, setView]                 = useState<ViewMode>("activas");
-  const [station, setStation]           = useState<StationFilter>(defaultStation);
+  const [orders, setOrders] = useState<Order[]>(initialOrders);
+  const [now, setNow] = useState(new Date());
+  const [showHistory, setShowHistory] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
-  useEffect(() => { setOrders(initialOrders); }, [initialOrders]);
-
-  // Realtime subscription
+  // Time refresher
   useEffect(() => {
-    const supabase = createClient();
-    const channel  = supabase
-      .channel("realtime-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "Order" }, async () => {
-        try {
-          const freshOrders = await getLiveOrders();
-          setOrders(freshOrders);
-        } catch(e) {
-          console.error(e);
-        }
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [router]);
-
-  // Tick every minute for urgency timer
-  useEffect(() => {
-    const id = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(id);
+    const int = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(int);
   }, []);
 
-  // ── DnD sensors ──────────────────────────────────────────────────────────────
-  const sensors = useSensors(
-    useSensor(MouseSensor,  { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor,  { activationConstraint: { delay: 200, tolerance: 8 } }),
-  );
+  // Supabase RT
+  useEffect(() => {
+    const supabase = createClient();
+    const ch = supabase
+      .channel("live_orders_kds")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "orders" },
+        () => router.refresh() 
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [router]);
 
-  function handleDragStart({ active }: DragStartEvent) {
-    setActiveId(active.id as string);
-  }
-
-  function handleDragEnd({ active, over }: DragEndEvent) {
-    setActiveId(null);
-    if (!over) return;
-
-    const orderId      = active.id as string;
-    const targetColumn = over.id as ColumnId;
-    const order        = orders.find(o => o.id === orderId);
-
-    if (!order || order.status === targetColumn || order.status === "delivered") return;
-
-    // Optimistic update
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: targetColumn } : o));
-
-    startTransition(async () => {
-      try {
-        await moveOrderToStatus(orderId, targetColumn);
-      } catch {
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: order.status } : o));
-      }
-    });
-  }
-
-  // ── Advance / undo (button clicks) ───────────────────────────────────────────
-  function advanceOrderState(orderId: string, currentStatus: OrderStatus) {
-    const next: Record<OrderStatus, OrderStatus> = {
-      pending: "preparing", preparing: "ready", ready: "delivered", delivered: "delivered",
-    };
-    const nextStatus = next[currentStatus];
-    setOrders(prev => prev.map(o =>
-      o.id === orderId
-        ? { ...o, status: nextStatus, deliveredAt: nextStatus === "delivered" ? new Date() : o.deliveredAt }
-        : o
-    ));
-    startTransition(async () => {
-      try {
-        await advanceOrderStatus(orderId, currentStatus);
-      } catch {
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: currentStatus } : o));
-      }
-    });
-  }
-
-  function undoOrderState(orderId: string, currentStatus: OrderStatus) {
-    const prev: Record<OrderStatus, OrderStatus> = {
-      pending: "pending", preparing: "pending", ready: "preparing", delivered: "ready",
-    };
-    const prevStatus = prev[currentStatus];
-    setOrders(orders => orders.map(o => o.id === orderId ? { ...o, status: prevStatus } : o));
-    startTransition(async () => {
-      try {
-        await undoOrderStatus(orderId, currentStatus);
-      } catch {
-        setOrders(orders => orders.map(o => o.id === orderId ? { ...o, status: currentStatus } : o));
-      }
-    });
-  }
-
-  // ── Filters ──────────────────────────────────────────────────────────────────
-  function filterByStation(list: Order[]): Order[] {
-    return list
-      .map(o => station === "todas" ? o : { ...o, items: o.items.filter(i => i.station === station) })
-      .filter(o => o.items.length > 0);
-  }
-
-  const active  = filterByStation(orders.filter(o => o.status !== "delivered"));
-  const history = filterByStation(orders.filter(o => o.status === "delivered"))
-    .sort((a, b) => (b.deliveredAt?.getTime() ?? 0) - (a.deliveredAt?.getTime() ?? 0));
-
-  const pending   = active.filter(o => o.status === "pending");
-  const preparing = active.filter(o => o.status === "preparing");
-  const ready     = active.filter(o => o.status === "ready");
+  useEffect(() => setOrders(initialOrders), [initialOrders]);
 
   const activeOrder = activeId ? orders.find(o => o.id === activeId) : null;
 
-  const STATION_TABS: { label: string; value: StationFilter }[] = [
-    { label: "Todas",  value: "todas"  },
-    { label: "Cocina", value: "cocina" },
-    { label: "Barra",  value: "barra"  },
-  ];
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+  );
+
+  async function handleDragEnd(e: any) {
+    setActiveId(null);
+    const { active, over } = e;
+    if (!over) return;
+
+    const orderId = active.id as string;
+    const newStatus = over.id as OrderStatus;
+    const order = orders.find((o) => o.id === orderId);
+    if (
+      !order ||
+      normalizeBoardStatus(order.status) === "delivered" ||
+      normalizeBoardStatus(order.status) === newStatus ||
+      newStatus === "delivered"
+    )
+      return;
+
+    const snapshot = [...orders];
+    setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status: newStatus } : o)));
+
+    try {
+      await moveOrderToStatus(orderId, newStatus);
+    } catch (err) {
+      setOrders(snapshot);
+      alert("Error moviendo el ticket");
+    }
+  }
+
+  // Solo tablero activo: nunca mostrar entregadas en columnas (p. ej. tras marcar desde mesero).
+  const boardOrders = orders.filter((o) => normalizeBoardStatus(o.status) !== "delivered");
+
+  const pending = boardOrders
+    .filter((o) => normalizeBoardStatus(o.status) === "pending")
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const prep = boardOrders
+    .filter((o) => normalizeBoardStatus(o.status) === "preparing")
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  const ready = boardOrders
+    .filter((o) => normalizeBoardStatus(o.status) === "ready")
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+  const recentHist = orders
+    .filter((o) => normalizeBoardStatus(o.status) === "delivered")
+    .sort((a, b) => new Date(b.deliveredAt || b.createdAt).getTime() - new Date(a.deliveredAt || a.createdAt).getTime())
+    .slice(0, 15);
 
   return (
-    <div className="flex h-screen flex-col bg-ink text-light">
+    <div className="relative min-h-screen bg-bg-solid text-text-primary flex flex-col font-sans overflow-hidden">
+      {/* Background Noise & Lighting */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+        <div
+          className="absolute inset-0 z-0 opacity-30 mix-blend-overlay"
+          style={{ backgroundImage: `url("${NOISE_SVG}")`, backgroundRepeat: "repeat" }}
+        />
+        <div className="absolute -left-[20%] -top-[20%] h-[min(80vh,600px)] w-[min(100vw,800px)] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(201,160,84,0.08),transparent_60%)] blur-[100px]" />
+        <div className="absolute top-[20%] -right-[10%] h-[60vh] w-[60vw] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(77,132,96,0.05),transparent_60%)] blur-[100px]" />
+      </div>
 
-      {/* ── Top bar ─────────────────────────────────────────── */}
-      <header
-        className="shrink-0 border-b border-wire bg-canvas px-6 py-4"
-        style={{ animation: "reveal-up 0.4s cubic-bezier(0.22,1,0.36,1) both" }}
-      >
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-5">
-            <div>
-              <p className="text-[0.5rem] font-bold uppercase tracking-[0.44em] text-dim">Monitor de cocina</p>
-              <h1 className="mt-1 font-serif text-[1.6rem] font-medium leading-none tracking-[-0.02em] text-light">
-                Kitchen Display
-              </h1>
-            </div>
-            <div className="hidden items-center border-l border-wire pl-5 sm:flex">
-              <LiveClock />
-            </div>
+      {/* Header */}
+      <header className="relative z-10 px-8 py-5 flex items-center justify-between border-b border-border-main bg-bg-card/40 backdrop-blur-md sticky top-0">
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-3">
+             <Flame className="w-6 h-6 text-gold" strokeWidth={1.5} />
+             <h1 className="font-serif text-3xl font-medium tracking-tight text-text-primary">
+               Kitchen UI Station
+             </h1>
           </div>
+          <span className="font-mono text-[10px] uppercase tracking-[0.3em] font-bold text-text-muted mt-0.5" style={{ marginLeft: "36px" }}>
+             Bouquet OS &copy; Live Sync
+          </span>
+        </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Station filter */}
-            <div className="flex border-b border-wire">
-              {STATION_TABS.map(({ label, value }) => (
-                <button
-                  key={value}
-                  onClick={() => setStation(value)}
-                  className={[
-                    "px-4 pb-2.5 pt-1.5 text-[0.62rem] font-bold uppercase tracking-[0.2em] transition-colors duration-150",
-                    station === value ? "border-b-[1.5px] border-glow text-glow" : "text-dim hover:text-light",
-                  ].join(" ")}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            <div className="h-5 w-px bg-wire" aria-hidden="true" />
-
-            {/* View mode */}
-            <div className="flex border-b border-wire">
-              {([
-                { label: `Activas · ${active.length}`, value: "activas"   as ViewMode },
-                { label: "Historial",                   value: "historial" as ViewMode },
-              ] as const).map(({ label, value }) => (
-                <button
-                  key={value}
-                  onClick={() => setView(value)}
-                  className={[
-                    "flex items-center gap-1.5 px-4 pb-2.5 pt-1.5 text-[0.62rem] font-bold uppercase tracking-[0.2em] transition-colors duration-150",
-                    view === value ? "border-b-[1.5px] border-glow text-glow" : "text-dim hover:text-light",
-                  ].join(" ")}
-                >
-                  {value === "historial" && <History className="h-3 w-3" aria-hidden="true" />}
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowHistory(true)}
+            className="group flex items-center gap-2.5 px-5 py-2.5 bg-bg-solid/60 hover:bg-gold/10 rounded-lg transition-all border border-border-main hover:border-gold/30 shadow-sm"
+          >
+            <History className="w-4 h-4 text-gold" strokeWidth={2} /> 
+            <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-text-primary group-hover:text-gold transition-colors">Historial</span>
+          </button>
         </div>
       </header>
 
-      {/* ── Board ───────────────────────────────────────────── */}
-      {view === "activas" ? (
+      {/* Main Board */}
+      <main className="relative z-10 flex-1 p-8 overflow-hidden flex gap-8 h-[calc(100vh-94px)]">
         <DndContext
           sensors={sensors}
-          onDragStart={handleDragStart}
+          onDragStart={(e) => setActiveId(e.active.id as string)}
           onDragEnd={handleDragEnd}
-          onDragCancel={() => setActiveId(null)}
         >
-          <div className="grid flex-1 grid-cols-1 gap-px overflow-hidden bg-wire md:grid-cols-3">
-            <KDSColumn columnId="pending" label="Nuevas" dot="bg-ember" count={pending.length} empty="Sin órdenes nuevas">
-              {pending.map(o => (
-                <OrderCard key={o.id} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} isDragging={o.id === activeId} />
-              ))}
-            </KDSColumn>
-
-            <KDSColumn columnId="preparing" label="En preparación" dot="bg-glow" count={preparing.length} empty="Estación libre">
-              {preparing.map(o => (
-                <OrderCard key={o.id} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} isDragging={o.id === activeId} />
-              ))}
-            </KDSColumn>
-
-            <KDSColumn columnId="ready" label="Listos" dot="bg-sage-deep" count={ready.length} empty="Sin platillos esperando salir">
-              {ready.map(o => (
-                <OrderCard key={o.id} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} isDragging={o.id === activeId} />
-              ))}
-            </KDSColumn>
+          {/* Columns */}
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6 h-full min-h-0">
+            <KDSColumn id="pending" title="Entrantes" orders={pending} now={now} />
+            <KDSColumn id="preparing" title="En Preparación" orders={prep} now={now} />
+            <KDSColumn id="ready" title="Listos para salir" orders={ready} now={now} />
           </div>
 
-          <DragOverlay dropAnimation={null}>
-            {activeOrder && <GhostCard order={activeOrder} />}
+          <DragOverlay dropAnimation={{ duration: 250, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
+            {activeOrder ? <SortableTicket order={activeOrder} now={now} isOverlay /> : null}
           </DragOverlay>
         </DndContext>
+      </main>
 
-      ) : (
-        <div className="flex-1 overflow-y-auto p-6">
-          <p className="mb-6 text-[0.54rem] font-bold uppercase tracking-[0.44em] text-dim">
-            Historial
-          </p>
-          {history.length === 0 ? (
-            <p className="mt-16 text-center text-[0.8rem] font-medium text-dim/40 italic">
-              No hay órdenes entregadas.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {history.map(o => (
-                <OrderCard key={`h-${o.id}`} order={o} currentTime={currentTime} onAdvance={advanceOrderState} onUndo={undoOrderState} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* History Sidemenu */}
+      <AnimatePresence>
+        {showHistory && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-bg-card backdrop-blur-sm z-50 flex justify-end"
+            onClick={() => setShowHistory(false)}
+          >
+            <motion.div
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 30, stiffness: 250 }}
+              className="w-full max-w-md h-full bg-bg-card/95 backdrop-blur-2xl border-l border-border-main shadow-[-10px_0_40px_rgba(0,0,0,0.3)] flex flex-col"
+              onClick={e => e.stopPropagation()} // prevent dismiss
+            >
+              <div className="px-8 py-6 border-b border-border-main bg-bg-card/40 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <History className="w-5 h-5 text-gold" strokeWidth={1.5} />
+                  <h2 className="font-serif text-2xl tracking-tight text-text-primary">Recientes</h2>
+                </div>
+                <button onClick={() => setShowHistory(false)} className="p-2.5 rounded-full border border-border-main hover:bg-bg-hover hover:border-border-bright transition-all group">
+                  <ChevronRight className="w-4 h-4 text-text-muted group-hover:text-text-primary" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
+                {recentHist.length === 0 ? (
+                  <p className="text-center font-mono font-bold text-[10px] uppercase tracking-[0.2em] text-text-muted mt-12">No hay tickets entregados recientemente.</p>
+                ) : (
+                  recentHist.map(o => (
+                    <div key={o.id} className="bg-bg-solid/40 rounded-xl border border-border-main p-6 opacity-70 hover:opacity-100 hover:border-gold/30 hover:bg-gold/[0.02] transition-colors duration-300">
+                      <div className="flex justify-between items-start mb-4 pb-3 border-b border-border-main/50">
+                        <div className="flex items-center gap-3">
+                          <span className="font-serif font-medium text-xl text-text-primary bg-bg-card/80 px-2.5 py-[1px] rounded shadow-sm border border-border-main">
+                            {o.tableCode}
+                          </span>
+                          {o.guestName && <span className="text-[9px] text-gold uppercase tracking-[0.2em] font-bold border border-gold/20 bg-gold/5 px-2 py-1 rounded">{o.guestName}</span>}
+                        </div>
+                        <span className="text-[10px] font-bold text-dash-green bg-dash-green/10 border border-dash-green/20 px-2 py-1 uppercase tracking-[0.1em] rounded shadow-sm">Entregado</span>
+                      </div>
+                      
+                      <div className="space-y-2 opacity-60">
+                         {o.items.map(it => (
+                           <div key={it.id} className="flex justify-between text-[13px] font-medium text-text-muted">
+                             <span><span className="font-bold text-text-primary mr-1">{it.quantity}x</span> {it.name}</span>
+                           </div>
+                         ))}
+                      </div>
+
+                      <div className="mt-5 pt-4 border-t border-border-main/50 flex gap-3">
+                        <button
+                          onClick={async () => {
+                            await undoOrderStatus(o.id, "delivered");
+                            setShowHistory(false);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-bg-card border border-dash-red/20 text-dash-red text-[11px] font-bold rounded-lg hover:bg-dash-red/[0.05] hover:border-dash-red/40 transition-all uppercase tracking-[0.1em]"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" /> Revertir Salida
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <style dangerouslySetInnerHTML={{__html:`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(0,0,0,0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.1);
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255,255,255,0.3);
+        }
+      `}} />
     </div>
   );
 }

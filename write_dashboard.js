@@ -1,4 +1,6 @@
+const fs = require('fs');
 
+const code = `
 "use client";
 
 import { usePathname } from "next/navigation";
@@ -54,7 +56,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 15 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const } },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
   };
 
   return (
@@ -63,7 +65,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
         <div
           className="absolute inset-0 z-0 opacity-30 mix-blend-overlay"
-          style={{ backgroundImage: `url("${NOISE_SVG}")`, backgroundRepeat: "repeat" }}
+          style={{ backgroundImage: \`url("\${NOISE_SVG}")\`, backgroundRepeat: "repeat" }}
         />
         <div className="absolute -left-40 -top-40 h-[min(80vh,600px)] w-[min(100vw,800px)] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(201,160,84,0.08),transparent_60%)] blur-3xl" />
         <div className="absolute -bottom-40 -right-40 h-[60vh] w-[60vw] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(77,132,96,0.05),transparent_60%)] blur-3xl" />
@@ -105,7 +107,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
               },
               {
                 label: "Mesas Ocupadas",
-                value: `${metrics.activeTables} / ${metrics.totalTables}`,
+                value: \`\${metrics.activeTables} / \${metrics.totalTables}\`,
                 icon: LayoutGrid,
               },
               {
@@ -185,7 +187,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
                  <div
                    className="size-full rounded-full transition-all duration-1000 ease-out"
                    style={{
-                     background: `conic-gradient(var(--color-gold) ${occPct * 3.6}deg, var(--color-border-main) 0deg)`,
+                     background: \`conic-gradient(var(--color-gold) \${occPct * 3.6}deg, var(--color-border-main) 0deg)\`,
                    }}
                  />
                  <div className="absolute inset-[12px] flex flex-col items-center justify-center rounded-full bg-bg-card shadow-2xl">
@@ -211,3 +213,6 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/components/dashboard/DashboardOverview.tsx', code);

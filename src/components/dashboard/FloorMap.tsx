@@ -1,9 +1,9 @@
 "use client";
 
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Stage, Layer, Rect, Circle, Text, Group } from "react-konva";
 import type Konva from "konva";
-import { Save, Edit3, Eye, Move, Circle as CircleIcon, Square } from "lucide-react";
+import { Save, Edit3, Eye, Move, Circle as CircleIcon, Square, Activity } from "lucide-react";
 import type { Table, TableStatus } from "@/generated/prisma";
 
 /* ── Design tokens (mirrors CSS vars) ─────────────────────────── */
@@ -207,24 +207,271 @@ const MemoizedTableNode = memo(
   }
 );
 
-/* ── Legend bar ────────────────────────────────────────────────── */
-function Legend() {
-  const items = [
-    { label: "Disponible", color: C.sage },
-    { label: "Ocupada",    color: C.glow },
-    { label: "Por limpiar",color: C.ember },
-  ];
+/* ── Live instrument panel ─────────────────────────────────────── */
+function StatusCell({
+  label,
+  color,
+  count,
+  delay,
+  emphasize,
+}: {
+  label: string;
+  color: string;
+  count: number;
+  delay: number;
+  emphasize?: boolean;
+}) {
   return (
-    <div className="flex items-center gap-5">
-      {items.map(({ label, color }) => (
-        <div key={label} className="flex items-center gap-1.5">
-          <span
-            className="h-2 w-2 rounded-full"
-            style={{ background: color }}
+    <div
+      className="group relative flex items-center gap-3 border-r border-wire/60 px-4 py-3 transition-colors last:border-r-0 hover:bg-light/[0.025]"
+      style={{ animation: `reveal-up 0.55s ${delay}s cubic-bezier(0.22,1,0.36,1) both` }}
+    >
+      <span className="relative flex size-2.5 shrink-0 items-center justify-center">
+        <span
+          aria-hidden
+          className="absolute rounded-full"
+          style={{
+            inset: "-7px",
+            border: `1px solid ${color}33`,
+            animation: "pulse-slow 2.8s ease-out infinite",
+            animationDelay: `${delay * 2}s`,
+          }}
+        />
+        <span
+          aria-hidden
+          className="absolute size-2 rounded-full"
+          style={{
+            background: color,
+            boxShadow: `0 0 12px ${color}AA, inset 0 0 4px ${color}`,
+            animation: emphasize
+              ? "pulse-slow 1.4s ease-in-out infinite"
+              : "pulse-slow 2.4s ease-in-out infinite",
+            animationDelay: `${delay}s`,
+          }}
+        />
+      </span>
+      <span
+        className="font-serif text-[1.3rem] font-semibold leading-none tabular-nums text-light"
+        style={{ textShadow: `0 0 18px ${color}33` }}
+      >
+        {count.toString().padStart(2, "0")}
+      </span>
+      <span className="text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-dim transition-colors group-hover:text-light/85">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function LiveBadge() {
+  return (
+    <div className="flex items-center gap-2.5 border-r border-wire/60 px-4 py-3">
+      <span className="relative flex size-2.5 items-center justify-center">
+        <span
+          aria-hidden
+          className="absolute size-2 rounded-full bg-ember"
+          style={{ animation: "pulse-slow 1.2s ease-in-out infinite" }}
+        />
+        <span
+          aria-hidden
+          className="absolute rounded-full border border-ember/50"
+          style={{ inset: "-6px", animation: "pulse-slow 2s ease-out infinite" }}
+        />
+      </span>
+      <span className="flex flex-col leading-none">
+        <span className="font-mono text-[0.5rem] font-bold uppercase tracking-[0.3em] text-ember/80">
+          ●  Live
+        </span>
+        <span className="mt-1 hidden text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-light/85 sm:inline">
+          Plano de sala
+        </span>
+      </span>
+    </div>
+  );
+}
+
+function SyncClock() {
+  const [clock, setClock] = useState<string | null>(null);
+  useEffect(() => {
+    const tick = () =>
+      setClock(
+        new Date().toLocaleTimeString("es-MX", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+      );
+    tick();
+    const id = setInterval(tick, 30_000);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div className="hidden flex-col justify-center border-r border-wire/60 px-4 py-2 text-right md:flex">
+      <span className="font-mono text-[0.5rem] font-bold uppercase tracking-[0.28em] text-dim">
+        Última sync
+      </span>
+      <span className="mt-1 font-mono text-[0.78rem] font-semibold tabular-nums text-light">
+        {clock ?? "--:--"}
+      </span>
+    </div>
+  );
+}
+
+function EditButton({
+  active,
+  onClick,
+}: {
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={[
+        "group relative inline-flex h-9 items-center gap-2 overflow-hidden border px-5 text-[0.68rem] font-bold uppercase tracking-[0.2em] transition-all hover:-translate-y-px",
+        active
+          ? "border-wire bg-canvas text-dim hover:border-light/30 hover:text-light"
+          : "border-glow/40 bg-glow/[0.04] text-glow hover:border-glow hover:bg-glow/[0.1] hover:text-[color:var(--color-gold-light)] hover:shadow-[0_0_28px_-6px_rgba(201,160,84,0.45)]",
+      ].join(" ")}
+    >
+      {/* shimmer sweep */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 -left-16 w-12 -skew-x-12 bg-gradient-to-r from-transparent via-light/20 to-transparent opacity-0 transition-all duration-700 ease-out group-hover:left-[110%] group-hover:opacity-100"
+      />
+      {/* corner notches */}
+      <span
+        aria-hidden
+        className={[
+          "pointer-events-none absolute left-[3px] top-[3px] h-1.5 w-1.5 border-l border-t transition-colors",
+          active ? "border-dim/60 group-hover:border-light" : "border-glow/60 group-hover:border-glow",
+        ].join(" ")}
+      />
+      <span
+        aria-hidden
+        className={[
+          "pointer-events-none absolute bottom-[3px] right-[3px] h-1.5 w-1.5 border-b border-r transition-colors",
+          active ? "border-dim/60 group-hover:border-light" : "border-glow/60 group-hover:border-glow",
+        ].join(" ")}
+      />
+      {active ? (
+        <>
+          <Eye className="h-3.5 w-3.5" /> Ver plano
+        </>
+      ) : (
+        <>
+          <Edit3 className="h-3.5 w-3.5 transition-transform group-hover:rotate-[-6deg]" />
+          Editar
+        </>
+      )}
+    </button>
+  );
+}
+
+function OperationsBar({
+  tables,
+  readOnly,
+  editMode,
+  saving,
+  saved,
+  onToggleEdit,
+  onSave,
+}: {
+  tables: FloorMapTable[];
+  readOnly: boolean;
+  editMode: boolean;
+  saving: boolean;
+  saved: boolean;
+  onToggleEdit: () => void;
+  onSave: () => void;
+}) {
+  const counts = useMemo(() => {
+    let disponible = 0;
+    let ocupada = 0;
+    let sucia = 0;
+    for (const t of tables) {
+      if (t.status === "DISPONIBLE") disponible++;
+      else if (t.status === "OCUPADA" || t.status === "CERRANDO") ocupada++;
+      else if (t.status === "SUCIA") sucia++;
+    }
+    return { disponible, ocupada, sucia };
+  }, [tables]);
+
+  return (
+    <div
+      className="relative border border-wire bg-[linear-gradient(180deg,rgba(201,160,84,0.045)_0%,rgba(19,16,8,0.6)_55%,rgba(12,9,7,0.9)_100%)] shadow-[inset_0_1px_0_rgba(237,232,225,0.04)]"
+      style={{ animation: "fade-in 0.5s ease-out both" }}
+    >
+      {/* hairline gold rail */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-6 top-0 h-px"
+        style={{
+          background:
+            "linear-gradient(90deg, transparent 0%, rgba(201,160,84,0.6) 30%, rgba(237,232,225,0.35) 50%, rgba(201,160,84,0.6) 70%, transparent 100%)",
+          animation: "draw-line 1s cubic-bezier(0.22,1,0.36,1) both",
+        }}
+      />
+      {/* faint radial glow on the right */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 right-0 w-[40%] opacity-60"
+        style={{
+          background:
+            "radial-gradient(ellipse at right center, rgba(201,160,84,0.09), transparent 60%)",
+        }}
+      />
+
+      <div className="relative flex flex-col gap-0 sm:flex-row sm:items-stretch">
+        <LiveBadge />
+
+        <div className="flex flex-1 items-center overflow-x-auto">
+          <StatusCell label="Disponibles" color={C.sage} count={counts.disponible} delay={0.05} />
+          <StatusCell label="Ocupadas" color={C.glow} count={counts.ocupada} delay={0.15} />
+          <StatusCell
+            label="Por limpiar"
+            color={C.ember}
+            count={counts.sucia}
+            delay={0.25}
+            emphasize={counts.sucia > 0}
           />
-          <span className="text-[0.6rem] font-medium text-dim">{label}</span>
+          <div
+            className="ml-auto hidden items-center gap-2 px-4 py-3 lg:flex"
+            aria-hidden
+          >
+            <Activity className="h-3 w-3 text-glow/70" />
+            <span className="font-mono text-[0.5rem] font-bold uppercase tracking-[0.28em] text-dim">
+              Operación
+            </span>
+          </div>
         </div>
-      ))}
+
+        <SyncClock />
+
+        {!readOnly && (
+          <div className="flex items-center gap-2 border-t border-wire/60 px-4 py-3 sm:border-l sm:border-t-0">
+            {editMode && (
+              <>
+                <p
+                  className="hidden text-[0.6rem] font-semibold uppercase tracking-[0.22em] text-glow/75 md:block"
+                  style={{ animation: "fade-in 0.3s ease-out both" }}
+                >
+                  · Arrastra para reposicionar
+                </p>
+                <button
+                  onClick={onSave}
+                  disabled={saving}
+                  className="inline-flex h-9 items-center gap-2 bg-light px-4 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-ink transition-all hover:-translate-y-px hover:bg-light/90 disabled:opacity-50"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  {saving ? "Guardando…" : saved ? "Guardado ✓" : "Guardar"}
+                </button>
+              </>
+            )}
+            <EditButton active={editMode} onClick={onToggleEdit} />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -323,54 +570,22 @@ export default function FloorMap({ tables: initialTables, readOnly = false, onTa
   return (
     <div className="flex flex-col gap-4">
 
-      {/* ── Toolbar ────────────────────────────────────────────── */}
-      {!readOnly && <div className="flex items-center justify-between border border-wire px-5 py-3">
-        <Legend />
-
-        <div className="flex items-center gap-3">
-          {editMode && (
-            <p className="hidden text-[0.62rem] font-medium text-glow sm:block">
-              Arrastra las mesas para reposicionarlas
-            </p>
-          )}
-
-          {editMode ? (
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="inline-flex h-9 items-center gap-2 bg-light px-4 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-ink transition-all hover:-translate-y-px hover:bg-light/90 disabled:opacity-50"
-            >
-              <Save className="h-3.5 w-3.5" />
-              {saving ? "Guardando…" : saved ? "Guardado ✓" : "Guardar"}
-            </button>
-          ) : null}
-
-          <button
-            onClick={() => {
-              if (editMode) handleSave();
-              else { setEditMode(true); setSelected(null); }
-            }}
-            className={[
-              "inline-flex h-9 items-center gap-2 border px-4 text-[0.68rem] font-bold uppercase tracking-[0.18em] transition-all hover:-translate-y-px",
-              editMode
-                ? "border-wire text-dim hover:border-light/20 hover:text-light"
-                : "border-wire text-dim hover:border-glow/40 hover:text-glow",
-            ].join(" ")}
-          >
-            {editMode
-              ? <><Eye className="h-3.5 w-3.5" /> Ver</>
-              : <><Edit3 className="h-3.5 w-3.5" /> Editar</>
-            }
-          </button>
-        </div>
-      </div>}
-
-      {/* ── Legend (read-only mode) ─────────────────────────────── */}
-      {readOnly && (
-        <div className="flex items-center border border-wire px-5 py-3">
-          <Legend />
-        </div>
-      )}
+      {/* ── Operations instrument panel ─────────────────────────── */}
+      <OperationsBar
+        tables={tables}
+        readOnly={readOnly}
+        editMode={editMode}
+        saving={saving}
+        saved={saved}
+        onSave={handleSave}
+        onToggleEdit={() => {
+          if (editMode) handleSave();
+          else {
+            setEditMode(true);
+            setSelected(null);
+          }
+        }}
+      />
 
       {/* ── Canvas ─────────────────────────────────────────────── */}
       <div
@@ -488,7 +703,7 @@ export default function FloorMap({ tables: initialTables, readOnly = false, onTa
               }
             </button>
             <button
-              onClick={() => window.open(`/mesa/${selectedTable.qrCode}/menu`, "_blank")}
+              onClick={() => window.open(`/mesa/${selectedTable.qrCode}`, "_blank")}
               className="inline-flex h-9 items-center gap-2 border border-wire px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
             >
               Ver menú

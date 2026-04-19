@@ -4,7 +4,7 @@ import { useState, useTransition, useEffect, useRef, useMemo, useCallback } from
 import { useRouter } from "next/navigation";
 import { submitComensalOrder, getGuestOrders, requestBill, transferHost, getGuestTableState } from "@/actions/comensal";
 import { createClient } from "@/lib/supabase/client";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Clock, CookingPot, Bell, CheckCircle2 } from "lucide-react";
 // ─── Types ──────────────────────────────────────────────────────────────────
 
 interface Category {
@@ -208,18 +208,50 @@ function CartPanel({
 
 // ─── OrderTracker ────────────────────────────────────────────────────────────
 
-const STATUS_LABEL: Record<string, string> = {
-  PENDING:   "En espera",
-  PREPARING: "Preparando",
-  READY:     "Lista ·",
-  DELIVERED: "Entregada",
-};
+/** Prisma enum vs KDS lowercase — unificamos para la UI del comensal */
+function normalizeOrderStatus(raw: unknown): "PENDING" | "PREPARING" | "READY" | "DELIVERED" {
+  const u = String(raw ?? "").toUpperCase();
+  if (u === "PENDING" || u === "PREPARING" || u === "READY" || u === "DELIVERED") return u;
+  const lo = String(raw ?? "").toLowerCase();
+  if (lo === "pending") return "PENDING";
+  if (lo === "preparing") return "PREPARING";
+  if (lo === "ready") return "READY";
+  if (lo === "delivered") return "DELIVERED";
+  return "PENDING";
+}
 
-const STATUS_BADGE: Record<string, string> = {
-  PENDING:   "border-wire text-dim/60",
-  PREPARING: "border-glow/40 bg-glow/[0.06] text-glow",
-  READY:     "border-sage-deep/50 bg-sage-deep/[0.07] text-sage-deep",
-  DELIVERED: "border-wire/40 text-dim/35",
+const ORDER_STATUS: Record<
+  "PENDING" | "PREPARING" | "READY" | "DELIVERED",
+  { label: string; summary: string; hint: string; badge: string; icon: typeof Clock }
+> = {
+  PENDING: {
+    label: "Pendiente",
+    summary: "en espera",
+    hint: "En cola para cocina",
+    badge: "border-wire text-dim/70 bg-wire/[0.04]",
+    icon: Clock,
+  },
+  PREPARING: {
+    label: "Preparando",
+    summary: "en cocina",
+    hint: "Tu pedido se está elaborando",
+    badge: "border-glow/45 bg-glow/[0.08] text-glow",
+    icon: CookingPot,
+  },
+  READY: {
+    label: "Listo",
+    summary: "listo",
+    hint: "El mesero lo llevará a la mesa",
+    badge: "border-sage-deep/55 bg-sage-deep/[0.1] text-sage-deep",
+    icon: Bell,
+  },
+  DELIVERED: {
+    label: "Entregado",
+    summary: "entregado",
+    hint: "Servido en mesa",
+    badge: "border-wire/35 bg-transparent text-dim/45",
+    icon: CheckCircle2,
+  },
 };
 
 function OrderTracker({
@@ -238,8 +270,8 @@ function OrderTracker({
   billRequested: boolean;
 }) {
   const router = useRouter();
-  const active    = orders.filter(o => o.status !== "DELIVERED");
-  const delivered = orders.filter(o => o.status === "DELIVERED");
+  const active = orders.filter((o) => normalizeOrderStatus(o.status) !== "DELIVERED");
+  const delivered = orders.filter((o) => normalizeOrderStatus(o.status) === "DELIVERED");
 
   const cuentaHref = `/mesa/${encodeURIComponent(tableCode)}/cuenta?guest=${encodeURIComponent(guestName)}&pax=${partySize}`;
   const [isRequestingBill, startBillTransition] = useTransition();
@@ -262,9 +294,9 @@ function OrderTracker({
 
   // Summary badge counts (only non-delivered)
   const counts = {
-    PENDING:   active.filter(o => o.status === "PENDING").length,
-    PREPARING: active.filter(o => o.status === "PREPARING").length,
-    READY:     active.filter(o => o.status === "READY").length,
+    PENDING: active.filter((o) => normalizeOrderStatus(o.status) === "PENDING").length,
+    PREPARING: active.filter((o) => normalizeOrderStatus(o.status) === "PREPARING").length,
+    READY: active.filter((o) => normalizeOrderStatus(o.status) === "READY").length,
   };
 
   const summaryBadges = (
@@ -296,7 +328,10 @@ function OrderTracker({
               · todos entregados ✓
             </span>
           ) : (
-            summaryBadges.map(([status, count, cls]) => (
+            summaryBadges.map(([status, count, cls]) => {
+              const st = normalizeOrderStatus(status);
+              const meta = ORDER_STATUS[st];
+              return (
               <span
                 key={status}
                 className={`inline-flex items-center gap-1 border px-2 py-0.5 text-[0.56rem] font-bold uppercase tracking-[0.14em] ${cls}`}
@@ -308,9 +343,10 @@ function OrderTracker({
                     aria-hidden="true"
                   />
                 )}
-                {count} {STATUS_LABEL[status]}
+                {count} {meta.summary}
               </span>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -401,30 +437,43 @@ function OrderRow({ order }: { order: any }) {
     .join(", ")
     + (order.items.length > 2 ? ` +${order.items.length - 2}` : "");
 
+  const st = normalizeOrderStatus(order.status);
+  const meta = ORDER_STATUS[st];
+  const Icon = meta.icon;
+
   return (
     <div
       className={[
-        "flex items-center justify-between gap-3 px-1",
-        order.status === "DELIVERED" ? "opacity-40" : "",
+        "rounded-xl border border-wire/25 bg-panel/30 px-3 py-2.5",
+        st === "DELIVERED" ? "opacity-45" : "",
       ].join(" ")}
     >
-      <div className="min-w-0">
-        <div className="flex items-center gap-1.5">
-          <span className="font-mono text-[0.58rem] text-dim/40">#{order.id.slice(-4)}</span>
-          {order.items[0]?.session?.guestName && (
-            <span className="text-[0.58rem] font-medium text-glow/70">{order.items[0].session.guestName}</span>
-          )}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+            <span className="font-mono text-[0.58rem] text-dim/40">#{order.id.slice(-4)}</span>
+            {order.items[0]?.session?.guestName && (
+              <span className="text-[0.58rem] font-medium text-glow/70">{order.items[0].session.guestName}</span>
+            )}
+          </div>
+          <p className="mt-0.5 truncate text-[0.72rem] font-medium leading-snug text-light">{summary}</p>
+          <p className="mt-1 text-[0.58rem] leading-snug text-dim/75">{meta.hint}</p>
         </div>
-        <p className="truncate text-[0.72rem] font-medium text-light">{summary}</p>
+
+        <div
+          className={[
+            "flex shrink-0 flex-col items-end gap-1 rounded-lg border px-2.5 py-2 text-right",
+            meta.badge,
+          ].join(" ")}
+          role="status"
+          aria-label={`Estado del pedido: ${meta.label}`}
+        >
+          <Icon className="size-4 shrink-0 opacity-90" aria-hidden />
+          <span className="max-w-[6.5rem] text-[0.52rem] font-bold uppercase leading-tight tracking-[0.12em]">
+            {meta.label}
+          </span>
+        </div>
       </div>
-      <span
-        className={[
-          "shrink-0 border px-2 py-0.5 text-[0.54rem] font-bold uppercase tracking-[0.14em]",
-          STATUS_BADGE[order.status] ?? "border-wire text-dim",
-        ].join(" ")}
-      >
-        {STATUS_LABEL[order.status] ?? order.status}
-      </span>
     </div>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus, Receipt, Lock } from "lucide-react";
+import { Plus, Receipt, Lock, Copy, ExternalLink, CheckCheck, Loader2 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
+import { advanceOrderStatus } from "@/actions/orders";
 import { getTableDetail, closeTable } from "@/actions/waiter";
 import WaiterTakeOrder from "./WaiterTakeOrder";
 import WaiterPayment from "./WaiterPayment";
@@ -43,22 +45,28 @@ export default function WaiterTableDetail({
   const [activeTab, setActiveTab] = useState<TabType>("orders");
   const [tableData, setTableData] = useState<TableDetailData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [origin, setOrigin] = useState("");
+  const [deliveringOrderId, setDeliveringOrderId] = useState<string | null>(null);
 
-  const loadTableDetail = useCallback(async () => {
+  const loadTableDetail = useCallback(async (opts?: { silent?: boolean }) => {
     try {
-      setLoading(true);
+      if (!opts?.silent) setLoading(true);
       const data = await getTableDetail(tableId);
       setTableData(data as TableDetailData);
     } catch (error) {
       console.error("Error loading table detail:", error);
     } finally {
-      setLoading(false);
+      if (!opts?.silent) setLoading(false);
     }
   }, [tableId]);
 
   useEffect(() => {
     loadTableDetail();
   }, [loadTableDetail]);
+
+  useEffect(() => {
+    setOrigin(typeof window !== "undefined" ? window.location.origin : "");
+  }, []);
 
   const handleAddItems = async () => {
     setActiveTab("add-items");
@@ -87,6 +95,19 @@ export default function WaiterTableDetail({
     }
   };
 
+  const handleMarkDelivered = async (orderId: string) => {
+    setDeliveringOrderId(orderId);
+    try {
+      await advanceOrderStatus(orderId, "ready");
+      await loadTableDetail({ silent: true });
+      onRefresh();
+    } catch (error) {
+      alert("No se pudo marcar como entregado: " + (error as Error).message);
+    } finally {
+      setDeliveringOrderId(null);
+    }
+  };
+
   if (loading || !tableData) {
     return (
       <div className="fixed inset-0 bg-canvas/90 backdrop-blur-sm flex items-center justify-center z-50">
@@ -98,6 +119,11 @@ export default function WaiterTableDetail({
   }
 
   const { table, session, orders, billTotal } = tableData;
+
+  /** Enlace de invitados: pantalla de acceso (nombre/comensales); el menú abre después del registro. */
+  const guestMenuUrl =
+    origin && table.qrCode ? `${origin}/mesa/${encodeURIComponent(table.qrCode)}` : "";
+
   const seatedMinutes =
     session && new Date(session.createdAt)
       ? Math.floor((Date.now() - new Date(session.createdAt).getTime()) / 60000)
@@ -124,6 +150,47 @@ export default function WaiterTableDetail({
             ✕
           </button>
         </div>
+
+        {/* QR menú — mesa libre */}
+        {table.status === "DISPONIBLE" && !session && guestMenuUrl && (
+          <div className="border-b border-wire bg-gradient-to-b from-glow/10 to-transparent px-4 py-6">
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.2em] text-glow">
+              Escanear para entrar a la mesa y ver el menú
+            </p>
+            <div className="mx-auto mt-4 flex max-w-sm flex-col items-center gap-4">
+              <div className="rounded-2xl bg-white p-4 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.15)]">
+                <QRCodeSVG value={guestMenuUrl} size={224} level="M" marginSize={2} />
+              </div>
+              <p className="break-all text-center font-mono text-[10px] leading-relaxed text-dim">
+                {guestMenuUrl}
+              </p>
+              <div className="flex w-full flex-wrap justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(guestMenuUrl);
+                    } catch {
+                      alert("No se pudo copiar el enlace");
+                    }
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg border border-glow/40 bg-glow/10 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-glow transition-colors hover:bg-glow/20"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  Copiar enlace
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.open(guestMenuUrl, "_blank", "noopener,noreferrer")}
+                  className="inline-flex items-center gap-2 rounded-lg border border-wire bg-wire/10 px-4 py-2.5 text-[11px] font-bold uppercase tracking-wider text-light transition-colors hover:bg-wire/20"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Probar acceso
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-wire px-4 pt-3 overflow-x-auto scrollbar-hide">
@@ -223,6 +290,22 @@ export default function WaiterTableDetail({
                         </div>
                       ))}
                     </div>
+
+                    {order.status === "READY" && (
+                      <button
+                        type="button"
+                        onClick={() => void handleMarkDelivered(order.id)}
+                        disabled={deliveringOrderId === order.id}
+                        className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-sage-deep px-4 py-2.5 text-sm font-bold uppercase tracking-wide text-canvas transition-colors hover:bg-sage-deep/90 disabled:opacity-60 active:scale-[0.98]"
+                      >
+                        {deliveringOrderId === order.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                        ) : (
+                          <CheckCheck className="h-4 w-4" aria-hidden />
+                        )}
+                        Marcar entregado
+                      </button>
+                    )}
                   </div>
                 ))
               )}

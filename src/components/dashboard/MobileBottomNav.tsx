@@ -7,6 +7,7 @@ import { NavGroup } from "./Sidebar";
 import { useMobileNav } from "./MobileNavContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
+  canonicalPathMatchesNavHref,
   resolveNavHref,
   restaurantBaseFromPathname,
   toCanonicalDashboardPath,
@@ -24,8 +25,7 @@ type MobileBottomNavProps = {
 
 /** Coincidencia por prefijo (rutas anidadas). Incluye URLs `/restaurant/[id]/...` → equivalente `/dashboard/...`. */
 function hrefMatchesPath(pathname: string, href: string) {
-  const logical = toCanonicalDashboardPath(pathname);
-  return logical === href || logical.startsWith(`${href}/`);
+  return canonicalPathMatchesNavHref(toCanonicalDashboardPath(pathname), href);
 }
 
 /** Entre varios enlaces, el activo debe ser el prefijo más largo (p. ej. /cadena/zonas gana a /cadena). */

@@ -20,6 +20,7 @@ import {
   type MenuRowItem,
   type CategoryTabItem,
 } from "@/components/guest/ui";
+import { GuestMenuAIAssistant } from "@/components/guest/GuestMenuAIAssistant";
 import { createClient } from "@/lib/supabase/client";
 import type { GuestMenuTheme } from "@/lib/guest-menu-theme";
 import { useGuestMenuTheme } from "@/hooks/useGuestMenuTheme";
@@ -82,46 +83,46 @@ function normalizeOrderStatus(raw: unknown): "PENDING" | "PREPARING" | "READY" |
 
 const ORDER_STATUS: Record<
   "PENDING" | "PREPARING" | "READY" | "DELIVERED" | "CANCELLED",
-  { label: string; summary: string; hint: string; badge: string; badgeGuestDark?: string; icon: typeof Clock }
+  { label: string; summary: string; hint: string; badge: string; icon: typeof Clock }
 > = {
   PENDING: {
     label: "Pendiente",
     summary: "en espera",
     hint: "En cola de preparación",
-    badge: "border-slate-300 text-slate-600 bg-slate-100/50",
-    badgeGuestDark: "guest-dark:border-dim/50 guest-dark:bg-panel/55 guest-dark:text-light/90",
+    badge:
+      "border-[var(--guest-divider)] bg-[var(--guest-bg-surface-2)] text-[var(--guest-muted)]",
     icon: Clock,
   },
   PREPARING: {
     label: "Preparando",
     summary: "en cocina",
     hint: "Tu pedido se está elaborando",
-    badge: "border-amber-400/60 bg-amber-100/50 text-amber-700",
-    badgeGuestDark: "guest-dark:border-amber-500/35 guest-dark:bg-amber-950/35 guest-dark:text-amber-200",
+    badge:
+      "border-amber-500/40 bg-amber-500/10 text-amber-900 guest-dark:border-amber-500/35 guest-dark:bg-amber-950/40 guest-dark:text-amber-200",
     icon: CookingPot,
   },
   READY: {
     label: "Listo",
     summary: "listo",
     hint: "El mesero lo llevará a la mesa",
-    badge: "border-gold/60/70 bg-gold/10/50 text-gold",
-    badgeGuestDark: "guest-dark:border-gold/50/40 guest-dark:bg-gold/95/35 guest-dark:text-gold/30",
+    badge:
+      "border-[color-mix(in_srgb,var(--guest-gold)_45%,transparent)] bg-[var(--guest-halo)] text-[var(--guest-gold)]",
     icon: Bell,
   },
   DELIVERED: {
     label: "Entregado",
     summary: "entregado",
     hint: "Servido en mesa",
-    badge: "border-slate-200 bg-slate-50/50 text-slate-500",
-    badgeGuestDark: "guest-dark:border-wire guest-dark:bg-panel/40 guest-dark:text-dim",
+    badge:
+      "border-[var(--guest-divider)] bg-[color-mix(in_srgb,var(--guest-bg-surface)_85%,transparent)] text-[var(--guest-subtle)]",
     icon: CheckCircle2,
   },
   CANCELLED: {
     label: "Cancelado",
     summary: "cancelado",
     hint: "No se cobrará este pedido",
-    badge: "border-red-300/50 bg-red-100/40 text-red-600",
-    badgeGuestDark: "guest-dark:border-red-500/35 guest-dark:bg-red-950/25 guest-dark:text-red-300",
+    badge:
+      "border-[color-mix(in_srgb,var(--guest-urgent)_35%,transparent)] bg-[color-mix(in_srgb,var(--guest-urgent)_12%,transparent)] text-[var(--guest-urgent)]",
     icon: XCircle,
   },
 };
@@ -234,9 +235,21 @@ function OrderTracker({
 
   const summaryBadges = (
     [
-      ["READY",     counts.READY,     "border-gold/50/50 text-gold/50 guest-dark:border-gold/60/45 guest-dark:text-gold/60"],
-      ["PREPARING", counts.PREPARING, "border-amber-400/50 text-amber-700 guest-dark:border-amber-500/40 guest-dark:text-amber-300"],
-      ["PENDING",   counts.PENDING,   "border-slate-200 text-slate-600/50 guest-dark:border-dim/40 guest-dark:text-dim"],
+      [
+        "READY",
+        counts.READY,
+        "border-[color-mix(in_srgb,var(--guest-gold)_45%,transparent)] bg-[var(--guest-halo)] text-[var(--guest-gold)]",
+      ],
+      [
+        "PREPARING",
+        counts.PREPARING,
+        "border-amber-500/40 bg-amber-500/10 text-amber-900 guest-dark:border-amber-500/35 guest-dark:bg-amber-950/35 guest-dark:text-amber-200",
+      ],
+      [
+        "PENDING",
+        counts.PENDING,
+        "border-[var(--guest-divider)] bg-[var(--guest-bg-surface-2)] text-[var(--guest-muted)]",
+      ],
     ] as [string, number, string][]
   ).filter(([, n]) => n > 0);
 
@@ -339,11 +352,11 @@ function OrderTracker({
                   <>
                     {active.length > 0 && (
                       <div className="my-4 flex items-center gap-3">
-                        <div className="h-px flex-1 bg-slate-200/30 guest-dark:bg-wire/40" />
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400 guest-dark:text-dim">
+                        <div className="h-px flex-1 bg-[var(--guest-divider)]" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-[var(--guest-muted)]">
                           {delivered.length} entregada{delivered.length !== 1 ? "s" : ""}
                         </span>
-                        <div className="h-px flex-1 bg-slate-200/30 guest-dark:bg-wire/40" />
+                        <div className="h-px flex-1 bg-[var(--guest-divider)]" />
                       </div>
                     )}
                     <div className="flex flex-col gap-2">
@@ -358,11 +371,11 @@ function OrderTracker({
                   <>
                     {(active.length > 0 || delivered.length > 0) && (
                       <div className="my-4 flex items-center gap-3">
-                        <div className="h-px flex-1 bg-slate-200/30 guest-dark:bg-wire/40" />
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400 guest-dark:text-dim">
+                        <div className="h-px flex-1 bg-[var(--guest-divider)]" />
+                        <span className="text-xs font-bold uppercase tracking-wider text-[var(--guest-muted)]">
                           Cancelados
                         </span>
-                        <div className="h-px flex-1 bg-slate-200/30 guest-dark:bg-wire/40" />
+                        <div className="h-px flex-1 bg-[var(--guest-divider)]" />
                       </div>
                     )}
                     <div className="flex flex-col gap-2">
@@ -375,7 +388,7 @@ function OrderTracker({
               </div>
 
               {/* Pedir la cuenta CTA */}
-              <div className="mt-6 pt-4 border-t border-slate-200/30 guest-dark:border-wire/45">
+              <div className="mt-6 border-t border-[var(--guest-divider)] pt-4">
                 {isHost ? (
                   /* Anfitrión: botón real que cierra la mesa */
                   <motion.button
@@ -384,8 +397,8 @@ function OrderTracker({
                     onClick={handleRequestBill}
                     disabled={isRequestingBill}
                     className={active.length === 0
-                      ? "flex w-full items-center justify-center gap-2 py-4 text-sm font-bold uppercase tracking-wider transition-all rounded-xl bg-gold/50 hover:bg-gold text-white shadow-lg shadow-gold/50/30 guest-dark:bg-gold guest-dark:hover:bg-gold/50"
-                      : "flex w-full items-center justify-center gap-2 py-3.5 text-xs font-bold uppercase tracking-wider transition-all rounded-xl border-2 border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 guest-dark:border-wire guest-dark:text-dim guest-dark:hover:border-glow/35 guest-dark:hover:bg-panel/50 guest-dark:hover:text-light"
+                      ? "flex w-full min-h-12 items-center justify-center gap-2 rounded-xl bg-[color-mix(in_srgb,var(--guest-gold)_88%,#1a1510)] py-4 text-sm font-bold uppercase tracking-wider text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition-all hover:opacity-95"
+                      : "flex w-full min-h-12 items-center justify-center gap-2 rounded-xl border-2 border-[var(--guest-divider)] py-3.5 text-xs font-bold uppercase tracking-wider text-[var(--guest-muted)] transition-all hover:border-[color-mix(in_srgb,var(--guest-gold)_35%,transparent)] hover:bg-[var(--guest-bg-surface)] hover:text-[var(--guest-text)]"
                     }
                   >
                     <svg viewBox="0 0 16 16" fill="none" className="h-4 w-4" aria-hidden="true">
@@ -395,7 +408,7 @@ function OrderTracker({
                   </motion.button>
                 ) : (
                   /* No anfitrión: aviso informativo */
-                  <p className="text-center text-xs font-medium uppercase tracking-widest text-slate-400 guest-dark:text-dim">
+                  <p className="text-center text-xs font-medium uppercase tracking-widest text-[var(--guest-muted)]">
                     Solo el anfitrión puede pedir la cuenta
                   </p>
                 )}
@@ -414,7 +427,7 @@ function OrderTracker({
             aria-modal="true"
             aria-labelledby="guest-cancel-order-title"
             data-guest-theme={menuTheme}
-            className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm guest-dark:bg-black/75"
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-[color-mix(in_srgb,var(--guest-text)_52%,transparent)] p-4 backdrop-blur-sm"
             onClick={dismissCancelVerification}
             onKeyDown={(e) => {
               if (e.key === "Escape") dismissCancelVerification();
@@ -424,24 +437,24 @@ function OrderTracker({
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="w-full max-w-sm rounded-2xl border border-slate-200/50 bg-white/95 backdrop-blur-xl p-8 shadow-[0_20px_60px_rgba(0,0,0,0.15)] guest-dark:border-wire guest-dark:bg-panel/95 guest-dark:shadow-[0_24px_60px_rgba(0,0,0,0.55)]"
+              className="w-full max-w-sm rounded-2xl border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] p-8 shadow-[0_24px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl"
               onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
             >
               <div className="flex gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-red-300 bg-red-100/50">
-                  <AlertTriangle className="size-6 text-red-600" aria-hidden />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-[color-mix(in_srgb,var(--guest-urgent)_35%,transparent)] bg-[color-mix(in_srgb,var(--guest-urgent)_12%,transparent)]">
+                  <AlertTriangle className="size-6 text-[var(--guest-urgent)]" aria-hidden />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h2 id="guest-cancel-order-title" className="text-lg font-semibold leading-tight text-slate-900 guest-dark:text-light">
+                  <h2 id="guest-cancel-order-title" className="text-lg font-semibold leading-tight text-[var(--guest-text)]">
                     ¿Cancelar este pedido?
                   </h2>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600 guest-dark:text-dim">
-                    Solo puedes hacerlo mientras sigue <strong className="text-slate-900 guest-dark:text-light">pendiente</strong>. Si ya entró a cocina, no se puede cancelar desde aquí.
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--guest-muted)]">
+                    Solo puedes hacerlo mientras sigue <strong className="text-[var(--guest-text)]">pendiente</strong>. Si ya entró a cocina, no se puede cancelar desde aquí.
                   </p>
-                  <p className="mt-3 rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2 font-mono text-xs text-slate-600 guest-dark:border-wire guest-dark:bg-ink/80 guest-dark:text-dim">
+                  <p className="mt-3 rounded-lg border border-[var(--guest-divider)] bg-[var(--guest-bg-surface-2)] px-3 py-2 font-mono text-xs text-[var(--guest-muted)]">
                     #{verifyCancelOrder.id.slice(-4)} · {guestOrderSummaryPreview(verifyCancelOrder)}
                   </p>
                 </div>
@@ -452,7 +465,7 @@ function OrderTracker({
                   type="button"
                   onClick={dismissCancelVerification}
                   disabled={!!cancellingOrderId}
-                  className="order-2 w-full border-2 border-slate-200 hover:border-slate-300 py-3 text-sm font-semibold uppercase tracking-wider text-slate-600 transition-all rounded-xl disabled:opacity-50 sm:order-1 sm:w-auto sm:min-w-[10rem] guest-dark:border-wire guest-dark:text-dim guest-dark:hover:border-glow/40 guest-dark:hover:text-light"
+                  className="order-2 w-full rounded-xl border-2 border-[var(--guest-divider)] py-3 text-sm font-semibold uppercase tracking-wider text-[var(--guest-muted)] transition-all hover:border-[color-mix(in_srgb,var(--guest-gold)_35%,transparent)] hover:text-[var(--guest-text)] disabled:opacity-50 sm:order-1 sm:w-auto sm:min-w-[10rem]"
                 >
                   No, volver
                 </motion.button>
@@ -544,7 +557,6 @@ function OrderRow({
           className={[
             "flex shrink-0 flex-col items-center gap-1.5 rounded-lg border px-3 py-2.5 text-center",
             meta.badge,
-            meta.badgeGuestDark ?? "",
           ].join(" ")}
           role="status"
           aria-label={`Estado del pedido: ${meta.label}`}
@@ -1234,7 +1246,7 @@ export function MenuScreen({
                   />
                 ) : (
                   <div
-                    className="flex aspect-square w-full min-h-[200px] items-center justify-center rounded-2xl bg-slate-100 text-sm font-medium text-slate-500"
+                    className="flex aspect-square w-full min-h-[200px] items-center justify-center rounded-2xl bg-[var(--guest-bg-surface-2)] text-sm font-medium text-[var(--guest-muted)]"
                     aria-live="polite"
                   >
                     Cargando código…
@@ -1279,16 +1291,16 @@ export function MenuScreen({
               aria-modal="true"
               aria-labelledby="host-transfer-title"
               aria-describedby="host-transfer-desc"
-              className="relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-amber-200/90 bg-gradient-to-br from-amber-50 to-white p-6 shadow-xl guest-dark:border-amber-500/25 guest-dark:from-amber-950/45 guest-dark:to-panel"
+              className="relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] p-6 shadow-[inset_0_1px_0_var(--guest-panel-edge)] backdrop-blur-sm"
               onClick={(e) => e.stopPropagation()}
             >
               <h3
                 id="host-transfer-title"
-                className="text-base font-semibold leading-snug text-amber-950 guest-dark:text-amber-50"
+                className="text-base font-semibold leading-snug text-[var(--guest-text)]"
               >
                 ¿Te vas antes que los demás?
               </h3>
-              <p id="host-transfer-desc" className="mt-2 text-sm leading-relaxed text-amber-950/90 guest-dark:text-amber-50/85">
+              <p id="host-transfer-desc" className="mt-2 text-sm leading-relaxed text-[var(--guest-muted)]">
                 Solo el anfitrión puede pedir la cuenta para todos. Elige quién será el nuevo anfitrión antes de salir.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
@@ -1308,7 +1320,7 @@ export function MenuScreen({
                           setIsHostLive(state.isHost);
                         });
                       }}
-                      className="min-h-10 rounded-lg border border-amber-800/20 px-4 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-amber-950 transition-colors hover:border-gold/50/55 hover:bg-gold/5/90 disabled:opacity-40 guest-dark:border-wire/55 guest-dark:text-light guest-dark:hover:border-gold/60/50 guest-dark:hover:bg-gold/95/35"
+                      className="min-h-11 rounded-lg border border-[var(--guest-divider)] bg-[var(--guest-bg-surface-2)] px-4 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-[var(--guest-text)] transition-colors hover:border-[color-mix(in_srgb,var(--guest-gold)_40%,transparent)] hover:bg-[var(--guest-halo)] disabled:opacity-40"
                     >
                       {g.name}
                     </button>
@@ -1317,7 +1329,7 @@ export function MenuScreen({
               <button
                 type="button"
                 onClick={() => setHostTransferDialogOpen(false)}
-                className="mt-6 text-sm font-medium text-amber-900/60 hover:text-amber-950 guest-dark:text-dim guest-dark:hover:text-light"
+                className="mt-6 min-h-11 text-sm font-medium text-[var(--guest-muted)] hover:text-[var(--guest-gold)]"
               >
                 Cerrar
               </button>
@@ -1327,6 +1339,20 @@ export function MenuScreen({
           ),
           document.body,
         )}
+
+      <GuestMenuAIAssistant
+        restaurantName={restaurantName}
+        tableCode={tableCode}
+        menuItems={initialItems.map((item) => ({
+          name: item.name,
+          description: item.description,
+          categoryName: item.categoryName,
+          price: item.price,
+          isPopular: item.isPopular,
+          isSoldOut: item.isSoldOut,
+        }))}
+        disabled={qrInviteFullscreenOpen || hostTransferDialogOpen}
+      />
     </div>
   );
 }

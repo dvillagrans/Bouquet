@@ -20,10 +20,11 @@ import {
   type MenuRowItem,
   type CategoryTabItem,
 } from "@/components/guest/ui";
-import { GuestMenuAIAssistant } from "@/components/guest/GuestMenuAIAssistant";
+import { GuestMenuAIAssistant, type AssistantAddToCartItem } from "@/components/guest/GuestMenuAIAssistant";
 import { createClient } from "@/lib/supabase/client";
 import type { GuestMenuTheme } from "@/lib/guest-menu-theme";
 import { useGuestMenuTheme } from "@/hooks/useGuestMenuTheme";
+import { cn } from "@/lib/utils";
 import { ChevronDown, Clock, CookingPot, Bell, CheckCircle2, XCircle, AlertTriangle, Share2, X } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { getSignedGuestPreviewUrl } from "@/actions/tables";
@@ -56,6 +57,14 @@ function decodeLineKey(key: string): { menuItemId: string; variantName: string |
     }
   }
   return { menuItemId: key, variantName: null };
+}
+
+function normalizeMenuText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }
 
 type CartLine = {
@@ -145,6 +154,7 @@ function OrderTracker({
   tableCode,
   guestName,
   isHost,
+  activeGuestCount,
   billRequested,
   onRefreshOrders,
   hasOrderPipeline = false,
@@ -154,6 +164,7 @@ function OrderTracker({
   tableCode: string;
   guestName: string;
   isHost: boolean;
+  activeGuestCount: number;
   billRequested: boolean;
   onRefreshOrders: () => void | Promise<void>;
   /** Si ya hay franja de progreso arriba, el título evita duplicar “resumen”. */
@@ -209,10 +220,22 @@ function OrderTracker({
 
   const cuentaHref = `/mesa/${encodeURIComponent(tableCode)}/cuenta`;
   const [isRequestingBill, startBillTransition] = useTransition();
+  const isSoloGuestFlow = activeGuestCount <= 1;
 
   function handleRequestBill() {
     startBillTransition(async () => {
       await requestBill(tableCode, guestName);
+
+      if (isSoloGuestFlow) {
+        const goToBillNow = window.confirm(
+          "Cuenta solicitada.\n\nAceptar: ir a pagar ahora.\nCancelar: seguir pidiendo.",
+        );
+        if (goToBillNow) {
+          router.push(cuentaHref);
+        }
+        return;
+      }
+
       router.push(cuentaHref);
     });
   }
@@ -864,6 +887,66 @@ export function MenuScreen({
     });
   }
 
+  const handleAssistantAddToCart = useCallback((requestedItems: AssistantAddToCartItem[]) => {
+    if (billRequested) {
+      setToast({ type: "error", message: "Ya se solicito la cuenta para esta mesa. No se pueden agregar ordenes." });
+      return;
+    }
+
+    const normalizedRequests = requestedItems
+      .map((item) => ({
+        name: typeof item?.name === "string" ? item.name.trim() : "",
+        quantity: Number.isFinite(item?.quantity)
+          ? Math.max(1, Math.min(20, Math.trunc(item.quantity)))
+          : 1,
+      }))
+      .filter((item) => item.name.length > 0);
+
+    if (normalizedRequests.length === 0) return;
+
+    const missing: string[] = [];
+    let addedUnits = 0;
+
+    setCart((prev) => {
+      const next = { ...prev };
+
+      for (const req of normalizedRequests) {
+        const reqName = normalizeMenuText(req.name);
+
+        const matchedItem =
+          initialItems.find((item) => normalizeMenuText(item.name) === reqName) ??
+          initialItems.find((item) => normalizeMenuText(item.name).includes(reqName) || reqName.includes(normalizeMenuText(item.name)));
+
+        if (!matchedItem || matchedItem.isSoldOut) {
+          missing.push(req.name);
+          continue;
+        }
+
+        const variantName = matchedItem.variants?.length
+          ? (variantChoice[matchedItem.id] ?? matchedItem.variants[0]?.name ?? null)
+          : null;
+        const lineKey = encodeLineKey(matchedItem.id, variantName);
+        next[lineKey] = (next[lineKey] ?? 0) + req.quantity;
+        addedUnits += req.quantity;
+      }
+
+      return next;
+    });
+
+    if (addedUnits === 0) {
+      setToast({ type: "error", message: "No pude agregar esos platillos al carrito." });
+      return;
+    }
+
+    const missingSuffix = missing.length > 0
+      ? ` · No encontrados: ${missing.slice(0, 2).join(", ")}${missing.length > 2 ? "..." : ""}`
+      : "";
+    setToast({
+      type: "success",
+      message: `Listo: agregue ${addedUnits} platillo${addedUnits !== 1 ? "s" : ""} al carrito${missingSuffix}`,
+    });
+  }, [billRequested, initialItems, variantChoice]);
+
   const cartLines: CartLine[] = useMemo(() => {
     return Object.entries(cart)
       .map(([key, qty]) => {
@@ -990,6 +1073,8 @@ export function MenuScreen({
               guestName={guestName}
               isHost={isHostLive}
               billRequested={billRequested}
+              menuTheme={menuTheme}
+              onThemeChange={changeGuestMenuTheme}
             />
 
             <div className="sticky top-0 z-30 mt-6 space-y-4 border-b border-[var(--guest-divider)] bg-[color-mix(in_srgb,var(--guest-bg-page)_92%,transparent)] py-4 backdrop-blur-xl">
@@ -998,8 +1083,6 @@ export function MenuScreen({
                 joinCode={joinCode}
                 cuentaHref={cuentaHref}
                 billRequested={billRequested}
-                menuTheme={menuTheme}
-                onThemeChange={changeGuestMenuTheme}
                 onShareQr={() => setQrInviteFullscreenOpen(true)}
                 qrOpen={qrInviteFullscreenOpen}
                 showTransferHost={
@@ -1077,6 +1160,7 @@ export function MenuScreen({
                 tableCode={tableCode}
                 guestName={guestName}
                 isHost={isHostLive}
+                activeGuestCount={guests.length || 1}
                 billRequested={billRequested}
                 onRefreshOrders={refreshOrders}
                 hasOrderPipeline
@@ -1168,13 +1252,24 @@ export function MenuScreen({
                 onClear={() => setCart({})}
                 onCheckout={handleCheckout}
                 isSubmitting={isPending}
-                cuentaHref={billRequested ? undefined : cuentaHref}
                 showCelebration={orderSuccess}
               />
             </div>
           </aside>
         </div>
       </div>
+
+      {!billRequested && !drawerOpen && (
+        <Link
+          href={cuentaHref}
+          className={cn(
+            "fixed bottom-4 left-4 right-44 z-50 inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--guest-text)] px-4 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--guest-bg-page)] shadow-lg transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color-mix(in_srgb,var(--guest-gold)_55%,transparent)] sm:hidden",
+            cartCount > 0 ? "bottom-24" : "bottom-4",
+          )}
+        >
+          Ir a pagar
+        </Link>
+      )}
 
       {cartCount > 0 && !drawerOpen && (
         <CartSummaryBar cartCount={cartCount} cartTotal={cartTotal} onOpen={() => setDrawerOpen(true)} />
@@ -1193,7 +1288,6 @@ export function MenuScreen({
           onClose={() => setDrawerOpen(false)}
           onCheckout={handleCheckout}
           isSubmitting={isPending}
-          cuentaHref={billRequested ? undefined : cuentaHref}
           showCelebration={orderSuccess}
         />
       </OrderSheet>
@@ -1351,7 +1445,9 @@ export function MenuScreen({
           isPopular: item.isPopular,
           isSoldOut: item.isSoldOut,
         }))}
-        disabled={qrInviteFullscreenOpen || hostTransferDialogOpen}
+        disabled={qrInviteFullscreenOpen || hostTransferDialogOpen || drawerOpen}
+        onAddToCart={handleAssistantAddToCart}
+        liftFabForBottomBar={cartCount > 0 && !drawerOpen}
       />
     </div>
   );

@@ -88,9 +88,14 @@ export async function POST(req: Request) {
     "- Solo recomienda platos existentes en el menu compartido.",
     "- Nunca inventes platillos, precios o promociones.",
     "- No recomiendes productos marcados como agotados.",
+    "- No afirmes que ya ordenaste o que ya se envio a cocina, a menos que emitas la directiva estructurada de accion.",
     "- Entrega respuestas breves, claras y utiles para decidir en menos de 30 segundos.",
     "- Si el usuario no da contexto, haz 1 pregunta corta y ofrece 2 opciones iniciales.",
     "- Cuando recomiendes, incluye nombre, precio y razon en 1 linea por opcion.",
+    "- Si el usuario pide agregar/ordenar, responde con confirmacion breve y agrega AL FINAL una sola linea con este formato exacto:",
+    "[[BOUQUET_ACTION:{\"type\":\"add_to_cart\",\"items\":[{\"name\":\"NOMBRE EXACTO DEL MENU\",\"quantity\":2}]}]]",
+    "- Usa nombres exactos del menu en la directiva.",
+    "- Si no hay accion de carrito, no incluyas la directiva.",
     "Contexto de la mesa:",
     `restaurante=${context.restaurantName ?? "Restaurante"}; mesa=${context.tableCode ?? ""}`,
     "Menu disponible (JSON):",
@@ -119,5 +124,5 @@ export async function POST(req: Request) {
     temperature: 0.35,
   });
 
-  return result.toTextStreamResponse();
+  return result.toUIMessageStreamResponse();
 }

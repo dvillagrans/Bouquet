@@ -454,10 +454,21 @@ export async function requestBill(tableCode: string, guestName: string) {
 
   await requireGuestSessionRow(table, tableCode, guestName);
 
-  const mySession = await prisma.session.findFirst({
-    where: { tableId: table.id, isActive: true, guestName, isHost: true }
+  const activeSessions = await prisma.session.findMany({
+    where: { tableId: table.id, isActive: true },
+    select: { id: true, guestName: true, isHost: true },
   });
+
+  const mySession = activeSessions.find((s) => s.guestName === guestName && s.isHost);
   if (!mySession) throw new Error("Solo el anfitrión puede pedir la cuenta.");
+
+  // Si solo queda 1 comensal activo, no bloqueamos la mesa completa.
+  // Esto permite que el mismo comensal pueda volver al menú y pedir más.
+  if (activeSessions.length <= 1) {
+    revalidatePath("/dashboard/mesas");
+    await broadcastKdsOrdersRefresh(table.restaurantId);
+    return;
+  }
 
   await prisma.table.update({
     where: { id: table.id },

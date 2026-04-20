@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +23,6 @@ export type GuestCartPanelProps = {
   onClose?: () => void;
   onCheckout: () => void;
   isSubmitting?: boolean;
-  cuentaHref?: string;
   showCelebration?: boolean;
 };
 
@@ -40,7 +38,6 @@ export function GuestCartPanel({
   onClose,
   onCheckout,
   isSubmitting,
-  cuentaHref,
   showCelebration,
 }: GuestCartPanelProps) {
   const reduceMotion = useReducedMotion();
@@ -140,13 +137,6 @@ export function GuestCartPanel({
             Vaciar
           </motion.button>
 
-          {cuentaHref && (
-            <div className="mt-6 flex justify-end border-t border-[var(--guest-divider)] pt-4">
-              <Link href={cuentaHref} className="text-sm font-medium text-[var(--guest-text)] underline-offset-4 hover:text-[var(--guest-gold)] hover:underline">
-                Pagar solo tu parte →
-              </Link>
-            </div>
-          )}
         </>
       )}
     </div>

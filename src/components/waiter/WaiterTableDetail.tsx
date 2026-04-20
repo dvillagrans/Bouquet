@@ -246,7 +246,7 @@ export default function WaiterTableDetail({
         )}
         aria-label="Cerrar panel"
         onClick={onClose}
-      />
+      ></button>
 
       <div
         className={cn(

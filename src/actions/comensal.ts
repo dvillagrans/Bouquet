@@ -143,8 +143,12 @@ export async function getTableBill(tableCode: string) {
 
 function generateJoinCode(): string {
   // 4 chars sin caracteres ambiguos (sin 0/O/1/I/L)
-  const chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
-  return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  const alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  let code = "";
+  for (let i = 0; i < 4; i += 1) {
+    code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return code;
 }
 
 /** Une comensal a la mesa y devuelve el código QR canónico (como en BD) para URL y cookies. */

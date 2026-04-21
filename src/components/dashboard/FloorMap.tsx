@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Stage, Layer, Rect, Circle, Text, Group } from "react-konva";
 import type Konva from "konva";
 import { Save, Edit3, Eye, Move, Circle as CircleIcon, Square } from "lucide-react";
@@ -598,6 +598,9 @@ export default function FloorMap({
 
   const handleTableSelect = (id: string | null) => {
     setSelected(id);
+    if (id && onTableClick && !editMode) {
+      onTableClick(id);
+    }
   };
 
   return (
@@ -692,12 +695,15 @@ export default function FloorMap({
         )}
       </div>
 
-      {/* ── Selected table panel ─────────────────────────────── */}
-      {selectedTable && !editMode && (
-        <div
-          className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-wire/40 bg-ink/60 px-5 py-4 backdrop-blur-md shadow-[0_4px_24px_-8px_rgba(0,0,0,0.5)]"
-          style={{ animation: "reveal-up 0.25s cubic-bezier(0.22,1,0.36,1) both" }}
-        >
+      <AnimatePresence>
+        {selectedTable && !editMode && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 8 }}
+            transition={{ type: "spring", damping: 20, stiffness: 280 }}
+            className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-wire/40 bg-ink/60 px-5 py-4 backdrop-blur-md shadow-[0_4px_24px_-8px_rgba(0,0,0,0.5)]"
+          >
           <div className="flex flex-wrap items-center gap-5 sm:gap-6">
             <div className="flex shrink-0 items-center gap-3 sm:gap-4">
               <MesaCapacityPreview
@@ -798,15 +804,18 @@ export default function FloorMap({
               </>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
-      {/* ── Edit mode: selected table shape toggle ───────────── */}
-      {selectedTable && editMode && (
-        <div
-          className="flex items-center justify-between rounded-2xl border border-glow/20 bg-glow/[0.04] px-5 py-3 backdrop-blur-md"
-          style={{ animation: "reveal-up 0.25s cubic-bezier(0.22,1,0.36,1) both" }}
-        >
+      <AnimatePresence>
+        {selectedTable && editMode && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="flex items-center justify-between rounded-2xl border border-glow/20 bg-glow/[0.04] px-5 py-3 backdrop-blur-md"
+          >
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-glow/80">
             Mesa {selectedTable.number} seleccionada
           </p>
@@ -819,8 +828,9 @@ export default function FloorMap({
               : <><CircleIcon className="h-3.5 w-3.5" /> Cambiar a redonda</>
             }
           </button>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }

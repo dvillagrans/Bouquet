@@ -364,6 +364,7 @@ model Order {
   tableId      String
   guestName    String?
   status       OrderStatus @default(PENDING)
+  isShared     Boolean     @default(false)
 
   restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
   table      Table       @relation(fields: [tableId], references: [id])

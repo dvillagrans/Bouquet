@@ -331,7 +331,7 @@ export function MenuScreen({
     };
   }, [tableCode, refreshOrders]);
 
-  function handleCheckout() {
+  function handleCheckout(isShared: boolean) {
     if (billRequested) {
       setOrderError("El anfitrión ya pidió la cuenta. No puedes agregar más órdenes.");
       setTimeout(() => setOrderError(null), 4000);
@@ -347,12 +347,13 @@ export function MenuScreen({
             variantName: variantName ?? undefined,
           };
         });
-        
+
         await submitComensalOrder({
           tableCode,
           guestName,
           pax: partySize,
           items: orderItems,
+          isShared,
         });
 
         await refreshOrders();
@@ -616,8 +617,9 @@ export function MenuScreen({
                 const items = visibleItems.filter((i) => i.categoryId === cat.id);
                 if (items.length === 0) return null;
                 return (
-                  <div key={cat.id} className="divide-y divide-[var(--guest-divider)]" style={{ contentVisibility: "auto", containIntrinsicSize: "0 500px" }}>
+                  <div key={cat.id} style={{ contentVisibility: "auto", containIntrinsicSize: "0 500px" }}>
                     <CategoryHeading title={cat.name} count={items.length} />
+                    <div className="grid grid-cols-2 gap-4 pb-8 sm:grid-cols-3 lg:grid-cols-3">
                     {items.map((item) => {
                       const hasVariants = item.variants && item.variants.length > 0;
                       const selectedVariantName = hasVariants
@@ -647,6 +649,7 @@ export function MenuScreen({
                         />
                       );
                     })}
+                    </div>
                   </div>
                 );
               })}

@@ -49,7 +49,7 @@ export default function WaiterDashboard({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<FilterType>("todas");
-  const [view, setView] = useState<ViewType>("lista");
+  const [view, setView] = useState<ViewType>("mapa");
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [showMapSeatGlyphs, setShowMapSeatGlyphs] = useState(true);
 
@@ -109,27 +109,6 @@ export default function WaiterDashboard({
 
   const openTableDetail = async (table: WaiterTableSummary) => {
     if (isJoinMode) return;
-
-    if (table.status === "DISPONIBLE") {
-      try {
-        await regenerateTableQr(table.id);
-        await loadTables({ silent: true });
-        setToast({
-          type: "success",
-          message: `Mesa ${table.number}: código QR actualizado`,
-        });
-      } catch (error) {
-        console.error(error);
-        setToast({
-          type: "error",
-          message: (error as Error).message || "No se pudo generar el QR",
-        });
-        return;
-      }
-    } else if (!isTableBusy(table.status)) {
-      return;
-    }
-
     setSelectedTable(table.id);
   };
 
@@ -601,17 +580,20 @@ export default function WaiterDashboard({
         }
       ` }} />
 
-      {selectedTable && (
-        <WaiterTableDetail
-          tableId={selectedTable}
-          restaurantId={restaurantId}
-          presentation={view === "mapa" ? "sheetMd" : "modal"}
-          onClose={() => setSelectedTable(null)}
-          onRefresh={() => {
-            void loadTables({ silent: true });
-          }}
-        />
-      )}
+      <AnimatePresence>
+        {selectedTable && (
+          <WaiterTableDetail
+            key="table-detail-panel"
+            tableId={selectedTable}
+            restaurantId={restaurantId}
+            presentation={view === "mapa" ? "sheetMd" : "modal"}
+            onClose={() => setSelectedTable(null)}
+            onRefresh={() => {
+              void loadTables({ silent: true });
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -15,13 +15,15 @@ export async function submitComensalOrder({
   tableCode,
   guestName,
   pax: _pax,
-  items
+  items,
+  isShared = false,
 }: {
   tableCode: string;
   guestName: string;
   /** Conservado por compatibilidad con el cliente; la sesión define el comensal. */
   pax: number;
   items: { menuItemId: string; quantity: number; variantName?: string | null }[];
+  isShared?: boolean;
 }) {
   // Buscar mesa por código
   const table = await findTableByQrCode(tableCode);
@@ -66,6 +68,7 @@ export async function submitComensalOrder({
       tableId: table.id,
       guestName: sessionRow.guestName,
       status: "PENDING",
+      isShared,
       items: {
         create: items.map(cartItem => {
           const dbItem = dbItems.find(i => i.id === cartItem.menuItemId);

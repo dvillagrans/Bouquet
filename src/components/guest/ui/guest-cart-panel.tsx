@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { User, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type GuestCartLine = {
@@ -21,7 +23,7 @@ export type GuestCartPanelProps = {
   onRemove: (lineKey: string) => void;
   onClear: () => void;
   onClose?: () => void;
-  onCheckout: () => void;
+  onCheckout: (isShared: boolean) => void;
   isSubmitting?: boolean;
   showCelebration?: boolean;
 };
@@ -41,6 +43,7 @@ export function GuestCartPanel({
   showCelebration,
 }: GuestCartPanelProps) {
   const reduceMotion = useReducedMotion();
+  const [isShared, setIsShared] = useState(false);
 
   return (
     <div
@@ -117,13 +120,50 @@ export function GuestCartPanel({
             </p>
           </div>
 
+          {/* Tipo de orden */}
+          <div className="mt-6">
+            <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--guest-muted)]">
+              Tipo de orden
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setIsShared(false)}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 rounded-2xl border px-3 py-3.5 transition-all",
+                  !isShared
+                    ? "border-[color-mix(in_srgb,var(--guest-gold)_55%,transparent)] bg-[color-mix(in_srgb,var(--guest-gold)_7%,transparent)] text-[var(--guest-text)]"
+                    : "border-[var(--guest-divider)] text-[var(--guest-muted)] hover:border-[color-mix(in_srgb,var(--guest-gold)_25%,transparent)]"
+                )}
+              >
+                <User className={cn("size-4", !isShared ? "text-[var(--guest-gold)]" : "text-[var(--guest-muted)]")} />
+                <span className="text-xs font-semibold">Solo para mí</span>
+                <span className="text-[10px] leading-tight opacity-60">Cuenta individual</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsShared(true)}
+                className={cn(
+                  "flex flex-col items-center gap-1.5 rounded-2xl border px-3 py-3.5 transition-all",
+                  isShared
+                    ? "border-[color-mix(in_srgb,var(--guest-gold)_55%,transparent)] bg-[color-mix(in_srgb,var(--guest-gold)_7%,transparent)] text-[var(--guest-text)]"
+                    : "border-[var(--guest-divider)] text-[var(--guest-muted)] hover:border-[color-mix(in_srgb,var(--guest-gold)_25%,transparent)]"
+                )}
+              >
+                <Users className={cn("size-4", isShared ? "text-[var(--guest-gold)]" : "text-[var(--guest-muted)]")} />
+                <span className="text-xs font-semibold">Para compartir</span>
+                <span className="text-[10px] leading-tight opacity-60">Se divide entre todos</span>
+              </button>
+            </div>
+          </div>
+
           <motion.button
             type="button"
             whileHover={reduceMotion ? undefined : { scale: 1.01 }}
             whileTap={reduceMotion ? undefined : { scale: 0.99 }}
-            onClick={onCheckout}
+            onClick={() => onCheckout(isShared)}
             disabled={isSubmitting}
-            className="mt-7 block min-h-12 w-full rounded-xl bg-[color-mix(in_srgb,var(--guest-gold)_88%,#333)] py-4 text-center text-sm font-semibold uppercase tracking-wider text-[var(--guest-bg-page)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color-mix(in_srgb,var(--guest-gold)_55%,transparent)] disabled:opacity-50"
+            className="mt-5 block min-h-12 w-full rounded-xl bg-[color-mix(in_srgb,var(--guest-gold)_88%,#333)] py-4 text-center text-sm font-semibold uppercase tracking-wider text-[var(--guest-bg-page)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color-mix(in_srgb,var(--guest-gold)_55%,transparent)] disabled:opacity-50"
           >
             {isSubmitting ? "Enviando…" : "Enviar orden"}
           </motion.button>

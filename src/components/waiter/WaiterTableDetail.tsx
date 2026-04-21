@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import type { Variants } from "framer-motion";
 import { Plus, Lock, Copy, ExternalLink, CheckCheck, Loader2, Share2, X } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { advanceOrderStatus } from "@/actions/orders";
@@ -141,11 +143,16 @@ export default function WaiterTableDetail({
   if (loading || !tableData) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-solid/90 backdrop-blur-sm">
-        <div className="rounded-[1.75rem] border border-border-main bg-bg-card p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="rounded-[1.75rem] border border-border-main bg-bg-card p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+        >
           <div className="rounded-[calc(1.75rem-0.375rem)] border border-border-main/50 bg-bg-solid px-8 py-10 font-mono text-xs uppercase tracking-[0.18em] text-text-muted shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
+            <Loader2 className="mx-auto mb-3 h-5 w-5 animate-spin text-gold" />
             Cargando detalles…
           </div>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -231,6 +238,16 @@ export default function WaiterTableDetail({
 
   const sheet = presentation === "sheetMd";
 
+  const panelVariants: Variants = {
+    initial: sheet ? { y: "100%" } : { opacity: 0, scale: 0.96, y: 20 },
+    animate: sheet 
+      ? { y: 0, transition: { type: "spring", damping: 28, stiffness: 220 } }
+      : { opacity: 1, scale: 1, y: 0, transition: { type: "spring", damping: 25, stiffness: 260 } },
+    exit: sheet 
+      ? { y: "100%", transition: { type: "spring", damping: 30, stiffness: 300 } }
+      : { opacity: 0, scale: 0.96, y: 15, transition: { duration: 0.22, ease: "easeOut" } }
+  };
+
   return (
     <div
       className={cn(
@@ -238,22 +255,29 @@ export default function WaiterTableDetail({
         sheet ? "items-end justify-center md:items-stretch md:justify-end md:bg-transparent" : "items-end justify-center md:items-center",
       )}
     >
-      <button
+      <motion.button
         type="button"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         className={cn(
-          "absolute inset-0 bg-bg-solid/90 backdrop-blur-sm",
-          sheet && "md:bg-black/35 md:backdrop-blur-none",
+          "absolute inset-0 bg-bg-solid/95 backdrop-blur-md",
+          sheet && "md:bg-black/40 md:backdrop-blur-none",
         )}
         aria-label="Cerrar panel"
         onClick={onClose}
-      ></button>
+      />
 
-      <div
+      <motion.div
+        variants={panelVariants}
+        initial="initial"
+        animate="animate"
+        exit="exit"
         className={cn(
-          "relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden border border-border-main bg-bg-card shadow-[0_24px_60px_-20px_rgba(9,9,7,0.65)] sm:max-h-[90vh]",
+          "relative z-10 flex max-h-[94vh] w-full flex-col overflow-hidden border border-border-main bg-bg-card shadow-[0_32px_80px_-16px_rgba(0,0,0,0.7)] sm:max-h-[90vh]",
           sheet
-            ? "rounded-t-[1.75rem] md:my-4 md:mr-4 md:max-h-[calc(100vh-2rem)] md:w-full md:max-w-md md:rounded-[1.75rem]"
-            : "rounded-t-[1.75rem] md:max-w-2xl md:rounded-[1.75rem]",
+            ? "rounded-t-[2.25rem] md:my-4 md:mr-4 md:max-h-[calc(100vh-2rem)] md:w-full md:max-w-md md:rounded-[2.25rem]"
+            : "rounded-t-[2.25rem] md:max-w-2xl md:rounded-[2.25rem]",
         )}
       >
         <div className="rounded-[calc(1.75rem-0.125rem)] border border-border-main/35 bg-bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
@@ -349,84 +373,94 @@ export default function WaiterTableDetail({
             />
           </div>
 
-          <div className="max-h-[min(52vh,520px)] overflow-y-auto p-4">
-            {activeTab === "orders" && (
-              <div className="divide-y divide-border-main/60 rounded-xl border border-border-main/50 bg-bg-solid/40">
-                {orders.length === 0 ? (
-                  <div className="px-4 py-12 text-center text-sm text-text-muted">No hay órdenes en esta mesa</div>
-                ) : (
-                  orders.map((order) => (
-                    <div key={order.id} className="px-4 py-4">
-                      <div className="mb-3 flex flex-wrap items-center gap-2">
-                        <span
-                          className={cn(
-                            "rounded-full px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em]",
-                            order.status === "PENDING" && "bg-gold/15 text-gold",
-                            order.status === "PREPARING" && "bg-gold/10 text-gold",
-                            order.status === "READY" && "bg-dash-green/15 text-dash-green",
-                            order.status === "DELIVERED" && "bg-bg-hover text-text-muted",
-                          )}
-                        >
-                          {order.status === "PENDING"
-                            ? "Pendiente"
-                            : order.status === "PREPARING"
-                              ? "Preparando"
-                              : order.status === "READY"
-                                ? "Listo"
-                                : "Entregado"}
-                        </span>
-                        <span className="font-mono text-[11px] text-text-muted">
-                          {new Date(order.createdAt).toLocaleTimeString("es-MX", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                      </div>
-
-                      <div className="space-y-2">
-                        {order.items.map((item) => (
-                          <div key={item.id} className="flex justify-between gap-3 text-sm">
-                            <div className="min-w-0">
-                              <p className="text-light">
-                                {item.quantity}x {item.name}
-                              </p>
-                              {item.notes ? (
-                                <p className="text-xs italic text-text-muted">{item.notes}</p>
-                              ) : null}
-                            </div>
-                            <p className="shrink-0 font-mono text-light">${item.totalPrice.toFixed(2)}</p>
+          <div className="max-h-[min(54vh,540px)] overflow-y-auto overflow-x-hidden p-4 scrollbar-hide">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.18, ease: "easeInOut" }}
+              >
+                {activeTab === "orders" && (
+                  <div className="divide-y divide-border-main/60 rounded-xl border border-border-main/50 bg-bg-solid/40">
+                    {orders.length === 0 ? (
+                      <div className="px-4 py-12 text-center text-sm text-text-muted">No hay órdenes en esta mesa</div>
+                    ) : (
+                      orders.map((order) => (
+                        <div key={order.id} className="px-4 py-4">
+                          <div className="mb-3 flex flex-wrap items-center gap-2">
+                            <span
+                              className={cn(
+                                "rounded-full px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em]",
+                                order.status === "PENDING" && "bg-gold/15 text-gold",
+                                order.status === "PREPARING" && "bg-gold/10 text-gold",
+                                order.status === "READY" && "bg-dash-green/15 text-dash-green",
+                                order.status === "DELIVERED" && "bg-bg-hover text-text-muted",
+                              )}
+                            >
+                              {order.status === "PENDING"
+                                ? "Pendiente"
+                                : order.status === "PREPARING"
+                                  ? "Preparando"
+                                  : order.status === "READY"
+                                    ? "Listo"
+                                    : "Entregado"}
+                            </span>
+                            <span className="font-mono text-[11px] text-text-muted">
+                              {new Date(order.createdAt).toLocaleTimeString("es-MX", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
                           </div>
-                        ))}
-                      </div>
 
-                      {order.status === "READY" ? (
-                        <button
-                          type="button"
-                          onClick={() => void handleMarkDelivered(order.id)}
-                          disabled={deliveringOrderId === order.id}
-                          className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-dash-green px-4 text-sm font-bold uppercase tracking-wide text-bg-solid transition hover:opacity-95 disabled:opacity-60 active:scale-[0.98]"
-                        >
-                          {deliveringOrderId === order.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                          ) : (
-                            <CheckCheck className="h-4 w-4" aria-hidden />
-                          )}
-                          Marcar entregado
-                        </button>
-                      ) : null}
-                    </div>
-                  ))
+                          <div className="space-y-2">
+                            {order.items.map((item) => (
+                              <div key={item.id} className="flex justify-between gap-3 text-sm">
+                                <div className="min-w-0">
+                                  <p className="text-light">
+                                    {item.quantity}x {item.name}
+                                  </p>
+                                  {item.notes ? (
+                                    <p className="text-xs italic text-text-muted">{item.notes}</p>
+                                  ) : null}
+                                </div>
+                                <p className="shrink-0 font-mono text-light">${item.totalPrice.toFixed(2)}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          {order.status === "READY" ? (
+                            <button
+                              type="button"
+                              onClick={() => void handleMarkDelivered(order.id)}
+                              disabled={deliveringOrderId === order.id}
+                              className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-dash-green px-4 text-sm font-bold uppercase tracking-wide text-bg-solid transition hover:opacity-95 disabled:opacity-60 active:scale-[0.98]"
+                            >
+                              {deliveringOrderId === order.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                              ) : (
+                                <CheckCheck className="h-4 w-4" aria-hidden />
+                              )}
+                              Marcar entregado
+                            </button>
+                          ) : null}
+                        </div>
+                      ))
+                    )}
+                  </div>
                 )}
-              </div>
-            )}
 
-            {activeTab === "add-items" && session ? (
-              <WaiterTakeOrder tableId={tableId} onOrderAdded={handleOrderAdded} />
-            ) : null}
+                {activeTab === "add-items" && session ? (
+                  <WaiterTakeOrder tableId={tableId} onOrderAdded={handleOrderAdded} />
+                ) : null}
 
-            {activeTab === "payment" && session ? (
-              <WaiterPayment tableCode={table.qrCode} onPaymentComplete={handlePaymentComplete} />
-            ) : null}
+                {activeTab === "payment" && session ? (
+                  <WaiterPayment tableCode={table.qrCode} onPaymentComplete={handlePaymentComplete} />
+                ) : null}
+              </motion.div>
+            </AnimatePresence>
           </div>
 
           {session ? (
@@ -450,7 +484,7 @@ export default function WaiterTableDetail({
             </div>
           ) : null}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

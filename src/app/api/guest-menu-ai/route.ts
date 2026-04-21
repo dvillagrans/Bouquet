@@ -2,6 +2,7 @@ import { deepseek } from "@ai-sdk/deepseek";
 import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { NextResponse } from "next/server";
+import { SECURITY_INSTRUCTIONS, sanitizeUserContent, wrapUserContent } from "@/lib/ai-security";
 
 export const maxDuration = 30;
 
@@ -98,8 +99,8 @@ export async function POST(req: Request) {
     "- Si no hay accion de carrito, no incluyas la directiva.",
     "Contexto de la mesa:",
     `restaurante=${context.restaurantName ?? "Restaurante"}; mesa=${context.tableCode ?? ""}`,
-    "Menu disponible (JSON):",
     JSON.stringify(menuSnapshot),
+    SECURITY_INSTRUCTIONS,
   ].join("\n");
 
   const hasDeepSeek = Boolean(process.env.DEEPSEEK_API_KEY);
@@ -120,7 +121,10 @@ export async function POST(req: Request) {
   const result = streamText({
     model,
     system: systemPrompt,
-    messages,
+    messages: messages.map((m) => ({
+      ...m,
+      content: m.role === "user" ? wrapUserContent(sanitizeUserContent(m.content)) : m.content,
+    })),
     temperature: 0.35,
   });
 

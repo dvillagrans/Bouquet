@@ -1,6 +1,6 @@
-"use client";
+import { memo } from "react";
 
-export function CategoryHeading({
+export const CategoryHeading = memo(function CategoryHeading({
   title,
   count,
   className = "",
@@ -17,4 +17,5 @@ export function CategoryHeading({
       )}
     </div>
   );
-}
+});
+

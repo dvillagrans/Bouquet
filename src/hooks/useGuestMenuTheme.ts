@@ -6,6 +6,7 @@ import { flushSync } from "react-dom";
 import type { GuestMenuThemeOrigin } from "@/components/guest/GuestMenuThemeToggle";
 import {
   GUEST_MENU_THEME_STORAGE_KEY,
+  GUEST_MENU_THEME_ATTRIBUTE,
   type GuestMenuTheme,
 } from "@/lib/guest-menu-theme";
 
@@ -18,16 +19,27 @@ export function useGuestMenuTheme(): {
 } {
   /**
    * Primer render servidor y cliente deben coincidir (no leer localStorage en useState).
-   * La preferencia guardada se aplica tras montar para evitar errores de hidratación.
+   * Intentamos leer el atributo aplicado por el script inyectado en el layout para evitar flashes.
    */
   const [menuTheme, setMenuTheme] = useState<GuestMenuTheme>("light");
   const skipFirstPersist = useRef(true);
 
   useEffect(() => {
     try {
+      // 1. Ver si el script del layout ya aplicó un tema
+      const attr = document.documentElement.getAttribute(GUEST_MENU_THEME_ATTRIBUTE);
+      if (attr === "dark" || attr === "light") {
+        setMenuTheme(attr as GuestMenuTheme);
+        return;
+      }
+
+      // 2. Si no, fallback a localStorage
       const v = localStorage.getItem(GUEST_MENU_THEME_STORAGE_KEY);
       if (v === "dark" || v === "light") {
-        startTransition(() => setMenuTheme(v));
+        startTransition(() => {
+          setMenuTheme(v);
+          document.documentElement.setAttribute(GUEST_MENU_THEME_ATTRIBUTE, v);
+        });
       }
     } catch {
       /* noop */
@@ -41,6 +53,8 @@ export function useGuestMenuTheme(): {
     }
     try {
       localStorage.setItem(GUEST_MENU_THEME_STORAGE_KEY, menuTheme);
+      // Mantener atributo en sincronía para variables CSS globales
+      document.documentElement.setAttribute(GUEST_MENU_THEME_ATTRIBUTE, menuTheme);
     } catch {
       /* noop */
     }
@@ -48,8 +62,6 @@ export function useGuestMenuTheme(): {
 
   /**
    * View Transitions API — círculo desde el clic (`globals.css`: `.guest-menu-vt-root`).
-   * El callback de `startViewTransition` debe actualizar el DOM antes de salir; `flushSync`
-   * fuerza el commit de React en ese fotograma. Si VT falla, aplicamos tema igual.
    */
   const changeGuestMenuTheme = useCallback(
     (next: GuestMenuTheme, origin?: GuestMenuThemeOrigin) => {
@@ -92,3 +104,4 @@ export function useGuestMenuTheme(): {
 
   return { menuTheme, changeGuestMenuTheme };
 }
+

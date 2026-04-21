@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { QtyStepper } from "@/components/guest/ui/qty-stepper";
 import { cn } from "@/lib/utils";
@@ -29,7 +30,7 @@ type MenuRowProps = {
   disabledQty?: boolean;
 };
 
-export function MenuRow({
+export const MenuRow = memo(function MenuRow({
   item,
   categoryInitial,
   selectedVariantName,
@@ -122,4 +123,5 @@ export function MenuRow({
       </div>
     </motion.article>
   );
-}
+});
+

@@ -126,7 +126,6 @@ function ConfirmedView({
   const { menuTheme } = useGuestMenuTheme();
   return (
     <div
-      data-guest-theme={menuTheme}
       className="guest-menu-vt-root relative flex min-h-screen flex-col items-center justify-center bg-[var(--guest-bg-page,#faf8f5)] px-6 text-center text-[var(--guest-text,#0f172a)]"
     >
 
@@ -303,7 +302,6 @@ export function SplitBillScreen({
 
   return (
     <div
-      data-guest-theme={menuTheme}
       className="guest-menu-vt-root flex h-[100dvh] min-h-0 flex-col overflow-hidden bg-[var(--guest-bg-page,#faf8f5)] text-[var(--guest-text,#0f172a)]"
     >
       {payError && (

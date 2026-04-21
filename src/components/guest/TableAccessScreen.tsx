@@ -73,7 +73,6 @@ export function TableAccessScreen({ tableCode, isLikelyValid, existingPax, requi
 
   return (
     <main
-      data-guest-theme={menuTheme}
       className="guest-menu-vt-root min-h-screen bg-cream pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] guest-dark:bg-[var(--guest-bg-page,#0c0907)]"
       aria-labelledby="access-heading"
     >
@@ -109,7 +108,7 @@ export function TableAccessScreen({ tableCode, isLikelyValid, existingPax, requi
         style={{ animation: "table-access-enter 0.5s cubic-bezier(0.25, 1, 0.5, 1) 0.08s both" }}
       >
         <p
-          className="font-sans text-[clamp(3rem,12vw,5.5rem)] font-semibold leading-none tracking-[0.12em] text-charcoal guest-dark:text-light"
+          className="max-w-full break-all font-sans text-[clamp(2.1rem,11vw,5.5rem)] font-semibold leading-[0.95] tracking-[0.05em] text-charcoal [overflow-wrap:anywhere] sm:tracking-[0.12em] guest-dark:text-light"
           aria-label={`Código de mesa: ${normalizedCode}`}
         >
           {normalizedCode}

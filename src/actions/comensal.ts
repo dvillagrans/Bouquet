@@ -148,73 +148,87 @@ function generateJoinCode(): string {
 }
 
 /** Une comensal a la mesa y devuelve el código QR canónico (como en BD) para URL y cookies. */
-export async function guestJoinTable(tableCode: string, guestName: string, pax: number, joinCode?: string) {
-  const table = await findTableByQrCode(tableCode);
-  if (!table) {
-    throw new Error("No encontramos esta mesa. Comprueba el código del QR.");
-  }
-  if (table.status === "SUCIA") {
-    throw new Error("La mesa está siendo limpiada. Pide al personal que la habilite.");
-  }
-
-  await requireTableJoinGate(table, tableCode);
-
-  const canonicalQr = table.qrCode;
-
-  const existingSessions = await prisma.session.count({
-    where: { tableId: table.id, isActive: true }
-  });
-  const isFirstGuest = existingSessions === 0;
-
-  // Si ya hay alguien en la mesa, verificar el código de acceso (comparación insensible a mayúsculas)
-  if (!isFirstGuest) {
-    const input = (joinCode ?? "").toUpperCase().trim();
-    if (!table.joinCode) {
-      throw new Error(
-        "Esta mesa tiene la sesión incompleta (sin código de acceso). Pide al personal que reinicie la mesa.",
-      );
+export async function guestJoinTable(
+  tableCode: string,
+  guestName: string,
+  pax: number,
+  joinCode?: string,
+): Promise<{ ok: true; canonicalQr: string } | { ok: false; message: string }> {
+  try {
+    const table = await findTableByQrCode(tableCode);
+    if (!table) {
+      return { ok: false, message: "No encontramos esta mesa. Comprueba el código del QR." };
     }
-    const stored = table.joinCode.toUpperCase();
-    if (!input || input !== stored) {
-      throw new Error("Código de acceso incorrecto.");
+    if (table.status === "SUCIA") {
+      return {
+        ok: false,
+        message: "La mesa está siendo limpiada. Pide al personal que la habilite.",
+      };
     }
-  }
 
-  const tableUpdates: { status?: "OCUPADA"; joinCode?: string } = {};
-  if (table.status !== "OCUPADA") tableUpdates.status = "OCUPADA";
-  if (isFirstGuest) tableUpdates.joinCode = generateJoinCode();
+    await requireTableJoinGate(table, tableCode);
 
-  if (Object.keys(tableUpdates).length > 0) {
-    await prisma.table.update({ where: { id: table.id }, data: tableUpdates });
-    revalidatePath("/dashboard/mesas");
-    await broadcastKdsOrdersRefresh(table.restaurantId);
-  }
+    const canonicalQr = table.qrCode;
 
-  let session = await prisma.session.findFirst({
-    where: { tableId: table.id, isActive: true, guestName },
-    orderBy: { createdAt: "desc" }
-  });
-
-  if (!session) {
-    session = await prisma.session.create({
-      data: { tableId: table.id, guestName, pax, isActive: true, isHost: isFirstGuest }
+    const existingSessions = await prisma.session.count({
+      where: { tableId: table.id, isActive: true }
     });
+    const isFirstGuest = existingSessions === 0;
+
+    // Si ya hay alguien en la mesa, verificar el código de acceso (comparación insensible a mayúsculas)
+    if (!isFirstGuest) {
+      const input = (joinCode ?? "").toUpperCase().trim();
+      if (!table.joinCode) {
+        return {
+          ok: false,
+          message: "Esta mesa tiene la sesión incompleta (sin código de acceso). Pide al personal que reinicie la mesa.",
+        };
+      }
+      const stored = table.joinCode.toUpperCase();
+      if (!input || input !== stored) {
+        return { ok: false, message: "Código de acceso incorrecto." };
+      }
+    }
+
+    const tableUpdates: { status?: "OCUPADA"; joinCode?: string } = {};
+    if (table.status !== "OCUPADA") tableUpdates.status = "OCUPADA";
+    if (isFirstGuest) tableUpdates.joinCode = generateJoinCode();
+
+    if (Object.keys(tableUpdates).length > 0) {
+      await prisma.table.update({ where: { id: table.id }, data: tableUpdates });
+      revalidatePath("/dashboard/mesas");
+      await broadcastKdsOrdersRefresh(table.restaurantId);
+    }
+
+    let session = await prisma.session.findFirst({
+      where: { tableId: table.id, isActive: true, guestName },
+      orderBy: { createdAt: "desc" }
+    });
+
+    if (!session) {
+      session = await prisma.session.create({
+        data: { tableId: table.id, guestName, pax, isActive: true, isHost: isFirstGuest }
+      });
+    }
+
+    const cookieStore = await cookies();
+    cookieStore.set(`bq_session_${canonicalQr}`, session.id, {
+      maxAge: 60 * 60 * 12,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+    });
+    cookieStore.set(`bq_guest_${canonicalQr}`, encodeURIComponent(guestName), {
+      maxAge: 60 * 60 * 12,
+      httpOnly: false, // para leer en cliente si hace falta
+      path: "/",
+    });
+
+    return { ok: true, canonicalQr };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No pudimos continuar. Intenta nuevamente.";
+    return { ok: false, message };
   }
-
-  const cookieStore = await cookies();
-  cookieStore.set(`bq_session_${canonicalQr}`, session.id, {
-    maxAge: 60 * 60 * 12,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-  });
-  cookieStore.set(`bq_guest_${canonicalQr}`, encodeURIComponent(guestName), {
-    maxAge: 60 * 60 * 12,
-    httpOnly: false, // para leer en cliente si hace falta
-    path: "/",
-  });
-
-  return canonicalQr;
 }
 
 // Pago parcial de un comensal sin cerrar la mesa.

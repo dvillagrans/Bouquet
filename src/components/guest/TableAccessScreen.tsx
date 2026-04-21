@@ -50,14 +50,19 @@ export function TableAccessScreen({ tableCode, isLikelyValid, existingPax, requi
     setSubmitError(null);
     setIsSubmitting(true);
     try {
-      const canonicalCode = await guestJoinTable(
+      const result = await guestJoinTable(
         tableCode,
         trimmedName,
         paxForSession,
         requiresJoinCode ? joinCode.replace(/\s/g, "").toUpperCase() : undefined,
       );
+      if (!result.ok) {
+        setSubmitError(result.message);
+        setIsSubmitting(false);
+        return;
+      }
       /** Sin nombre en URL: la identidad queda solo en sesión+cookie httpOnly */
-      await router.push(`/mesa/${encodeURIComponent(canonicalCode)}/menu`);
+      await router.push(`/mesa/${encodeURIComponent(result.canonicalQr)}/menu`);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "No pudimos continuar. Intenta nuevamente.";

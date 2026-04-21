@@ -4,7 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { Stage, Layer, Rect, Circle, Text, Group } from "react-konva";
 import type Konva from "konva";
-import { Save, Edit3, Eye, Move, Circle as CircleIcon, Square, Activity } from "lucide-react";
+import { Save, Edit3, Eye, Move, Circle as CircleIcon, Square } from "lucide-react";
 import type { Table, TableStatus } from "@/generated/prisma";
 import { getSignedGuestPreviewUrl } from "@/actions/tables";
 import MesaCapacityPreview from "./MesaCapacityPreview";
@@ -86,6 +86,8 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGly
   const isRound = table.shape === "round";
   const half = TABLE_W / 2;
   const seatCount = Math.min(table.capacity, 8);
+  const seatOrbit = half + 13;
+  const seatR = 4.5;
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     const x = snap(e.target.x());
@@ -103,69 +105,111 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGly
     onDragEnd: handleDragEnd,
   };
 
+  // Diagonal gradient matching MesaCapacityPreview style (top-left tint → dark → darker)
+  const bodyGrad = {
+    fillLinearGradientStartPoint: { x: 0, y: 0 },
+    fillLinearGradientEndPoint:   { x: TABLE_W, y: TABLE_W },
+    fillLinearGradientColorStops: [0, fill + "2E", 0.48, "#0F0F0FEB", 1, "#00000088"] as (string | number)[],
+  };
+
   return (
     <Group {...sharedGroupProps}>
-      {/* Selection glow ring */}
+      {/* Selection outer glow ring */}
       {isSelected && (
         isRound ? (
           <Circle
             x={half} y={half}
-            radius={half + 6}
+            radius={half + 11}
             stroke={fill}
-            strokeWidth={2}
+            strokeWidth={1.5}
             opacity={0.4}
-            dash={[4, 4]}
+            dash={[3, 5]}
             listening={false}
           />
         ) : (
           <Rect
-            x={-6} y={-6}
-            width={TABLE_W + 12}
-            height={TABLE_W + 12}
+            x={-9} y={-9}
+            width={TABLE_W + 18}
+            height={TABLE_W + 18}
+            cornerRadius={26}
             stroke={fill}
-            strokeWidth={2}
+            strokeWidth={1.5}
             opacity={0.4}
-            dash={[4, 4]}
-            
+            dash={[3, 5]}
             listening={false}
           />
         )
       )}
 
-      {/* Table body */}
+      {/* Table body — gradient + glow shadow */}
       {isRound ? (
-        <Circle
-          x={half} y={half}
-          radius={half}
-          fill={fill + "28"}
-          stroke={stroke}
-          strokeWidth={isSelected ? 2 : 1.5}
-        />
+        <>
+          <Circle
+            x={half} y={half}
+            radius={half}
+            {...bodyGrad}
+            stroke={stroke}
+            strokeWidth={isSelected ? 2 : 1.5}
+            shadowColor={fill}
+            shadowBlur={isSelected ? 24 : 10}
+            shadowOpacity={isSelected ? 0.5 : 0.22}
+          />
+          {/* Inner overlay circle (matches MesaCapacityPreview inner panel) */}
+          <Circle
+            x={half} y={half}
+            radius={half * 0.68}
+            fill="#00000040"
+            stroke="#FFFFFF0E"
+            strokeWidth={0.8}
+            listening={false}
+          />
+        </>
       ) : (
-        <Rect
-          width={TABLE_W}
-          height={TABLE_W}
-          fill={fill + "28"}
-          stroke={stroke}
-          strokeWidth={isSelected ? 2 : 1.5}
-          
-        />
+        <>
+          <Rect
+            width={TABLE_W}
+            height={TABLE_W}
+            cornerRadius={18}
+            {...bodyGrad}
+            stroke={stroke}
+            strokeWidth={isSelected ? 2 : 1.5}
+            shadowColor={fill}
+            shadowBlur={isSelected ? 24 : 10}
+            shadowOpacity={isSelected ? 0.5 : 0.22}
+          />
+          {/* Inner overlay rect */}
+          <Rect
+            x={TABLE_W * 0.12}
+            y={TABLE_W * 0.12}
+            width={TABLE_W * 0.76}
+            height={TABLE_W * 0.76}
+            cornerRadius={11}
+            fill="#00000040"
+            stroke="#FFFFFF0E"
+            strokeWidth={0.8}
+            listening={false}
+          />
+        </>
       )}
 
-      {/* Seat indicators (small dots around the table) */}
+      {/* Seat dots — gradient fill + glow (matches MesaCapacityPreview seats) */}
       {showSeatGlyphs &&
         Array.from({ length: seatCount }).map((_, i) => {
           const angle = (i / seatCount) * Math.PI * 2 - Math.PI / 2;
-          const r = half + 11;
           return (
             <Circle
               key={i}
-              x={half + Math.cos(angle) * r}
-              y={half + Math.sin(angle) * r}
-              radius={4}
-              fill={fill + "60"}
-              stroke={stroke}
-              strokeWidth={1}
+              x={half + Math.cos(angle) * seatOrbit}
+              y={half + Math.sin(angle) * seatOrbit}
+              radius={seatR}
+              fillLinearGradientStartPoint={{ x: -seatR, y: -seatR }}
+              fillLinearGradientEndPoint={{ x: seatR, y: seatR }}
+              fillLinearGradientColorStops={[0, fill + "E6", 1, fill + "66"] as (string | number)[]}
+              stroke={stroke + "80"}
+              strokeWidth={0.8}
+              shadowColor={fill}
+              shadowBlur={10}
+              shadowOpacity={0.55}
               listening={false}
             />
           );
@@ -173,26 +217,30 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGly
 
       {/* Table number */}
       <Text
-        x={0} y={half - 12}
+        x={0} y={half - 11}
         width={TABLE_W}
         align="center"
         text={String(table.number)}
-        fontSize={22}
+        fontSize={20}
         fontStyle="bold"
         fontFamily="serif"
         fill={C.light}
+        shadowColor="#000000"
+        shadowBlur={6}
+        shadowOpacity={0.8}
+        listening={false}
       />
 
-      {/* Status label */}
-      <Text
-        x={0} y={half + 8}
-        width={TABLE_W}
-        align="center"
-        text={STATUS_LABEL[table.status]}
-        fontSize={9}
-        fontFamily="sans-serif"
+      {/* Status glow dot */}
+      <Circle
+        x={half}
+        y={half + 11}
+        radius={3}
         fill={fill}
-        opacity={0.85}
+        shadowColor={fill}
+        shadowBlur={8}
+        shadowOpacity={0.75}
+        listening={false}
       />
     </Group>
   );
@@ -214,7 +262,7 @@ const MemoizedTableNode = memo(
 );
 
 /* ── Live instrument panel ─────────────────────────────────────── */
-function StatusCell({
+function StatusPill({
   label,
   color,
   count,
@@ -229,69 +277,64 @@ function StatusCell({
 }) {
   return (
     <div
-      className="group relative flex items-center gap-3 border-r border-wire/60 px-4 py-3 transition-colors last:border-r-0 hover:bg-light/[0.025]"
-      style={{ animation: `reveal-up 0.55s ${delay}s cubic-bezier(0.22,1,0.36,1) both` }}
+      className="group relative flex flex-1 items-center gap-3 rounded-xl px-4 py-3 transition-all"
+      style={{
+        background: `${color}0C`,
+        border: `1px solid ${color}22`,
+        animation: `reveal-up 0.55s ${delay}s cubic-bezier(0.22,1,0.36,1) both`,
+      }}
     >
-      <span className="relative flex size-2.5 shrink-0 items-center justify-center">
+      <span className="relative flex size-2 shrink-0">
         <span
           aria-hidden
-          className="absolute rounded-full"
+          className="absolute inline-flex size-full rounded-full opacity-60"
           style={{
-            inset: "-7px",
-            border: `1px solid ${color}33`,
-            animation: "pulse-slow 2.8s ease-out infinite",
-            animationDelay: `${delay * 2}s`,
-          }}
-        />
-        <span
-          aria-hidden
-          className="absolute size-2 rounded-full"
-          style={{
-            background: color,
-            boxShadow: `0 0 12px ${color}AA, inset 0 0 4px ${color}`,
+            backgroundColor: color,
             animation: emphasize
-              ? "pulse-slow 1.4s ease-in-out infinite"
-              : "pulse-slow 2.4s ease-in-out infinite",
+              ? "ping 0.9s cubic-bezier(0,0,0.2,1) infinite"
+              : "ping 2.2s cubic-bezier(0,0,0.2,1) infinite",
             animationDelay: `${delay}s`,
           }}
         />
+        <span
+          className="relative inline-flex size-2 rounded-full"
+          style={{ backgroundColor: color }}
+        />
       </span>
-      <span
-        className="font-serif text-[1.3rem] font-semibold leading-none tabular-nums text-light"
-        style={{ textShadow: `0 0 18px ${color}33` }}
-      >
-        {count.toString().padStart(2, "0")}
-      </span>
-      <span className="text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-dim transition-colors group-hover:text-light/85">
-        {label}
-      </span>
+      <div className="min-w-0">
+        <p
+          className="font-serif text-[1.5rem] font-semibold tabular-nums leading-none"
+          style={{ color, textShadow: `0 0 20px ${color}50` }}
+        >
+          {count.toString().padStart(2, "0")}
+        </p>
+        <p className="mt-1 text-[0.54rem] font-bold uppercase tracking-[0.22em] text-dim group-hover:text-dim/80 transition-colors">
+          {label}
+        </p>
+      </div>
     </div>
   );
 }
 
 function LiveBadge() {
   return (
-    <div className="flex items-center gap-2.5 border-r border-wire/60 px-4 py-3">
+    <div className="flex shrink-0 items-center gap-3">
       <span className="relative flex size-2.5 items-center justify-center">
         <span
           aria-hidden
-          className="absolute size-2 rounded-full bg-ember"
-          style={{ animation: "pulse-slow 1.2s ease-in-out infinite" }}
+          className="absolute inline-flex size-full rounded-full bg-ember opacity-60"
+          style={{ animation: "ping 1.4s cubic-bezier(0,0,0.2,1) infinite" }}
         />
-        <span
-          aria-hidden
-          className="absolute rounded-full border border-ember/50"
-          style={{ inset: "-6px", animation: "pulse-slow 2s ease-out infinite" }}
-        />
+        <span className="relative inline-flex size-2.5 rounded-full bg-ember shadow-[0_0_8px_rgba(168,86,42,0.8)]" />
       </span>
-      <span className="flex flex-col leading-none">
-        <span className="font-mono text-[0.5rem] font-bold uppercase tracking-[0.3em] text-ember/80">
-          ●  Live
+      <div className="flex flex-col leading-none">
+        <span className="font-mono text-[0.5rem] font-bold uppercase tracking-[0.36em] text-ember">
+          Live
         </span>
-        <span className="mt-1 hidden text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-light/85 sm:inline">
+        <span className="mt-1 text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-light/55">
           Plano de sala
         </span>
-      </span>
+      </div>
     </div>
   );
 }
@@ -312,11 +355,11 @@ function SyncClock() {
     return () => clearInterval(id);
   }, []);
   return (
-    <div className="hidden flex-col justify-center border-r border-wire/60 px-4 py-2 text-right md:flex">
-      <span className="font-mono text-[0.5rem] font-bold uppercase tracking-[0.28em] text-dim">
-        Última sync
+    <div className="hidden flex-col items-end md:flex">
+      <span className="font-mono text-[0.48rem] font-bold uppercase tracking-[0.3em] text-dim/60">
+        Sync
       </span>
-      <span className="mt-1 font-mono text-[0.78rem] font-semibold tabular-nums text-light">
+      <span className="mt-0.5 font-mono text-[0.9rem] font-semibold tabular-nums text-light/70">
         {clock ?? "--:--"}
       </span>
     </div>
@@ -334,32 +377,12 @@ function EditButton({
     <button
       onClick={onClick}
       className={[
-        "group relative inline-flex h-9 items-center gap-2 overflow-hidden border px-5 text-[0.68rem] font-bold uppercase tracking-[0.2em] transition-all hover:-translate-y-px",
+        "group inline-flex h-9 items-center gap-2 rounded-xl px-5 text-[0.68rem] font-bold uppercase tracking-[0.18em] transition-all hover:-translate-y-px active:translate-y-0",
         active
-          ? "border-wire bg-canvas text-dim hover:border-light/30 hover:text-light"
-          : "border-glow/40 bg-glow/[0.04] text-glow hover:border-glow hover:bg-glow/[0.1] hover:text-[color:var(--color-gold-light)] hover:shadow-[0_0_28px_-6px_rgba(201,160,84,0.45)]",
+          ? "border border-wire/60 bg-wire/30 text-dim hover:border-light/20 hover:text-light"
+          : "border border-glow/30 bg-glow/[0.08] text-glow hover:border-glow/55 hover:bg-glow/[0.14] hover:shadow-[0_0_24px_-4px_rgba(201,160,84,0.45)]",
       ].join(" ")}
     >
-      {/* shimmer sweep */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 -left-16 w-12 -skew-x-12 bg-gradient-to-r from-transparent via-light/20 to-transparent opacity-0 transition-all duration-700 ease-out group-hover:left-[110%] group-hover:opacity-100"
-      />
-      {/* corner notches */}
-      <span
-        aria-hidden
-        className={[
-          "pointer-events-none absolute left-[3px] top-[3px] h-1.5 w-1.5 border-l border-t transition-colors",
-          active ? "border-dim/60 group-hover:border-light" : "border-glow/60 group-hover:border-glow",
-        ].join(" ")}
-      />
-      <span
-        aria-hidden
-        className={[
-          "pointer-events-none absolute bottom-[3px] right-[3px] h-1.5 w-1.5 border-b border-r transition-colors",
-          active ? "border-dim/60 group-hover:border-light" : "border-glow/60 group-hover:border-glow",
-        ].join(" ")}
-      />
       {active ? (
         <>
           <Eye className="h-3.5 w-3.5" /> Ver plano
@@ -405,77 +428,77 @@ function OperationsBar({
 
   return (
     <div
-      className="relative border border-wire bg-[linear-gradient(180deg,rgba(201,160,84,0.045)_0%,rgba(19,16,8,0.6)_55%,rgba(12,9,7,0.9)_100%)] shadow-[inset_0_1px_0_rgba(237,232,225,0.04)]"
+      className="relative flex flex-col gap-3 overflow-hidden rounded-2xl border border-wire/50 bg-ink/75 px-5 py-4 shadow-[0_4px_32px_-8px_rgba(0,0,0,0.6)] backdrop-blur-xl sm:flex-row sm:items-center sm:gap-4"
       style={{ animation: "fade-in 0.5s ease-out both" }}
     >
-      {/* hairline gold rail */}
+      {/* Subtle gold glow from left */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: "radial-gradient(ellipse 60% 120% at 0% 50%, rgba(201,160,84,0.06), transparent 65%)",
+        }}
+      />
+      {/* Hairline top border */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-x-6 top-0 h-px"
+        className="pointer-events-none absolute inset-x-8 top-0 h-px"
         style={{
           background:
-            "linear-gradient(90deg, transparent 0%, rgba(201,160,84,0.6) 30%, rgba(237,232,225,0.35) 50%, rgba(201,160,84,0.6) 70%, transparent 100%)",
+            "linear-gradient(90deg, transparent 0%, rgba(201,160,84,0.5) 25%, rgba(237,232,225,0.25) 50%, rgba(201,160,84,0.5) 75%, transparent 100%)",
           animation: "draw-line 1s cubic-bezier(0.22,1,0.36,1) both",
         }}
       />
-      {/* faint radial glow on the right */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-0 w-[40%] opacity-60"
-        style={{
-          background:
-            "radial-gradient(ellipse at right center, rgba(201,160,84,0.09), transparent 60%)",
-        }}
-      />
 
-      <div className="relative flex flex-col gap-0 sm:flex-row sm:items-stretch">
-        <LiveBadge />
+      {/* Live badge */}
+      <LiveBadge />
 
-        <div className="flex flex-1 items-center overflow-x-auto">
-          <StatusCell label="Disponibles" color={C.sage} count={counts.disponible} delay={0.05} />
-          <StatusCell label="Ocupadas" color={C.glow} count={counts.ocupada} delay={0.15} />
-          <StatusCell
-            label="Por limpiar"
-            color={C.ember}
-            count={counts.sucia}
-            delay={0.25}
-            emphasize={counts.sucia > 0}
-          />
-          <div
-            className="ml-auto hidden items-center gap-2 px-4 py-3 lg:flex"
-            aria-hidden
-          >
-            <Activity className="h-3 w-3 text-glow/70" />
-            <span className="font-mono text-[0.5rem] font-bold uppercase tracking-[0.28em] text-dim">
-              Operación
-            </span>
-          </div>
-        </div>
+      {/* Divider */}
+      <div className="hidden h-8 w-px shrink-0 bg-wire/50 sm:block" aria-hidden />
 
+      {/* Stats */}
+      <div className="flex flex-1 gap-2">
+        <StatusPill label="Disponibles" color={C.sage} count={counts.disponible} delay={0.05} />
+        <StatusPill label="Ocupadas" color={C.glow} count={counts.ocupada} delay={0.15} />
+        <StatusPill
+          label="Por limpiar"
+          color={C.ember}
+          count={counts.sucia}
+          delay={0.25}
+          emphasize={counts.sucia > 0}
+        />
+      </div>
+
+      {/* Right: clock + controls */}
+      <div className="flex items-center gap-3">
         <SyncClock />
 
         {!readOnly && (
-          <div className="flex items-center gap-2 border-t border-wire/60 px-4 py-3 sm:border-l sm:border-t-0">
-            {editMode && (
-              <>
-                <p
-                  className="hidden text-[0.6rem] font-semibold uppercase tracking-[0.22em] text-glow/75 md:block"
-                  style={{ animation: "fade-in 0.3s ease-out both" }}
-                >
-                  · Arrastra para reposicionar
-                </p>
-                <button
-                  onClick={onSave}
-                  disabled={saving}
-                  className="inline-flex h-9 items-center gap-2 bg-light px-4 text-[0.68rem] font-bold uppercase tracking-[0.2em] text-ink transition-all hover:-translate-y-px hover:bg-light/90 disabled:opacity-50"
-                >
-                  <Save className="h-3.5 w-3.5" />
-                  {saving ? "Guardando…" : saved ? "Guardado ✓" : "Guardar"}
-                </button>
-              </>
-            )}
-            <EditButton active={editMode} onClick={onToggleEdit} />
-          </div>
+          <>
+            {/* Divider */}
+            <div className="hidden h-8 w-px shrink-0 bg-wire/50 md:block" aria-hidden />
+            <div className="flex items-center gap-2">
+              {editMode && (
+                <>
+                  <p
+                    className="hidden text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-glow/65 lg:block"
+                    style={{ animation: "fade-in 0.3s ease-out both" }}
+                  >
+                    Arrastra para mover
+                  </p>
+                  <button
+                    onClick={onSave}
+                    disabled={saving}
+                    className="inline-flex h-9 items-center gap-2 rounded-xl bg-light px-4 text-[0.68rem] font-bold uppercase tracking-[0.18em] text-ink transition-all hover:-translate-y-px hover:bg-light/90 disabled:opacity-50"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    {saving ? "Guardando…" : saved ? "Guardado ✓" : "Guardar"}
+                  </button>
+                </>
+              )}
+              <EditButton active={editMode} onClick={onToggleEdit} />
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -600,7 +623,7 @@ export default function FloorMap({
       {/* ── Canvas ─────────────────────────────────────────────── */}
       <div
         ref={containerRef}
-        className="relative overflow-hidden border border-wire"
+        className="relative overflow-hidden rounded-2xl border border-wire/40 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(237,232,225,0.03)]"
         style={{ height: GRID_H * scale + 2 }}
       >
         <Stage
@@ -631,9 +654,10 @@ export default function FloorMap({
               width={GRID_W - 40}
               height={GRID_H - 40}
               stroke={C.wire}
-              strokeWidth={2}
+              strokeWidth={1}
               fill="transparent"
-              dash={[8, 6]}
+              dash={[4, 8]}
+              opacity={0.5}
               listening={false}
             />
 
@@ -655,12 +679,12 @@ export default function FloorMap({
         {/* Edit mode overlay hint */}
         {editMode && (
           <div
-            className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 border border-glow/20 bg-ink/80 px-4 py-1.5 backdrop-blur-sm"
+            className="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2"
             style={{ animation: "fade-in 0.3s ease-out both" }}
           >
-            <div className="flex items-center gap-2">
-              <Move className="h-3 w-3 text-glow" />
-              <p className="text-[0.62rem] font-semibold text-glow/80">
+            <div className="flex items-center gap-2 rounded-full border border-glow/25 bg-ink/85 px-4 py-2 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.6)] backdrop-blur-md">
+              <Move className="h-3 w-3 text-glow/80" />
+              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-glow/75">
                 Modo edición — arrastra para mover
               </p>
             </div>
@@ -671,7 +695,7 @@ export default function FloorMap({
       {/* ── Selected table panel ─────────────────────────────── */}
       {selectedTable && !editMode && (
         <div
-          className="flex flex-wrap items-center justify-between gap-4 border border-wire px-5 py-4"
+          className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-wire/40 bg-ink/60 px-5 py-4 backdrop-blur-md shadow-[0_4px_24px_-8px_rgba(0,0,0,0.5)]"
           style={{ animation: "reveal-up 0.25s cubic-bezier(0.22,1,0.36,1) both" }}
         >
           <div className="flex flex-wrap items-center gap-5 sm:gap-6">
@@ -681,7 +705,7 @@ export default function FloorMap({
                 reduceMotion={prefersReducedMotion}
                 scale={0.62}
               />
-              <div className="border-l border-wire/70 pl-3 sm:pl-4">
+              <div className="border-l border-wire/50 pl-3 sm:pl-4">
                 <p className="text-[0.52rem] font-bold uppercase tracking-[0.38em] text-dim">Capacidad</p>
                 <p className="mt-0.5 font-serif text-xl font-semibold tabular-nums leading-none text-light sm:text-2xl">
                   {selectedTable.capacity}
@@ -706,7 +730,7 @@ export default function FloorMap({
             </div>
             <div className="min-w-0">
               <p className="text-[0.52rem] font-bold uppercase tracking-[0.38em] text-dim">Código QR</p>
-              <p className="mt-0.5 truncate font-mono text-[0.75rem] font-semibold text-light/50">
+              <p className="mt-0.5 truncate font-mono text-[0.75rem] font-semibold text-light/40">
                 {selectedTable.qrCode}
               </p>
             </div>
@@ -719,7 +743,7 @@ export default function FloorMap({
                   <button
                     type="button"
                     onClick={() => onTableClick(selectedTable.id)}
-                    className="inline-flex h-9 items-center gap-2 border border-glow/35 bg-glow/[0.12] px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-glow transition-colors hover:border-glow/55 hover:bg-glow/20"
+                    className="inline-flex h-9 items-center gap-2 rounded-xl border border-glow/35 bg-glow/[0.1] px-4 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-glow transition-all hover:border-glow/55 hover:bg-glow/[0.18] hover:shadow-[0_0_18px_-4px_rgba(201,160,84,0.35)]"
                   >
                     <Eye className="h-3.5 w-3.5" />
                     Abrir mesa
@@ -737,7 +761,7 @@ export default function FloorMap({
                       }
                     })()
                   }
-                  className="inline-flex h-9 items-center gap-2 border border-wire px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
+                  className="inline-flex h-9 items-center gap-2 rounded-xl border border-wire/50 px-4 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
                 >
                   Ver menú
                 </button>
@@ -747,7 +771,7 @@ export default function FloorMap({
                 <button
                   type="button"
                   onClick={() => handleShapeToggle(selectedTable.id, selectedTable.shape)}
-                  className="inline-flex h-9 items-center gap-2 border border-wire px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
+                  className="inline-flex h-9 items-center gap-2 rounded-xl border border-wire/50 px-4 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
                   title="Cambiar forma"
                 >
                   {selectedTable.shape === "round"
@@ -767,7 +791,7 @@ export default function FloorMap({
                       }
                     })()
                   }
-                  className="inline-flex h-9 items-center gap-2 border border-wire px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
+                  className="inline-flex h-9 items-center gap-2 rounded-xl border border-wire/50 px-4 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-dim transition-colors hover:border-light/20 hover:text-light"
                 >
                   Ver menú
                 </button>
@@ -780,15 +804,15 @@ export default function FloorMap({
       {/* ── Edit mode: selected table shape toggle ───────────── */}
       {selectedTable && editMode && (
         <div
-          className="flex items-center justify-between border border-glow/20 bg-glow/[0.04] px-5 py-3"
+          className="flex items-center justify-between rounded-2xl border border-glow/20 bg-glow/[0.04] px-5 py-3 backdrop-blur-md"
           style={{ animation: "reveal-up 0.25s cubic-bezier(0.22,1,0.36,1) both" }}
         >
-          <p className="text-[0.68rem] font-semibold text-glow">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-glow/80">
             Mesa {selectedTable.number} seleccionada
           </p>
           <button
             onClick={() => handleShapeToggle(selectedTable.id, selectedTable.shape)}
-            className="inline-flex h-8 items-center gap-2 border border-glow/30 px-3 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-glow transition-colors hover:bg-glow/10"
+            className="inline-flex h-8 items-center gap-2 rounded-xl border border-glow/30 px-4 text-[0.62rem] font-bold uppercase tracking-[0.16em] text-glow transition-colors hover:bg-glow/10"
           >
             {selectedTable.shape === "round"
               ? <><Square className="h-3.5 w-3.5" /> Cambiar a cuadrada</>

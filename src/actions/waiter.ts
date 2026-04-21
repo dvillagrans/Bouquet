@@ -232,7 +232,16 @@ export async function getTableDetail(tableId: string) {
     );
   }
 
-  const guestEntryRelativePath = `/mesa/${encodeURIComponent(table.qrCode)}?k=${encodeURIComponent(signTableJoinProof(table.qrCode))}`;
+  let guestEntryRelativePath: string | undefined;
+  try {
+    const proof = signTableJoinProof(table.qrCode);
+    guestEntryRelativePath = `/mesa/${encodeURIComponent(table.qrCode)}?k=${encodeURIComponent(proof)}`;
+  } catch (error) {
+    console.error("No se pudo firmar enlace de acceso para mesa", {
+      tableId,
+      reason: error instanceof Error ? error.message : String(error),
+    });
+  }
 
   return {
     table: {

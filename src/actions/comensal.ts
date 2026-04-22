@@ -268,26 +268,29 @@ export async function guestJoinTable(
       }
     }
 
-    const tableUpdates: { status?: "OCUPADA"; joinCode?: string } = {};
-    if (table.status !== "OCUPADA") tableUpdates.status = "OCUPADA";
-    if (isFirstGuest) tableUpdates.joinCode = generateJoinCode();
-
-    if (Object.keys(tableUpdates).length > 0) {
-      await prisma.table.update({ where: { id: table.id }, data: tableUpdates });
-      revalidatePath("/dashboard/mesas");
-      await broadcastKdsOrdersRefresh(table.restaurantId);
-    }
-
-    let session = await prisma.session.findFirst({
-      where: { tableId: table.id, isActive: true, guestName },
-      orderBy: { createdAt: "desc" }
-    });
-
-    if (!session) {
-      session = await prisma.session.create({
-        data: { tableId: table.id, guestName, pax, isActive: true, isHost: isFirstGuest }
+      let session = await prisma.session.findFirst({
+        where: { tableId: table.id, isActive: true, guestName },
+        orderBy: { createdAt: "desc" }
       });
-    }
+  
+      if (!session) {
+        session = await prisma.session.create({
+          data: { tableId: table.id, guestName, pax, isActive: true }
+        });
+      }
+  
+      const tableUpdates: { status?: "OCUPADA"; joinCode?: string; hostSessionId?: string } = {};
+      if (table.status !== "OCUPADA") tableUpdates.status = "OCUPADA";
+      if (isFirstGuest) {
+        tableUpdates.joinCode = generateJoinCode();
+        tableUpdates.hostSessionId = session.id;
+      }
+  
+      if (Object.keys(tableUpdates).length > 0) {
+        await prisma.table.update({ where: { id: table.id }, data: tableUpdates });
+        revalidatePath("/dashboard/mesas");
+        await broadcastKdsOrdersRefresh(table.restaurantId);
+      }
 
     const cookieStore = await cookies();
     cookieStore.set(`bq_session_${canonicalQr}`, session.id, {
@@ -451,7 +454,7 @@ export async function payGuestShare(input: {
     });
 
     // HOST DEFICIT ENFORCEMENT:
-    if (session.isHost || remainingActive === 0) {
+    if (table.hostSessionId === session.id || remainingActive === 0) {
       const allSharedItems = await tx.orderItem.findMany({
         where: {
           sessionId: { in: sessionIds },
@@ -606,17 +609,17 @@ export async function transferHost(tableCode: string, fromGuest: string, toGuest
   await requireGuestSessionRow(table, tableCode, fromGuest);
 
   const [fromSession, toSession] = await Promise.all([
-    prisma.session.findFirst({ where: { tableId: table.id, isActive: true, guestName: fromGuest, isHost: true } }),
+    prisma.session.findFirst({ where: { tableId: table.id, isActive: true, guestName: fromGuest, id: table.hostSessionId ?? undefined } }),
     prisma.session.findFirst({ where: { tableId: table.id, isActive: true, guestName: toGuest } }),
   ]);
 
   if (!fromSession) throw new Error("Solo el anfitrión puede transferir el rol.");
   if (!toSession) throw new Error("El comensal destino no está en la mesa.");
 
-  await prisma.$transaction([
-    prisma.session.update({ where: { id: fromSession.id }, data: { isHost: false } }),
-    prisma.session.update({ where: { id: toSession.id },   data: { isHost: true  } }),
-  ]);
+  await prisma.table.update({
+    where: { id: table.id },
+    data: { hostSessionId: toSession.id }
+  });
 
   await broadcastGuestOrdersRefresh(tableCode); // reusar para que todos refresquen la UI
 }
@@ -631,10 +634,10 @@ export async function requestBill(tableCode: string, guestName: string) {
 
   const activeSessions = await prisma.session.findMany({
     where: { tableId: table.id, isActive: true },
-    select: { id: true, guestName: true, isHost: true },
+    select: { id: true, guestName: true },
   });
 
-  const mySession = activeSessions.find((s) => s.guestName === guestName && s.isHost);
+  const mySession = activeSessions.find((s) => s.guestName === guestName && s.id === table.hostSessionId);
   if (!mySession) throw new Error("Solo el anfitrión puede pedir la cuenta.");
 
   // Si solo queda 1 comensal activo, no bloqueamos la mesa completa.
@@ -671,12 +674,12 @@ export async function getGuestTableState(tableCode: string, guestName: string) {
   });
 
   const mySession = activeSessions.find(s => s.guestName === guestName);
-  const isHost = mySession?.isHost ?? false;
+  const isHost = mySession?.id === table.hostSessionId && mySession !== undefined;
 
   return {
     isHost,
     billRequested: table.status === "CERRANDO",
-    guests: activeSessions.map(s => ({ name: s.guestName, isHost: s.isHost })),
+    guests: activeSessions.map(s => ({ name: s.guestName, isHost: s.id === table.hostSessionId })),
     /** Misma mesa misma sesión: todos ven el código para invitar (no exponemos si no hay sesión activa). */
     joinCode: mySession ? table.joinCode : null,
   };

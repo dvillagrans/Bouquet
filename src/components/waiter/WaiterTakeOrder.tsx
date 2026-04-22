@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { getMenuForOrdering, waiterCreateOrder } from "@/actions/waiter";
-import { ChevronDown, Plus, Minus, Send } from "lucide-react";
+import { Plus, Minus, Send, CheckCheck, Loader2 } from "lucide-react";
 
 interface MenuItem {
   id: string;
@@ -48,7 +48,7 @@ export default function WaiterTakeOrder({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [expandedNotes, setExpandedNotes] = useState<string | null>(null);
+  const [successFeedback, setSuccessFeedback] = useState(false);
   const [variantChoice, setVariantChoice] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -153,7 +153,11 @@ export default function WaiterTakeOrder({
 
       await waiterCreateOrder(tableId, orderItems);
       setCart([]);
-      onOrderAdded();
+      setSuccessFeedback(true);
+      setTimeout(() => {
+        setSuccessFeedback(false);
+        onOrderAdded();
+      }, 1500);
     } catch (error) {
       alert("Error al crear orden: " + (error as Error).message);
     } finally {
@@ -171,23 +175,27 @@ export default function WaiterTakeOrder({
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setSelectedCategory(cat.id)}
-            className={`px-4 py-2 rounded whitespace-nowrap text-sm font-bold uppercase transition-all ${
-              selectedCategory === cat.id
-                ? "bg-glow text-canvas"
-                : "border border-wire text-light hover:border-glow"
-            }`}
-          >
-            {cat.name}
-          </button>
-        ))}
+      <div className="relative -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex gap-2 overflow-x-auto pb-2 pr-8 scrollbar-hide">
+          {categories.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`shrink-0 px-4 py-2 rounded text-sm font-bold uppercase transition-all ${
+                selectedCategory === cat.id
+                  ? "bg-glow text-canvas"
+                  : "border border-wire text-light hover:border-glow"
+              }`}
+            >
+              {cat.name}
+            </button>
+          ))}
+        </div>
+        {/* Right fade gradient for mobile horizontal scroll hint */}
+        <div className="pointer-events-none absolute right-0 top-0 bottom-2 w-12 bg-gradient-to-l from-bg-card to-transparent" />
       </div>
 
-      <div className="grid grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+      <div className="flex flex-col gap-2 pb-2">
         {visibleItems.map((item) => {
           const hasVariants = item.variants && item.variants.length > 0;
           const vn = selectedVariantName(item);
@@ -195,45 +203,48 @@ export default function WaiterTakeOrder({
           return (
             <div
               key={item.id}
-              className="border border-wire rounded-lg p-3 hover:border-glow/40 transition-colors bg-canvas/50"
+              className="flex flex-col border border-wire/50 rounded-lg p-3 hover:border-glow/40 transition-colors bg-canvas/50"
             >
-              <h4 className="text-sm font-bold text-light line-clamp-2">{item.name}</h4>
-              {item.description && (
-                <p className="text-xs text-dim mt-1 line-clamp-1">{item.description}</p>
-              )}
-              {hasVariants && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {item.variants.map((v) => {
-                    const active = vn === v.name;
-                    return (
-                      <button
-                        key={v.name}
-                        type="button"
-                        onClick={() =>
-                          setVariantChoice((prev) => ({ ...prev, [item.id]: v.name }))
-                        }
-                        className={`rounded px-2 py-0.5 text-[0.58rem] font-bold uppercase tracking-wide transition-colors ${
-                          active
-                            ? "bg-glow/25 text-glow border border-glow/50"
-                            : "border border-wire/50 text-dim hover:text-light"
-                        }`}
-                      >
-                        {v.name} ${v.price.toFixed(0)}
-                      </button>
-                    );
-                  })}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <h4 className="text-[0.95rem] font-bold text-light truncate">{item.name}</h4>
+                  
+                  {hasVariants && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {item.variants.map((v) => {
+                        const active = vn === v.name;
+                        return (
+                          <button
+                            key={v.name}
+                            type="button"
+                            onClick={() =>
+                              setVariantChoice((prev) => ({ ...prev, [item.id]: v.name }))
+                            }
+                            className={`rounded px-2 py-0.5 text-[0.58rem] font-bold uppercase tracking-wide transition-colors ${
+                              active
+                                ? "bg-glow/25 text-glow border border-glow/50"
+                                : "border border-wire/50 text-dim hover:text-light"
+                            }`}
+                          >
+                            {v.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-              <div className="flex items-end justify-between mt-2">
-                <p className="font-mono text-glow">${up.toFixed(2)}</p>
-                <button
-                  type="button"
-                  onClick={() => addToCart(item)}
-                  className="bg-glow/20 hover:bg-glow/40 text-glow p-1 rounded transition-colors"
-                  aria-label={`Agregar ${item.name}`}
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
+
+                <div className="flex items-center gap-4 shrink-0">
+                  <p className="font-mono text-glow">${up.toFixed(2)}</p>
+                  <button
+                    type="button"
+                    onClick={() => addToCart(item)}
+                    className="bg-glow/10 hover:bg-glow/30 text-glow p-2 rounded-xl transition-colors active:scale-95"
+                    aria-label={`Agregar ${item.name}`}
+                  >
+                    <Plus className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
             </div>
           );
@@ -274,28 +285,13 @@ export default function WaiterTakeOrder({
                   </div>
                 </div>
 
-                <button
-                  onClick={() =>
-                    setExpandedNotes(expandedNotes === item.key ? null : item.key)
-                  }
-                  className="text-xs text-dim hover:text-light mt-1 flex items-center gap-1 transition-colors"
-                >
-                  <ChevronDown
-                    className={`h-3 w-3 transition-transform ${
-                      expandedNotes === item.key ? "rotate-180" : ""
-                    }`}
-                  />
-                  Instrucciones
-                </button>
-                {expandedNotes === item.key && (
-                  <input
-                    type="text"
-                    placeholder="Ej: Sin cebolla, bien cocido..."
-                    value={item.notes}
-                    onChange={(e) => updateNotes(item.key, e.target.value)}
-                    className="w-full mt-2 px-2 py-1 bg-canvas border border-wire/30 rounded text-light text-xs focus:outline-none focus:border-glow/50"
-                  />
-                )}
+                <input
+                  type="text"
+                  placeholder="Instrucciones (ej: sin cebolla)"
+                  value={item.notes}
+                  onChange={(e) => updateNotes(item.key, e.target.value)}
+                  className="w-full mt-2 px-3 py-1.5 bg-canvas/40 border border-wire/40 rounded text-light text-xs focus:outline-none focus:border-glow/50 placeholder:text-dim transition-colors"
+                />
               </div>
             ))}
           </div>
@@ -311,10 +307,20 @@ export default function WaiterTakeOrder({
 
       <button
         onClick={handleSubmit}
-        disabled={submitting || cart.length === 0}
-        className="w-full bg-glow hover:bg-glow/90 disabled:opacity-50 disabled:cursor-not-allowed text-canvas px-4 py-3 rounded font-bold uppercase flex items-center justify-center gap-2 transition-colors"
+        disabled={submitting || successFeedback || cart.length === 0}
+        className={`w-full px-4 py-3 rounded font-bold uppercase flex items-center justify-center gap-2 transition-colors ${
+          successFeedback 
+            ? "bg-dash-green text-bg-solid" 
+            : "bg-glow hover:bg-glow/90 text-canvas disabled:opacity-50 disabled:cursor-not-allowed"
+        }`}
       >
-        <Send className="h-4 w-4" /> Crear Orden
+        {submitting ? (
+          <><Loader2 className="h-4 w-4 animate-spin" /> Enviando...</>
+        ) : successFeedback ? (
+          <><CheckCheck className="h-4 w-4" /> Orden enviada a cocina</>
+        ) : (
+          <><Send className="h-4 w-4" /> Crear Orden</>
+        )}
       </button>
     </div>
   );

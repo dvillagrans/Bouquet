@@ -342,7 +342,7 @@ export function GuestMenuAIAssistant({
             whileTap={reducedMotion ? {} : { scale: 0.96 }}
             transition={SPRING_SNAPPY}
             onClick={() => setOpen(true)}
-            className={`fixed right-4 z-[90] inline-flex min-h-[52px] items-center gap-2.5 rounded-full border border-[color-mix(in_srgb,var(--guest-gold)_48%,transparent)] bg-[color-mix(in_srgb,var(--guest-bg-surface)_92%,white)] px-5 text-sm font-semibold text-[var(--guest-text)] shadow-[0_8px_32px_rgba(183,146,93,0.18),0_16px_40px_rgba(15,23,42,0.14)] backdrop-blur-xl sm:right-6 ${liftFabForBottomBar ? "bottom-24" : "bottom-6"}`}
+            className={`fixed right-4 z-[90] flex size-[54px] items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--guest-gold)_48%,transparent)] bg-[color-mix(in_srgb,var(--guest-bg-surface)_92%,white)] shadow-[0_8px_32px_rgba(183,146,93,0.18),0_16px_40px_rgba(15,23,42,0.14)] backdrop-blur-xl sm:right-6 ${liftFabForBottomBar ? "bottom-24" : "bottom-6"}`}
             style={{ WebkitBackfaceVisibility: "hidden" }}
             aria-label="Abrir asistente AI del menú"
           >
@@ -352,11 +352,12 @@ export function GuestMenuAIAssistant({
               style={{ background: "radial-gradient(circle, color-mix(in srgb, var(--guest-gold) 30%, transparent), transparent 72%)" }}
               aria-hidden
             />
-            <Sparkles className="h-[18px] w-[18px] text-[var(--guest-gold)]" aria-hidden />
-            <span className="tracking-tight">Bouquet AI</span>
+            <Sparkles className="size-[22px] text-[var(--guest-gold)]" aria-hidden />
+            
+            {/* Notification Badge */}
             <motion.span
-              className="ml-0.5 inline-flex h-2 w-2 rounded-full bg-emerald-500"
-              animate={reducedMotion ? {} : { opacity: [0.5, 1, 0.5], scale: [1, 1.2, 1] }}
+              className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full border-2 border-[var(--guest-bg-surface)] bg-emerald-500"
+              animate={reducedMotion ? {} : { opacity: [0.6, 1, 0.6], scale: [1, 1.15, 1] }}
               transition={reducedMotion ? {} : { duration: 2, repeat: Infinity, ease: "easeInOut" }}
               aria-hidden
             />

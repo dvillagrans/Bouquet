@@ -2,8 +2,8 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Stage, Layer, Rect, Circle, Text, Group } from "react-konva";
-import type Konva from "konva";
+import { Stage, Layer, Rect, Circle, Text, Group, Path } from "react-konva";
+import Konva from "konva";
 import { Save, Edit3, Eye, Move, Circle as CircleIcon, Square } from "lucide-react";
 import type { Table, TableStatus } from "@/generated/prisma";
 import { getSignedGuestPreviewUrl } from "@/actions/tables";
@@ -55,10 +55,10 @@ function snap(v: number) {
 }
 
 /* ── Dot-grid background ───────────────────────────────────────── */
-function DotGrid() {
+function DotGrid({ width, height }: { width: number; height: number }) {
   const dots: React.ReactNode[] = [];
-  for (let x = 0; x <= GRID_W; x += SNAP) {
-    for (let y = 0; y <= GRID_H; y += SNAP) {
+  for (let x = 0; x <= width; x += SNAP) {
+    for (let y = 0; y <= height; y += SNAP) {
       dots.push(
         <Circle key={`${x}-${y}`} x={x} y={y} radius={1} fill={C.wire} listening={false} />
       );
@@ -70,8 +70,42 @@ function DotGrid() {
 const DotGridMemo = memo(DotGrid);
 
 /* ── Single table node ─────────────────────────────────────────── */
+export type FloorMapTable = Table & {
+  readyCount?: number;
+  pendingCount?: number;
+  activeSession?: { guestName: string; pax: number; createdAt: Date } | null;
+};
+
+function useElapsedTime(createdAt: string | Date | undefined) {
+  const [elapsed, setElapsed] = useState("");
+  
+  useEffect(() => {
+    if (!createdAt) return;
+    const date = new Date(createdAt);
+    
+    const update = () => {
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      if (diffMins < 60) {
+        setElapsed(`${diffMins}m`);
+      } else {
+        const h = Math.floor(diffMins / 60);
+        const m = diffMins % 60;
+        setElapsed(`${h}h ${m}m`);
+      }
+    };
+    
+    update();
+    const id = setInterval(update, 60000);
+    return () => clearInterval(id);
+  }, [createdAt]);
+  
+  return elapsed;
+}
+
 interface TableNodeProps {
-  table: Table;
+  table: FloorMapTable;
   editMode: boolean;
   selected: string | null;
   onSelect: (id: string | null) => void;
@@ -88,6 +122,34 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGly
   const seatCount = Math.min(table.capacity, 8);
   const seatOrbit = half + 13;
   const seatR = 4.5;
+
+  const isOccupied = table.status === "OCUPADA" || table.status === "CERRANDO";
+  const elapsed = useElapsedTime(table.activeSession?.createdAt);
+  const needsAttention = (table.readyCount ?? 0) > 0;
+
+  const ringRef = useRef<Konva.Circle>(null);
+
+  useEffect(() => {
+    const node = ringRef.current;
+    if (!node || !needsAttention) return;
+    
+    const anim = new Konva.Animation((frame) => {
+      if (!frame) return;
+      const t = frame.time / 1000;
+      const phase = (t % 1.5) / 1.5; 
+      node.scale({ x: 1 + phase * 0.35, y: 1 + phase * 0.35 });
+      node.opacity(1 - phase);
+    }, node.getLayer());
+    
+    anim.start();
+    return () => {
+      anim.stop();
+      if (node) {
+        node.scale({ x: 1, y: 1 });
+        node.opacity(0);
+      }
+    };
+  }, [needsAttention]);
 
   const handleDragEnd = (e: Konva.KonvaEventObject<DragEvent>) => {
     const x = snap(e.target.x());
@@ -215,13 +277,26 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGly
           );
         })}
 
+      {/* Pulse ring for needsAttention */}
+      {needsAttention && (
+        <Circle
+          ref={ringRef}
+          x={half}
+          y={half}
+          radius={half}
+          stroke="#4ADE80"
+          strokeWidth={4}
+          listening={false}
+        />
+      )}
+
       {/* Table number */}
       <Text
-        x={0} y={half - 11}
+        x={0} y={isOccupied && elapsed ? half - 16 : half - 11}
         width={TABLE_W}
         align="center"
         text={String(table.number)}
-        fontSize={20}
+        fontSize={isOccupied && elapsed ? 22 : 20}
         fontStyle="bold"
         fontFamily="serif"
         fill={C.light}
@@ -231,17 +306,50 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGly
         listening={false}
       />
 
+      {/* Elaspsed time if occupied */}
+      {isOccupied && elapsed && (
+        <Text
+          x={0} y={half + 8}
+          width={TABLE_W}
+          align="center"
+          text={elapsed}
+          fontSize={11}
+          fontStyle="bold"
+          fontFamily="monospace"
+          fill={C.dim}
+          shadowColor="#000000"
+          shadowBlur={4}
+          shadowOpacity={0.8}
+          listening={false}
+        />
+      )}
+
       {/* Status glow dot */}
-      <Circle
-        x={half}
-        y={half + 11}
-        radius={3}
-        fill={fill}
-        shadowColor={fill}
-        shadowBlur={8}
-        shadowOpacity={0.75}
-        listening={false}
-      />
+      {(!isOccupied || !elapsed) && (
+        <Circle
+          x={half}
+          y={half + 11}
+          radius={3}
+          fill={fill}
+          shadowColor={fill}
+          shadowBlur={8}
+          shadowOpacity={0.75}
+          listening={false}
+        />
+      )}
+
+      {/* Bell overlay for ready items */}
+      {needsAttention && (
+        <Group x={TABLE_W - 14} y={-4} listening={false}>
+           <Circle radius={14} fill="#4ADE80" shadowColor="#4ADE80" shadowBlur={10} shadowOpacity={0.6}/>
+           <Path
+             x={-9} y={-9}
+             data="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"
+             fill="#0F172A"
+             scale={{ x: 0.75, y: 0.75 }}
+           />
+        </Group>
+      )}
     </Group>
   );
 }
@@ -506,7 +614,6 @@ function OperationsBar({
 }
 
 /* ── Main component ────────────────────────────────────────────── */
-export type FloorMapTable = Table;
 
 interface FloorMapProps {
   tables: FloorMapTable[];
@@ -514,6 +621,7 @@ interface FloorMapProps {
   onTableClick?: (tableId: string) => void;
   /** Mostrar puntos de capacidad alrededor de cada mesa (mapa mesero). */
   showSeatGlyphs?: boolean;
+  showOperationsBar?: boolean;
 }
 
 export default function FloorMap({
@@ -521,6 +629,7 @@ export default function FloorMap({
   readOnly = false,
   onTableClick,
   showSeatGlyphs = true,
+  showOperationsBar = true,
 }: FloorMapProps) {
   const [tables, setTables]     = useState<FloorMapTable[]>(initialTables);
   const [editMode, setEditMode] = useState(false);
@@ -533,6 +642,52 @@ export default function FloorMap({
   }, [initialTables]);
   const [saving, setSaving]     = useState(false);
   const [saved, setSaved]       = useState(false);
+  const layoutBounds = useMemo(() => {
+    if (tables.length === 0) {
+      return { logicalWidth: GRID_W, logicalHeight: GRID_H, marginX: 0, marginY: 0, actualMaxX: GRID_W, actualMaxY: GRID_H };
+    }
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = 0;
+    let maxY = 0;
+
+    for (const t of tables) {
+      if (t.posX < minX) minX = t.posX;
+      if (t.posY < minY) minY = t.posY;
+      if (t.posX > maxX) maxX = t.posX;
+      if (t.posY > maxY) maxY = t.posY;
+    }
+
+    if (!readOnly) {
+      const w = Math.max(GRID_W, maxX + TABLE_W + 80);
+      const h = Math.max(GRID_H, maxY + TABLE_W + 80);
+      return { logicalWidth: w, logicalHeight: h, marginX: 0, marginY: 0, actualMaxX: w, actualMaxY: h };
+    }
+
+    const PADDING_X = 80;
+    const PADDING_Y = 80;
+    
+    const marginX = Math.max(0, minX - PADDING_X);
+    const marginY = Math.max(0, minY - PADDING_Y);
+
+    const actualMaxX = maxX + TABLE_W + PADDING_X;
+    const actualMaxY = Math.max(maxY + TABLE_W + PADDING_Y + 40, marginY + 280); 
+    // enforced a min bound for extreme cases
+
+    const contentW = actualMaxX - marginX;
+    const contentH = actualMaxY - marginY;
+
+    return {
+      logicalWidth: contentW,
+      logicalHeight: contentH,
+      marginX,
+      marginY,
+      actualMaxX,
+      actualMaxY
+    };
+  }, [tables, readOnly]);
+
   const containerRef            = useRef<HTMLDivElement>(null);
   const [scale, setScale]       = useState(1);
 
@@ -543,13 +698,15 @@ export default function FloorMap({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const obs = new ResizeObserver(() => {
-      const s = Math.min(1, (el.clientWidth - 2) / GRID_W);
+    const updateScale = () => {
+      const s = Math.min(1, (el.clientWidth - 2) / layoutBounds.logicalWidth);
       setScale(s);
-    });
+    };
+    const obs = new ResizeObserver(updateScale);
     obs.observe(el);
+    updateScale(); // call immediately after mount
     return () => obs.disconnect();
-  }, []);
+  }, [layoutBounds.logicalWidth]);
 
   const handleDragEnd = useCallback((id: string, x: number, y: number) => {
     setTables(prev =>
@@ -607,34 +764,38 @@ export default function FloorMap({
     <div className="flex flex-col gap-4">
 
       {/* ── Operations instrument panel ─────────────────────────── */}
-      <OperationsBar
-        tables={tables}
-        readOnly={readOnly}
-        editMode={editMode}
-        saving={saving}
-        saved={saved}
-        onSave={handleSave}
-        onToggleEdit={() => {
-          if (editMode) handleSave();
-          else {
-            setEditMode(true);
-            setSelected(null);
-          }
-        }}
-      />
+      {showOperationsBar ? (
+        <OperationsBar
+          tables={tables}
+          readOnly={readOnly}
+          editMode={editMode}
+          saving={saving}
+          saved={saved}
+          onSave={handleSave}
+          onToggleEdit={() => {
+            if (editMode) handleSave();
+            else {
+              setEditMode(true);
+              setSelected(null);
+            }
+          }}
+        />
+      ) : null}
 
       {/* ── Canvas ─────────────────────────────────────────────── */}
       <div
         ref={containerRef}
         className="relative overflow-hidden rounded-2xl border border-wire/40 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(237,232,225,0.03)]"
-        style={{ height: GRID_H * scale + 2 }}
+        style={{ height: layoutBounds.logicalHeight * scale + 2 }}
       >
         <Stage
-          width={GRID_W}
-          height={GRID_H}
+          width={layoutBounds.logicalWidth * scale}
+          height={layoutBounds.logicalHeight * scale}
           scaleX={scale}
           scaleY={scale}
-          style={{ display: "block" }}
+          offsetX={layoutBounds.marginX}
+          offsetY={layoutBounds.marginY}
+          style={{ display: "block", aspectRatio: `${layoutBounds.logicalWidth} / ${layoutBounds.logicalHeight}` }}
           onClick={(e) => {
             if (e.target === e.target.getStage()) setSelected(null);
           }}
@@ -642,20 +803,24 @@ export default function FloorMap({
           <Layer>
             {/* Background */}
             <Rect
-              width={GRID_W}
-              height={GRID_H}
+              x={layoutBounds.marginX}
+              y={layoutBounds.marginY}
+              width={layoutBounds.logicalWidth}
+              height={layoutBounds.logicalHeight}
               fill={C.canvas}
               listening={false}
             />
 
             {/* Dot grid */}
-            <DotGridMemo />
+            <Group x={layoutBounds.marginX} y={layoutBounds.marginY}>
+              <DotGridMemo width={layoutBounds.logicalWidth} height={layoutBounds.logicalHeight} />
+            </Group>
 
             {/* Room border */}
             <Rect
-              x={20} y={20}
-              width={GRID_W - 40}
-              height={GRID_H - 40}
+              x={layoutBounds.marginX + 20} y={layoutBounds.marginY + 20}
+              width={layoutBounds.logicalWidth - 40}
+              height={layoutBounds.logicalHeight - 40}
               stroke={C.wire}
               strokeWidth={1}
               fill="transparent"

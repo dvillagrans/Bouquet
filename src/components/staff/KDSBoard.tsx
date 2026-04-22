@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { RotateCcw, Utensils, Coffee, History, GripVertical, Clock, CheckCircle2, ChevronRight, Flame, ArrowRight, PackageCheck, ChefHat, X, Loader2 } from "lucide-react";
+import { RotateCcw, Utensils, Coffee, History, GripVertical, Clock, CheckCircle2, ChevronRight, Flame, ArrowRight, PackageCheck, ChefHat, X, Loader2, WifiOff, Wifi } from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -14,9 +14,10 @@ import {
   useDroppable,
   useDraggable,
 } from "@dnd-kit/core";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { advanceOrderStatus, undoOrderStatus, moveOrderToStatus } from "@/actions/orders";
 import { createClient } from "@/lib/supabase/client";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -384,6 +385,8 @@ export default function KDSBoard({
   initialNowMs?: number;
 }) {
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
+  const networkStatus = useNetworkStatus();
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [now, setNow] = useState<Date>(() => new Date(initialNowMs ?? Date.now()));
   const [showHistory, setShowHistory] = useState(false);
@@ -546,6 +549,53 @@ export default function KDSBoard({
           </button>
         </div>
       </header>
+
+      {/* Network bar */}
+      <AnimatePresence>
+        {networkStatus !== "online" && (
+          <motion.div
+            key={networkStatus}
+            role="status"
+            aria-live="polite"
+            initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+            transition={{ type: "spring", stiffness: 340, damping: 32 }}
+            className={`relative z-10 flex items-center justify-center gap-3 border-b px-4 py-2 ${
+              networkStatus === "offline"
+                ? "border-dash-red/30 bg-dash-red/10"
+                : "border-gold/30 bg-gold/10"
+            }`}
+          >
+            <span className="relative flex size-1.5 shrink-0">
+              <span
+                className={`absolute inline-flex size-full animate-ping rounded-full opacity-60 ${
+                  networkStatus === "offline" ? "bg-dash-red" : "bg-gold"
+                }`}
+              />
+              <span
+                className={`relative inline-flex size-1.5 rounded-full ${
+                  networkStatus === "offline" ? "bg-dash-red" : "bg-gold"
+                }`}
+              />
+            </span>
+            {networkStatus === "offline" ? (
+              <WifiOff className="size-3.5 shrink-0 text-dash-red" strokeWidth={2} aria-hidden />
+            ) : (
+              <Wifi className="size-3.5 shrink-0 text-gold" strokeWidth={2} aria-hidden />
+            )}
+            <span
+              className={`font-mono text-[10px] font-bold uppercase tracking-[0.16em] ${
+                networkStatus === "offline" ? "text-dash-red" : "text-gold"
+              }`}
+            >
+              {networkStatus === "offline"
+                ? "Sin conexión · Las comandas no se actualizarán"
+                : "Señal débil · La sincronización puede tardar"}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Board */}
       <main className="relative z-10 flex-1 px-3 pb-3 pt-3 md:p-8 overflow-hidden flex gap-8 h-[calc(100vh-74px)] md:h-[calc(100vh-94px)]">

@@ -18,15 +18,23 @@ interface FloorMapClientProps {
   readOnly?: boolean;
   onTableClick?: (tableId: string) => void;
   showSeatGlyphs?: boolean;
+  showOperationsBar?: boolean;
 }
 
-export default function FloorMapClient({ tables, readOnly, onTableClick, showSeatGlyphs = true }: FloorMapClientProps) {
+export default function FloorMapClient({
+  tables,
+  readOnly,
+  onTableClick,
+  showSeatGlyphs = true,
+  showOperationsBar = true,
+}: FloorMapClientProps) {
   return (
     <FloorMap
       tables={tables}
       readOnly={readOnly}
       onTableClick={onTableClick}
       showSeatGlyphs={showSeatGlyphs}
+      showOperationsBar={showOperationsBar}
     />
   );
 }

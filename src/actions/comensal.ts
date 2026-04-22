@@ -97,15 +97,25 @@ export async function getTableBill(tableCode: string) {
   const table = await findTableByQrCode(tableCode);
   if (!table) throw new Error("Mesa no encontrada");
 
-  const activeSessions = await prisma.session.findMany({
+  const currentlyActive = await prisma.session.findMany({
     where: { tableId: table.id, isActive: true },
+    orderBy: { createdAt: "asc" }
   });
 
-  if (!activeSessions.length) {
+  let sessionCandidates = currentlyActive;
+  if (currentlyActive.length > 0) {
+    const minCreatedAt = currentlyActive[0].createdAt;
+    sessionCandidates = await prisma.session.findMany({
+      where: { tableId: table.id, createdAt: { gte: minCreatedAt } },
+      orderBy: { createdAt: "asc" }
+    });
+  }
+
+  if (!sessionCandidates.length) {
     return { guests: [], total: 0, guestCount: 0 };
   }
 
-  const sessionIds = activeSessions.map(s => s.id);
+  const sessionIds = sessionCandidates.map(s => s.id);
 
   const allItems = await prisma.orderItem.findMany({
     where: {
@@ -117,7 +127,7 @@ export async function getTableBill(tableCode: string) {
 
   type GuestItem = { key: string; menuItemId: string; name: string; qty: number; price: number };
 
-  const guests = activeSessions.map(session => {
+  const guests = sessionCandidates.map(session => {
     const sessionItems = allItems.filter(i => i.sessionId === session.id);
     const aggregated: GuestItem[] = [];
 
@@ -137,11 +147,17 @@ export async function getTableBill(tableCode: string) {
     }
 
     const subtotal = aggregated.reduce((sum, i) => sum + i.price * i.qty, 0);
-    return { sessionId: session.id, guestName: session.guestName, items: aggregated, subtotal };
+    return { 
+      sessionId: session.id, 
+      guestName: session.guestName, 
+      items: aggregated, 
+      subtotal,
+      isPaid: !session.isActive
+    };
   });
 
-  const total = guests.reduce((sum, g) => sum + g.subtotal, 0);
-  return { guests, total, guestCount: activeSessions.length };
+  const total = guests.filter(g => !g.isPaid).reduce((sum, g) => sum + g.subtotal, 0);
+  return { guests, total, guestCount: sessionCandidates.length };
 }
 
 function generateJoinCode(): string {

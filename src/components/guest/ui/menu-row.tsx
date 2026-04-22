@@ -1,7 +1,7 @@
 "use client";
 
-import { memo } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { memo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { QtyStepper } from "@/components/guest/ui/qty-stepper";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +61,7 @@ export const MenuRow = memo(function MenuRow({
   const hasVariants = item.variants && item.variants.length > 0;
   const reduceMotion = useReducedMotion();
   const [gradFrom, gradTo] = getFallbackGradient(categoryInitial);
+  const [addPulseKey, setAddPulseKey] = useState(0);
 
   return (
     <motion.article
@@ -209,9 +210,13 @@ export const MenuRow = memo(function MenuRow({
               No disponible
             </div>
           ) : qty === 0 ? (
-            <button
+            <motion.button
               type="button"
-              onClick={onAdd}
+              onClick={() => {
+                onAdd();
+                if (!reduceMotion) setAddPulseKey((k) => k + 1);
+              }}
+              whileTap={reduceMotion ? undefined : { scale: 0.96 }}
               disabled={disabledQty}
               className={cn(
                 "group/btn relative flex min-h-[42px] w-full items-center justify-center overflow-hidden rounded-xl",
@@ -222,13 +227,27 @@ export const MenuRow = memo(function MenuRow({
                 "disabled:cursor-not-allowed disabled:opacity-40"
               )}
             >
+              <AnimatePresence>
+                {addPulseKey > 0 && !reduceMotion ? (
+                  <motion.span
+                    key={`add-pulse-${addPulseKey}`}
+                    initial={{ opacity: 0.28, scale: 0.3 }}
+                    animate={{ opacity: 0, scale: 1.8 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.36, ease: "easeOut" }}
+                    className="pointer-events-none absolute inset-0 m-auto h-24 w-24 rounded-full bg-white/35"
+                    aria-hidden
+                  />
+                ) : null}
+              </AnimatePresence>
+
               {/* Shimmer sweep — enters from left on hover */}
               <span
                 className="pointer-events-none absolute inset-y-0 -left-14 w-10 -skew-x-12 bg-gradient-to-r from-transparent via-white/22 to-transparent opacity-0 transition-all duration-500 group-hover/btn:left-[110%] group-hover/btn:opacity-100"
                 aria-hidden
               />
               Añadir
-            </button>
+            </motion.button>
           ) : (
             <div className="flex justify-center py-0.5">
               <QtyStepper

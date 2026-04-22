@@ -12,7 +12,7 @@ const ROWS: { status: TableStatus; label: string }[] = [
 
 export function MapLegend({ showCapacity, onToggleCapacity }: { showCapacity: boolean; onToggleCapacity: () => void }) {
   return (
-    <div className="pointer-events-auto absolute bottom-4 left-4 z-10 max-w-[min(100%-2rem,16rem)] rounded-[1.25rem] border border-border-main/70 bg-bg-solid/85 p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
+    <div className="w-full rounded-[1.25rem] border border-border-main/70 bg-bg-solid/85 p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md">
       <div className="rounded-[calc(1.25rem-0.375rem)] border border-border-main/45 bg-bg-card/95 px-3 py-2.5 shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
         <p className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-text-muted">Leyenda</p>
         <ul className="mt-2 space-y-1.5">

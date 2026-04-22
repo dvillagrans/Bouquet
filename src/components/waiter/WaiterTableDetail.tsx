@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
-import { Plus, Lock, Copy, ExternalLink, CheckCheck, Loader2, Share2, X } from "lucide-react";
+import { Plus, Lock, Copy, ExternalLink, CheckCheck, Loader2, Share2, X, CreditCard } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { advanceOrderStatus } from "@/actions/orders";
 import { getTableDetail, closeTable } from "@/actions/waiter";
@@ -57,6 +57,7 @@ export default function WaiterTableDetail({
   const [loading, setLoading] = useState(true);
   const [origin, setOrigin] = useState("");
   const [deliveringOrderId, setDeliveringOrderId] = useState<string | null>(null);
+  const [copyToast, setCopyToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const loadTableDetail = useCallback(async (opts?: { silent?: boolean }) => {
@@ -100,6 +101,12 @@ export default function WaiterTableDetail({
     }
   }, [tableData?.session, activeTab]);
 
+  useEffect(() => {
+    if (!copyToast) return;
+    const timeout = window.setTimeout(() => setCopyToast(null), 2000);
+    return () => window.clearTimeout(timeout);
+  }, [copyToast]);
+
   const handleAddItems = async () => {
     setActiveTab("add-items");
   };
@@ -140,6 +147,30 @@ export default function WaiterTableDetail({
     }
   };
 
+  const orders = tableData?.orders ?? [];
+
+  const activeOrders = useMemo(() => orders.filter((o) => o.status !== "DELIVERED"), [orders]);
+  const deliveredOrders = useMemo(() => orders.filter((o) => o.status === "DELIVERED"), [orders]);
+
+  const coalescedDeliveredItems = useMemo(() => {
+    const map = new Map<string, { name: string; quantity: number; totalPrice: number }>();
+    for (const order of deliveredOrders) {
+      for (const item of order.items) {
+        const key = item.name;
+        if (map.has(key)) {
+          const existing = map.get(key)!;
+          existing.quantity += item.quantity;
+          existing.totalPrice += item.totalPrice;
+        } else {
+          map.set(key, { name: item.name, quantity: item.quantity, totalPrice: item.totalPrice });
+        }
+      }
+    }
+    return Array.from(map.values());
+  }, [deliveredOrders]);
+
+  const deliveredTotal = coalescedDeliveredItems.reduce((acc, i) => acc + i.totalPrice, 0);
+
   if (loading || !tableData) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-solid/90 backdrop-blur-sm">
@@ -157,7 +188,7 @@ export default function WaiterTableDetail({
     );
   }
 
-  const { table, session, orders } = tableData;
+  const { table, session, billTotal } = tableData;
 
   const guestMenuUrl =
     origin && tableData.guestEntryRelativePath ? `${origin}${tableData.guestEntryRelativePath}` : "";
@@ -168,7 +199,7 @@ export default function WaiterTableDetail({
       : 0;
 
   const tabItems: SegmentedItem<TabType>[] = [
-    { id: "orders", label: `Órdenes (${orders.length})`, dotClass: "bg-text-muted" },
+    { id: "orders", label: `Órdenes${activeOrders.length > 0 ? ` (${activeOrders.length})` : ""}`, dotClass: "bg-text-muted" },
   ];
   if (session) {
     tabItems.push(
@@ -255,6 +286,30 @@ export default function WaiterTableDetail({
         sheet ? "items-end justify-center md:items-stretch md:justify-end md:bg-transparent" : "items-end justify-center md:items-center",
       )}
     >
+      <AnimatePresence>
+        {copyToast && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="pointer-events-none absolute inset-x-0 top-4 z-[80] flex justify-center px-4"
+            role={copyToast.type === "error" ? "alert" : "status"}
+            aria-live={copyToast.type === "error" ? "assertive" : "polite"}
+          >
+            <div
+              className={cn(
+                "rounded-full border px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.14em] shadow-[0_14px_36px_rgba(9,9,7,0.55)] backdrop-blur-md",
+                copyToast.type === "error"
+                  ? "border-dash-red/50 bg-dash-red/15 text-dash-red"
+                  : "border-dash-green/50 bg-dash-green/15 text-dash-green",
+              )}
+            >
+              {copyToast.message}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <motion.button
         type="button"
         initial={{ opacity: 0 }}
@@ -274,16 +329,18 @@ export default function WaiterTableDetail({
         animate="animate"
         exit="exit"
         className={cn(
-          "relative z-10 flex max-h-[94vh] w-full flex-col overflow-hidden border border-border-main bg-bg-card shadow-[0_32px_80px_-16px_rgba(0,0,0,0.7)] sm:max-h-[90vh]",
+          "relative z-10 flex w-full flex-col overflow-hidden border-border-main bg-bg-card shadow-[0_32px_80px_-16px_rgba(0,0,0,0.7)]",
           sheet
-            ? "rounded-t-[2.25rem] md:my-4 md:mr-4 md:max-h-[calc(100vh-2rem)] md:w-full md:max-w-md md:rounded-[2.25rem]"
-            : "rounded-t-[2.25rem] md:max-w-2xl md:rounded-[2.25rem]",
+            ? "h-[100dvh] rounded-none md:my-4 md:mr-4 md:h-auto md:max-h-[calc(100vh-2rem)] md:w-full md:max-w-md md:rounded-[2.25rem] md:border"
+            : "h-[100dvh] rounded-none md:h-auto md:max-h-[90vh] md:max-w-2xl md:rounded-[2.25rem] md:border",
         )}
       >
-        <div className="rounded-[calc(1.75rem-0.125rem)] border border-border-main/35 bg-bg-card shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
+        <div className="flex h-full flex-col rounded-none border-0 bg-bg-card md:rounded-[calc(1.75rem-0.125rem)] md:border md:border-border-main/35 md:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
           <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border-main/70 bg-bg-solid/95 px-4 py-3 backdrop-blur-md">
             <div className="min-w-0">
-              <h2 className="truncate text-xl font-semibold tracking-tight text-light">Mesa {table.number}</h2>
+              <h2 className="flex items-center gap-3 truncate text-xl font-semibold tracking-tight text-light">
+                Mesa {table.number}
+              </h2>
               {session ? (
                 <p className="mt-1 truncate font-mono text-[11px] uppercase tracking-[0.14em] text-text-muted">
                   {session.guestName} · {session.pax} pax · {seatedMinutes} min
@@ -338,8 +395,9 @@ export default function WaiterTableDetail({
                     onClick={async () => {
                       try {
                         await navigator.clipboard.writeText(guestMenuUrl);
+                        setCopyToast({ type: "success", message: "Link copiado" });
                       } catch {
-                        alert("No se pudo copiar el enlace");
+                        setCopyToast({ type: "error", message: "No se pudo copiar" });
                       }
                     }}
                     className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border-main px-4 text-[11px] font-bold uppercase tracking-wider text-light transition hover:border-border-bright"
@@ -373,7 +431,7 @@ export default function WaiterTableDetail({
             />
           </div>
 
-          <div className="max-h-[min(54vh,540px)] overflow-y-auto overflow-x-hidden p-4 scrollbar-hide">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 scrollbar-hide md:max-h-[min(54vh,540px)]">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -383,71 +441,101 @@ export default function WaiterTableDetail({
                 transition={{ duration: 0.18, ease: "easeInOut" }}
               >
                 {activeTab === "orders" && (
-                  <div className="divide-y divide-border-main/60 rounded-xl border border-border-main/50 bg-bg-solid/40">
-                    {orders.length === 0 ? (
-                      <div className="px-4 py-12 text-center text-sm text-text-muted">No hay órdenes en esta mesa</div>
-                    ) : (
-                      orders.map((order) => (
-                        <div key={order.id} className="px-4 py-4">
-                          <div className="mb-3 flex flex-wrap items-center gap-2">
-                            <span
-                              className={cn(
-                                "rounded-full px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em]",
-                                order.status === "PENDING" && "bg-gold/15 text-gold",
-                                order.status === "PREPARING" && "bg-gold/10 text-gold",
-                                order.status === "READY" && "bg-dash-green/15 text-dash-green",
-                                order.status === "DELIVERED" && "bg-bg-hover text-text-muted",
-                              )}
-                            >
-                              {order.status === "PENDING"
-                                ? "Pendiente"
-                                : order.status === "PREPARING"
-                                  ? "Preparando"
-                                  : order.status === "READY"
-                                    ? "Listo"
-                                    : "Entregado"}
-                            </span>
-                            <span className="font-mono text-[11px] text-text-muted">
-                              {new Date(order.createdAt).toLocaleTimeString("es-MX", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
-                          </div>
-
-                          <div className="space-y-2">
-                            {order.items.map((item) => (
-                              <div key={item.id} className="flex justify-between gap-3 text-sm">
-                                <div className="min-w-0">
-                                  <p className="text-light">
-                                    {item.quantity}x {item.name}
-                                  </p>
-                                  {item.notes ? (
-                                    <p className="text-xs italic text-text-muted">{item.notes}</p>
-                                  ) : null}
-                                </div>
-                                <p className="shrink-0 font-mono text-light">${item.totalPrice.toFixed(2)}</p>
-                              </div>
-                            ))}
-                          </div>
-
-                          {order.status === "READY" ? (
-                            <button
-                              type="button"
-                              onClick={() => void handleMarkDelivered(order.id)}
-                              disabled={deliveringOrderId === order.id}
-                              className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-dash-green px-4 text-sm font-bold uppercase tracking-wide text-bg-solid transition hover:opacity-95 disabled:opacity-60 active:scale-[0.98]"
-                            >
-                              {deliveringOrderId === order.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                              ) : (
-                                <CheckCheck className="h-4 w-4" aria-hidden />
-                              )}
-                              Marcar entregado
-                            </button>
-                          ) : null}
+                  <div className="flex flex-col gap-4">
+                    <div className="divide-y divide-border-main/60 rounded-xl border border-border-main/50 bg-bg-solid/40">
+                      {activeOrders.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-sm text-text-muted">
+                          No hay órdenes pendientes
                         </div>
-                      ))
+                      ) : (
+                        activeOrders.map((order) => (
+                          <div key={order.id} className="px-4 py-4">
+                            <div className="mb-3 flex flex-wrap items-center gap-2">
+                              <span
+                                className={cn(
+                                  "rounded-full px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em]",
+                                  order.status === "PENDING" && "bg-gold/15 text-gold",
+                                  order.status === "PREPARING" && "bg-gold/10 text-gold",
+                                  order.status === "READY" && "bg-dash-green/15 text-dash-green",
+                                )}
+                              >
+                                {order.status === "PENDING"
+                                  ? "Pendiente"
+                                  : order.status === "PREPARING"
+                                    ? "Preparando"
+                                    : "Listo"}
+                              </span>
+                              <span className="font-mono text-[11px] text-text-muted">
+                                {new Date(order.createdAt).toLocaleTimeString("es-MX", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            </div>
+
+                            <div className="space-y-2">
+                              {order.items.map((item) => (
+                                <div key={item.id} className="flex justify-between gap-3 text-sm">
+                                  <div className="min-w-0">
+                                    <p className="text-light">
+                                      {item.quantity}x {item.name}
+                                    </p>
+                                    {item.notes ? (
+                                      <p className="text-xs italic text-text-muted">{item.notes}</p>
+                                    ) : null}
+                                  </div>
+                                  <p className="shrink-0 font-mono text-light">${item.totalPrice.toFixed(2)}</p>
+                                </div>
+                              ))}
+                            </div>
+
+                            {order.status === "READY" ? (
+                              <button
+                                type="button"
+                                onClick={() => void handleMarkDelivered(order.id)}
+                                disabled={deliveringOrderId === order.id}
+                                className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-dash-green px-4 text-sm font-bold uppercase tracking-wide text-bg-solid transition hover:opacity-95 disabled:opacity-60 active:scale-[0.98]"
+                              >
+                                {deliveringOrderId === order.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                                ) : (
+                                  <CheckCheck className="h-4 w-4" aria-hidden />
+                                )}
+                                Marcar entregado
+                              </button>
+                            ) : null}
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {coalescedDeliveredItems.length > 0 && (
+                      <div className="rounded-xl border border-border-main/50 bg-bg-solid/40">
+                        <div className="flex items-center justify-between border-b border-border-main/60 bg-bg-hover/30 px-4 py-3">
+                          <h3 className="font-mono text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                            Historial Entregado
+                          </h3>
+                          <span className="font-mono text-[11px] text-text-muted">
+                            Subtotal:{" "}
+                            <span className="text-light">${deliveredTotal.toFixed(2)}</span>
+                          </span>
+                        </div>
+                        <div className="space-y-2 px-4 py-3">
+                          {coalescedDeliveredItems.map((item, idx) => (
+                            <div key={idx} className="flex justify-between gap-3 text-sm">
+                              <div className="min-w-0">
+                                <p className="text-text-muted">
+                                  <span className="font-medium text-light">{item.quantity}x</span>{" "}
+                                  {item.name}
+                                </p>
+                              </div>
+                              <p className="shrink-0 font-mono text-text-muted">
+                                ${item.totalPrice.toFixed(2)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
@@ -463,22 +551,30 @@ export default function WaiterTableDetail({
             </AnimatePresence>
           </div>
 
-          {session ? (
-            <div className="border-t border-border-main/70 bg-bg-solid px-4 py-4">
-              <div className="flex flex-wrap gap-3">
+          {session && activeTab === "orders" ? (
+            <div className="mt-auto border-t border-border-main/70 bg-bg-solid px-4 py-4 md:mt-0">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={handleAddItems}
-                  className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full bg-gold px-4 text-sm font-bold uppercase tracking-wide text-bg-solid transition hover:bg-gold-light active:scale-[0.98]"
+                  className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full border border-border-main px-4 text-sm font-bold uppercase tracking-wide text-light transition hover:border-gold hover:text-gold active:scale-[0.98]"
                 >
-                  <Plus className="h-4 w-4" strokeWidth={2} /> Agregar ítems
+                  <Plus className="h-4 w-4" strokeWidth={2} /> Agregar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("payment")}
+                  className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full bg-glow px-4 text-sm font-bold uppercase tracking-wide text-canvas transition hover:opacity-90 active:scale-[0.98]"
+                >
+                  <CreditCard className="h-4 w-4" strokeWidth={2} /> Cobrar
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseTable}
-                  className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-full border border-border-main px-4 text-sm font-bold uppercase tracking-wide text-light transition hover:border-dash-red hover:bg-dash-red/10 hover:text-dash-red active:scale-[0.98]"
+                  title="Liberar mesa (Sin cobrar)"
+                  className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-full border border-border-main text-text-muted transition hover:border-dash-red hover:bg-dash-red/10 hover:text-dash-red active:scale-[0.98]"
                 >
-                  <Lock className="h-4 w-4" strokeWidth={2} /> Cerrar mesa
+                  <Lock className="h-4 w-4" strokeWidth={2} />
                 </button>
               </div>
             </div>

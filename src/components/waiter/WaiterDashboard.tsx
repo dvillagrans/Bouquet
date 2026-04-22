@@ -5,6 +5,8 @@ import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "framer-m
 import { RefreshCw, LayoutGrid, Link as LinkIcon } from "lucide-react";
 import { getWaiterTablesSummary, regenerateTableQr, updateTableStatus } from "@/actions/waiter";
 import { getTables, joinTables, separateTable } from "@/actions/tables";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import { WifiOff, Wifi } from "lucide-react";
 import WaiterTableDetail from "./WaiterTableDetail";
 import FloorMapClient from "@/components/dashboard/FloorMapClient";
 import { createClient } from "@/lib/supabase/client";
@@ -17,7 +19,6 @@ import { SegmentedControl, type SegmentedItem } from "./ui/segmented-control";
 import { AnimatedNumber } from "./ui/animated-number";
 import { MesaCardSkeleton } from "./ui/mesa-card-skeleton";
 import { FloatingActionBar, FloatingActionPrimary } from "./ui/floating-action-bar";
-import { MapLegend } from "./ui/map-legend";
 
 type FilterType = "todas" | "ocupadas" | "pendientes" | "listas" | "sucias";
 type ViewType = "lista" | "mapa";
@@ -44,6 +45,7 @@ export default function WaiterDashboard({
   restaurantName?: string;
 }) {
   const reduceMotion = useReducedMotion();
+  const networkStatus = useNetworkStatus();
   const [tables, setTables] = useState<WaiterTableSummary[]>([]);
   const [mapTables, setMapTables] = useState<FloorMapTable[]>([]);
   const [loading, setLoading] = useState(true);
@@ -218,8 +220,18 @@ export default function WaiterDashboard({
   }, [filteredTables]);
 
   const filteredMapTables = useMemo(() => {
-    const ids = new Set(filteredTables.map((t) => t.id));
-    return mapTables.filter((t) => ids.has(t.id));
+    const tableMap = new Map(filteredTables.map((t) => [t.id, t]));
+    return mapTables
+      .filter((t) => tableMap.has(t.id))
+      .map((t) => {
+        const wt = tableMap.get(t.id)!;
+        return {
+          ...t,
+          readyCount: wt.readyCount,
+          pendingCount: wt.pendingCount,
+          activeSession: wt.activeSession,
+        };
+      });
   }, [mapTables, filteredTables]);
 
   const stats = useMemo(() => {
@@ -229,6 +241,12 @@ export default function WaiterDashboard({
     const dirty = tables.filter((t) => t.status === "SUCIA").length;
     return { occupied, pending, ready, dirty };
   }, [tables]);
+
+  // Auto-reset alert filters when items successfully reach 0
+  useEffect(() => {
+    if (filter === "listas" && stats.ready === 0) setFilter("todas");
+    if (filter === "pendientes" && stats.pending === 0) setFilter("todas");
+  }, [filter, stats.ready, stats.pending]);
 
   const weekdayLabel = useMemo(() => {
     const raw = new Intl.DateTimeFormat("es-MX", { weekday: "long" }).format(new Date());
@@ -261,6 +279,14 @@ export default function WaiterDashboard({
     { id: "lista", label: "Lista", dotClass: "bg-text-muted" },
     { id: "mapa", label: "Mapa", dotClass: "bg-text-muted" },
   ];
+
+  const filterLabelById: Record<FilterType, string> = {
+    todas: "Todas",
+    ocupadas: "Ocupadas",
+    pendientes: "Cocina",
+    listas: "Listos",
+    sucias: "Limpiar",
+  };
 
   return (
     <div className="relative min-h-[100dvh] overflow-x-hidden bg-bg-solid text-text-primary">
@@ -298,6 +324,63 @@ export default function WaiterDashboard({
         </div>
       )}
 
+      <AnimatePresence>
+        {networkStatus !== "online" && (
+          <motion.div
+            key={networkStatus}
+            role="status"
+            aria-live="polite"
+            initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+            transition={{ type: "spring", stiffness: 340, damping: 32 }}
+            className={`sticky top-0 z-[70] flex items-center justify-center gap-3 border-b px-4 py-2 ${
+              networkStatus === "offline"
+                ? "border-dash-red/30 bg-dash-red/10"
+                : "border-gold/30 bg-gold/10"
+            }`}
+          >
+            {/* pulsing dot */}
+            <span className="relative flex size-1.5 shrink-0">
+              <span
+                className={`absolute inline-flex size-full animate-ping rounded-full opacity-60 ${
+                  networkStatus === "offline" ? "bg-dash-red" : "bg-gold"
+                }`}
+              />
+              <span
+                className={`relative inline-flex size-1.5 rounded-full ${
+                  networkStatus === "offline" ? "bg-dash-red" : "bg-gold"
+                }`}
+              />
+            </span>
+
+            {networkStatus === "offline" ? (
+              <WifiOff
+                className="size-3.5 shrink-0 text-dash-red"
+                strokeWidth={2}
+                aria-hidden
+              />
+            ) : (
+              <Wifi
+                className="size-3.5 shrink-0 text-gold"
+                strokeWidth={2}
+                aria-hidden
+              />
+            )}
+
+            <span
+              className={`font-mono text-[10px] font-bold uppercase tracking-[0.16em] ${
+                networkStatus === "offline" ? "text-dash-red" : "text-gold"
+              }`}
+            >
+              {networkStatus === "offline"
+                ? "Sin conexión · Los datos no se actualizarán"
+                : "Señal débil · La sincronización puede tardar"}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <main className="relative z-10 px-4 pb-28 pt-4 sm:px-6 lg:px-8 lg:pt-5">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
           <header className="flex flex-col gap-4 border-b border-border-main/70 pb-5">
@@ -326,6 +409,16 @@ export default function WaiterDashboard({
                   value={view}
                   onChange={setView}
                 />
+
+                {filter !== "todas" && (
+                  <button
+                    type="button"
+                    onClick={() => setFilter("todas")}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 text-xs font-semibold uppercase tracking-[0.12em] text-gold transition hover:bg-gold/15 active:scale-[0.98]"
+                  >
+                    Filtro: {filterLabelById[filter]} · Ver todas
+                  </button>
+                )}
 
                 {allowJoinTables && (
                   <button
@@ -358,30 +451,76 @@ export default function WaiterDashboard({
               </div>
             </div>
 
-            <div className="flex flex-wrap items-stretch divide-x divide-border-main/70 overflow-hidden rounded-2xl border border-border-main/80 bg-bg-card">
-              {(
-                [
-                  ["Activas", stats.occupied, "text-light", false],
-                  ["Cocina", stats.pending, "text-light", false],
-                  ["Listos", stats.ready, "text-light", true],
-                  ["Limpiar", stats.dirty, "text-light", false],
-                ] as const
-              ).map(([label, val, color, pulseDot]) => (
-                <div
-                  key={label}
-                  className="min-w-[calc(50%-1px)] flex-1 px-4 py-3 text-center sm:min-w-0"
-                >
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
-                    {label}
-                  </p>
-                  <p className={`mt-1 flex items-center justify-center gap-2 font-mono text-2xl font-semibold tabular-nums ${color}`}>
-                    {pulseDot && val > 0 ? (
-                      <span className="h-2 w-2 animate-pulse rounded-full bg-dash-green" aria-hidden />
-                    ) : null}
-                    <AnimatedNumber value={val as number} />
-                  </p>
-                </div>
-              ))}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-stretch divide-x divide-border-main/70 overflow-hidden rounded-2xl border border-border-main/80 bg-bg-card">
+                {(
+                  [
+                    ["Activas", stats.occupied, "text-light"],
+                    ["Limpiar", stats.dirty, "text-light"],
+                  ] as const
+                ).map(([label, val, color]) => (
+                  <div
+                    key={label}
+                    className="min-w-[calc(50%-1px)] flex-1 px-4 py-3 text-center sm:min-w-0"
+                  >
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                      {label}
+                    </p>
+                    <p className={`mt-1 flex items-center justify-center gap-2 font-mono text-2xl font-semibold tabular-nums ${color}`}>
+                      <AnimatedNumber value={val as number} />
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <AnimatePresence>
+                {(stats.ready > 0 || stats.pending > 0) && (
+                  <motion.div
+                    initial={reduceMotion ? undefined : { opacity: 0, height: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, height: "auto", scale: 1 }}
+                    exit={reduceMotion ? undefined : { opacity: 0, height: 0, scale: 0.95 }}
+                    className="flex flex-col gap-2 overflow-hidden"
+                  >
+                    {stats.ready > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFilter("listas");
+                          setView("lista");
+                        }}
+                        className="group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border border-dash-green/40 bg-dash-green/10 p-4 shadow-[0_4px_24px_-8px_rgba(34,197,94,0.3)] transition-all hover:bg-dash-green/15 active:scale-[0.98] text-left"
+                      >
+                        <span className="absolute left-0 top-0 h-full w-1 animate-pulse bg-dash-green" aria-hidden />
+                        <div className="flex-1">
+                          <h3 className="flex items-center gap-2 text-lg font-semibold text-light group-hover:text-dash-green transition-colors">
+                            <span className="relative flex h-3 w-3">
+                              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-dash-green opacity-75" />
+                              <span className="relative inline-flex h-3 w-3 rounded-full bg-dash-green" />
+                            </span>
+                            {stats.ready} {stats.ready === 1 ? "platillo listo" : "platillos listos"}
+                          </h3>
+                          <p className="mt-1 text-sm text-text-muted">Toca para ver las mesas que requieren servicio inmediato.</p>
+                        </div>
+                      </button>
+                    )}
+                    {stats.pending > 0 && stats.ready === 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFilter("pendientes");
+                          setView("lista");
+                        }}
+                        className="group flex w-full items-center justify-between rounded-2xl border border-gold/20 bg-gold/5 px-4 py-3 transition-colors hover:bg-gold/10 active:scale-[0.98] text-left"
+                      >
+                        <span className="text-sm text-text-muted">
+                          <strong className="text-light">{stats.pending}</strong> {stats.pending === 1 ? "plato en preparación" : "platos en preparación"}
+                        </span>
+                        <span className="text-xs font-semibold text-gold group-hover:underline">Ver mesas</span>
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </header>
 
@@ -399,21 +538,6 @@ export default function WaiterDashboard({
 
           {view === "mapa" && (
             <section className="relative overflow-hidden rounded-[1.25rem] border border-border-main bg-bg-card">
-              <div className="sticky top-0 z-20 border-b border-border-main/80 bg-bg-solid/90 px-3 py-2 backdrop-blur-md">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">
-                    Mapa · {filteredMapTables.length} mesas
-                  </p>
-                  <div className="flex flex-wrap gap-3 font-mono text-[11px] tabular-nums text-light">
-                    <span className="text-text-muted">
-                      Cocina <strong className="text-light">{stats.pending}</strong>
-                    </span>
-                    <span className="text-text-muted">
-                      Listos <strong className="text-dash-green">{stats.ready}</strong>
-                    </span>
-                  </div>
-                </div>
-              </div>
               <div className="relative">
                 {loading && mapTables.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-text-muted">
@@ -426,14 +550,16 @@ export default function WaiterDashboard({
                       tables={filteredMapTables}
                       readOnly
                       showSeatGlyphs={showMapSeatGlyphs}
+                      showOperationsBar={false}
                       onTableClick={(id) => {
                         const t = tables.find((x) => x.id === id);
-                        if (t) void openTableDetail(t);
+                        if (!t) return;
+                        if (t.status === "SUCIA") {
+                          void handleCleanTable(t.id);
+                          return;
+                        }
+                        void openTableDetail(t);
                       }}
-                    />
-                    <MapLegend
-                      showCapacity={showMapSeatGlyphs}
-                      onToggleCapacity={() => setShowMapSeatGlyphs((s) => !s)}
                     />
                   </>
                 )}

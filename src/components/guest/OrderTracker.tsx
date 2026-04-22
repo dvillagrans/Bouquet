@@ -172,6 +172,7 @@ export function OrderTracker({
   onRefreshOrders,
   hasOrderPipeline = false,
   menuTheme = "light",
+  displayMode = "inline",
 }: {
   orders: any[];
   tableCode: string;
@@ -182,6 +183,7 @@ export function OrderTracker({
   onRefreshOrders: () => void | Promise<void>;
   hasOrderPipeline?: boolean;
   menuTheme?: GuestMenuTheme;
+  displayMode?: "inline" | "content";
 }) {
   const router = useRouter();
   const activeList = useMemo(() => orders.filter((o) => {
@@ -269,6 +271,8 @@ export function OrderTracker({
     prevActiveLen.current = activeList.length;
   }, [activeList.length]);
 
+  const contentOpen = displayMode === "content" ? true : open;
+
   const counts = useMemo(() => ({
     PENDING: activeList.filter((o) => normalizeOrderStatus(o.status) === "PENDING").length,
     PREPARING: activeList.filter((o) => normalizeOrderStatus(o.status) === "PREPARING").length,
@@ -298,56 +302,58 @@ export function OrderTracker({
   }, [counts]);
 
   return (
-    <div className="border-b border-[var(--guest-divider)]">
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        className="flex min-h-[52px] w-full items-center justify-between gap-4 rounded-xl py-5 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--guest-bg-surface)_70%,transparent)]"
-        aria-expanded={open}
-      >
-        <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <span className="shrink-0 text-xs font-bold uppercase tracking-widest text-[var(--guest-text)]">
-            {hasOrderPipeline ? "Detalle de pedidos" : "Tus pedidos"}
-          </span>
-          <span className="shrink-0 font-mono text-base font-semibold text-[var(--guest-muted)]">
-            ({orders.length})
-          </span>
-
-          {activeList.length === 0 ? (
-            <span className="text-xs font-medium text-[var(--guest-gold)]">
-              {deliveredList.length > 0
-                ? "· todos entregados"
-                : "· sin pedidos en curso"}
+    <div className={displayMode === "inline" ? "border-b border-[var(--guest-divider)]" : ""}>
+      {displayMode === "inline" ? (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex min-h-[52px] w-full items-center justify-between gap-4 rounded-xl py-5 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--guest-bg-surface)_70%,transparent)]"
+          aria-expanded={open}
+        >
+          <div className="flex min-w-0 flex-wrap items-center gap-3">
+            <span className="shrink-0 text-xs font-bold uppercase tracking-widest text-[var(--guest-text)]">
+              {hasOrderPipeline ? "Detalle de pedidos" : "Tus pedidos"}
             </span>
-          ) : (
-            summaryBadges.map(([status, count, cls]) => {
-              const st = normalizeOrderStatus(status);
-              const meta = ORDER_STATUS[st];
-              return (
-                <span
-                  key={status}
-                  className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-bold uppercase tracking-wider ${cls}`}
-                >
-                  {(status === "READY" || status === "PREPARING") && (
-                    <span
-                      className={`h-2 w-2 rounded-full guest-status-dot-pulse ${status === "READY" ? "bg-[var(--guest-gold)]" : "bg-amber-500"}`}
-                      aria-hidden="true"
-                    />
-                  )}
-                  {count} {meta.summary}
-                </span>
-              );
-            })
-          )}
-        </div>
-        <ChevronDown
-          className={`h-5 w-5 shrink-0 text-[var(--guest-muted)] transition-transform duration-300 ${open ? "rotate-180" : ""}`}
-          aria-hidden="true"
-        />
-      </button>
+            <span className="shrink-0 font-mono text-base font-semibold text-[var(--guest-muted)]">
+              ({orders.length})
+            </span>
+
+            {activeList.length === 0 ? (
+              <span className="text-xs font-medium text-[var(--guest-gold)]">
+                {deliveredList.length > 0
+                  ? "· todos entregados"
+                  : "· sin pedidos en curso"}
+              </span>
+            ) : (
+              summaryBadges.map(([status, count, cls]) => {
+                const st = normalizeOrderStatus(status);
+                const meta = ORDER_STATUS[st];
+                return (
+                  <span
+                    key={status}
+                    className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-bold uppercase tracking-wider ${cls}`}
+                  >
+                    {(status === "READY" || status === "PREPARING") && (
+                      <span
+                        className={`h-2 w-2 rounded-full guest-status-dot-pulse ${status === "READY" ? "bg-[var(--guest-gold)]" : "bg-amber-500"}`}
+                        aria-hidden="true"
+                      />
+                    )}
+                    {count} {meta.summary}
+                  </span>
+                );
+              })
+            )}
+          </div>
+          <ChevronDown
+            className={`h-5 w-5 shrink-0 text-[var(--guest-muted)] transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+            aria-hidden="true"
+          />
+        </button>
+      ) : null}
 
       <AnimatePresence>
-        {open && (
+        {contentOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
@@ -355,7 +361,7 @@ export function OrderTracker({
             transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <div className="pb-6 pt-4">
+            <div className={displayMode === "content" ? "pb-2 pt-2" : "pb-6 pt-4"}>
               <div className="max-h-56 overflow-y-auto space-y-2">
                 {activeList.length > 0 && (
                   <div className="flex flex-col gap-2">

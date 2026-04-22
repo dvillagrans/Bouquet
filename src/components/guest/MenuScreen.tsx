@@ -16,11 +16,13 @@ import {
   GuestMasthead,
   GuestToast,
   MenuRow,
+  NetworkBanner,
   OrderSheet,
   type GuestCartLine,
   type MenuRowItem,
   type CategoryTabItem,
 } from "@/components/guest/ui";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import type { AssistantAddToCartItem } from "@/components/guest/GuestMenuAIAssistant";
 import { OrderTracker } from "./OrderTracker";
 import { createClient } from "@/lib/supabase/client";
@@ -125,6 +127,7 @@ export function MenuScreen({
 }: MenuScreenProps) {
   const router = useRouter();
   const reducedMotion = useReducedMotion();
+  const networkStatus = useNetworkStatus();
   const [cart, setCart]               = useState<CartMap>({});
   /** Tamaño elegido por platillo (solo ítems con variantes). */
   const [variantChoice, setVariantChoice] = useState<Record<string, string>>({});
@@ -133,7 +136,7 @@ export function MenuScreen({
   const [guests, setGuests]               = useState(initialGuests);
   /** Rol anfitrión puede cambiar sin recargar (p. ej. transferencia). */
   const [isHostLive, setIsHostLive]       = useState(isHost);
-  const [hostTransferDialogOpen, setHostTransferDialogOpen] = useState(false);
+  const [tableCompanionsOpen, setTableCompanionsOpen] = useState(false);
   const [isTransferring, startTransfer]   = useTransition();
   const [activeCategory, setCategory] = useState<string>("todos");
   const [drawerOpen, setDrawerOpen]   = useState(false);
@@ -144,7 +147,8 @@ export function MenuScreen({
   const [inviteFullUrl, setInviteFullUrl] = useState<string | null>(null);
   const qrInviteCanvasRef = useRef<HTMLCanvasElement>(null);
   const [qrInviteFullscreenOpen, setQrInviteFullscreenOpen] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [orderTrackerModalOpen, setOrderTrackerModalOpen] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error"; onClick?: () => void } | null>(null);
   /** Portal de toasts solo tras montar (evita mismatch SSR/cliente vs `document.body`). */
   const [toastPortalReady, setToastPortalReady] = useState(false);
 
@@ -195,12 +199,13 @@ export function MenuScreen({
   }, [tableCode]);
 
   useEffect(() => {
-    const overlayOpen = qrInviteFullscreenOpen || hostTransferDialogOpen;
+    const overlayOpen = qrInviteFullscreenOpen || tableCompanionsOpen || orderTrackerModalOpen;
     if (!overlayOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      if (hostTransferDialogOpen) setHostTransferDialogOpen(false);
-      else setQrInviteFullscreenOpen(false);
+      if (tableCompanionsOpen) setTableCompanionsOpen(false);
+      else if (qrInviteFullscreenOpen) setQrInviteFullscreenOpen(false);
+      else setOrderTrackerModalOpen(false);
     };
     window.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
@@ -209,7 +214,84 @@ export function MenuScreen({
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [qrInviteFullscreenOpen, hostTransferDialogOpen]);
+  }, [qrInviteFullscreenOpen, tableCompanionsOpen, orderTrackerModalOpen]);
+
+  const orderTrackerSummary = useMemo(() => {
+    const active = orders.filter((o) => {
+      const s = String(o.status ?? "").toUpperCase();
+      return s !== "DELIVERED" && s !== "CANCELLED";
+    });
+    const pending = active.filter((o) => String(o.status ?? "").toUpperCase() === "PENDING").length;
+    const delivered = orders.filter((o) => String(o.status ?? "").toUpperCase() === "DELIVERED").length;
+    return {
+      total: orders.length,
+      active: active.length,
+      ready: active.filter((o) => String(o.status ?? "").toUpperCase() === "READY").length,
+      preparing: active.filter((o) => String(o.status ?? "").toUpperCase() === "PREPARING").length,
+      pending,
+      delivered,
+    };
+  }, [orders]);
+
+
+  const orderTrackerTone = useMemo(() => {
+    if (orderTrackerSummary.ready > 0) {
+      return {
+        key: "ready",
+        label: "Listo para servir",
+        container:
+          "border-emerald-400/45 bg-emerald-500/12 text-emerald-900 guest-dark:text-emerald-200",
+        title: "text-emerald-700 guest-dark:text-emerald-300",
+        ring: "bg-emerald-500",
+        icon: "border-emerald-400/40 bg-emerald-500/15 text-emerald-700 guest-dark:text-emerald-300",
+      };
+    }
+    if (orderTrackerSummary.preparing > 0) {
+      return {
+        key: "preparing",
+        label: "En preparación",
+        container:
+          "border-amber-400/45 bg-amber-500/12 text-amber-900 guest-dark:text-amber-200",
+        title: "text-amber-700 guest-dark:text-amber-300",
+        ring: "bg-amber-500",
+        icon: "border-amber-400/40 bg-amber-500/15 text-amber-700 guest-dark:text-amber-300",
+      };
+    }
+    if (orderTrackerSummary.pending > 0) {
+      return {
+        key: "pending",
+        label: "Pendiente en cola",
+        container:
+          "border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] text-[var(--guest-text)]",
+        title: "text-[var(--guest-muted)]",
+        ring: "bg-[var(--guest-muted)]",
+        icon: "border-[var(--guest-divider)] bg-[var(--guest-bg-surface-2)] text-[var(--guest-muted)]",
+      };
+    }
+    return {
+      key: "delivered",
+      label: "Todo entregado",
+      container:
+        "border-[color-mix(in_srgb,var(--guest-gold)_30%,transparent)] bg-[var(--guest-halo)] text-[var(--guest-text)]",
+      title: "text-[var(--guest-gold)]",
+      ring: "bg-[var(--guest-gold)]",
+      icon: "border-[color-mix(in_srgb,var(--guest-gold)_30%,transparent)] bg-[var(--guest-bg-surface)] text-[var(--guest-gold)]",
+    };
+  }, [orderTrackerSummary]);
+
+  const orderTrackerSummaryText = useMemo(() => {
+    const segments = [
+      `${orderTrackerSummary.total} pedidos`,
+      `${orderTrackerSummary.ready} listo${orderTrackerSummary.ready === 1 ? "" : "s"}`,
+    ];
+    if (orderTrackerSummary.preparing > 0) {
+      segments.push(`${orderTrackerSummary.preparing} en cocina`);
+    }
+    if (orderTrackerSummary.pending > 0) {
+      segments.push(`${orderTrackerSummary.pending} pendientes`);
+    }
+    return segments.join(" · ");
+  }, [orderTrackerSummary]);
 
   const handleShareInvite = useCallback(async () => {
     let url = inviteFullUrl;
@@ -332,6 +414,11 @@ export function MenuScreen({
   }, [tableCode, refreshOrders]);
 
   function handleCheckout(isShared: boolean) {
+    if (networkStatus === "offline") {
+      setOrderError("Sin conexión. Conéctate a internet para enviar tu orden.");
+      setTimeout(() => setOrderError(null), 4000);
+      return;
+    }
     if (billRequested) {
       setOrderError("El anfitrión ya pidió la cuenta. No puedes agregar más órdenes.");
       setTimeout(() => setOrderError(null), 4000);
@@ -513,28 +600,18 @@ export function MenuScreen({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: reducedMotion ? 1 : 0, y: reducedMotion ? 0 : -16 }}
                     transition={{ duration: reducedMotion ? 0 : 0.22 }}
-                    className="fixed inset-x-0 top-8 z-[260] flex justify-center px-4 pointer-events-none"
-                    role={toast.type === "error" ? "alert" : "status"}
+                    onClick={() => {
+                      if (toast.onClick) toast.onClick();
+                    }}
+                    className={cn(
+                      "fixed inset-x-0 top-8 z-[260] flex justify-center px-4",
+                      toast.onClick ? "cursor-pointer pointer-events-auto active:scale-95 transition-transform" : "pointer-events-none"
+                    )}
+                    role={toast.onClick ? "button" : toast.type === "error" ? "alert" : "status"}
                     aria-live={toast.type === "error" ? "assertive" : "polite"}
                   >
                     <GuestToast tone={toast.type === "error" ? "error" : "success"}>
                       {toast.message}
-                    </GuestToast>
-                  </motion.div>
-                )}
-                {orderSuccess && (
-                  <motion.div
-                    key="order-success"
-                    initial={{ opacity: reducedMotion ? 1 : 0, y: reducedMotion ? 0 : -16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: reducedMotion ? 1 : 0, y: reducedMotion ? 0 : -16 }}
-                    transition={{ duration: reducedMotion ? 0 : 0.22 }}
-                    className="fixed inset-x-0 top-8 z-[260] flex justify-center px-4 pointer-events-none"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    <GuestToast tone="success">
-                      Orden enviada a cocina
                     </GuestToast>
                   </motion.div>
                 )}
@@ -562,6 +639,9 @@ export function MenuScreen({
 
 
 
+      {/* ── NETWORK BANNER ───────────────────────────────────────────── */}
+      <NetworkBanner status={networkStatus} />
+
       {/* ── BODY ─────────────────────────────────────────────────────── */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 pb-36 sm:px-8 lg:px-12 lg:pb-24">
         <div className="lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(280px,3fr)] lg:gap-12 lg:items-start">
@@ -571,30 +651,38 @@ export function MenuScreen({
               tableNumber={tableNumber}
               guestName={guestName}
               isHost={isHostLive}
+              guests={guests}
               billRequested={billRequested}
               menuTheme={menuTheme}
               onThemeChange={changeGuestMenuTheme}
+              displayTableCode={displayTableCode}
+              joinCode={joinCode}
+              onShareQr={() => setQrInviteFullscreenOpen(true)}
+              qrOpen={qrInviteFullscreenOpen}
+              onOpenCompanions={() => setTableCompanionsOpen(true)}
+              orderStatusVisible={orders.length > 0}
+              orderStatusLabel={orderTrackerSummary.active === 0 ? "Opciones de pago" : orderTrackerTone.label}
+              orderStatusSummary={orderTrackerSummary.active === 0 ? "Ver tu cuenta y pagar" : orderTrackerSummaryText}
+              orderStatusToneKey={orderTrackerSummary.active === 0 ? "checkout" : orderTrackerTone.key}
+              hasOrderActivity={orderTrackerSummary.active > 0}
+              onOpenOrderStatus={() => {
+                if (orderTrackerSummary.active === 0) {
+                  router.push(cuentaHref);
+                } else {
+                  setOrderTrackerModalOpen(true);
+                }
+              }}
             />
 
-            <div className="sticky top-0 z-30 mt-6 space-y-4 border-b border-[var(--guest-divider)] bg-[color-mix(in_srgb,var(--guest-bg-page)_92%,transparent)] py-4 backdrop-blur-xl">
-              <ContextIsland
-                displayTableCode={displayTableCode}
-                joinCode={joinCode}
-                cuentaHref={cuentaHref}
-                billRequested={billRequested}
-                onShareQr={() => setQrInviteFullscreenOpen(true)}
-                qrOpen={qrInviteFullscreenOpen}
-                showTransferHost={
-                  Boolean(isHostLive && guests.filter((g) => g.name !== guestName).length > 0 && !billRequested)
-                }
-                onTransferHost={() => setHostTransferDialogOpen(true)}
-              />
-              <CategoryTabs
-                tabs={categoryTabItems}
-                activeId={activeCategory}
-                onChange={setCategory}
-                layoutId="guest-menu-cat"
-              />
+            <div className="sticky top-0 z-30 mt-4 border-b border-[var(--guest-divider)] bg-[color-mix(in_srgb,var(--guest-bg-page)_92%,transparent)] py-3 backdrop-blur-xl">
+              <div className="min-w-0">
+                <CategoryTabs
+                  tabs={categoryTabItems}
+                  activeId={activeCategory}
+                  onChange={setCategory}
+                  layoutId="guest-menu-cat"
+                />
+              </div>
             </div>
 
             <div role="tabpanel" className="mt-8">
@@ -656,6 +744,7 @@ export function MenuScreen({
             </div>
 
             {orders && orders.length > 0 && (
+              <div className="hidden lg:block">
               <OrderTracker
                 orders={orders}
                 tableCode={tableCode}
@@ -667,78 +756,10 @@ export function MenuScreen({
                 hasOrderPipeline
                 menuTheme={menuTheme}
               />
-            )}
-
-            <details className="group mt-14 border-t border-[var(--guest-divider)] pt-8">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--guest-muted)] [&::-webkit-details-marker]:hidden">
-                <span>Tu mesa y compañeros</span>
-                <ChevronDown
-                  className="size-4 shrink-0 text-[var(--guest-muted)] transition-transform duration-200 group-open:rotate-180"
-                  aria-hidden
-                />
-              </summary>
-              <div className="mt-5 space-y-5">
-                {guests.length > 0 && (
-                  <div>
-                    <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[var(--guest-muted)]">
-                      En la mesa
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-3">
-                      {guests.map((g) => (
-                        <span
-                          key={g.name}
-                          className="inline-flex min-h-11 items-center gap-2 rounded-full border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] py-1.5 pl-1.5 pr-4 text-sm font-medium text-[var(--guest-text)]"
-                          aria-label={g.isHost ? `${g.name}, anfitrión` : g.name}
-                        >
-                          <GuestAvatar name={g.name} size="sm" />
-                          <span className="min-w-0 truncate">{g.name}</span>
-                          {g.isHost && (
-                            <svg
-                              viewBox="0 0 10 10"
-                              fill="none"
-                              className="h-3 w-3 shrink-0 text-[var(--guest-gold)]"
-                              aria-hidden="true"
-                            >
-                              <path d="M5 1l1.2 2.5L9 4.1 7 6l.5 2.9L5 7.5 2.5 8.9 3 6 1 4.1l2.8-.6L5 1z" fill="currentColor" />
-                            </svg>
-                          )}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </details>
-
-            {!billRequested && (
-              <div className="mt-10 border-t border-[var(--guest-divider)] pt-6 text-center text-sm leading-relaxed text-[var(--guest-muted)]">
-                {isHostLive && guests.filter((g) => g.name !== guestName).length > 0 ? (
-                  <p>
-                    Si sales antes y sigues como anfitrión,{" "}
-                    <strong className="font-semibold text-[var(--guest-text)]">pulsa «Pasar anfitrión»</strong> para
-                    elegir quién sigue. También puedes{" "}
-                    <Link
-                      href={cuentaHref}
-                      className="font-medium text-[var(--guest-gold)] underline-offset-2 hover:underline"
-                    >
-                      pagar solo tu parte
-                    </Link>
-                    .
-                  </p>
-                ) : (
-                  <p>
-                    Si sales antes, puedes{" "}
-                    <Link
-                      href={cuentaHref}
-                      className="font-medium text-[var(--guest-gold)] underline-offset-2 hover:underline"
-                    >
-                      pagar solo tu parte
-                    </Link>
-                    .
-                  </p>
-                )}
               </div>
             )}
+
+            {/* Legacy block removed */}
           </div>
 
           <aside className="z-20 hidden lg:block lg:self-start lg:sticky lg:top-8">
@@ -760,21 +781,77 @@ export function MenuScreen({
         </div>
       </div>
 
-      {!billRequested && !drawerOpen && (
-        <Link
-          href={cuentaHref}
-          className={cn(
-            "fixed bottom-4 left-4 right-44 z-50 inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--guest-text)] px-4 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--guest-bg-page)] shadow-lg transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color-mix(in_srgb,var(--guest-gold)_55%,transparent)] sm:hidden",
-            cartCount > 0 ? "bottom-24" : "bottom-4",
-          )}
-        >
-          Ir a pagar
-        </Link>
+      {toastPortalReady && orderTrackerModalOpen && orders.length > 0 && createPortal(
+        <AnimatePresence>
+          <motion.div
+            className="fixed inset-0 z-[240] bg-[color-mix(in_srgb,var(--guest-text)_58%,transparent)] backdrop-blur-sm lg:hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setOrderTrackerModalOpen(false)}
+          >
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 250 }}
+              className="absolute inset-x-0 bottom-0 max-h-[88dvh] overflow-hidden rounded-t-[2rem] border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] p-4 shadow-[0_-16px_42px_rgba(0,0,0,0.35)]"
+              onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Detalle de pedidos"
+            >
+              <div className="mx-auto mb-3 h-1.5 w-14 rounded-full bg-[var(--guest-divider)]" aria-hidden />
+              <div className="mb-3 flex items-center justify-between gap-3 border-b border-[var(--guest-divider)] pb-3">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[var(--guest-muted)]">Seguimiento en vivo</p>
+                  <h2 className="mt-1 text-lg font-semibold text-[var(--guest-text)]">Detalle de pedidos</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setOrderTrackerModalOpen(false)}
+                  className="inline-flex size-11 items-center justify-center rounded-full border border-[var(--guest-divider)] text-[var(--guest-muted)] transition hover:text-[var(--guest-text)]"
+                  aria-label="Cerrar detalle de pedidos"
+                >
+                  <X className="size-5" aria-hidden />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto pb-4">
+                <OrderTracker
+                  orders={orders}
+                  tableCode={tableCode}
+                  guestName={guestName}
+                  isHost={isHostLive}
+                  activeGuestCount={guests.length || 1}
+                  billRequested={billRequested}
+                  onRefreshOrders={refreshOrders}
+                  hasOrderPipeline
+                  menuTheme={menuTheme}
+                  displayMode="content"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>,
+        document.body,
       )}
 
-      {cartCount > 0 && !drawerOpen && (
-        <CartSummaryBar cartCount={cartCount} cartTotal={cartTotal} onOpen={() => setDrawerOpen(true)} />
-      )}
+      {/* Legacy 'Ir a pagar' floating button removed in favor of Masthead integration */}
+
+      <AnimatePresence initial={false}>
+        {cartCount > 0 && !drawerOpen ? (
+          <motion.div
+            key="cart-summary-bar"
+            initial={reducedMotion ? { opacity: 1 } : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: 24 }}
+            transition={{ duration: reducedMotion ? 0.15 : 0.24, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <CartSummaryBar cartCount={cartCount} cartTotal={cartTotal} onOpen={() => setDrawerOpen(true)} />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       <OrderSheet open={drawerOpen} onClose={() => setDrawerOpen(false)} titleId="guest-cart-title">
         <GuestCartPanel
@@ -825,6 +902,11 @@ export function MenuScreen({
               >
                 Invitar a la mesa{" "}
                 <span className="font-mono tracking-[0.08em] text-white">{displayTableCode}</span>
+                {joinCode ? (
+                  <span className="mt-2 block font-mono text-[0.78rem] font-bold tracking-[0.18em] text-white/85">
+                    Acceso: {joinCode}
+                  </span>
+                ) : null}
               </h2>
               <div className="w-full max-w-[280px] rounded-3xl bg-white p-5 shadow-2xl shadow-black/40">
                 {inviteFullUrl ? (
@@ -871,64 +953,84 @@ export function MenuScreen({
           document.body,
         )}
 
-      {hostTransferDialogOpen &&
+      {tableCompanionsOpen &&
         typeof document !== "undefined" &&
         createPortal(
           (
             <div>
             <div
-              className="fixed inset-0 z-[115] flex items-center justify-center bg-black/65 p-4 backdrop-blur-sm"
+              className="fixed inset-0 z-[115] flex items-end sm:items-center justify-center bg-black/65 p-0 sm:p-4 backdrop-blur-sm"
               role="presentation"
-              onClick={() => setHostTransferDialogOpen(false)}
+              onClick={() => setTableCompanionsOpen(false)}
             >
-            <div
+            <motion.div
+              initial={{ y: "100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "100%", opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
               role="dialog"
               aria-modal="true"
-              aria-labelledby="host-transfer-title"
-              aria-describedby="host-transfer-desc"
-              className="relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] p-6 shadow-[inset_0_1px_0_var(--guest-panel-edge)] backdrop-blur-sm"
+              aria-labelledby="companions-title"
+              className="relative max-h-[90dvh] w-full max-w-md overflow-hidden rounded-t-3xl sm:rounded-2xl border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] shadow-[inset_0_1px_0_var(--guest-panel-edge)] backdrop-blur-md"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3
-                id="host-transfer-title"
-                className="text-base font-semibold leading-snug text-[var(--guest-text)]"
-              >
-                ¿Te vas antes que los demás?
-              </h3>
-              <p id="host-transfer-desc" className="mt-2 text-sm leading-relaxed text-[var(--guest-muted)]">
-                Solo el anfitrión puede pedir la cuenta para todos. Elige quién será el nuevo anfitrión antes de salir.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                {guests
-                  .filter((g) => g.name !== guestName)
-                  .map((g) => (
-                    <button
-                      key={g.name}
-                      type="button"
-                      disabled={isTransferring}
-                      onClick={() => {
-                        startTransfer(async () => {
-                          await transferHost(tableCode, guestName, g.name);
-                          setHostTransferDialogOpen(false);
-                          const state = await getGuestTableState(tableCode, guestName);
-                          setGuests(state.guests);
-                          setIsHostLive(state.isHost);
-                        });
-                      }}
-                      className="min-h-11 rounded-lg border border-[var(--guest-divider)] bg-[var(--guest-bg-surface-2)] px-4 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-[var(--guest-text)] transition-colors hover:border-[color-mix(in_srgb,var(--guest-gold)_40%,transparent)] hover:bg-[var(--guest-halo)] disabled:opacity-40"
-                    >
-                      {g.name}
-                    </button>
-                  ))}
+              <div className="flex items-center justify-between border-b border-[var(--guest-divider)] p-5">
+                <div>
+                  <h3 id="companions-title" className="text-base font-semibold leading-snug text-[var(--guest-text)]">
+                    Tu mesa y compañeros
+                  </h3>
+                  <p className="mt-0.5 text-xs text-[var(--guest-muted)]">
+                    {guests.length} participante{guests.length === 1 ? '' : 's'} activo{guests.length === 1 ? '' : 's'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTableCompanionsOpen(false)}
+                  className="rounded-full bg-[var(--guest-bg-surface-2)] p-2 text-[var(--guest-text)] hover:bg-[var(--guest-divider)] transition-colors"
+                >
+                  <X className="size-4" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setHostTransferDialogOpen(false)}
-                className="mt-6 min-h-11 text-sm font-medium text-[var(--guest-muted)] hover:text-[var(--guest-gold)]"
-              >
-                Cerrar
-              </button>
-            </div>
+
+              <div className="overflow-y-auto p-2">
+                <div className="space-y-1">
+                  {guests.map((g) => (
+                    <div key={g.name} className="flex items-center justify-between rounded-xl px-3 py-3 hover:bg-[var(--guest-bg-surface-2)] transition-colors">
+                      <div className="flex items-center gap-3">
+                        <GuestAvatar name={g.name} size="md" />
+                        <div>
+                          <p className="text-sm font-medium text-[var(--guest-text)] flex items-center gap-1.5">
+                            {g.name} 
+                            {g.name === guestName && <span className="text-[10px] text-[var(--guest-muted)] font-normal">(Tú)</span>}
+                          </p>
+                          {g.isHost && (
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--guest-gold)]">Anfitrión</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {isHostLive && g.name !== guestName && !billRequested && (
+                        <button
+                          type="button"
+                          disabled={isTransferring}
+                          onClick={() => {
+                            startTransfer(async () => {
+                              await transferHost(tableCode, guestName, g.name);
+                              const state = await getGuestTableState(tableCode, guestName);
+                              setGuests(state.guests);
+                              setIsHostLive(state.isHost);
+                            });
+                          }}
+                          className="rounded-lg border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--guest-text)] transition-colors hover:border-[var(--guest-gold)] hover:text-[var(--guest-gold)] disabled:opacity-40"
+                        >
+                          Hacer Anfitrión
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
           </div>
             </div>
           ),
@@ -946,7 +1048,7 @@ export function MenuScreen({
           isPopular: item.isPopular,
           isSoldOut: item.isSoldOut,
         }))}
-        disabled={qrInviteFullscreenOpen || hostTransferDialogOpen || drawerOpen}
+        disabled={qrInviteFullscreenOpen || tableCompanionsOpen || drawerOpen}
         onAddToCart={handleAssistantAddToCart}
         liftFabForBottomBar={cartCount > 0 && !drawerOpen}
       />

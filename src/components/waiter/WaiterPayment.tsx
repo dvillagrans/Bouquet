@@ -9,6 +9,7 @@ interface BillItem {
   name: string;
   qty: number;
   price: number;
+  guestName: string;
 }
 
 interface GuestBill {
@@ -16,6 +17,7 @@ interface GuestBill {
   guestName: string;
   items: BillItem[];
   subtotal: number;
+  isPaid?: boolean;
 }
 
 type PaymentMethod = "CASH" | "CARD" | "TRANSFER" | "OTHER";
@@ -62,13 +64,13 @@ export default function WaiterPayment({
     try {
       setLoading(true);
       const bill = await getTableBill(tableCode);
-      const multiGuest = bill.guests.length > 1;
       const items: BillItem[] = bill.guests.flatMap((g) =>
         g.items.map((i) => ({
           id: i.key,
-          name: multiGuest ? `${i.name} (${g.guestName})` : i.name,
+          name: i.name,
           qty: i.qty,
           price: i.price,
+          guestName: g.guestName,
         }))
       );
 
@@ -83,8 +85,10 @@ export default function WaiterPayment({
             name: i.name,
             qty: i.qty,
             price: i.price,
+            guestName: g.guestName,
           })),
           subtotal: g.subtotal,
+          isPaid: g.isPaid,
         }))
       );
 
@@ -146,7 +150,9 @@ export default function WaiterPayment({
       });
 
       showToast({ type: "success", message: "Pago de mesa registrado" });
-      onPaymentComplete();
+      setTimeout(() => {
+        onPaymentComplete();
+      }, 1500);
     } catch (error) {
       showToast({ type: "error", message: "Error procesando pago: " + (error as Error).message });
     } finally {
@@ -229,8 +235,11 @@ export default function WaiterPayment({
           <>
             {billItems.map((item) => (
               <div key={item.id} className="flex justify-between text-sm">
-                <div>
+                <div className="flex gap-2">
                   <p className="text-light">{item.qty}x {item.name}</p>
+                  {paymentMode === "GUEST" && guestBills.length > 1 && (
+                    <span className="text-dim text-xs">({item.guestName})</span>
+                  )}
                 </div>
                 <p className="text-light font-mono">${(item.price * item.qty).toFixed(2)}</p>
               </div>
@@ -326,7 +335,7 @@ export default function WaiterPayment({
             placeholder="Otro %"
             value={tipPercentage > 20 ? tipPercentage : ""}
             onChange={(e) => setTipPercentage(Number(e.target.value) || 0)}
-            className="flex-1 px-3 py-2 bg-canvas border border-wire/30 rounded text-light text-sm focus:outline-none focus:border-glow/50"
+            className="flex-1 px-3 py-2 bg-canvas/40 border border-glow/30 rounded text-light text-sm focus:outline-none focus:border-glow transition-colors placeholder:text-light/50 shadow-[inset_0_1px_2px_rgba(0,0,0,0.2)]"
           />
           <span className="px-3 py-2 bg-canvas/50 border border-wire/30 rounded text-glow font-mono">
             ${tip.toFixed(2)}
@@ -391,14 +400,22 @@ export default function WaiterPayment({
             {guestBills.map((guest) => (
               <button
                 key={guest.sessionId}
-                onClick={() => setSelectedGuest(guest.guestName)}
+                onClick={() => !guest.isPaid && setSelectedGuest(guest.guestName)}
+                disabled={guest.isPaid}
                 className={`w-full flex items-center justify-between rounded border px-3 py-2 text-sm transition-all ${
-                  selectedGuest === guest.guestName
+                  guest.isPaid 
+                    ? "border-wire/20 bg-wire/10 text-dim cursor-not-allowed opacity-60"
+                    : selectedGuest === guest.guestName
                     ? "border-glow bg-glow/10 text-glow"
                     : "border-wire text-light hover:border-glow/50"
                 }`}
               >
-                <span className="font-semibold">{guest.guestName}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`font-semibold ${guest.isPaid ? 'line-through' : ''}`}>
+                    {guest.guestName}
+                  </span>
+                  {guest.isPaid && <span className="text-[10px] font-bold uppercase tracking-wider bg-bg-card px-1.5 py-0.5 rounded-sm">Cobrado</span>}
+                </div>
                 <span className="font-mono">${guest.subtotal.toFixed(2)}</span>
               </button>
             ))}

@@ -394,6 +394,7 @@ model OrderItem {
   order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItem MenuItem @relation(fields: [menuItemId], references: [id])
   session  Session  @relation(fields: [sessionId], references: [id])
+  allocations PaymentAllocation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -467,6 +468,9 @@ model PaymentAllocation {
   guestName String?
   amount    Float
 
+  orderItemId String?
+  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+
   payment Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
   session Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
@@ -475,6 +479,7 @@ model PaymentAllocation {
 
   @@index([paymentId])
   @@index([sessionId])
+  @@index([orderItemId])
 }
 
 // ------------------------------------

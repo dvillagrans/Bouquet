@@ -235,48 +235,52 @@ export function MenuScreen({
 
 
   const orderTrackerTone = useMemo(() => {
-    if (orderTrackerSummary.ready > 0) {
-      return {
+    const tones: Record<string, {
+      key: "ready" | "preparing" | "pending" | "delivered";
+      label: string;
+      container: string;
+      title: string;
+      ring: string;
+      icon: string;
+    }> = {
+      ready: {
         key: "ready",
         label: "Listo para servir",
-        container:
-          "border-emerald-400/45 bg-emerald-500/12 text-emerald-900 guest-dark:text-emerald-200",
+        container: "border-emerald-400/45 bg-emerald-500/12 text-emerald-900 guest-dark:text-emerald-200",
         title: "text-emerald-700 guest-dark:text-emerald-300",
         ring: "bg-emerald-500",
         icon: "border-emerald-400/40 bg-emerald-500/15 text-emerald-700 guest-dark:text-emerald-300",
-      };
-    }
-    if (orderTrackerSummary.preparing > 0) {
-      return {
+      },
+      preparing: {
         key: "preparing",
         label: "En preparación",
-        container:
-          "border-amber-400/45 bg-amber-500/12 text-amber-900 guest-dark:text-amber-200",
+        container: "border-amber-400/45 bg-amber-500/12 text-amber-900 guest-dark:text-amber-200",
         title: "text-amber-700 guest-dark:text-amber-300",
         ring: "bg-amber-500",
         icon: "border-amber-400/40 bg-amber-500/15 text-amber-700 guest-dark:text-amber-300",
-      };
-    }
-    if (orderTrackerSummary.pending > 0) {
-      return {
+      },
+      pending: {
         key: "pending",
         label: "Pendiente en cola",
-        container:
-          "border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] text-[var(--guest-text)]",
+        container: "border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] text-[var(--guest-text)]",
         title: "text-[var(--guest-muted)]",
         ring: "bg-[var(--guest-muted)]",
         icon: "border-[var(--guest-divider)] bg-[var(--guest-bg-surface-2)] text-[var(--guest-muted)]",
-      };
-    }
-    return {
-      key: "delivered",
-      label: "Todo entregado",
-      container:
-        "border-[color-mix(in_srgb,var(--guest-gold)_30%,transparent)] bg-[var(--guest-halo)] text-[var(--guest-text)]",
-      title: "text-[var(--guest-gold)]",
-      ring: "bg-[var(--guest-gold)]",
-      icon: "border-[color-mix(in_srgb,var(--guest-gold)_30%,transparent)] bg-[var(--guest-bg-surface)] text-[var(--guest-gold)]",
+      },
+      delivered: {
+        key: "delivered",
+        label: "Todo entregado",
+        container: "border-[color-mix(in_srgb,var(--guest-gold)_30%,transparent)] bg-[var(--guest-halo)] text-[var(--guest-text)]",
+        title: "text-[var(--guest-gold)]",
+        ring: "bg-[var(--guest-gold)]",
+        icon: "border-[color-mix(in_srgb,var(--guest-gold)_30%,transparent)] bg-[var(--guest-bg-surface)] text-[var(--guest-gold)]",
+      },
     };
+
+    if (orderTrackerSummary.ready > 0) return tones.ready;
+    if (orderTrackerSummary.preparing > 0) return tones.preparing;
+    if (orderTrackerSummary.pending > 0) return tones.pending;
+    return tones.delivered;
   }, [orderTrackerSummary]);
 
   const orderTrackerSummaryText = useMemo(() => {
@@ -394,6 +398,15 @@ export function MenuScreen({
       .on("broadcast", { event: "bill-requested" }, () => {
         setBillRequested(true);
         router.push(cuentaHref);
+      })
+      .on("broadcast", { event: "shared-order" }, (payload) => {
+        const p = payload.payload as { orderedBy: string; summary: string; suggestedPart: number };
+        if (p.orderedBy !== guestName) {
+          setToast({
+            type: "success",
+            message: `${p.orderedBy} ordenó ${p.summary} para compartir — tu parte sugerida: $${p.suggestedPart.toLocaleString("es-MX")}`
+          });
+        }
       })
       .subscribe();
 
@@ -663,7 +676,7 @@ export function MenuScreen({
               orderStatusVisible={orders.length > 0}
               orderStatusLabel={orderTrackerSummary.active === 0 ? "Opciones de pago" : orderTrackerTone.label}
               orderStatusSummary={orderTrackerSummary.active === 0 ? "Ver tu cuenta y pagar" : orderTrackerSummaryText}
-              orderStatusToneKey={orderTrackerSummary.active === 0 ? "checkout" : orderTrackerTone.key}
+              orderStatusToneKey={(orderTrackerSummary.active === 0 ? "checkout" : orderTrackerTone.key) as any}
               hasOrderActivity={orderTrackerSummary.active > 0}
               onOpenOrderStatus={() => {
                 if (orderTrackerSummary.active === 0) {

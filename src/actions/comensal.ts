@@ -9,6 +9,7 @@ import {
   broadcastGuestOrdersRefresh,
   broadcastBillRequested,
   broadcastKdsOrdersRefresh,
+  broadcastSharedOrderNotif,
 } from "@/lib/supabase/broadcast-guest-orders";
 
 export async function submitComensalOrder({
@@ -88,6 +89,30 @@ export async function submitComensalOrder({
   await broadcastGuestOrdersRefresh(table.qrCode);
   await broadcastKdsOrdersRefresh(table.restaurantId);
 
+  if (isShared) {
+    const cartTotal = items.reduce((sum, cartItem) => {
+      const dbItem = dbItems.find((i) => i.id === cartItem.menuItemId);
+      const price = dbItem ? priceAtTimeForItem(dbItem, cartItem.variantName?.trim()) : 0;
+      return sum + price * cartItem.quantity;
+    }, 0);
+
+    const activeSessionsCount = await prisma.session.count({
+      where: { tableId: table.id, isActive: true },
+    });
+
+    const partySize = Math.max(1, activeSessionsCount);
+    const suggestedPart = Math.ceil(cartTotal / partySize);
+
+    // Simplistic summary string
+    const summary = `${items.length} platillo${items.length !== 1 ? "s" : ""}`;
+
+    await broadcastSharedOrderNotif(table.qrCode, {
+      orderedBy: sessionRow.guestName,
+      summary,
+      suggestedPart,
+    });
+  }
+
   revalidatePath("/cocina"); // Despertar el KDS!
 
   return newOrder.id;
@@ -112,7 +137,7 @@ export async function getTableBill(tableCode: string) {
   }
 
   if (!sessionCandidates.length) {
-    return { guests: [], total: 0, guestCount: 0 };
+    return { guests: [], sharedItems: [], total: 0, guestCount: 0 };
   }
 
   const sessionIds = sessionCandidates.map(s => s.id);
@@ -122,13 +147,14 @@ export async function getTableBill(tableCode: string) {
       sessionId: { in: sessionIds },
       order: { status: { not: "CANCELLED" } },
     },
-    include: { menuItem: true },
+    include: { menuItem: true, order: true, allocations: true },
   });
 
   type GuestItem = { key: string; menuItemId: string; name: string; qty: number; price: number };
 
   const guests = sessionCandidates.map(session => {
-    const sessionItems = allItems.filter(i => i.sessionId === session.id);
+    // Individual items
+    const sessionItems = allItems.filter(i => i.sessionId === session.id && !i.order.isShared);
     const aggregated: GuestItem[] = [];
 
     for (const item of sessionItems) {
@@ -156,8 +182,37 @@ export async function getTableBill(tableCode: string) {
     };
   });
 
-  const total = guests.filter(g => !g.isPaid).reduce((sum, g) => sum + g.subtotal, 0);
-  return { guests, total, guestCount: sessionCandidates.length };
+  const sharedOrderItems = allItems.filter(i => i.order.isShared);
+  
+  const sharedItems = sharedOrderItems.map(item => {
+    const totalItemPrice = item.quantity * item.priceAtTime;
+    const paidByAllocations = item.allocations.reduce((sum, alloc) => sum + alloc.amount, 0);
+    const remaining = Math.max(0, totalItemPrice - paidByAllocations);
+
+    const orderedBySession = sessionCandidates.find(s => s.id === item.sessionId);
+    const orderedBy = orderedBySession ? orderedBySession.guestName : "Anónimo";
+
+    return {
+      orderItemId: item.id,
+      name: item.menuItem.name,
+      qty: item.quantity,
+      price: item.priceAtTime,
+      total: totalItemPrice,
+      paid: paidByAllocations,
+      remaining,
+      orderedBy
+    };
+  }).filter(i => i.remaining > 0);
+
+  const totalOwnUnpaid = guests.filter(g => !g.isPaid).reduce((sum, g) => sum + g.subtotal, 0);
+  const totalSharedUnpaid = sharedItems.reduce((sum, i) => sum + i.remaining, 0);
+
+  return { 
+    guests, 
+    sharedItems,
+    total: totalOwnUnpaid + totalSharedUnpaid, 
+    guestCount: sessionCandidates.filter(s => s.isActive).length 
+  };
 }
 
 function generateJoinCode(): string {
@@ -262,6 +317,7 @@ export async function payGuestShare(input: {
   amountPaid: number;
   tipRate: number;
   paymentMethod?: "CASH" | "CARD" | "TRANSFER" | "OTHER";
+  allocations?: { orderItemId: string; amount: number }[];
 }) {
   const base = await findTableByQrCode(input.tableCode);
   if (!base) throw new Error("Mesa no encontrada");
@@ -289,7 +345,10 @@ export async function payGuestShare(input: {
     },
     select: { quantity: true, priceAtTime: true },
   });
-  const subtotal = myItems.reduce((s, i) => s + i.quantity * i.priceAtTime, 0);
+  const subtotalIndividual = myItems.reduce((s, i) => s + i.quantity * i.priceAtTime, 0);
+  const subtotalShared = input.allocations?.reduce((s, a) => s + a.amount, 0) ?? 0;
+  const subtotal = subtotalIndividual + subtotalShared;
+  
   if (subtotal <= 0) throw new Error("El comensal no tiene consumo pendiente.");
 
   const normalizedTipRate = input.tipRate > 1 ? input.tipRate / 100 : input.tipRate;
@@ -303,6 +362,47 @@ export async function payGuestShare(input: {
   }
 
   await prisma.$transaction(async tx => {
+    // Prevent double-charging race condition by validating shared contributions
+    if (input.allocations && input.allocations.length > 0) {
+      for (const req of input.allocations) {
+        if (req.amount <= 0) continue;
+        const item = await tx.orderItem.findUnique({
+          where: { id: req.orderItemId },
+          include: { allocations: true },
+        });
+        if (!item) throw new Error("Un platillo compartido ya no está disponible.");
+
+        const totalItemPrice = item.quantity * item.priceAtTime;
+        const paidSoFar = item.allocations.reduce((sum, a) => sum + a.amount, 0);
+        const remaining = totalItemPrice - paidSoFar;
+        if (req.amount > remaining) {
+          throw new Error("El saldo compartido de un artículo cambió. Intenta nuevamente.");
+        }
+      }
+    }
+
+    const payloadAllocations = [];
+    if (subtotalIndividual > 0) {
+      payloadAllocations.push({
+        sessionId: session.id,
+        guestName: effectiveGuest,
+        amount: subtotalIndividual,
+      });
+    }
+
+    if (input.allocations) {
+      for (const a of input.allocations) {
+        if (a.amount > 0) {
+          payloadAllocations.push({
+            sessionId: session.id,
+            guestName: effectiveGuest,
+            amount: a.amount,
+            orderItemId: a.orderItemId,
+          });
+        }
+      }
+    }
+
     await tx.payment.create({
       data: {
         restaurantId: table.restaurantId,
@@ -321,14 +421,24 @@ export async function payGuestShare(input: {
         amountPaid,
         paidAt: new Date(),
         allocations: {
-          create: {
-            sessionId: session.id,
-            guestName: effectiveGuest,
-            amount: amountPaid,
-          },
+          create: payloadAllocations,
         },
       },
     });
+
+    // Determinar temporalidad de la mesa para el cálculo de deficit antes de cerrar la sesión
+    const oldestActive = await tx.session.findFirst({
+      where: { tableId: table.id, isActive: true },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true }
+    });
+    const minCreatedAt = oldestActive?.createdAt || session.createdAt;
+    
+    const sessionCandidates = await tx.session.findMany({
+      where: { tableId: table.id, createdAt: { gte: minCreatedAt } },
+      select: { id: true }
+    });
+    const sessionIds = sessionCandidates.map(s => s.id);
 
     // Close only this guest session so the rest of the table can continue ordering/paying.
     await tx.session.update({
@@ -339,6 +449,34 @@ export async function payGuestShare(input: {
     const remainingActive = await tx.session.count({
       where: { tableId: table.id, isActive: true },
     });
+
+    // HOST DEFICIT ENFORCEMENT:
+    if (session.isHost || remainingActive === 0) {
+      const allSharedItems = await tx.orderItem.findMany({
+        where: {
+          sessionId: { in: sessionIds },
+          order: { isShared: true, status: { not: "CANCELLED" } }
+        },
+        include: { allocations: true },
+      });
+
+      let globalDeficit = 0;
+      for (const item of allSharedItems) {
+        const itemTotal = item.quantity * item.priceAtTime;
+        const paidSoFar = item.allocations.reduce((sum, a) => sum + a.amount, 0);
+        if (paidSoFar < itemTotal) {
+          globalDeficit += (itemTotal - paidSoFar);
+        }
+      }
+
+      if (globalDeficit > 0) {
+        if (remainingActive === 0) {
+          throw new Error(`Eres el último comensal en la mesa. Queda un faltante de $${globalDeficit.toLocaleString("es-MX")} en órdenes compartidas que debes cubrir.`);
+        } else {
+          throw new Error(`Como anfitrión, debes cubrir el faltante de $${globalDeficit.toLocaleString("es-MX")} en órdenes compartidas antes de retirarte, o bien, espera a que otros lo paguen o transfiere tu rol.`);
+        }
+      }
+    }
 
     if (remainingActive === 0) {
       await tx.table.update({

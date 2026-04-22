@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-async function broadcastOnChannel(channelName: string, event: string) {
+async function broadcastOnChannel(channelName: string, event: string, payload: any = {}) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return;
@@ -22,7 +22,7 @@ async function broadcastOnChannel(channelName: string, event: string) {
         if (status === "SUBSCRIBED") {
           clearTimeout(timeout);
           void channel
-            .send({ type: "broadcast", event, payload: {} })
+            .send({ type: "broadcast", event, payload })
             .then(() => { supabase.removeChannel(channel); resolve(); })
             .catch((e) => { supabase.removeChannel(channel); reject(e); });
         } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
@@ -47,6 +47,13 @@ export function broadcastGuestOrdersRefresh(tableQrCode: string) {
 
 export function broadcastBillRequested(tableQrCode: string) {
   return broadcastOnChannel(`guest-orders:${encodeURIComponent(tableQrCode)}`, "bill-requested");
+}
+
+export function broadcastSharedOrderNotif(
+  tableQrCode: string,
+  payload: { orderedBy: string; summary: string; suggestedPart: number }
+) {
+  return broadcastOnChannel(`guest-orders:${encodeURIComponent(tableQrCode)}`, "shared-order", payload);
 }
 
 /**

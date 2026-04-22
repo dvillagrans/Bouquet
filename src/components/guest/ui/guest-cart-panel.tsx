@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { User, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -155,6 +155,28 @@ export function GuestCartPanel({
                 <span className="text-[10px] leading-tight opacity-60">Se divide entre todos</span>
               </button>
             </div>
+            
+            <AnimatePresence>
+              {isShared && (
+                <motion.div
+                  initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -4, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4, height: 0 }}
+                  className="mt-3 overflow-hidden"
+                >
+                  <div className="rounded-xl bg-[color-mix(in_srgb,var(--guest-gold)_10%,transparent)] px-4 py-3 border border-[color-mix(in_srgb,var(--guest-gold)_24%,transparent)]">
+                    <p className="flex items-center justify-between text-xs font-medium text-[var(--guest-text)]">
+                      <span>Total compartible</span>
+                      <strong className="font-mono">${cartTotal.toLocaleString("es-MX")}</strong>
+                    </p>
+                    <div className="mt-2 flex items-center justify-between text-xs font-bold text-[color-mix(in_srgb,var(--guest-gold)_85%,#333)]">
+                      <span>Sugerido por persona (×{partySize})</span>
+                      <span className="font-mono text-sm">${Math.ceil(cartTotal / partySize).toLocaleString("es-MX")}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <motion.button

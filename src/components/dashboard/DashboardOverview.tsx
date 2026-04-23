@@ -142,7 +142,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
   const pathname = usePathname();
   const restaurantBase = restaurantBaseFromPathname(pathname);
   const { metrics, restaurant } = data;
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotion() ?? false;
   const occPct = metrics.totalTables > 0 ? (metrics.activeTables / metrics.totalTables) * 100 : 0;
 
   const fmtMoney = (n: number) =>

@@ -69,6 +69,53 @@ function DotGrid({ width, height }: { width: number; height: number }) {
 
 const DotGridMemo = memo(DotGrid);
 
+/* ── Table sizing helpers ──────────────────────────────────────── */
+function getTableSize(capacity: number, shape: string): { w: number; h: number } {
+  if (shape === "round") {
+    const d = capacity <= 2 ? 60 : capacity <= 4 ? 76 : capacity <= 6 ? 92 : 108;
+    return { w: d, h: d };
+  }
+  if (capacity <= 2)  return { w: 64,  h: 64  };
+  if (capacity <= 4)  return { w: 80,  h: 80  };
+  if (capacity <= 6)  return { w: 108, h: 72  };
+  if (capacity <= 8)  return { w: 128, h: 72  };
+  if (capacity <= 12) return { w: 152, h: 72  };
+  return                     { w: 176, h: 72  };
+}
+
+function getSeatPositions(
+  capacity: number, w: number, h: number, isRound: boolean
+): { x: number; y: number }[] {
+  const cx = w / 2, cy = h / 2;
+
+  if (isRound || w === h) {
+    const count = Math.min(capacity, isRound ? 10 : 8);
+    const orbit = w / 2 + 14;
+    return Array.from({ length: count }, (_, i) => {
+      const angle = (i / count) * Math.PI * 2 - Math.PI / 2;
+      return { x: cx + Math.cos(angle) * orbit, y: cy + Math.sin(angle) * orbit };
+    });
+  }
+
+  // Rectangular: distribute seats around the perimeter
+  const SPACING = 28;
+  const OFF = 13;
+  const seatsLong  = Math.max(2, Math.floor((w + 4) / SPACING));
+  const seatsShort = Math.max(0, Math.floor((h - 8) / SPACING) - 1);
+  const positions: { x: number; y: number }[] = [];
+
+  for (let i = 0; i < seatsLong; i++)
+    positions.push({ x: w * (i + 0.5) / seatsLong, y: -OFF });
+  for (let i = 0; i < seatsLong; i++)
+    positions.push({ x: w * (i + 0.5) / seatsLong, y: h + OFF });
+  for (let i = 0; i < seatsShort; i++)
+    positions.push({ x: -OFF, y: h * (i + 1) / (seatsShort + 1) });
+  for (let i = 0; i < seatsShort; i++)
+    positions.push({ x: w + OFF, y: h * (i + 1) / (seatsShort + 1) });
+
+  return positions.slice(0, Math.min(capacity, positions.length));
+}
+
 /* ── Single table node ─────────────────────────────────────────── */
 export type FloorMapTable = Table & {
   readyCount?: number;
@@ -114,40 +161,40 @@ interface TableNodeProps {
 }
 
 function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGlyphs = true }: TableNodeProps) {
-  const isSelected = selected === table.id;
-  const fill   = STATUS_FILL[table.status];
-  const stroke = STATUS_STROKE[table.status];
-  const isRound = table.shape === "round";
-  const half = TABLE_W / 2;
-  const seatCount = Math.min(table.capacity, 8);
-  const seatOrbit = half + 13;
-  const seatR = 4.5;
+  const isSelected  = selected === table.id;
+  const fill        = STATUS_FILL[table.status];
+  const stroke      = STATUS_STROKE[table.status];
+  const isRound     = table.shape === "round";
 
-  const isOccupied = table.status === "OCUPADA" || table.status === "CERRANDO";
-  const elapsed = useElapsedTime(table.activeSession?.createdAt);
+  const { w, h }    = getTableSize(table.capacity, table.shape);
+  const cx          = w / 2;
+  const cy          = h / 2;
+  const seatR       = Math.max(3.5, Math.min(5.5, 3.5 + (w - 64) * 0.016));
+  const seatPositions = getSeatPositions(table.capacity, w, h, isRound);
+  const cornerR     = Math.max(12, Math.min(20, w * 0.18));
+  const fontSize    = w >= 128 ? 22 : w >= 104 ? 20 : 18;
+
+  const isOccupied  = table.status === "OCUPADA" || table.status === "CERRANDO";
+  const elapsed     = useElapsedTime(table.activeSession?.createdAt);
   const needsAttention = (table.readyCount ?? 0) > 0;
+
+  const textY = isOccupied && elapsed ? cy - fontSize - 2 : cy - fontSize / 2 - 1;
 
   const ringRef = useRef<Konva.Circle>(null);
 
   useEffect(() => {
     const node = ringRef.current;
     if (!node || !needsAttention) return;
-    
     const anim = new Konva.Animation((frame) => {
       if (!frame) return;
-      const t = frame.time / 1000;
-      const phase = (t % 1.5) / 1.5; 
+      const phase = ((frame.time / 1000) % 1.5) / 1.5;
       node.scale({ x: 1 + phase * 0.35, y: 1 + phase * 0.35 });
       node.opacity(1 - phase);
     }, node.getLayer());
-    
     anim.start();
     return () => {
       anim.stop();
-      if (node) {
-        node.scale({ x: 1, y: 1 });
-        node.opacity(0);
-      }
+      if (node) { node.scale({ x: 1, y: 1 }); node.opacity(0); }
     };
   }, [needsAttention]);
 
@@ -163,191 +210,100 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGly
     y: table.posY,
     draggable: editMode,
     onClick: () => onSelect(isSelected ? null : table.id),
-    onTap: () => onSelect(isSelected ? null : table.id),
+    onTap:    () => onSelect(isSelected ? null : table.id),
     onDragEnd: handleDragEnd,
   };
 
-  // Diagonal gradient matching MesaCapacityPreview style (top-left tint → dark → darker)
   const bodyGrad = {
     fillLinearGradientStartPoint: { x: 0, y: 0 },
-    fillLinearGradientEndPoint:   { x: TABLE_W, y: TABLE_W },
+    fillLinearGradientEndPoint:   { x: w, y: h },
     fillLinearGradientColorStops: [0, fill + "2E", 0.48, "#0F0F0FEB", 1, "#00000088"] as (string | number)[],
   };
 
   return (
     <Group {...sharedGroupProps}>
-      {/* Selection outer glow ring */}
+      {/* Selection ring */}
       {isSelected && (
         isRound ? (
-          <Circle
-            x={half} y={half}
-            radius={half + 11}
-            stroke={fill}
-            strokeWidth={1.5}
-            opacity={0.4}
-            dash={[3, 5]}
-            listening={false}
-          />
+          <Circle x={cx} y={cy} radius={cx + 11}
+            stroke={fill} strokeWidth={1.5} opacity={0.4} dash={[3, 5]} listening={false} />
         ) : (
-          <Rect
-            x={-9} y={-9}
-            width={TABLE_W + 18}
-            height={TABLE_W + 18}
-            cornerRadius={26}
-            stroke={fill}
-            strokeWidth={1.5}
-            opacity={0.4}
-            dash={[3, 5]}
-            listening={false}
-          />
+          <Rect x={-9} y={-9} width={w + 18} height={h + 18} cornerRadius={cornerR + 8}
+            stroke={fill} strokeWidth={1.5} opacity={0.4} dash={[3, 5]} listening={false} />
         )
       )}
 
-      {/* Table body — gradient + glow shadow */}
+      {/* Table body */}
       {isRound ? (
         <>
-          <Circle
-            x={half} y={half}
-            radius={half}
-            {...bodyGrad}
-            stroke={stroke}
+          <Circle x={cx} y={cy} radius={cx}
+            {...bodyGrad} stroke={stroke}
             strokeWidth={isSelected ? 2 : 1.5}
-            shadowColor={fill}
-            shadowBlur={isSelected ? 24 : 10}
-            shadowOpacity={isSelected ? 0.5 : 0.22}
-          />
-          {/* Inner overlay circle (matches MesaCapacityPreview inner panel) */}
-          <Circle
-            x={half} y={half}
-            radius={half * 0.68}
-            fill="#00000040"
-            stroke="#FFFFFF0E"
-            strokeWidth={0.8}
-            listening={false}
-          />
+            shadowColor={fill} shadowBlur={isSelected ? 24 : 10} shadowOpacity={isSelected ? 0.5 : 0.22} />
+          <Circle x={cx} y={cy} radius={cx * 0.68}
+            fill="#00000040" stroke="#FFFFFF0E" strokeWidth={0.8} listening={false} />
         </>
       ) : (
         <>
-          <Rect
-            width={TABLE_W}
-            height={TABLE_W}
-            cornerRadius={18}
-            {...bodyGrad}
-            stroke={stroke}
+          <Rect width={w} height={h} cornerRadius={cornerR}
+            {...bodyGrad} stroke={stroke}
             strokeWidth={isSelected ? 2 : 1.5}
-            shadowColor={fill}
-            shadowBlur={isSelected ? 24 : 10}
-            shadowOpacity={isSelected ? 0.5 : 0.22}
-          />
-          {/* Inner overlay rect */}
+            shadowColor={fill} shadowBlur={isSelected ? 24 : 10} shadowOpacity={isSelected ? 0.5 : 0.22} />
           <Rect
-            x={TABLE_W * 0.12}
-            y={TABLE_W * 0.12}
-            width={TABLE_W * 0.76}
-            height={TABLE_W * 0.76}
-            cornerRadius={11}
-            fill="#00000040"
-            stroke="#FFFFFF0E"
-            strokeWidth={0.8}
-            listening={false}
-          />
+            x={w * 0.10} y={h * 0.12}
+            width={w * 0.80} height={h * 0.76}
+            cornerRadius={Math.max(7, cornerR - 5)}
+            fill="#00000040" stroke="#FFFFFF0E" strokeWidth={0.8} listening={false} />
         </>
       )}
 
-      {/* Seat dots — gradient fill + glow (matches MesaCapacityPreview seats) */}
-      {showSeatGlyphs &&
-        Array.from({ length: seatCount }).map((_, i) => {
-          const angle = (i / seatCount) * Math.PI * 2 - Math.PI / 2;
-          return (
-            <Circle
-              key={i}
-              x={half + Math.cos(angle) * seatOrbit}
-              y={half + Math.sin(angle) * seatOrbit}
-              radius={seatR}
-              fillLinearGradientStartPoint={{ x: -seatR, y: -seatR }}
-              fillLinearGradientEndPoint={{ x: seatR, y: seatR }}
-              fillLinearGradientColorStops={[0, fill + "E6", 1, fill + "66"] as (string | number)[]}
-              stroke={stroke + "80"}
-              strokeWidth={0.8}
-              shadowColor={fill}
-              shadowBlur={10}
-              shadowOpacity={0.55}
-              listening={false}
-            />
-          );
-        })}
+      {/* Seat dots */}
+      {showSeatGlyphs && seatPositions.map(({ x, y }, i) => (
+        <Circle key={i} x={x} y={y} radius={seatR}
+          fillLinearGradientStartPoint={{ x: -seatR, y: -seatR }}
+          fillLinearGradientEndPoint={{ x: seatR, y: seatR }}
+          fillLinearGradientColorStops={[0, fill + "E6", 1, fill + "66"] as (string | number)[]}
+          stroke={stroke + "80"} strokeWidth={0.8}
+          shadowColor={fill} shadowBlur={10} shadowOpacity={0.55}
+          listening={false} />
+      ))}
 
-      {/* Pulse ring for needsAttention */}
+      {/* Pulse ring */}
       {needsAttention && (
-        <Circle
-          ref={ringRef}
-          x={half}
-          y={half}
-          radius={half}
-          stroke="#4ADE80"
-          strokeWidth={4}
-          listening={false}
-        />
+        <Circle ref={ringRef} x={cx} y={cy} radius={Math.max(cx, cy)}
+          stroke="#4ADE80" strokeWidth={4} listening={false} />
       )}
 
       {/* Table number */}
-      <Text
-        x={0} y={isOccupied && elapsed ? half - 16 : half - 11}
-        width={TABLE_W}
-        align="center"
+      <Text x={0} y={textY} width={w} align="center"
         text={String(table.number)}
-        fontSize={isOccupied && elapsed ? 22 : 20}
-        fontStyle="bold"
-        fontFamily="serif"
-        fill={C.light}
-        shadowColor="#000000"
-        shadowBlur={6}
-        shadowOpacity={0.8}
-        listening={false}
-      />
+        fontSize={isOccupied && elapsed ? fontSize + 2 : fontSize}
+        fontStyle="bold" fontFamily="serif"
+        fill={C.light} shadowColor="#000000" shadowBlur={6} shadowOpacity={0.8}
+        listening={false} />
 
-      {/* Elaspsed time if occupied */}
+      {/* Elapsed time */}
       {isOccupied && elapsed && (
-        <Text
-          x={0} y={half + 8}
-          width={TABLE_W}
-          align="center"
-          text={elapsed}
-          fontSize={11}
-          fontStyle="bold"
-          fontFamily="monospace"
-          fill={C.dim}
-          shadowColor="#000000"
-          shadowBlur={4}
-          shadowOpacity={0.8}
-          listening={false}
-        />
+        <Text x={0} y={cy + 4} width={w} align="center"
+          text={elapsed} fontSize={11} fontStyle="bold" fontFamily="monospace"
+          fill={C.dim} shadowColor="#000000" shadowBlur={4} shadowOpacity={0.8}
+          listening={false} />
       )}
 
-      {/* Status glow dot */}
+      {/* Status dot */}
       {(!isOccupied || !elapsed) && (
-        <Circle
-          x={half}
-          y={half + 11}
-          radius={3}
-          fill={fill}
-          shadowColor={fill}
-          shadowBlur={8}
-          shadowOpacity={0.75}
-          listening={false}
-        />
+        <Circle x={cx} y={cy + Math.max(9, h * 0.13)} radius={3}
+          fill={fill} shadowColor={fill} shadowBlur={8} shadowOpacity={0.75}
+          listening={false} />
       )}
 
-      {/* Bell overlay for ready items */}
+      {/* Bell badge */}
       {needsAttention && (
-        <Group x={TABLE_W - 14} y={-4} listening={false}>
-           <Circle radius={14} fill="#4ADE80" shadowColor="#4ADE80" shadowBlur={10} shadowOpacity={0.6}/>
-           <Path
-             x={-9} y={-9}
-             data="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"
-             fill="#0F172A"
-             scale={{ x: 0.75, y: 0.75 }}
-           />
+        <Group x={w - 14} y={-4} listening={false}>
+          <Circle radius={14} fill="#4ADE80" shadowColor="#4ADE80" shadowBlur={10} shadowOpacity={0.6} />
+          <Path x={-9} y={-9}
+            data="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"
+            fill="#0F172A" scale={{ x: 0.75, y: 0.75 }} />
         </Group>
       )}
     </Group>
@@ -659,20 +615,28 @@ export default function FloorMap({
       if (t.posY > maxY) maxY = t.posY;
     }
 
+    // Compute the actual right/bottom edge of the farthest table
+    let farX = 0, farY = 0;
+    for (const t of tables) {
+      const { w: tw, h: th } = getTableSize(t.capacity, t.shape);
+      if (t.posX + tw > farX) farX = t.posX + tw;
+      if (t.posY + th > farY) farY = t.posY + th;
+    }
+
     if (!readOnly) {
-      const w = Math.max(GRID_W, maxX + TABLE_W + 80);
-      const h = Math.max(GRID_H, maxY + TABLE_W + 80);
+      const w = Math.max(GRID_W, farX + 80);
+      const h = Math.max(GRID_H, farY + 80);
       return { logicalWidth: w, logicalHeight: h, marginX: 0, marginY: 0, actualMaxX: w, actualMaxY: h };
     }
 
     const PADDING_X = 80;
     const PADDING_Y = 80;
-    
+
     const marginX = Math.max(0, minX - PADDING_X);
     const marginY = Math.max(0, minY - PADDING_Y);
 
-    const actualMaxX = maxX + TABLE_W + PADDING_X;
-    const actualMaxY = Math.max(maxY + TABLE_W + PADDING_Y + 40, marginY + 280); 
+    const actualMaxX = farX + PADDING_X;
+    const actualMaxY = Math.max(farY + PADDING_Y + 40, marginY + 280); 
     // enforced a min bound for extreme cases
 
     const contentW = actualMaxX - marginX;

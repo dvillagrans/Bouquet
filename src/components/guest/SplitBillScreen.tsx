@@ -5,6 +5,7 @@ import { useEffect, useState, useTransition } from "react";
 import { payGuestShare } from "@/actions/comensal";
 import { GuestMenuThemeToggle } from "@/components/guest/GuestMenuThemeToggle";
 import { useGuestMenuTheme } from "@/hooks/useGuestMenuTheme";
+import CheckoutSuccessScreen from "@/components/guest/CheckoutSuccessScreen";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -113,35 +114,6 @@ function ProgressLine({ paid, active, total }: { paid: number; active: number; t
   );
 }
 
-// ─── ConfirmedView ───────────────────────────────────────────────────────────
-
-function ConfirmedView({ tableCode, guestName, amount }: { tableCode: string; guestName: string; amount: number }) {
-  return (
-    <div className="guest-menu-vt-root relative flex min-h-screen flex-col items-center justify-center bg-[var(--guest-bg-page,#faf8f5)] px-6 text-center text-[var(--guest-text,#0f172a)]">
-      <p className="font-sans text-[1.1rem] font-semibold italic tracking-tight text-gold/60 guest-dark:text-gold/50" style={{ animation: "fade-in 0.5s ease-out 0.1s both" }}>
-        bouquet
-      </p>
-      <div className="mt-16" style={{ animation: "reveal-scale 0.55s cubic-bezier(0.22,1,0.36,1) 0.2s both" }}>
-        <p className="text-[0.54rem] font-bold uppercase tracking-[0.44em] text-slate-400 guest-dark:text-dim">Tu parte</p>
-        <p className="mt-3 font-mono font-semibold leading-none text-gold guest-dark:text-gold/70" style={{ fontSize: "clamp(4rem,12vw,6rem)" }}>
-          ${amount.toLocaleString("es-MX")}
-        </p>
-        <p className="mt-3 text-[0.65rem] font-medium uppercase tracking-[0.2em] text-slate-500 guest-dark:text-dim/80">
-          Pago registrado ✓
-        </p>
-      </div>
-      <div className="mx-auto mt-14 h-px w-10 bg-slate-300/80 guest-dark:bg-wire/40" style={{ animation: "fade-in 0.4s ease-out 0.5s both" }}/>
-      <div className="mt-14" style={{ animation: "fade-in 0.5s ease-out 0.55s both" }}>
-        <h1 className="font-sans text-[clamp(2rem,6vw,2.8rem)] font-medium leading-[0.95] tracking-[-0.02em] text-slate-900 guest-dark:text-light">Gracias, {guestName}.</h1>
-        <p className="mt-4 text-[0.78rem] font-medium leading-relaxed text-slate-600 guest-dark:text-dim">Fue un placer tenerte en la mesa.</p>
-        <Link href={`/mesa/${encodeURIComponent(tableCode)}/menu`} className="mt-10 inline-flex h-10 items-center justify-center rounded-full bg-text-primary px-8 text-[0.65rem] font-bold uppercase tracking-widest text-bg-solid transition-colors hover:bg-text-primary/90 guest-dark:bg-gold/45 guest-dark:text-[var(--color-charcoal)] guest-dark:hover:bg-gold/55">
-          Volver al menú
-        </Link>
-      </div>
-    </div>
-  );
-}
-
 // ─── SplitBillScreen ─────────────────────────────────────────────────────────
 
 export function SplitBillScreen({ tableCode, guestName, partySize, initialBill }: SplitBillScreenProps) {
@@ -158,9 +130,8 @@ export function SplitBillScreen({ tableCode, guestName, partySize, initialBill }
   const displayTableCode = tableCode.trim().toUpperCase();
 
   const [tipRate, setTipRate] = useState<TipRate>(0.15);
-  const [confirmed, setConfirmed] = useState(false);
-  const [paidAmount, setPaidAmount] = useState(0);
-  const [isPending, startTransition] = useTransition();
+  const [successData, setSuccessData] = useState<{ isLastPayer: boolean; guestName: string } | null>(null);
+  const [isPending, setIsPending] = useState(false);
 
   // Initialize shared item contributions: active remaining split by party size
   const [allocations, setAllocations] = useState<Record<string, number>>(() => {
@@ -181,31 +152,45 @@ export function SplitBillScreen({ tableCode, guestName, partySize, initialBill }
   const ownTip = Math.round(ownSubtotal * tipRate);
   const myShare = ownSubtotal + ownTip;
 
-  function handlePay() {
-    startTransition(async () => {
-      try {
-        await payGuestShare({
-          tableCode,
-          guestName,
-          amountPaid: myShare,
-          tipRate,
-          paymentMethod: "CARD",
-          allocations: Object.entries(allocations).map(([id, amount]) => ({
-            orderItemId: id,
-            amount
-          })).filter(a => a.amount > 0)
+  async function handlePay() {
+    setIsPending(true);
+    try {
+      const response = await payGuestShare({
+        tableCode,
+        guestName,
+        amountPaid: myShare,
+        tipRate,
+        paymentMethod: "CARD",
+        allocations: Object.entries(allocations).map(([id, amount]) => ({
+          orderItemId: id,
+          amount
+        })).filter(a => a.amount > 0)
+      });
+      
+      if (response.success) {
+        setSuccessData({
+          isLastPayer: response.isLastPayer,
+          guestName: response.guestName
         });
-        setPaidAmount(myShare);
-        setConfirmed(true);
-      } catch (err) {
-        console.error(err);
-        setPayError((err as Error).message ?? "No se pudo registrar el pago. Intenta de nuevo.");
       }
-    });
+    } catch (err) {
+      console.error(err);
+      setPayError((err as Error).message ?? "No se pudo registrar el pago. Intenta de nuevo.");
+    } finally {
+      setIsPending(false);
+    }
   }
 
-  if (confirmed) {
-    return <ConfirmedView tableCode={tableCode} guestName={guestName} amount={paidAmount} />;
+  if (successData) {
+    // Para simplificar, le pasamos "Bouquet" como branchName si no tenemos el dato a la mano,
+    // o podemos pasarlo desde la página.
+    return (
+      <CheckoutSuccessScreen 
+        guestName={successData.guestName}
+        isLastPayer={successData.isLastPayer}
+        branchName="Bouquet"
+      />
+    );
   }
 
   const canPay = myShare > 0;

@@ -4,11 +4,13 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "framer-motion";
 import { RefreshCw, LayoutGrid, Link as LinkIcon } from "lucide-react";
 import { getWaiterTablesSummary, regenerateTableQr, updateTableStatus } from "@/actions/waiter";
-import { getTables, joinTables, separateTable } from "@/actions/tables";
+import { getTables } from "@/actions/tables";
+import { createTableGroup, releaseTableGroup } from "@/actions/table-groups";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { WifiOff, Wifi } from "lucide-react";
 import WaiterTableDetail from "./WaiterTableDetail";
 import FloorMapClient from "@/components/dashboard/FloorMapClient";
+import WaiterMobileFloorMap from "./WaiterMobileFloorMap";
 import { createClient } from "@/lib/supabase/client";
 import type { FloorMapTable } from "@/components/dashboard/FloorMap";
 import type { TableStatus } from "@/generated/prisma";
@@ -144,8 +146,8 @@ export default function WaiterDashboard({
     }
   };
 
-  const handleToggleJoinTable = (tableId: string, isParent: boolean) => {
-    if (isParent) return;
+  const handleToggleJoinTable = (tableId: string, isInGroup: boolean) => {
+    if (isInGroup) return;
     setSelectedTablesToJoin((prev) =>
       prev.includes(tableId) ? prev.filter((id) => id !== tableId) : [...prev, tableId],
     );
@@ -154,28 +156,38 @@ export default function WaiterDashboard({
   const handleConfirmJoin = async () => {
     if (selectedTablesToJoin.length < 2) return;
     setIsJoining(true);
-    const [parentId, ...childIds] = selectedTablesToJoin;
     try {
-      await joinTables(parentId, childIds);
+      // Validate all selected tables are DISPONIBLE
+      const selectedData = tables.filter((t) => selectedTablesToJoin.includes(t.id));
+      const notAvailable = selectedData.filter((t) => t.status !== "DISPONIBLE");
+      if (notAvailable.length > 0) {
+        const nums = notAvailable.map((t) => t.number).join(", ");
+        setToast({ type: "error", message: `Mesa${notAvailable.length > 1 ? "s" : ""} ${nums} no disponible${notAvailable.length > 1 ? "s" : ""}` });
+        return;
+      }
+      await createTableGroup(selectedTablesToJoin, "waiter");
       await loadTables({ silent: true });
       setIsJoinMode(false);
       setSelectedTablesToJoin([]);
       setToast({ type: "success", message: "Mesas unidas correctamente" });
     } catch (err) {
       console.error(err);
-      setToast({ type: "error", message: "Error al unir mesas" });
+      const msg = err instanceof Error ? err.message : "Error al unir mesas";
+      setToast({ type: "error", message: msg });
     } finally {
       setIsJoining(false);
     }
   };
 
-  const handleSeparate = async (childId: string) => {
+  const handleReleaseGroup = async (groupId: string) => {
     try {
-      await separateTable(childId);
+      await releaseTableGroup(groupId);
       await loadTables({ silent: true });
+      setToast({ type: "success", message: "Grupo deshecho correctamente" });
     } catch (err) {
       console.error(err);
-      setToast({ type: "error", message: "Error al separar la mesa" });
+      const msg = err instanceof Error ? err.message : "Error al deshacer el grupo";
+      setToast({ type: "error", message: msg });
     }
   };
 
@@ -218,6 +230,46 @@ export default function WaiterDashboard({
     });
     return list;
   }, [filteredTables]);
+
+  const groupedSortedFilteredTables = useMemo(() => {
+    const grouped: (WaiterTableSummary & { label?: string })[] = [];
+    const groupMap = new Map<string, WaiterTableSummary[]>();
+
+    for (const t of sortedFilteredTables) {
+      if (t.groupId) {
+        if (!groupMap.has(t.groupId)) groupMap.set(t.groupId, []);
+        groupMap.get(t.groupId)!.push(t);
+      } else {
+        grouped.push({ ...t });
+      }
+    }
+
+    for (const [gid, items] of groupMap.entries()) {
+      let readyCount = 0, pendingCount = 0;
+      const labels: number[] = [];
+
+      for (const it of items) {
+        readyCount += it.readyCount ?? 0;
+        pendingCount += it.pendingCount ?? 0;
+        labels.push(it.number);
+      }
+      labels.sort((a,b) => a - b);
+      const label = labels.join("·");
+      
+      const firstTable = items[0];
+      grouped.push({
+        ...firstTable,
+        readyCount,
+        pendingCount,
+        label,
+      });
+    }
+
+    // sort again to keep numerical order
+    grouped.sort((a, b) => a.number - b.number);
+    
+    return grouped;
+  }, [sortedFilteredTables]);
 
   const filteredMapTables = useMemo(() => {
     const tableMap = new Map(filteredTables.map((t) => [t.id, t]));
@@ -438,16 +490,6 @@ export default function WaiterDashboard({
                   </button>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => void handleManualRefresh()}
-                  disabled={refreshing}
-                  className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border-main px-4 text-xs font-medium text-text-muted transition hover:border-border-bright hover:text-light disabled:opacity-50 active:scale-[0.98]"
-                  title="Actualizar datos"
-                >
-                  <RefreshCw className={`h-4 w-4 shrink-0 ${refreshing ? "animate-spin" : ""}`} strokeWidth={1.7} aria-hidden />
-                  Actualizar
-                </button>
               </div>
             </div>
 
@@ -537,21 +579,35 @@ export default function WaiterDashboard({
           )}
 
           {view === "mapa" && (
-            <section className="relative overflow-hidden rounded-[1.25rem] border border-border-main bg-bg-card">
-              <div className="relative">
-                {loading && mapTables.length === 0 ? (
+            <>
+              {loading && mapTables.length === 0 ? (
+                <section className="relative overflow-hidden rounded-[1.25rem] border border-border-main bg-bg-card">
                   <div className="flex flex-col items-center justify-center py-16 text-text-muted">
                     <RefreshCw className="mb-3 h-7 w-7 animate-spin" strokeWidth={1.6} aria-hidden />
                     <p className="text-sm">Cargando mapa…</p>
                   </div>
-                ) : (
-                  <>
-                    <FloorMapClient
+                </section>
+              ) : (
+                <>
+                  {/* Mobile: HTML/CSS spatial map — touch-friendly */}
+                  <section className="md:hidden">
+                    <WaiterMobileFloorMap
                       tables={filteredMapTables}
-                      readOnly
-                      showSeatGlyphs={showMapSeatGlyphs}
-                      showOperationsBar={false}
+                      selectionMode={isJoinMode}
+                      selectedIds={selectedTablesToJoin}
+                      disabledIds={
+                        isJoinMode
+                          ? tables.filter((t) => !!t.groupId).map((t) => t.id)
+                          : []
+                      }
                       onTableClick={(id) => {
+                        if (isJoinMode) {
+                          const t = tables.find((x) => x.id === id);
+                          if (t && !t.groupId) {
+                            handleToggleJoinTable(id, false);
+                          }
+                          return;
+                        }
                         const t = tables.find((x) => x.id === id);
                         if (!t) return;
                         if (t.status === "SUCIA") {
@@ -561,10 +617,31 @@ export default function WaiterDashboard({
                         void openTableDetail(t);
                       }}
                     />
-                  </>
-                )}
-              </div>
-            </section>
+                  </section>
+
+                  {/* Desktop: Konva canvas map */}
+                  <section className="hidden md:block relative overflow-hidden rounded-[1.25rem] border border-border-main bg-bg-card">
+                    <div className="relative">
+                      <FloorMapClient
+                        tables={filteredMapTables}
+                        readOnly
+                        showSeatGlyphs={showMapSeatGlyphs}
+                        showOperationsBar={false}
+                        onTableClick={(id) => {
+                          const t = tables.find((x) => x.id === id);
+                          if (!t) return;
+                          if (t.status === "SUCIA") {
+                            void handleCleanTable(t.id);
+                            return;
+                          }
+                          void openTableDetail(t);
+                        }}
+                      />
+                    </div>
+                  </section>
+                </>
+              )}
+            </>
           )}
 
           {view === "lista" && (
@@ -600,10 +677,9 @@ export default function WaiterDashboard({
                       },
                     }}
                   >
-                    {sortedFilteredTables.map((table) => {
+                    {groupedSortedFilteredTables.map((table) => {
                       const isSelectedToJoin = selectedTablesToJoin.includes(table.id);
-                      const isChild = !!table.parentTableId;
-                      const hasChildren = tables.some((t) => t.parentTableId === table.id);
+                      const isInGroup = !!table.groupId;
 
                       return (
                         <motion.div
@@ -624,22 +700,22 @@ export default function WaiterDashboard({
                             isJoinMode={isJoinMode}
                             isSelectedToJoin={isSelectedToJoin}
                             joinOrderIndex={selectedTablesToJoin.indexOf(table.id)}
-                            isChild={isChild}
-                            hasChildren={
-                              hasChildren && !(isJoinMode && isSelectedToJoin)
-                            }
+                            isInGroup={isInGroup}
                             qrError={qrErrorByTable[table.id]}
                             confirmQrId={confirmQr?.id ?? null}
+                            label={table.label}
                             onCardClick={() => {
                               if (isJoinMode) {
-                                handleToggleJoinTable(table.id, !!table.parentTableId);
+                                handleToggleJoinTable(table.id, isInGroup);
                               } else {
                                 void openTableDetail(table);
                               }
                             }}
                             onClean={() => void handleCleanTable(table.id)}
                             onRegenerateQr={() => void handleRegenerateQr(table.id, table.number)}
-                            onSeparate={() => void handleSeparate(table.id)}
+                            onSeparate={() => {
+                              if (table.groupId) void handleReleaseGroup(table.groupId);
+                            }}
                           />
                         </motion.div>
                       );

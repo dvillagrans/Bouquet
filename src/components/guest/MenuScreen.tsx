@@ -11,6 +11,7 @@ import {
   CategoryHeading,
   CategoryTabs,
   ContextIsland,
+  DishDetailSheet,
   GuestAvatar,
   GuestCartPanel,
   GuestMasthead,
@@ -151,6 +152,7 @@ export function MenuScreen({
   const [toast, setToast] = useState<{ message: string; type: "success" | "error"; onClick?: () => void } | null>(null);
   /** Portal de toasts solo tras montar (evita mismatch SSR/cliente vs `document.body`). */
   const [toastPortalReady, setToastPortalReady] = useState(false);
+  const [detailItem, setDetailItem] = useState<MenuItem | null>(null);
 
   useEffect(() => {
     setToastPortalReady(true);
@@ -458,11 +460,13 @@ export function MenuScreen({
 
         await refreshOrders();
 
-        // En lugar de ir a pagar, vaciamos carrito, cerramos cajon y avisamos que se mando a la cocina
+        // Vaciamos carrito y mostramos celebración; el drawer cierra solo tras la animación
         setCart({});
-        setDrawerOpen(false);
         setOrderSuccess(true);
-        setTimeout(() => setOrderSuccess(false), 3000);
+        setTimeout(() => {
+          setOrderSuccess(false);
+          setDrawerOpen(false);
+        }, 2600);
       } catch (err) {
         console.error("No se pudo enviar la orden", err);
         setOrderError("No se pudo enviar la orden. Intenta de nuevo.");
@@ -562,6 +566,25 @@ export function MenuScreen({
 
   const cartCount = cartLines.reduce((s, l) => s + l.qty, 0);
   const cartTotal = cartLines.reduce((s, l) => s + l.unitPrice * l.qty, 0);
+
+  // Derived props for the detail sheet — recomputed when detailItem, variantChoice or cart changes
+  const detailSheetState = useMemo(() => {
+    if (!detailItem) return null;
+    const hasVariants = detailItem.variants && detailItem.variants.length > 0;
+    const selectedVariantName = hasVariants
+      ? (variantChoice[detailItem.id] ?? detailItem.variants[0]!.name)
+      : null;
+    const lineKey = encodeLineKey(detailItem.id, selectedVariantName);
+    const qty = cart[lineKey] ?? 0;
+    const unitPrice = hasVariants
+      ? detailItem.variants.find((v) => v.name === selectedVariantName)?.price ?? detailItem.price
+      : detailItem.price;
+    const qtyLabel =
+      hasVariants && selectedVariantName
+        ? `${detailItem.name} (${selectedVariantName})`
+        : detailItem.name;
+    return { selectedVariantName, lineKey, qty, unitPrice, qtyLabel };
+  }, [detailItem, variantChoice, cart]);
 
   const visibleItems = useMemo(
     () => (activeCategory === "todos" ? initialItems : initialItems.filter(i => i.categoryId === activeCategory)),
@@ -747,6 +770,7 @@ export function MenuScreen({
                           onInc={() => setQty(lineKey, qty + 1)}
                           onDec={() => setQty(lineKey, qty - 1)}
                           disabledQty={billRequested}
+                          onViewDetail={() => setDetailItem(item)}
                         />
                       );
                     })}
@@ -1064,6 +1088,33 @@ export function MenuScreen({
         disabled={qrInviteFullscreenOpen || tableCompanionsOpen || drawerOpen}
         onAddToCart={handleAssistantAddToCart}
         liftFabForBottomBar={cartCount > 0 && !drawerOpen}
+      />
+
+      {/* ── Dish detail sheet ────────────────────────────────────── */}
+      <DishDetailSheet
+        open={detailItem !== null}
+        item={detailItem}
+        categoryInitial={
+          detailItem
+            ? (initialCategories.find((c) => c.id === detailItem.categoryId)?.name ?? detailItem.name)
+            : ""
+        }
+        selectedVariantName={detailSheetState?.selectedVariantName ?? null}
+        onVariantChange={(name) =>
+          detailItem && setVariantChoice((prev) => ({ ...prev, [detailItem.id]: name }))
+        }
+        unitPrice={detailSheetState?.unitPrice ?? 0}
+        qty={detailSheetState?.qty ?? 0}
+        qtyLabel={detailSheetState?.qtyLabel ?? ""}
+        onAdd={() => detailSheetState && setQty(detailSheetState.lineKey, 1)}
+        onInc={() =>
+          detailSheetState && setQty(detailSheetState.lineKey, detailSheetState.qty + 1)
+        }
+        onDec={() =>
+          detailSheetState && setQty(detailSheetState.lineKey, detailSheetState.qty - 1)
+        }
+        onClose={() => setDetailItem(null)}
+        disabledQty={billRequested}
       />
     </div>
   );

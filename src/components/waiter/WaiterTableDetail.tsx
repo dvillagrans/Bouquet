@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
-import { Plus, Lock, Copy, ExternalLink, CheckCheck, Loader2, Share2, X, CreditCard } from "lucide-react";
+import { Plus, Lock, Copy, ExternalLink, CheckCheck, Loader2, Share2, X, CreditCard, AlertTriangle } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { advanceOrderStatus } from "@/actions/orders";
 import { getTableDetail, closeTable } from "@/actions/waiter";
@@ -58,6 +58,8 @@ export default function WaiterTableDetail({
   const [origin, setOrigin] = useState("");
   const [deliveringOrderId, setDeliveringOrderId] = useState<string | null>(null);
   const [copyToast, setCopyToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+  const [isClosingTable, setIsClosingTable] = useState(false);
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const loadTableDetail = useCallback(async (opts?: { silent?: boolean }) => {
@@ -122,15 +124,19 @@ export default function WaiterTableDetail({
     onClose();
   };
 
-  const handleCloseTable = async () => {
-    if (confirm("¿Cerrar esta mesa? Se marcará como SUCIA.")) {
-      try {
-        await closeTable(tableId);
-        onRefresh();
-        onClose();
-      } catch (error) {
-        alert("Error al cerrar la mesa: " + (error as Error).message);
-      }
+  const handleCloseTable = () => setShowCloseConfirm(true);
+
+  const handleConfirmClose = async () => {
+    setIsClosingTable(true);
+    try {
+      await closeTable(tableId);
+      onRefresh();
+      onClose();
+    } catch (error) {
+      setCopyToast({ type: "error", message: (error as Error).message || "Error al cerrar la mesa" });
+      setShowCloseConfirm(false);
+    } finally {
+      setIsClosingTable(false);
     }
   };
 
@@ -335,7 +341,7 @@ export default function WaiterTableDetail({
             : "h-[100dvh] rounded-none md:h-auto md:max-h-[90vh] md:max-w-2xl md:rounded-[2.25rem] md:border",
         )}
       >
-        <div className="flex h-full flex-col rounded-none border-0 bg-bg-card md:rounded-[calc(1.75rem-0.125rem)] md:border md:border-border-main/35 md:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
+        <div className="relative flex h-full flex-col rounded-none border-0 bg-bg-card md:rounded-[calc(1.75rem-0.125rem)] md:border md:border-border-main/35 md:shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
           <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border-main/70 bg-bg-solid/95 px-4 py-3 backdrop-blur-md">
             <div className="min-w-0">
               <h2 className="flex items-center gap-3 truncate text-xl font-semibold tracking-tight text-light">
@@ -579,6 +585,86 @@ export default function WaiterTableDetail({
               </div>
             </div>
           ) : null}
+
+          {/* ── Close-table confirmation overlay ─────────────────── */}
+          <AnimatePresence>
+            {showCloseConfirm && (
+              <>
+                {/* scrim */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.18 }}
+                  className="absolute inset-0 z-20 rounded-[inherit] bg-bg-solid/80 backdrop-blur-sm"
+                  onClick={() => !isClosingTable && setShowCloseConfirm(false)}
+                />
+
+                {/* card */}
+                <motion.div
+                  role="alertdialog"
+                  aria-modal="true"
+                  aria-labelledby="close-confirm-title"
+                  initial={{ opacity: 0, scale: 0.90, y: 16 }}
+                  animate={{ opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 360, damping: 28 } }}
+                  exit={{ opacity: 0, scale: 0.93, y: 10, transition: { duration: 0.16 } }}
+                  className="absolute inset-x-4 top-1/2 z-30 -translate-y-1/2 overflow-hidden rounded-[1.75rem] border border-border-main bg-bg-card shadow-[0_32px_80px_-12px_rgba(0,0,0,0.85),inset_0_1px_0_rgba(255,255,255,0.06)]"
+                >
+                  {/* top accent stripe */}
+                  <div className="h-px w-full bg-gradient-to-r from-transparent via-dash-red/60 to-transparent" />
+
+                  <div className="px-6 pb-6 pt-7">
+                    {/* icon */}
+                    <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl border border-dash-red/25 bg-dash-red/10 shadow-[0_0_20px_rgba(239,68,68,0.15)]">
+                      <AlertTriangle className="size-6 text-dash-red" strokeWidth={1.8} />
+                    </div>
+
+                    {/* title */}
+                    <h3
+                      id="close-confirm-title"
+                      className="text-center text-[1.15rem] font-semibold leading-snug tracking-tight text-light"
+                    >
+                      ¿Cerrar la mesa {table.number}?
+                    </h3>
+
+                    {/* body */}
+                    <p className="mt-2 text-center font-mono text-[11px] leading-relaxed text-text-muted">
+                      La mesa se marcará como{" "}
+                      <span className="font-bold uppercase tracking-widest text-dash-red/80">Sucia</span>
+                      {" "}y la sesión se cerrará.<br />
+                      Las órdenes activas no cobradas se perderán.
+                    </p>
+
+                    {/* buttons */}
+                    <div className="mt-6 flex flex-col gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => void handleConfirmClose()}
+                        disabled={isClosingTable}
+                        className="inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-full border border-dash-red/40 bg-dash-red/15 font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-dash-red shadow-[0_0_12px_rgba(239,68,68,0.12)] transition hover:border-dash-red/70 hover:bg-dash-red/25 disabled:opacity-50 active:scale-[0.98]"
+                      >
+                        {isClosingTable ? (
+                          <Loader2 className="size-4 animate-spin" aria-hidden />
+                        ) : (
+                          <Lock className="size-4" strokeWidth={2} aria-hidden />
+                        )}
+                        {isClosingTable ? "Cerrando…" : "Sí, cerrar mesa"}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setShowCloseConfirm(false)}
+                        disabled={isClosingTable}
+                        className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-border-main font-mono text-[11px] font-bold uppercase tracking-[0.14em] text-text-muted transition hover:border-border-bright hover:text-light disabled:opacity-40 active:scale-[0.98]"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
     </div>

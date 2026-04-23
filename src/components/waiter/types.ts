@@ -5,7 +5,7 @@ export interface WaiterTableSummary {
   number: number;
   capacity: number;
   status: TableStatus;
-  parentTableId: string | null;
+  groupId: string | null;
   qrCode: string;
   activeSession: { guestName: string; pax: number; createdAt: Date } | null;
   orderCount: number;

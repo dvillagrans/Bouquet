@@ -141,6 +141,8 @@ function SortableTicket({
   stationScope,
   isNew = false,
   onAdvance,
+  onUndo,
+  canUndo,
 }: {
   order: Order;
   now: Date;
@@ -148,6 +150,8 @@ function SortableTicket({
   stationScope?: "cocina" | "barra";
   isNew?: boolean;
   onAdvance: (orderId: string, currentStatus: OrderStatus) => void;
+  onUndo: (orderId: string) => void;
+  canUndo: boolean;
 }) {
   const [isPending, setIsPending] = useState(false);
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -262,17 +266,33 @@ function SortableTicket({
           <button
             disabled={isPending}
             onClick={async () => { setIsPending(true); await onAdvance(order.id, normalStatus); setIsPending(false); }}
-            className={`w-full flex items-center justify-center gap-2 py-2 border text-[11px] font-bold uppercase tracking-[0.15em] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${advance.color}`}
+            className={`w-full flex min-h-12 items-center justify-center gap-2.5 px-4 py-3 border text-[12px] font-bold uppercase tracking-[0.16em] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${advance.color}`}
           >
             {isPending ? (
               <span className="opacity-60">Actualizando...</span>
             ) : (
               <>
-                <AdvIcon className="w-3.5 h-3.5" />
+                <AdvIcon className="w-4 h-4" />
                 {advance.label}
               </>
             )}
           </button>
+
+          {canUndo && (
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={async () => {
+                setIsPending(true);
+                await onUndo(order.id);
+                setIsPending(false);
+              }}
+              className="mt-2 w-full flex min-h-11 items-center justify-center gap-2 border border-dash-red/30 text-dash-red hover:bg-dash-red/10 hover:border-dash-red/60 text-[11px] font-bold uppercase tracking-[0.14em] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Deshacer
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -289,6 +309,8 @@ function KDSColumn({
   stationScope,
   newOrderIds,
   onAdvance,
+  onUndo,
+  canUndoOrder,
 }: {
   id: ColumnId;
   title: string;
@@ -297,6 +319,8 @@ function KDSColumn({
   stationScope?: "cocina" | "barra";
   newOrderIds: Set<string>;
   onAdvance: (orderId: string, currentStatus: OrderStatus) => void;
+  onUndo: (orderId: string) => void;
+  canUndoOrder: (orderId: string) => boolean;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id });
   const Icon = STATUS_ICONS[id];
@@ -357,6 +381,8 @@ function KDSColumn({
                   stationScope={stationScope}
                   isNew={newOrderIds.has(o.id)}
                   onAdvance={onAdvance}
+                  onUndo={onUndo}
+                  canUndo={canUndoOrder(o.id)}
                 />
               </motion.div>
             ))
@@ -394,6 +420,8 @@ export default function KDSBoard({
   const [mobileColumn, setMobileColumn] = useState<ColumnId>("pending");
   const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [undoStateByOrder, setUndoStateByOrder] = useState<Record<string, { from: OrderStatus; to: OrderStatus }>>({});
+  const undoTimersRef = useRef<Record<string, number>>({});
   const knownIdsRef = useRef(new Set(initialOrders.map(o => o.id)));
 
   const boardScopedOrders = useMemo(() => {
@@ -436,6 +464,52 @@ export default function KDSBoard({
     setTimeout(() => setToastMsg(null), 3500);
   }
 
+  function registerUndo(orderId: string, from: OrderStatus, to: OrderStatus) {
+    const prevTimer = undoTimersRef.current[orderId];
+    if (prevTimer) {
+      window.clearTimeout(prevTimer);
+    }
+
+    setUndoStateByOrder((prev) => ({ ...prev, [orderId]: { from, to } }));
+    undoTimersRef.current[orderId] = window.setTimeout(() => {
+      setUndoStateByOrder((prev) => {
+        const next = { ...prev };
+        delete next[orderId];
+        return next;
+      });
+      delete undoTimersRef.current[orderId];
+    }, 8000);
+  }
+
+  function clearUndo(orderId: string) {
+    const prevTimer = undoTimersRef.current[orderId];
+    if (prevTimer) {
+      window.clearTimeout(prevTimer);
+      delete undoTimersRef.current[orderId];
+    }
+    setUndoStateByOrder((prev) => {
+      const next = { ...prev };
+      delete next[orderId];
+      return next;
+    });
+  }
+
+  async function handleUndo(orderId: string) {
+    const undoState = undoStateByOrder[orderId];
+    if (!undoState) return;
+
+    const snapshot = [...orders];
+    setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: undoState.from } : o)));
+    clearUndo(orderId);
+
+    try {
+      await undoOrderStatus(orderId, undoState.to);
+    } catch {
+      setOrders(snapshot);
+      showToast("No se pudo deshacer el cambio de estado.");
+    }
+  }
+
   async function handleAdvance(orderId: string, currentStatus: OrderStatus) {
     if (defaultStation === "cocina" && currentStatus === "ready") return;
 
@@ -457,6 +531,7 @@ export default function KDSBoard({
 
     try {
       await advanceOrderStatus(orderId, currentStatus);
+      registerUndo(orderId, currentStatus, nextStatus);
     } catch {
       setOrders(snapshot);
       showToast("Error al actualizar el ticket. Intenta de nuevo.");
@@ -485,11 +560,19 @@ export default function KDSBoard({
 
     try {
       await moveOrderToStatus(orderId, newStatus);
+      registerUndo(orderId, normalizeBoardStatus(order.status), newStatus);
     } catch {
       setOrders(snapshot);
       showToast("Error al mover el ticket. Intenta de nuevo.");
     }
   }
+
+  useEffect(() => {
+    return () => {
+      Object.values(undoTimersRef.current).forEach((timer) => window.clearTimeout(timer));
+      undoTimersRef.current = {};
+    };
+  }, []);
 
   const boardOrders = boardScopedOrders.filter((o) => {
     const s = String(o.status).toLowerCase();
@@ -631,13 +714,13 @@ export default function KDSBoard({
 
             <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 h-full min-h-0">
               <div className={mobileColumn === "pending" ? "block md:block min-h-0" : "hidden md:block min-h-0"}>
-                <KDSColumn id="pending" title="Entrantes" orders={pending} now={now} stationScope={defaultStation} newOrderIds={newOrderIds} onAdvance={handleAdvance} />
+                <KDSColumn id="pending" title="Entrantes" orders={pending} now={now} stationScope={defaultStation} newOrderIds={newOrderIds} onAdvance={handleAdvance} onUndo={handleUndo} canUndoOrder={(orderId) => Boolean(undoStateByOrder[orderId])} />
               </div>
               <div className={mobileColumn === "preparing" ? "block md:block min-h-0" : "hidden md:block min-h-0"}>
-                <KDSColumn id="preparing" title="En Preparación" orders={prep} now={now} stationScope={defaultStation} newOrderIds={newOrderIds} onAdvance={handleAdvance} />
+                <KDSColumn id="preparing" title="En Preparación" orders={prep} now={now} stationScope={defaultStation} newOrderIds={newOrderIds} onAdvance={handleAdvance} onUndo={handleUndo} canUndoOrder={(orderId) => Boolean(undoStateByOrder[orderId])} />
               </div>
               <div className={mobileColumn === "ready" ? "block md:block min-h-0" : "hidden md:block min-h-0"}>
-                <KDSColumn id="ready" title="Listos para salir" orders={ready} now={now} stationScope={defaultStation} newOrderIds={newOrderIds} onAdvance={handleAdvance} />
+                <KDSColumn id="ready" title="Listos para salir" orders={ready} now={now} stationScope={defaultStation} newOrderIds={newOrderIds} onAdvance={handleAdvance} onUndo={handleUndo} canUndoOrder={(orderId) => Boolean(undoStateByOrder[orderId])} />
               </div>
             </div>
           </div>
@@ -650,6 +733,8 @@ export default function KDSBoard({
                 isOverlay
                 stationScope={defaultStation}
                 onAdvance={handleAdvance}
+                onUndo={handleUndo}
+                canUndo={false}
               />
             ) : null}
           </DragOverlay>

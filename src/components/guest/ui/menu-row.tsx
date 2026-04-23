@@ -29,6 +29,7 @@ type MenuRowProps = {
   onInc: () => void;
   onDec: () => void;
   disabledQty?: boolean;
+  onViewDetail?: () => void;
 };
 
 // Deterministic dark gradient per category letter — warm/earthy tones
@@ -41,8 +42,10 @@ const FALLBACK_GRADIENTS = [
 ] as const;
 
 function getFallbackGradient(initial: string) {
-  const idx = initial.charCodeAt(0) % FALLBACK_GRADIENTS.length;
-  return FALLBACK_GRADIENTS[idx];
+  const firstChar = initial.trim().charAt(0);
+  const code = firstChar ? firstChar.charCodeAt(0) : 0;
+  const idx = Number.isFinite(code) ? code % FALLBACK_GRADIENTS.length : 0;
+  return FALLBACK_GRADIENTS[idx] ?? FALLBACK_GRADIENTS[0];
 }
 
 export const MenuRow = memo(function MenuRow({
@@ -57,6 +60,7 @@ export const MenuRow = memo(function MenuRow({
   onInc,
   onDec,
   disabledQty,
+  onViewDetail,
 }: MenuRowProps) {
   const hasVariants = item.variants && item.variants.length > 0;
   const reduceMotion = useReducedMotion();
@@ -81,7 +85,21 @@ export const MenuRow = memo(function MenuRow({
       )}
     >
       {/* ── Image zone ─────────────────────────────────────────── */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden">
+      <div
+        className={cn(
+          "relative aspect-[4/3] w-full overflow-hidden",
+          onViewDetail && !item.isSoldOut && "cursor-pointer"
+        )}
+        onClick={onViewDetail && !item.isSoldOut ? onViewDetail : undefined}
+        role={onViewDetail && !item.isSoldOut ? "button" : undefined}
+        tabIndex={onViewDetail && !item.isSoldOut ? 0 : undefined}
+        aria-label={onViewDetail && !item.isSoldOut ? `Ver detalles de ${item.name}` : undefined}
+        onKeyDown={
+          onViewDetail && !item.isSoldOut
+            ? (e) => { if (e.key === "Enter" || e.key === " ") onViewDetail(); }
+            : undefined
+        }
+      >
         {item.imageUrl ? (
           <>
             <img
@@ -92,6 +110,14 @@ export const MenuRow = memo(function MenuRow({
             />
             {/* Depth gradient */}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+            {/* "Tap for details" hint — fades in on hover */}
+            {onViewDetail && !item.isSoldOut && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center pb-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                <span className="rounded-full border border-white/20 bg-black/50 px-3 py-1 text-[9px] font-bold uppercase tracking-[0.2em] text-white/80 backdrop-blur-sm">
+                  Ver detalles
+                </span>
+              </div>
+            )}
           </>
         ) : (
           /* Rich typographic fallback — asymmetric, dark, editorial */
@@ -152,7 +178,7 @@ export const MenuRow = memo(function MenuRow({
 
         {/* Price badge — glass chip bottom-right over image */}
         <div className="pointer-events-none absolute bottom-2.5 right-2.5">
-          <span className="flex items-center rounded-full border border-[color-mix(in_srgb,var(--guest-gold)_22%,transparent)] bg-[var(--guest-bg-surface)]/88 px-3 py-[5px] font-mono text-[11px] font-bold tabular-nums text-[var(--guest-gold)] backdrop-blur-md shadow-sm">
+          <span className="font-mono text-[13px] font-bold tabular-nums text-[var(--guest-gold)] drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)]">
             ${unitPrice.toLocaleString("es-MX")}
           </span>
         </div>
@@ -160,6 +186,14 @@ export const MenuRow = memo(function MenuRow({
 
       {/* ── Content ────────────────────────────────────────────── */}
       <div className="flex flex-1 flex-col p-3">
+        {/* Name + description — tappable zone for detail sheet */}
+        <div
+          className={cn(onViewDetail && !item.isSoldOut && "cursor-pointer")}
+          onClick={onViewDetail && !item.isSoldOut ? onViewDetail : undefined}
+          role={onViewDetail && !item.isSoldOut ? "button" : undefined}
+          tabIndex={-1}
+          aria-hidden={!!onViewDetail}
+        >
         <h3 className="line-clamp-2 text-sm font-bold leading-snug tracking-tight text-[var(--guest-text)]">
           {item.name}
         </h3>
@@ -169,6 +203,7 @@ export const MenuRow = memo(function MenuRow({
             {item.description}
           </p>
         )}
+        </div>
 
         {hasVariants && (
           <div

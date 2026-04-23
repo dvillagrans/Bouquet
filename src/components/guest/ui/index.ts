@@ -10,3 +10,4 @@ export { OrderSheet } from "@/components/guest/ui/order-sheet";
 export { GuestToast } from "@/components/guest/ui/guest-toast";
 export { GuestCartPanel, type GuestCartLine, type GuestCartPanelProps } from "@/components/guest/ui/guest-cart-panel";
 export { NetworkBanner } from "@/components/guest/ui/network-banner";
+export { DishDetailSheet, type DishDetailSheetProps } from "@/components/guest/ui/dish-detail-sheet";

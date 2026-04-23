@@ -11,6 +11,7 @@ import { revalidatePath } from "next/cache";
 import { getDefaultRestaurant } from "./restaurant";
 import { generateSecureTableCode } from "@/lib/table-qr-code";
 import { signTableJoinProof } from "@/lib/table-join-proof";
+import { removeFromGroup } from "./table-groups";
 
 function startOfToday(): Date {
   const d = new Date();
@@ -95,6 +96,18 @@ export async function regenerateTableQr(tableId: string) {
  * Close all active sessions for a table and mark it as SUCIA
  */
 export async function closeTable(tableId: string) {
+  // Check if table belongs to a group — use removeFromGroup for partial separation
+  const tableCheck = await prisma.table.findUnique({
+    where: { id: tableId },
+    select: { groupId: true },
+  });
+
+  if (tableCheck?.groupId) {
+    // removeFromGroup handles: session closing, SUCIA status, and auto-close if ≤1 table left
+    await removeFromGroup(tableId);
+    return;
+  }
+
   // 1. Find all active sessions for this table
   const sessions = await prisma.session.findMany({
     where: { tableId, isActive: true }
@@ -179,7 +192,7 @@ export async function getWaiterTablesSummary() {
       number: table.number,
       capacity: table.capacity,
       status: table.status,
-      parentTableId: table.parentTableId,
+      groupId: table.groupId,
       qrCode: table.qrCode,
       activeSession,
       orderCount: table.orders.length,

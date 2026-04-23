@@ -6,6 +6,8 @@ import { getGuestOrders, getGuestTableState } from "@/actions/comensal";
 import { consumeTableJoinProofQuery } from "@/lib/consume-table-join-proof";
 import { resolveGuestTableAccess } from "@/lib/guest-table-access";
 import { prisma } from "@/lib/prisma";
+import CheckoutSuccessScreen from "@/components/guest/CheckoutSuccessScreen";
+import { cookies } from "next/headers";
 
 type MenuPageProps = {
   params: Promise<{ codigo: string }>;
@@ -32,6 +34,25 @@ export default async function MesaMenuPage({ params, searchParams }: MenuPagePro
   if (access.status === "not_found") notFound();
   if (access.status === "need_login") {
     redirect(`/mesa/${encodeURIComponent(access.canonicalQr)}/`);
+  }
+  if (access.status === "session_ended") {
+    const store = await cookies();
+    const checkoutCookie = store.get(`bq_checkout_${access.canonicalQr}`)?.value;
+    if (checkoutCookie) {
+      try {
+        const data = JSON.parse(checkoutCookie);
+        return <CheckoutSuccessScreen guestName={data.guestName} isLastPayer={data.isLastPayer} branchName="Bouquet" />;
+      } catch (e) {}
+    }
+
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#0a0a08] px-6 text-center text-white">
+        <h1 className="font-serif text-3xl font-medium tracking-tight">Esta sesión ha terminado</h1>
+        <p className="mt-4 max-w-sm font-sans text-sm leading-relaxed text-gray-400">
+          Ya has completado tu pago o tu sesión fue cerrada. Esperamos verte de nuevo pronto.
+        </p>
+      </div>
+    );
   }
 
   if (

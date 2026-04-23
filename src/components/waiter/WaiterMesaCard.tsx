@@ -67,28 +67,28 @@ export function WaiterMesaCard({
   isJoinMode,
   isSelectedToJoin,
   joinOrderIndex,
-  isChild,
-  hasChildren,
+  isInGroup,
   qrError,
   onCardClick,
   onClean,
   onRegenerateQr,
   onSeparate,
   confirmQrId,
+  label,
 }: {
   table: WaiterTableSummary;
   allowJoinTables: boolean;
   isJoinMode: boolean;
   isSelectedToJoin: boolean;
   joinOrderIndex: number;
-  isChild: boolean;
-  hasChildren: boolean;
+  isInGroup: boolean;
   qrError?: string | null;
   onCardClick: () => void;
   onClean: () => void;
   onRegenerateQr: () => void;
   onSeparate: () => void;
   confirmQrId: string | null;
+  label?: string;
 }) {
   const reduceMotion = useReducedMotion();
   const [now, setNow] = useState(() => Date.now());
@@ -129,12 +129,12 @@ export function WaiterMesaCard({
       transition={spring}
       className={cn(
         "group relative flex h-full min-h-0 cursor-pointer flex-col overflow-hidden rounded-[20px] border border-border-main bg-bg-card p-4 sm:p-5 shadow-[inset_0_1px_0_var(--status-color)]",
-        isJoinMode && isChild && "cursor-not-allowed",
-        isJoinMode && isChild && "opacity-[0.55]",
+        isJoinMode && isInGroup && "cursor-not-allowed",
+        isJoinMode && isInGroup && "opacity-[0.55]",
         isSelectedToJoin && "ring-2 ring-gold ring-offset-2 ring-offset-bg-solid",
       )}
     >
-      {isJoinMode && isChild && (
+      {isJoinMode && isInGroup && (
         <div
           className="pointer-events-none absolute inset-0 z-[5] opacity-[0.35]"
           style={{
@@ -151,37 +151,32 @@ export function WaiterMesaCard({
         </div>
       )}
 
-      {isChild && (
-        <div className="absolute left-3 top-3 z-20 inline-flex items-center gap-1 rounded-full border border-border-main/70 bg-bg-solid/70 px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-text-muted">
-          Vinculada
-          {allowJoinTables && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onSeparate();
-              }}
-              className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-full text-text-muted transition hover:text-dash-red"
-              title="Separar"
-            >
-              <Unlink className="h-3.5 w-3.5" strokeWidth={1.8} />
-            </button>
-          )}
-        </div>
-      )}
-
-      {hasChildren && (
-        <div className="absolute right-3 top-3 z-20 rounded-full border border-gold/35 bg-gold/15 px-2.5 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-gold">
-          Master
-        </div>
-      )}
-
       <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-4">
         <header className="flex items-start justify-between gap-3">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border-main bg-bg-solid/70 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-light">
-            <StatusDot status={table.status} />
-            {tableStatusLabel(table.status)}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-2 rounded-full border border-border-main bg-bg-solid/70 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-light">
+              <StatusDot status={table.status} />
+              {tableStatusLabel(table.status)}
+            </span>
+            {isInGroup && (
+              <div className="inline-flex items-center gap-1 rounded-full border border-gold/35 bg-gold/15 pl-2.5 pr-1 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.15em] text-gold">
+                Grupo
+                {allowJoinTables && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSeparate();
+                    }}
+                    className="ml-1 inline-flex min-h-6 min-w-6 items-center justify-center rounded-full text-gold transition hover:text-dash-red"
+                    title="Deshacer grupo"
+                  >
+                    <Unlink className="h-3 w-3" strokeWidth={2} />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           <div className="flex items-start gap-2">
             {busy && table.activeSession ? (
               <SessionTimeRing minutes={seatedMin} warnMinutes={45} />
@@ -201,12 +196,13 @@ export function WaiterMesaCard({
           <p className="text-[11px] font-medium text-text-muted">Mesa</p>
           <p
             className={cn(
-              "text-[52px] font-semibold tabular-nums leading-none tracking-[-0.04em] sm:text-[56px]",
+              "font-semibold tabular-nums leading-none tracking-[-0.04em] sm:text-[56px]",
+              label ? "text-[38px] sm:text-[42px]" : "text-[52px]",
               numberClass,
             )}
             style={numberStyle}
           >
-            {table.number}
+            {label ?? table.number}
           </p>
           <div className="flex min-h-[28px] items-center gap-2">
             {table.activeSession ? (
@@ -279,7 +275,7 @@ export function WaiterMesaCard({
               </button>
             )}
 
-            {table.status === "DISPONIBLE" && !isChild && (
+            {table.status === "DISPONIBLE" && !isInGroup && (
               <button
                 type="button"
                 onClick={(e) => {

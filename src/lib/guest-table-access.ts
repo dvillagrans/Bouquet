@@ -17,6 +17,7 @@ export type GuestSessionRow = {
 export type GuestTableResolution =
   | { status: "not_found" }
   | { status: "need_login"; canonicalQr: string }
+  | { status: "session_ended"; canonicalQr: string }
   | {
       status: "ok";
       table: Table;
@@ -52,6 +53,9 @@ export async function resolveGuestTableAccess(rawTableCode: string): Promise<Gue
   });
 
   if (!session?.isActive || session.tableId !== table.id) {
+    if (session && !session.isActive && session.tableId === table.id) {
+      return { status: "session_ended", canonicalQr: table.qrCode };
+    }
     return { status: "need_login", canonicalQr: table.qrCode };
   }
 

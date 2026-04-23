@@ -106,31 +106,6 @@ export async function updateTablePositions(
   }
 }
 
-export async function joinTables(parentTableId: string, childTableIds: string[]) {
-  await prisma.table.updateMany({
-    where: { id: { in: childTableIds } },
-    data: { parentTableId }
-  });
-  revalidatePath("/dashboard/mesas");
-  const parent = await prisma.table.findUnique({
-    where: { id: parentTableId },
-    select: { restaurantId: true },
-  });
-  if (parent) await broadcastKdsOrdersRefresh(parent.restaurantId);
-}
-
-export async function separateTable(tableId: string) {
-  const before = await prisma.table.findUnique({
-    where: { id: tableId },
-    select: { restaurantId: true },
-  });
-  await prisma.table.update({
-    where: { id: tableId },
-    data: { parentTableId: null }
-  });
-  revalidatePath("/dashboard/mesas");
-  if (before) await broadcastKdsOrdersRefresh(before.restaurantId);
-}
 
 /** Vista previa firmada para staff (mapa / mesero): misma forma que el QR impreso. */
 export async function getSignedGuestPreviewUrl(qrCode: string) {

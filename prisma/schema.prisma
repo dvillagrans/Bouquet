@@ -92,12 +92,13 @@ model Restaurant {
   allowWaiterJoinTables Boolean @default(false)
   isArchived          Boolean @default(false) // Soft Delete (cerrado, histórico)
 
-  zone       Zone?      @relation(fields: [zoneId], references: [id], onDelete: SetNull)
-  tables     Table[]
-  menuItems  MenuItem[]
-  categories Category[]
-  staff      Staff[]
-  orders     Order[]
+  zone        Zone?        @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  tables      Table[]
+  menuItems   MenuItem[]
+  categories  Category[]
+  staff       Staff[]
+  orders      Order[]
+  tableGroups TableGroup[]
   payments   Payment[]
 
   // Menú de plantilla: puede usar una plantilla de cadena + sus propios overrides
@@ -121,6 +122,28 @@ enum TableStatus {
   SUCIA
 }
 
+enum TableGroupStatus {
+  ACTIVE
+  CLOSED
+}
+
+model TableGroup {
+  id           String           @id @default(uuid())
+  restaurantId String
+  createdBy    String           // staffId del mesero que creó el grupo
+  status       TableGroupStatus @default(ACTIVE)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  tables     Table[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  closedAt  DateTime?
+
+  @@index([restaurantId])
+  @@index([status])
+}
+
 model Table {
   id           String      @id @default(uuid())
   restaurantId String
@@ -133,9 +156,8 @@ model Table {
   posX         Float       @default(80)
   posY         Float       @default(80)
   shape        String      @default("rect") // "rect" | "round"
-  parentTableId String?
-  parentTable   Table?      @relation("JoinedTables", fields: [parentTableId], references: [id])
-  childTables   Table[]     @relation("JoinedTables")
+  groupId      String?
+  group        TableGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   hostSession Session?  @relation("TableHost", fields: [hostSessionId], references: [id])
@@ -148,6 +170,7 @@ model Table {
 
   @@unique([restaurantId, number])
   @@index([restaurantId])
+  @@index([groupId])
 }
 
 // ------------------------------------

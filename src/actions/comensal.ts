@@ -3,8 +3,8 @@
 import { findTableByQrCode } from "@/lib/find-table-by-qr";
 import { requireGuestSessionRow, requireTableJoinGate } from "@/lib/guest-table-access";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import {
   broadcastGuestOrdersRefresh,
   broadcastBillRequested,
@@ -321,7 +321,7 @@ export async function payGuestShare(input: {
   tipRate: number;
   paymentMethod?: "CASH" | "CARD" | "TRANSFER" | "OTHER";
   allocations?: { orderItemId: string; amount: number }[];
-}) {
+}): Promise<{ success: boolean; isLastPayer: boolean; guestName: string }> {
   const base = await findTableByQrCode(input.tableCode);
   if (!base) throw new Error("Mesa no encontrada");
 
@@ -364,7 +364,7 @@ export async function payGuestShare(input: {
     throw new Error("El monto pagado no puede ser menor al total del comensal.");
   }
 
-  await prisma.$transaction(async tx => {
+  const remainingActive = await prisma.$transaction(async tx => {
     // Prevent double-charging race condition by validating shared contributions
     if (input.allocations && input.allocations.length > 0) {
       for (const req of input.allocations) {
@@ -487,12 +487,25 @@ export async function payGuestShare(input: {
         data: { status: "SUCIA" },
       });
     }
+
+    return remainingActive;
   });
 
   revalidatePath("/mesero");
   revalidatePath("/dashboard/mesas");
   await broadcastKdsOrdersRefresh(table.restaurantId);
-  return true;
+
+  const cookieStore = await cookies();
+  cookieStore.set(`bq_checkout_${table.qrCode}`, JSON.stringify({
+    isLastPayer: remainingActive === 0,
+    guestName: input.guestName
+  }), { maxAge: 300, path: "/" });
+
+  return {
+    success: true,
+    isLastPayer: remainingActive === 0,
+    guestName: input.guestName,
+  };
 }
 
 interface RequestBillAndPayInput {

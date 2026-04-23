@@ -78,19 +78,19 @@
 
 /* Invitado — menú QR: light (spec) vs dark (ink/panel). Cuenta /cuenta sigue aparte. */
 [data-guest-theme="light"] {
-  --guest-bg-page: #faf8f5;
-  --guest-text: #0f172a;
+  --guest-bg-page: #f6f1e7;
+  --guest-text: #1d1710;
   --guest-accent: #10b981;
-  --guest-border: #e2e8f0;
+  --guest-border: #d8c9b2;
   --guest-urgent: #dc2626;
-  --guest-bg-surface: rgba(255, 253, 248, 0.82);
-  --guest-bg-surface-2: rgba(246, 239, 228, 0.92);
-  --guest-divider: rgba(226, 232, 240, 0.95);
-  --guest-muted: #64748b;
-  --guest-subtle: #94a3b8;
-  --guest-gold: #b7925d;
-  --guest-halo: rgba(183, 146, 93, 0.16);
-  --guest-panel-edge: rgba(183, 146, 93, 0.35);
+  --guest-bg-surface: rgba(255, 252, 247, 0.96);
+  --guest-bg-surface-2: rgba(242, 232, 216, 0.94);
+  --guest-divider: rgba(203, 181, 149, 0.56);
+  --guest-muted: #6d6151;
+  --guest-subtle: #968974;
+  --guest-gold: #a67b42;
+  --guest-halo: rgba(166, 123, 66, 0.16);
+  --guest-panel-edge: rgba(166, 123, 66, 0.34);
 }
 
 [data-guest-theme="dark"] {

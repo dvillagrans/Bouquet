@@ -7,6 +7,7 @@ import type { GuestMenuThemeOrigin } from "@/components/guest/GuestMenuThemeTogg
 import {
   GUEST_MENU_THEME_STORAGE_KEY,
   GUEST_MENU_THEME_ATTRIBUTE,
+  GUEST_MENU_THEME_COOKIE_KEY,
   type GuestMenuTheme,
 } from "@/lib/guest-menu-theme";
 
@@ -53,6 +54,7 @@ export function useGuestMenuTheme(): {
     }
     try {
       localStorage.setItem(GUEST_MENU_THEME_STORAGE_KEY, menuTheme);
+      document.cookie = `${GUEST_MENU_THEME_COOKIE_KEY}=${menuTheme}; path=/; max-age=31536000; samesite=lax`;
       // Mantener atributo en sincronía para variables CSS globales
       document.documentElement.setAttribute(GUEST_MENU_THEME_ATTRIBUTE, menuTheme);
     } catch {

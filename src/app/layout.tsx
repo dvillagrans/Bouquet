@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import "./globals.css";
 import { ReactGrabDevLoader } from "@/components/dev/ReactGrabDevLoader";
 import { ThemePreferenceSync } from "@/components/theme/theme-preference-sync";
+import { GUEST_MENU_THEME_ATTRIBUTE, GUEST_MENU_THEME_COOKIE_KEY } from "@/lib/guest-menu-theme";
 import { APP_THEME_STORAGE_KEY } from "@/lib/theme-storage";
 import { cn } from "@/lib/utils";
 
@@ -50,11 +51,14 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const themeCookie = cookieStore.get(APP_THEME_STORAGE_KEY)?.value;
   const isLight = themeCookie === "light";
+  const guestThemeCookie = cookieStore.get(GUEST_MENU_THEME_COOKIE_KEY)?.value;
+  const guestTheme = guestThemeCookie === "dark" ? "dark" : "light";
 
   return (
     <html
       lang="es"
       suppressHydrationWarning
+      {...{ [GUEST_MENU_THEME_ATTRIBUTE]: guestTheme }}
       className={cn("font-sans", geist.variable, geistMono.variable, !isLight && "dark")}
     >
       <body className={`${serif.variable} ${sans.variable} ${geistMono.variable} font-sans antialiased`}>

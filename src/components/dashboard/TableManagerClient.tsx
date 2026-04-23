@@ -17,15 +17,16 @@ import {
   Loader2,
   Users,
 } from "lucide-react";
-import { createTable, deleteTable, joinTables, separateTable } from "@/actions/tables";
+import { createTable, deleteTable } from "@/actions/tables";
+import { createTableGroup, removeFromGroup } from "@/actions/table-groups";
 import { TableStatus } from "@/generated/prisma";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from "framer-motion";
 import FloorMapClient from "./FloorMapClient";
 import MesaCapacityPreview from "./MesaCapacityPreview";
 import { createClient } from "@/lib/supabase/client";
 
 // Mantenemos la estructura requerida del backend
-type Table = import("@/generated/prisma").Table & { parentTableId?: string | null };
+type Table = import("@/generated/prisma").Table & { groupId?: string | null };
 type Tab = "mapa" | "lista";
 
 // Colors actualizados usando tokens existentes de color (text-gold, text-dash-red, text-dash-green, text-dash-blue)
@@ -204,27 +205,23 @@ export default function TableManagerClient({
 
   function handleConfirmJoin() {
     if (selectedTablesToJoin.length < 2) return;
-    const [parentId, ...childIds] = selectedTablesToJoin;
     
     startTransition(async () => {
       try {
-        await joinTables(parentId, childIds);
-        setTables((prev) => prev.map((t) => 
-          childIds.includes(t.id) ? { ...t, parentTableId: parentId } : t
-        ));
+        await createTableGroup(selectedTablesToJoin, "admin");
+        // Refresh will come from realtime, but also update local state
         setIsJoinMode(false);
         setSelectedTablesToJoin([]);
+        router.refresh();
       } catch (e) { console.error(e); }
     });
   }
 
-  function handleSeparate(childId: string) {
+  function handleSeparate(tableId: string) {
     startTransition(async () => {
       try {
-        await separateTable(childId);
-        setTables((prev) => prev.map((t) => 
-          t.id === childId ? { ...t, parentTableId: null } : t
-        ));
+        await removeFromGroup(tableId);
+        router.refresh();
       } catch (e) { console.error(e); }
     });
   }
@@ -282,18 +279,22 @@ export default function TableManagerClient({
             </div>
 
             <div className="flex gap-2">
-              <button
+              <motion.button
                 onClick={() => setIsAdding(true)}
                 disabled={isJoinMode || isPending}
+                whileHover={reduceMotion ? undefined : { y: -1, scale: 1.01 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.985 }}
                 className="inline-flex h-[42px] items-center gap-2 rounded-xl bg-gold px-5 text-[11px] font-semibold uppercase tracking-[0.1em] text-bg-solid transition-all hover:bg-white hover:shadow-[0_0_20px_rgba(201,160,84,0.3)] disabled:opacity-50 disabled:hover:bg-gold disabled:hover:shadow-none"
               >
                 <Plus className="size-3.5" aria-hidden="true" />
                 Nueva Mesa
-              </button>
+              </motion.button>
 
-              <button
+              <motion.button
                 onClick={toggleJoinMode}
                 disabled={isPending}
+                whileHover={reduceMotion ? undefined : { y: -1, scale: 1.01 }}
+                whileTap={reduceMotion ? undefined : { scale: 0.985 }}
                 className={`inline-flex h-[42px] items-center gap-2 rounded-xl border px-5 text-[11px] font-semibold uppercase tracking-[0.1em] transition-all disabled:opacity-50 ${
                   isJoinMode 
                     ? "border-dash-red bg-dash-red/10 text-dash-red hover:bg-dash-red/20 hover:border-dash-red/50" 
@@ -302,28 +303,48 @@ export default function TableManagerClient({
               >
                 <LinkIcon className="size-3.5" aria-hidden="true" />
                 {isJoinMode ? "Cancelar Unión" : "Juntar Mesas"}
-              </button>
+              </motion.button>
             </div>
           </div>
 
-          <div className="flex rounded-xl border border-border-main bg-bg-card/50 p-1">
-            <button
-              onClick={() => setTab("mapa")}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition-colors ${
-                tab === "mapa" ? "bg-bg-solid text-gold shadow-sm" : "text-text-dim hover:text-text-primary"
-              }`}
-            >
-              <Map className="size-3.5" /> Mapa
-            </button>
-            <button
-              onClick={() => setTab("lista")}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition-colors ${
-                tab === "lista" ? "bg-bg-solid text-gold shadow-sm" : "text-text-dim hover:text-text-primary"
-              }`}
-            >
-              <LayoutGrid className="size-3.5" /> Lista
-            </button>
-          </div>
+          <LayoutGroup id="mesas-view-switch">
+            <div className="flex rounded-xl border border-border-main bg-bg-card/50 p-1">
+              <button
+                onClick={() => setTab("mapa")}
+                className={`relative flex items-center gap-2 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition-colors ${
+                  tab === "mapa" ? "text-gold" : "text-text-dim hover:text-text-primary"
+                }`}
+              >
+                {tab === "mapa" ? (
+                  <motion.span
+                    layoutId="mesas-view-pill"
+                    className="absolute inset-0 rounded-lg bg-bg-solid shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                    transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                  />
+                ) : null}
+                <span className="relative z-[1] inline-flex items-center gap-2">
+                  <Map className="size-3.5" /> Mapa
+                </span>
+              </button>
+              <button
+                onClick={() => setTab("lista")}
+                className={`relative flex items-center gap-2 rounded-lg px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] transition-colors ${
+                  tab === "lista" ? "text-gold" : "text-text-dim hover:text-text-primary"
+                }`}
+              >
+                {tab === "lista" ? (
+                  <motion.span
+                    layoutId="mesas-view-pill"
+                    className="absolute inset-0 rounded-lg bg-bg-solid shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                    transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                  />
+                ) : null}
+                <span className="relative z-[1] inline-flex items-center gap-2">
+                  <LayoutGrid className="size-3.5" /> Lista
+                </span>
+              </button>
+            </div>
+          </LayoutGroup>
         </motion.div>
 
         {isJoinMode && selectedTablesToJoin.length >= 2 && (
@@ -351,40 +372,67 @@ export default function TableManagerClient({
         {/* Stats Strip */}
         <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {stats.map((stat, idx) => (
-            <div key={idx} className="flex flex-col rounded-2xl border border-border-main bg-bg-card/30 p-5 backdrop-blur-md">
+            <motion.div
+              key={idx}
+              initial={reduceMotion ? undefined : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              whileHover={reduceMotion ? undefined : { y: -3, transition: { type: "spring", stiffness: 160, damping: 18 } }}
+              className="group flex flex-col rounded-2xl border border-border-main bg-bg-card/30 p-5 backdrop-blur-md"
+            >
               <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-text-dim">
                 {stat.label}
               </p>
-              <p className="mt-3 font-serif text-3xl font-semibold text-text-primary">{stat.value}</p>
-            </div>
+              <p className="mt-3 font-serif text-3xl font-semibold text-text-primary transition-colors group-hover:text-gold">{stat.value}</p>
+            </motion.div>
           ))}
         </motion.div>
 
         {/* Views */}
         <motion.div variants={itemVariants} className="min-h-[500px]">
-          {tab === "mapa" && (
-            <div className="overflow-hidden rounded-2xl border border-border-main bg-bg-card/45 backdrop-blur-md p-4 relative min-h-[550px]">
-              {showMap ? (
-                <FloorMapClient tables={tables} />
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                   <p className="text-[12px] uppercase tracking-[0.2em] text-text-dim font-medium">Cargando distribución...</p>
-                   {isMobile && (
-                     <button
-                       onClick={() => setShowMap(true)}
-                       className="rounded-full border border-border-bright px-5 py-2 text-[11px] uppercase tracking-widest text-text-secondary hover:text-gold hover:border-gold/50 transition-colors"
-                     >
-                       Toca para Cargar
-                     </button>
-                   )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {tab === "lista" && (
-            filtered.length === 0 ? (
-              <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-border-main bg-bg-card/30 p-8 text-center text-text-dim">
+          <AnimatePresence mode="wait" initial={false}>
+            {tab === "mapa" ? (
+              <motion.div
+                key="mesas-map-view"
+                initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+                transition={{ duration: reduceMotion ? 0.12 : 0.28 }}
+                className="overflow-hidden rounded-2xl border border-border-main bg-bg-card/45 backdrop-blur-md p-4 relative min-h-[550px]"
+              >
+                {!reduceMotion && (
+                  <motion.div
+                    aria-hidden
+                    className="pointer-events-none absolute inset-x-12 top-0 h-px bg-gradient-to-r from-transparent via-gold/55 to-transparent"
+                    animate={{ opacity: [0.3, 1, 0.3], scaleX: [0.8, 1, 0.8] }}
+                    transition={{ duration: 2.6, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+                  />
+                )}
+                {showMap ? (
+                  <FloorMapClient tables={tables} />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                    <p className="text-[12px] uppercase tracking-[0.2em] text-text-dim font-medium">Cargando distribución...</p>
+                    {isMobile && (
+                      <button
+                        onClick={() => setShowMap(true)}
+                        className="rounded-full border border-border-bright px-5 py-2 text-[11px] uppercase tracking-widest text-text-secondary hover:text-gold hover:border-gold/50 transition-colors"
+                      >
+                        Toca para Cargar
+                      </button>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            ) : filtered.length === 0 ? (
+              <motion.div
+                key="mesas-list-empty"
+                initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+                transition={{ duration: reduceMotion ? 0.12 : 0.28 }}
+                className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-dashed border-border-main bg-bg-card/30 p-8 text-center text-text-dim"
+              >
                 <LayoutGrid className="mb-4 size-10 opacity-20" />
                 <p className="text-[13px] font-medium">Ninguna mesa encontrada.</p>
                 {search && (
@@ -392,26 +440,33 @@ export default function TableManagerClient({
                     Limpiar Búsqueda
                   </button>
                 )}
-              </div>
+              </motion.div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <motion.div
+                key="mesas-list-view"
+                initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
+                transition={{ duration: reduceMotion ? 0.12 : 0.28 }}
+                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              >
                 {filtered.map((table) => {
                   const isSelectedToJoin = selectedTablesToJoin.includes(table.id);
-                  const isChild = !!table.parentTableId;
-                  const hasChildren = tables.some((t) => t.parentTableId === table.id);
+                  const isInGroup = !!table.groupId;
                   const statusInfo = STATUS_COLORS[table.status];
 
                   return (
-                    <div
+                    <motion.div
                       key={table.id}
+                      whileHover={reduceMotion ? undefined : { y: -3, transition: { type: "spring", stiffness: 170, damping: 18 } }}
                       onClick={() => {
-                        if (isJoinMode && !isChild) toggleTableSelection(table.id, false);
+                        if (isJoinMode && !isInGroup) toggleTableSelection(table.id, false);
                       }}
                       className={`group relative flex flex-col overflow-hidden rounded-2xl border ${
                         isSelectedToJoin 
                           ? "border-gold bg-gold/5 shadow-[0_0_15px_rgba(201,160,84,0.15)]" 
                           : "border-border-main bg-bg-card/45 hover:border-border-bright"
-                      } p-5 backdrop-blur-md transition-all duration-200 ${isJoinMode && !isChild ? "cursor-pointer" : ""}`}
+                      } p-5 backdrop-blur-md transition-all duration-200 ${isJoinMode && !isInGroup ? "cursor-pointer" : ""}`}
                     >
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
@@ -435,20 +490,18 @@ export default function TableManagerClient({
                         <p className="font-mono text-[11px] tracking-wide text-text-muted mt-0.5 truncate">{table.qrCode}</p>
                       </div>
 
-                      {/* Parent/Child Indicator */}
-                      {(isChild || hasChildren) && (
-                        <div className="mb-4 flex items-center justify-between rounded-lg border border-border-main bg-bg-solid/50 px-3 py-2">
-                           <span className="text-[10px] font-medium uppercase tracking-[0.15em] text-text-dim">
-                             {isChild ? "Mesa unida" : "Mesa principal"}
+                      {/* Group Indicator */}
+                      {isInGroup && (
+                        <div className="mb-4 flex items-center justify-between rounded-lg border border-gold/30 bg-gold/10 px-3 py-2">
+                           <span className="text-[10px] font-medium uppercase tracking-[0.15em] text-gold">
+                             Grupo
                            </span>
-                           {isChild && (
-                             <button
-                               onClick={(e) => { e.stopPropagation(); handleSeparate(table.id); }}
-                               className="text-[10px] font-bold uppercase tracking-widest text-dash-red hover:text-dash-red/80 transition-colors"
-                             >
-                               Separar
-                             </button>
-                           )}
+                           <button
+                             onClick={(e) => { e.stopPropagation(); handleSeparate(table.id); }}
+                             className="text-[10px] font-bold uppercase tracking-widest text-dash-red hover:text-dash-red/80 transition-colors"
+                           >
+                             Separar
+                           </button>
                         </div>
                       )}
 
@@ -469,12 +522,12 @@ export default function TableManagerClient({
                           </motion.div>
                         )}
                       </AnimatePresence>
-                    </div>
+                    </motion.div>
                   );
                 })}
-              </div>
-            )
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </motion.div>
 

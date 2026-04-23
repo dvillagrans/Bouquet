@@ -184,6 +184,7 @@ export function TableAccessScreen({ tableCode, isLikelyValid, existingPax, requi
                 autoComplete="given-name"
                 required
                 aria-required="true"
+                suppressHydrationWarning
               />
             </div>
 
@@ -212,6 +213,7 @@ export function TableAccessScreen({ tableCode, isLikelyValid, existingPax, requi
                   spellCheck={false}
                   inputMode="text"
                   required
+                  suppressHydrationWarning
                 />
               </div>
             )}
@@ -248,6 +250,7 @@ export function TableAccessScreen({ tableCode, isLikelyValid, existingPax, requi
                     ? { animation: "table-access-loading-pulse 1.2s ease-in-out infinite" }
                     : undefined
                 }
+                suppressHydrationWarning
               >
                 {isSubmitting ? "Entrando…" : "Entrar a la mesa"}
               </button>

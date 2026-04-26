@@ -1,0 +1,193 @@
+---
+title: "Lineage 1 — analytic_sales_daily"
+---
+flowchart TD
+
+    subgraph OLTP["🗄️ Tablas OLTP (Bronze)"]
+        RO["RestaurantOrder\n─────────────\nid · restaurantId\ndiningSessionId · source\nstatus · createdAt"]
+        OI["OrderItem\n─────────────\nid · orderId\nmenuItemId · guestId\nquantity · status\nunitPriceCents · totalCents\ntaxAmountCents · categoryId"]
+        RMI["RestaurantMenuItem\n─────────────\nid · restaurantId\ncategoryId · stationId\nname · priceCents"]
+        RC["RestaurantCategory\n─────────────\nid · restaurantId\nname · taxGroupId"]
+        REST["Restaurant\n─────────────\nid · chainId · zoneId\nname · currency"]
+        CH["Chain\n─────────────\nid · name\ncurrency"]
+    end
+
+    subgraph SILVER["🥈 Silver"]
+        S1["silver_orders_enriched\n─────────────\norderId · restaurantId · chainId\nrestaurantName · chainName\nstatusLabel · createdDate · createdHour"]
+        S2["silver_order_items_enriched\n─────────────\norderItemId · orderId · menuItemId\nitemNameSnapshot · categoryName\nunitPriceCents · totalCents\ntaxAmountCents · quantity · status"]
+    end
+
+    subgraph GOLD["🥇 Gold"]
+        G["analytic_sales_daily\n─────────────\nrestaurantId · restaurantName\nchainId · chainName\ncategoryName · date\ntotalOrders · totalItemsSold\nrevenueCents · avgTicketCents\ncancellations · computedAt"]
+    end
+
+    RO  -->|"id → orderId\nrestaurantId\ncreatedAt → createdDate"| S1
+    REST -->|"id → restaurantId\nname → restaurantName\nchainId"| S1
+    CH  -->|"id → chainId\nname → chainName"| S1
+
+    OI  -->|"id · orderId · quantity\nstatus · totalCents\ntaxAmountCents"| S2
+    RMI -->|"id → menuItemId\ncategoryId · name"| S2
+    RC  -->|"id → categoryId\nname → categoryName"| S2
+
+    S1  -->|"orderId · restaurantId\nchainId · restaurantName\nchainName · createdDate"| AGG
+    S2  -->|"orderId · categoryName\ntotalCents · quantity · status"| AGG
+
+    AGG["⚙️ Job 2 — Aggregate\nJOIN S1 ⋈ S2 ON orderId\nGROUP BY date · restaurantId · categoryName\nCOUNT orders · SUM totalCents\nAVG totalCents · SUM cancellations"]
+
+    AGG --> G
+
+    classDef oltp   fill:#0d1a0f,stroke:#4caf7d,color:#e8e4da
+    classDef silver fill:#111418,stroke:#adb5bd,color:#e8e4da
+    classDef gold   fill:#12100a,stroke:#c9a054,color:#f3ead7
+    classDef job    fill:#0a0f1a,stroke:#5b9cf6,color:#c0c8d8
+
+    class RO,OI,RMI,RC,REST,CH oltp
+    class S1,S2 silver
+    class G gold
+    class AGG job
+
+---
+title: "Lineage 2 — analytic_item_velocity"
+---
+flowchart TD
+
+    subgraph OLTP2["🗄️ Tablas OLTP (Bronze)"]
+        OI2["OrderItem\n─────────────\nid · orderId · menuItemId\nquantity · status\ntotalCents · createdAt"]
+        RMI2["RestaurantMenuItem\n─────────────\nid · restaurantId\ncategoryId · stationId · name"]
+        RC2["RestaurantCategory\n─────────────\nid · name"]
+        ST2["Station\n─────────────\nid · restaurantId\nname · color"]
+        RO2["RestaurantOrder\n─────────────\nid · restaurantId\ncreatedAt"]
+    end
+
+    subgraph SILVER2["🥈 Silver"]
+        S3["silver_order_items_enriched\n─────────────\norderItemId · menuItemId\nitemNameSnapshot · categoryName\nstationName · restaurantId\ntotalCents · quantity · status\ncreatedAt (hora incluida)"]
+    end
+
+    subgraph GOLD2["🥇 Gold"]
+        G2["analytic_item_velocity\n─────────────\nmenuItemId · itemName\ncategoryName · stationName\nrestaurantId\nunitsSoldLast7d · unitsSoldLast30d\nrevenueCentsLast30d\navgUnitsPerHour · peakHour\ncancellationCount · computedAt"]
+    end
+
+    OI2  -->|"id · menuItemId · quantity\nstatus · totalCents · createdAt"| S3
+    RMI2 -->|"id → menuItemId\nname → itemNameSnapshot\ncategoryId · stationId · restaurantId"| S3
+    RC2  -->|"id → categoryId\nname → categoryName"| S3
+    ST2  -->|"id → stationId\nname → stationName"| S3
+    RO2  -->|"id → orderId\nrestaurantId · createdAt"| S3
+
+    S3 -->|"menuItemId · itemNameSnapshot\ncategoryName · stationName\nrestaurantId · quantity · status\ntotalCents · createdAt"| AGG2
+
+    AGG2["⚙️ Job 2 — Item Velocity\nFILTER status != CANCELLED\nGROUP BY menuItemId · restaurantId\nSUM quantity (7d y 30d)\nSUM totalCents\nAVG HOUR(createdAt) → peakHour\nCOUNT cancellations"]
+
+    AGG2 --> G2
+
+    classDef oltp   fill:#0d1a0f,stroke:#4caf7d,color:#e8e4da
+    classDef silver fill:#111418,stroke:#adb5bd,color:#e8e4da
+    classDef gold   fill:#12100a,stroke:#c9a054,color:#f3ead7
+    classDef job    fill:#0a0f1a,stroke:#5b9cf6,color:#c0c8d8
+
+    class OI2,RMI2,RC2,ST2,RO2 oltp
+    class S3 silver
+    class G2 gold
+    class AGG2 job
+
+---
+title: "Lineage 3 — analytic_process_mining"
+---
+flowchart TD
+
+    subgraph OLTP3["🗄️ Tablas OLTP (Bronze)"]
+        EVT["OrderItemStatusEvent\n─────────────\nid · orderItemId\nfromStatus · toStatus\ncreatedAt · changedByUserId"]
+        OI3["OrderItem\n─────────────\nid · menuItemId\nstationId · itemNameSnapshot\norderId"]
+        ST3["Station\n─────────────\nid · restaurantId\nname"]
+        RO3["RestaurantOrder\n─────────────\nid · restaurantId"]
+    end
+
+    subgraph SILVER3["🥈 Silver"]
+        S4["silver_process_events\n─────────────\neventId · orderItemId · orderId\nfromStatus · toStatus · createdAt\nitemNameSnapshot\nstationId · stationName · restaurantId"]
+    end
+
+    subgraph TRANSFORM["⚙️ Transformación"]
+        W["Window Function\nPARTITION BY orderItemId\nORDER BY createdAt\nLAG(createdAt) → prevTs\ndurationSeconds = ts - prevTs"]
+    end
+
+    subgraph GOLD3["🥇 Gold"]
+        G3["analytic_process_mining\n─────────────\nrestaurantId · stationName · date\navgSecondsNewToServed\nitemsOnTime · itemsLate\nslaThresholdSeconds\nbottleneckScore · computedAt"]
+    end
+
+    EVT -->|"orderItemId · fromStatus\ntoStatus · createdAt"| S4
+    OI3 -->|"id → orderItemId\nstationId · itemNameSnapshot"| S4
+    ST3 -->|"id → stationId\nname → stationName\nrestaurantId"| S4
+    RO3 -->|"id → orderId\nrestaurantId"| S4
+
+    S4 -->|"orderItemId · toStatus\ncreatedAt · stationName\nrestaurantId"| W
+
+    W  -->|"durationSeconds por transición\nFILTER toStatus = SERVED"| AGG3
+
+    AGG3["⚙️ Job 2 — Process Mining\nGROUP BY stationName · restaurantId · date\nAVG durationSeconds\nCOUNT itemsOnTime (≤ SLA)\nCOUNT itemsLate (> SLA)\nbottleneckScore = itemsLate / total"]
+
+    AGG3 --> G3
+
+    classDef oltp   fill:#0d1a0f,stroke:#4caf7d,color:#e8e4da
+    classDef silver fill:#111418,stroke:#adb5bd,color:#e8e4da
+    classDef gold   fill:#12100a,stroke:#c9a054,color:#f3ead7
+    classDef job    fill:#0a0f1a,stroke:#5b9cf6,color:#c0c8d8
+    classDef trans  fill:#1a0f1a,stroke:#a78bfa,color:#e8e4da
+
+    class EVT,OI3,ST3,RO3 oltp
+    class S4 silver
+    class G3 gold
+    class AGG3 job
+    class W trans
+
+---
+title: "Lineage 4 — analytic_forecast"
+---
+flowchart TD
+
+    subgraph OLTP4["🗄️ Tablas OLTP (Bronze)"]
+        OI4["OrderItem\n─────────────\nid · orderId · menuItemId\nquantity · totalCents\nstatus · createdAt"]
+        RMI4["RestaurantMenuItem\n─────────────\nid · categoryId · restaurantId"]
+        RC4["RestaurantCategory\n─────────────\nid · name"]
+        RO4["RestaurantOrder\n─────────────\nid · restaurantId · createdAt"]
+    end
+
+    subgraph SILVER4["🥈 Silver"]
+        S5["silver_order_items_enriched\n─────────────\norderItemId · restaurantId\ncategoryName · quantity\ntotalCents · createdDate\ndayOfWeek · status"]
+    end
+
+    subgraph TRANSFORM4["⚙️ Transformación Estadística"]
+        HA["Historical Avg\nGROUP BY restaurantId\n· categoryName · dayOfWeek\nAVG dailyUnits → avgUnits\nAVG dailyRevenue → avgRevenueCents\nSTDDEV → stddevUnits"]
+        FD["Forecast Dates\n+1 a +7 días desde hoy\ncada fecha → dayOfWeek"]
+        JOIN["JOIN\nhistorical_avg ⋈ forecast_dates\nON dayOfWeek\n→ proyectar avgUnits\npor fecha futura"]
+        CONF["Confidence Score\n1 - (stddev / avgUnits + 1)\nclamp [0.0, 1.0]"]
+    end
+
+    subgraph GOLD4["🥇 Gold"]
+        G4["analytic_forecast\n─────────────\nrestaurantId · categoryName\nforecastDate · projectedOrders\nprojectedRevenueCents\nconfidenceScore · modelUsed\ncomputedAt"]
+    end
+
+    OI4  -->|"orderId · quantity · totalCents\nstatus · createdAt"| S5
+    RMI4 -->|"id → menuItemId\ncategoryId · restaurantId"| S5
+    RC4  -->|"id → categoryId\nname → categoryName"| S5
+    RO4  -->|"id → orderId\nrestaurantId · createdAt → createdDate"| S5
+
+    S5 -->|"restaurantId · categoryName\ndayOfWeek · quantity\ntotalCents (histórico 90d)"| HA
+    HA -->|"avgUnits · avgRevenueCents\nstddevUnits · dayOfWeek"| JOIN
+    FD -->|"forecastDate · dayOfWeek"| JOIN
+    JOIN -->|"avgUnits · stddevUnits"| CONF
+    CONF -->|"confidenceScore"| AGG4
+
+    AGG4["⚙️ Job 3 — Forecast\nmodelUsed = weighted_moving_avg_weekly\nprojectedOrders = avgUnits.cast(int)\nprojectedRevenueCents = avgRevenueCents.cast(int)"]
+
+    AGG4 --> G4
+
+    classDef oltp   fill:#0d1a0f,stroke:#4caf7d,color:#e8e4da
+    classDef silver fill:#111418,stroke:#adb5bd,color:#e8e4da
+    classDef gold   fill:#12100a,stroke:#c9a054,color:#f3ead7
+    classDef job    fill:#0a0f1a,stroke:#5b9cf6,color:#c0c8d8
+    classDef trans  fill:#1a0f1a,stroke:#a78bfa,color:#e8e4da
+
+    class OI4,RMI4,RC4,RO4 oltp
+    class S5 silver
+    class G4 gold
+    class AGG4 job
+    class HA,FD,JOIN,CONF trans

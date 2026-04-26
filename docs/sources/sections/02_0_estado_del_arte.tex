@@ -1,0 +1,420 @@
+\section{Estado del Arte}
+
+\subsubsection{Antecedentes Académicos y Técnicos}
+
+La literatura relacionada con sistemas digitales para restaurantes, omnicanalidad, pedidos
+en mesa, men\'us QR y pagos digitales muestra que la digitalizaci\'on puede generar mejoras
+operativas importantes, aunque tambi\'en introduce retos asociados con la experiencia del
+usuario, la integraci\'on de canales y la complejidad t\'ecnica del sistema. Los antecedentes
+se organizan en cinco ejes:
+
+\noindent\textbf{Digitalizaci\'on, omnicanalidad y desempe\~no operativo.}
+Diversos trabajos recientes han analizado el efecto de la transformaci\'on digital en la
+industria restaurantera. Lee et~al. (2024) documentan que la digitalizaci\'on del
+\textit{front of house} y del \textit{back of house} contribuye a fortalecer el desempe\~no
+organizacional, especialmente cuando los sistemas permiten integrar informaci\'on de distintas
+\'areas del negocio \cite{katagri_smart_2025}. De forma complementaria, Wang et~al. (2024) proponen modelos
+anal\'iticos para estudiar la operaci\'on restaurantera en contextos omnicanal mediante teor\'ia
+de colas y teor\'ia de juegos, mostrando que la conveniencia de operar mediante canales
+presenciales, digitales o una combinaci\'on de ambos depende de factores como la sensibilidad
+al tiempo de espera y la capacidad del restaurante \cite{oracle_consumer_study}.
+
+Katagri y Balavalad (2025) presentaron un sistema inteligente de ordenamiento digital para
+restaurantes que integra una interfaz responsiva, actualizaciones en tiempo real y pagos
+seguros, reportando reducciones en tiempos de error y procesamiento de \'ordenes al eliminar
+la intermediaci\'on manual \cite{katagri_smart_2025}. Sus resultados respaldan la pertinencia de dise\~nar una
+plataforma que integre la operaci\'on presencial del restaurante con mecanismos digitales
+de interacci\'on, manteniendo una base de datos centralizada.
+
+\noindent\textbf{Autoservicio en mesa y aplicaciones m\'oviles.}
+Tan y Netessine (2020) reportan que las tecnolog\'ias de autoservicio en mesa pueden incrementar
+las ventas por cuenta, reducir la duraci\'on del servicio y mejorar la productividad al aumentar
+la rotaci\'on de mesas \cite{lee_digital_2024}. No obstante, Xu et~al. (2024) se\~nalan que la incorporaci\'on
+intensiva de aplicaciones m\'oviles de pedido tambi\'en puede relacionarse con disminuciones en
+ciertos indicadores de satisfacci\'on del consumidor \cite{xu_mobile_2024}, lo que sugiere que la mejora operativa
+no siempre se traduce autom\'aticamente en una mejor experiencia del usuario. Estos hallazgos
+orientan el dise\~no del presente proyecto hacia interfaces de m\'inima fricci\'on y flujos guiados.
+
+\noindent\textbf{C\'odigos QR en restaurantes.}
+Koay y Ang (2024) examinan la intenci\'on de uso de men\'us QR a partir de variables como
+utilidad percibida, facilidad de uso, influencia social y percepci\'on de privacidad,
+encontrando que la utilidad percibida y los h\'abitos previos son los predictores m\'as fuertes
+de adopci\'on \cite{koay_qr_2024}. Sin embargo, Hewage et~al. (2024) muestran que los men\'us QR pueden
+generar inconveniencia percibida y afectar negativamente la lealtad del cliente cuando existe
+alta preferencia por la interacci\'on con el personal de servicio \cite{hewage_qr_2024}. Yigito\u{g}lu et~al. (2025)
+destacan que el riesgo percibido y el contexto cultural modifican la aceptaci\'on de estas
+tecnolog\'ias \cite{yigitoglu_sustainable_2025}. Estos hallazgos son especialmente relevantes para este trabajo, ya que
+el dise\~no del sistema deber\'a priorizar facilidad de uso, rapidez de acceso y baja fricci\'on
+durante la interacci\'on del comensal con el c\'odigo QR de la mesa virtual.
+
+\noindent\textbf{Sincronizaci\'on en tiempo real y arquitectura.}
+Iovescu y Tudose (2024) proponen arquitecturas orientadas a eventos para sistemas que requieren
+actualizaci\'on casi inmediata entre m\'ultiples actores, destacando la importancia de la
+idempotencia en comandos y transacciones \cite{iovescu_realtime_2024}. Sus aportaciones son directamente aplicables
+al presente sistema, donde la confirmaci\'on de una orden o de un pago no debe provocar
+duplicidad de registros si la misma operaci\'on se procesa m\'as de una vez por error de red o
+reconexi\'on.
+
+El sistema de pedidos QR desarrollado por Choo et~al. (2023) publicado en el
+\textit{Journal of Informatics and Web Engineering} integra generaci\'on de QR por mesa,
+interfaz de administraci\'on de men\'u, facturaci\'on automatizada y visualizaci\'on de datos
+anal\'iticos, reportando una reducci\'on significativa en errores de captura respecto a sistemas
+con comandas en papel \cite{choo_qr_2023}. Si bien este trabajo no aborda la divisi\'on de cuenta entre
+comensales ni la arquitectura serverless, sienta una base s\'olida para la presente propuesta.
+
+\noindent\textbf{Pagos digitales, propinas y divisi\'on de cuenta.}
+Alsaati et~al. (2026) muestran que la percepci\'on de manipulaci\'on en las interfaces de
+pago puede afectar negativamente la satisfacci\'on del usuario y la favorabilidad hacia la
+marca, lo que resalta la importancia de dise\~nar flujos de pago transparentes \cite{pci_dss_4}.
+Desde el punto de vista algor\'itmico, Bultel et~al. (2020) demuestran que algunos problemas
+de minimizaci\'on de transacciones en contextos de reparto de gastos pueden ser
+computacionalmente complejos \cite{bultel_faster_2020}, lo cual resulta relevante como antecedente te\'orico
+para el m\'odulo de divisi\'on de cuentas del presente proyecto.
+
+\noindent\textbf{Anal\'itica de datos y procesamiento masivo.}
+El procesamiento de grandes vol\'umenes de datos en la industria restaurantera permite
+identificar patrones de consumo, optimizar inventarios y predecir demanda. Zaharia et~al. (2012)
+introducen el concepto de conjuntos de datos distribuidos resilientes (RDD), permitiendo que
+motores como Apache Spark realicen an\'alisis en memoria con alta tolerancia a fallos y
+escalabilidad horizontal \cite{zaharia2012resilient}. Kleppmann (2017) destaca que la transici\'on de
+sistemas puramente transaccionales (OLTP) hacia arquitecturas h\'ibridas con capas
+anal\'iticas (OLAP) es fundamental para la escalabilidad de aplicaciones intensivas en
+datos \cite{kleppmann2017designing}. En el presente proyecto, esta base te\'orica sustenta el uso de Spark
+sobre una arquitectura Medallion para procesar las transacciones operativas y generar
+tableros de inteligencia de negocio estrat\'egica.
+
+La Tabla~\ref{tab:antecedentes} resume los antecedentes acad\'emicos y t\'ecnicos
+m\'as relevantes para el presente trabajo.
+
+{\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.5}
+\begin{longtable}{>{\raggedright\arraybackslash}p{3.5cm}
+                >{\centering\arraybackslash}p{1.2cm}
+                >{\raggedright\arraybackslash}p{4.5cm}
+                >{\raggedright\arraybackslash}p{6.5cm}}
+\caption{Resumen de Antecedentes Académicos y Técnicos Relacionados con el Proyecto} \label{tab:antecedentes} \\
+\toprule
+\thead{Trabajo} & \thead{A\~no} & \thead{Aporte principal} & \thead{Aplicabilidad al proyecto} \\
+\midrule
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\toprule
+\thead{Trabajo} & \thead{A\~no} & \thead{Aporte principal} & \thead{Aplicabilidad al proyecto} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Lee, Jang y Kim \cite{lee_digital_2024} & 2024 &
+  Relaci\'on positiva entre transformaci\'on digital y productividad en restaurantes. &
+  Justifica la integraci\'on tecnol\'ogica de procesos operativos. \\
+\rowcolor{altrow}
+Wang et al. \cite{wang_omnichannel_2024} & 2024 &
+  Modela la conveniencia de operar en canales dine-in, delivery y omnicanal. &
+  Sustenta el enfoque omnicanal del sistema. \\
+Katagri y Balavalad \cite{katagri_smart_2025} & 2025 &
+  Sistema inteligente de pedidos con interfaz responsiva y pagos seguros. &
+  Referente directo para la arquitectura de pedidos y reducci\'on de errores. \\
+\rowcolor{altrow}
+Tan y Netessine \cite{tan_tabletop_2020} & 2020 &
+  Tecnolog\'ias en mesa aumentan ventas y reducen duraci\'on del servicio. &
+  Apoya el uso de pedidos y pagos digitales en mesa. \\
+Koay y Ang \cite{koay_qr_2024} & 2024 &
+  Analiza intenci\'on de uso de men\'us QR con variables UTAUT2 y privacidad. &
+  Orienta el dise\~no UX del acceso por QR. \\
+\rowcolor{altrow}
+Hewage, Boman y Lefebvre \cite{hewage_qr_2024} & 2024 &
+  Men\'us QR pueden reducir lealtad por inconveniencia percibida. &
+  Advierte sobre la necesidad de minimizar fricci\'on y ofrecer alternativas. \\
+Yigito\u{g}lu et al. \cite{yigitoglu_sustainable_2025} & 2025 &
+  Impacto de men\'us QR sustentables en calidad de servicio y satisfacci\'on. &
+  Fundamenta el dise\~no accesible y de bajo riesgo percibido. \\
+\rowcolor{altrow}
+Iovescu y Tudose \cite{iovescu_realtime_2024} & 2024 &
+  Arquitecturas orientadas a eventos para sincronizaci\'on en tiempo real. &
+  Fundamenta el uso de eventos e idempotencia para \'ordenes y pagos. \\
+Choo et al. \cite{choo_qr_2023} & 2023 &
+  Sistema QR con men\'u digital, facturaci\'on automatizada y anal\'itica. &
+  Antecedente directo del m\'odulo de c\'odigos QR y tablero de administraci\'on. \\
+\rowcolor{altrow}
+Alsaati et al. \cite{alsaati_etipping_2026} & 2026 &
+  La manipulaci\'on percibida en interfaces de propina afecta satisfacci\'on. &
+  Sustenta dise\~no \'etico y transparente del flujo de pagos. \\
+\rowcolor{altrow}
+Zaharia et al. \cite{zaharia2012resilient} & 2012 &
+  Arquitectura de procesamiento distribuido en memoria (RDD). &
+  Base tecnol\'ogica para el pipeline anal\'itico de Spark. \\
+Bultel et al. \cite{bultel_faster_2020} & 2020 &
+  Minimizar transacciones en reparto de gastos puede ser NP-completo. &
+  Antecedente te\'orico para modelos de divisi\'on de pagos. \\
+\end{longtable}
+}
+
+\subsubsection{Soluciones de Mercado y Aplicaciones Comerciales}
+
+En el mercado actual existen diversas plataformas orientadas a la gesti\'on de restaurantes.
+Para el an\'alisis comparativo del presente trabajo, las soluciones se organizaron en tres grupos:
+plataformas POS y KDS integradas; plataformas de gesti\'on omnicanal de \'ordenes; y pasarelas
+o procesadores de pago con capacidades de integraci\'on digital.
+
+\noindent\textbf{Plataformas POS y KDS integradas.}
+Soluciones como Toast, Square~for~Restaurants, Lightspeed~Restaurant y TouchBistro incorporan
+funcionalidades de \textit{split bill}, pagos m\'ultiples, visualizaci\'on de \'ordenes en cocina y
+herramientas para mejorar la eficiencia operativa \cite{toast_contactless_2026}--\cite{touchbistro_pos}. En general, estas plataformas
+muestran un alto nivel de madurez en la gesti\'on interna del restaurante, particularmente en
+procesos administrados por meseros, caja o cocina. No obstante, en varios casos la experiencia
+de pago dividido sigue estando m\'as centrada en la l\'ogica operativa del establecimiento que en
+un flujo completamente aut\'onomo para el comensal, y muchas forman parte de ecosistemas
+cerrados con dependencia de hardware o configuraciones espec\'ificas del proveedor.
+
+CoverAtTable (CoverManager) ofrece un sistema con c\'odigo QR en mesa para pedidos y pagos
+que permite al comensal pagar la cuenta o realizar el pedido desde su dispositivo m\'ovil sin
+llamar al camarero \cite{mdn_websocket}. Sin embargo, no integra la gesti\'on de mesas virtuales compartidas con
+divisi\'on aut\'onoma de cuenta entre m\'ultiples comensales identificados individualmente.
+
+\noindent\textbf{Plataformas omnicanal de gesti\'on de \'ordenes.}
+Soluciones como Deliverect destacan por su capacidad de integraci\'on con POS existentes y
+por coordinar men\'us, estados y flujos de \'ordenes entre distintos or\'igenes. Sin embargo,
+funcionan m\'as como orquestadores de canales que como una soluci\'on integral de interacci\'on
+comensal-mesa-pago.
+
+\noindent\textbf{Pasarelas y procesadores de pago.}
+Stripe y Conekta ofrecen infraestructura cr\'itica para el procesamiento de cobros digitales,
+tokenizaci\'on y conciliaci\'on de transacciones \cite{pci_dss_4, stripe_pricing}. Estas soluciones se consideran
+complementarias al sistema propuesto: no resuelven por s\'i mismas la l\'ogica de divisi\'on de
+cuenta en una mesa virtual, pero proporcionan la base tecnol\'ogica necesaria para ejecutar
+los pagos de forma segura y trazable.
+
+La Tabla~\ref{tab:soluciones_comerciales} presenta una comparaci\'on de las soluciones
+comerciales m\'as relevantes identificadas en el estado del arte.
+
+\begin{longtable}{>{\raggedright\arraybackslash}p{2.2cm}
+                >{\raggedright\arraybackslash}p{2.5cm}
+                >{\centering\arraybackslash}p{1.3cm}
+                >{\centering\arraybackslash}p{1.3cm}
+                >{\centering\arraybackslash}p{1.3cm}
+                >{\raggedright\arraybackslash}p{4.1cm}}
+\caption{Comparación de Soluciones Comerciales Relacionadas con el Proyecto}
+\label{tab:soluciones_comerciales}\\
+\toprule
+\thead{Proveedor} & \thead{Producto} & \thead{QR / mesa} &
+\thead{Split bill} & \thead{Mesa virtual} & \thead{Observaciones} \\
+\midrule
+\endfirsthead
+
+\toprule
+\thead{Proveedor} & \thead{Producto} & \thead{QR / mesa} &
+\thead{Split bill} & \thead{Mesa virtual} & \thead{Observaciones} \\
+\midrule
+\endhead
+
+\midrule
+\multicolumn{6}{r}{Contin\'ua en la siguiente p\'agina} \\
+\endfoot
+
+\bottomrule
+\endlastfoot
+Toast & POS + Mobile Order \& Pay + KDS & S\'i & S\'i & No &
+  Ecosistema robusto, dependencia del stack del proveedor. \\
+\rowcolor{altrow}
+Square & Square for Restaurants + KDS & S\'i & S\'i & No &
+  Soporta pagos m\'ultiples y divisi\'on por \'items con integraci\'on propia. \\
+Lightspeed & Restaurant + Order Anywhere + KDS & S\'i & S\'i & No &
+  Buen soporte para cuenta dividida y pedidos por QR, con variaciones por regi\'on. \\
+\rowcolor{altrow}
+CoverManager & CoverAtTable & S\'i & Parcial & No &
+  QR en mesa para pedidos y pagos, sin gesti\'on de comensales individuales. \\
+Deliverect & Order Management + Integraciones & Parcial & No central & No &
+  Destaca en agregaci\'on omnicanal, no en mesa y pago dividido. \\
+\rowcolor{altrow}
+Mercado Pago & Checkout / Links / QR & No espec\'ifico & Parcial & No &
+  \'Util como capa de pago, no como gestor integral de restaurante. \\
+Stripe & Payments + Connect & No espec\'ifico & Parcial & No &
+  Flexible por API; la l\'ogica de divisi\'on debe implementarse en la app. \\
+\rowcolor{altrow}
+Biomenus & Men\'u digital PWA con nutrici\'on, alerg\'enos y filtros & S\'i & No & No &
+  Especializado en informaci\'on nutricional y filtros diet\'eticos; sin KDS, sin cuentas por comensal ni gesti\'on de mesas. \\
+Loyverse POS & POS + KDS + inventario (freemium) & Parcial* & Parcial & No &
+  KDS y divisi\'on de tickets gratuitos; sin mapeo de mesas, sin QR de sesiones, sin cuentas aut\'onomas por comensal. QR ordering s\'olo v\'ia integraciones de terceros. \\
+\rowcolor{altrow}
+\textbf{El presente sistema} & PWA omnicanal & \textbf{S\'i} & \textbf{S\'i} &
+  \textbf{S\'i} & Mesa virtual con contrase\~na, divisi\'on aut\'onoma de cuenta y arquitectura serverless. \\
+\end{longtable}
+
+\noindent\footnotesize{*QR ordering en Loyverse requiere integraciones externas del App Marketplace (ej. MENU~TIGER, Fuudey).}
+
+\normalsize
+
+\subsubsection{Análisis Detallado: Biomenus}
+
+Biomenus es una plataforma de men\'us digitales inteligentes especializada en la presentaci\'on
+de informaci\'on nutricional, declaraci\'on de al\'ergenos y filtros diet\'eticos (vegano,
+sin gluten, sin l\'acteos, entre otros) \cite{biomenus}. Su propuesta de valor se centra en empoderar al
+comensal con informaci\'on detallada sobre los platillos antes de ordenar, facilitando la
+toma de decisiones para personas con restricciones alimentarias o necesidades espec\'ificas
+de salud.
+
+La plataforma permite a los restaurantes crear y publicar men\'us digitales accesibles
+mediante c\'odigo QR, con soporte para actualizaci\'on en tiempo real de precios, fotos,
+descripciones y disponibilidad de platillos. Destaca por ofrecer perfiles nutricionales
+completos por plato y la posibilidad de que los comensales filtren el cat\'alogo seg\'un sus
+preferencias diet\'eticas.
+
+Sin embargo, Biomenus opera exclusivamente como una herramienta de \textit{consulta
+de men\'u}, sin incluir funcionalidades de gesti\'on de pedidos, seguimiento de \'ordenes
+en cocina (KDS), gesti\'on de mesas, ni divisi\'on de cuentas entre comensales. El flujo
+de pago queda completamente fuera de su alcance. En este sentido, constituye una soluci\'on
+complementaria pero no sustituta de un sistema integral de gesti\'on restaurantera.
+
+La Tabla~\ref{tab:comp_biomenus} presenta el an\'alisis comparativo entre Biomenus y la
+propuesta del presente proyecto.
+
+{\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.5}
+\begin{longtable}{>{\raggedright\arraybackslash}p{4.5cm}
+                >{\centering\arraybackslash}p{2.5cm}
+                >{\centering\arraybackslash}p{2.5cm}
+                >{\raggedright\arraybackslash}p{6cm}}
+\caption{Análisis Comparativo: Biomenus vs. Sistema Propuesto} \label{tab:comp_biomenus} \\
+\toprule
+\thead{Capacidad} & \thead{Biomenus} & \thead{Sistema} & \thead{Observaci\'on} \\
+\midrule
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\toprule
+\thead{Capacidad} & \thead{Biomenus} & \thead{Sistema} & \thead{Observaci\'on} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Men\'u digital con QR & S\'i & S\'i & Ambas ofrecen acceso al men\'u v\'ia QR sin app nativa. \\
+\rowcolor{altrow}
+Informaci\'on nutricional y al\'ergenos & \textbf{S\'i (detallada)} & No (v1.0) & Biomenus supera al sistema propuesto en profundidad de informaci\'on diet\'etica; identificado como trabajo futuro. \\
+Filtros diet\'eticos (vegano, gluten-free) & \textbf{S\'i} & No (v1.0) & Funcionalidad de roadmap en el sistema. \\
+\rowcolor{altrow}
+Actualizaci\'on de men\'u en tiempo real & S\'i & S\'i & Ambas permiten cambios inmediatos sin reimprimir. \\
+Gesti\'on de \'ordenes (comensal ordena) & No & \textbf{S\'i} & El sistema incluye flujo completo de canasta y confirmaci\'on. \\
+\rowcolor{altrow}
+KDS para Chef en tiempo real & No & \textbf{S\'i} & El sistema sincroniza \'ordenes con el tablero del Chef v\'ia Supabase Realtime. \\
+Mesa virtual con contrase\~na & No & \textbf{S\'i} & Diferenciador central del sistema: acceso seguro por JWT + contrase\~na. \\
+\rowcolor{altrow}
+Divisi\'on de cuenta por comensal & No & \textbf{S\'i} & El sistema permite liquidar cuentas individuales y mesa compartida de forma aut\'onoma. \\
+Dashboard administrativo & No & \textbf{S\'i} & El sistema incluye m\'etricas por cadena, zona y sucursal. \\
+\rowcolor{altrow}
+Gesti\'on de roles y personal & No & \textbf{S\'i} & El sistema implementa jerarqu\'ia de 5 roles con RLS en Supabase. \\
+Modelo de negocio & SaaS / freemium & Desarrollo propio & Biomenus opera como servicio externo; el sistema es propiedad total del c\'odigo. \\
+\end{longtable}
+}
+
+\subsubsection{Análisis Detallado: Loyverse POS}
+
+Loyverse~POS es un sistema de punto de venta (POS) en la nube con modelo freemium,
+disponible para iOS y Android, orientado principalmente a caf\'es, restaurantes de
+servicio r\'apido y comercios minoristas peque\~nos \cite{loyverse_features}. Su plan gratuito incluye funciones
+habitualmente de pago en otros sistemas: POS b\'asico, KDS, pantalla de cliente,
+programa de lealtad, gesti\'on de inventario y reportes anal\'iticos en tiempo real \cite{fitsmallbusiness_loyverse}.
+Las funciones avanzadas (gesti\'on de empleados, inventario avanzado e integraciones) se
+ofrecen como m\'odulos adicionales con tarifa mensual por tienda.
+
+En cuanto a la experiencia del comensal, Loyverse no cuenta con QR de sesi\'on nativo;
+el ordenamiento por QR s\'olo es posible mediante integraciones del App~Marketplace como
+MENU~TIGER o Fuudey \cite{posusa_loyverse}. Estas integraciones registran los pedidos en el sistema
+de Loyverse, pero no implementan el concepto de mesa virtual protegida por contrase\~na
+ni la gesti\'on aut\'onoma de cuentas individuales por comensal.
+
+Una limitaci\'on documentada de Loyverse es la ausencia de mapeo visual de mesas
+(\textit{table mapping}), lo que lo hace poco adecuado para restaurantes de servicio
+completo donde la gesti\'on espacial de mesas es esencial \cite{fitsmallbusiness_loyverse, posusa_loyverse}. La divisi\'on de
+tickets existe pero opera desde el lado del cajero/mesero, no desde el dispositivo
+del comensal.
+
+La Tabla~\ref{tab:comp_loyverse} presenta el an\'alisis comparativo entre Loyverse y la
+propuesta del presente proyecto.
+
+{\small
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.5}
+\begin{longtable}{>{\raggedright\arraybackslash}p{4.5cm}
+                >{\centering\arraybackslash}p{2.5cm}
+                >{\centering\arraybackslash}p{2.5cm}
+                >{\raggedright\arraybackslash}p{6cm}}
+\caption{Análisis Comparativo: Loyverse vs. Sistema Propuesto} \label{tab:comp_loyverse} \\
+\toprule
+\thead{Capacidad} & \thead{Loyverse} & \thead{Sistema} & \thead{Observaci\'on} \\
+\midrule
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\toprule
+\thead{Capacidad} & \thead{Loyverse} & \thead{Sistema} & \thead{Observaci\'on} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+POS (toma de \'ordenes por personal) & \textbf{S\'i (gratuito)} & Limitado & Loyverse supera al sistema en POS tradicional; el sistema se enfoca en autoservicio del comensal. \\
+\rowcolor{altrow}
+KDS para cocina en tiempo real & \textbf{S\'i (gratuito)} & S\'i & Ambas ofrecen KDS; Loyverse usa app nativa, el sistema usa WebSockets + Supabase Realtime. \\
+Programa de lealtad & \textbf{S\'i (gratuito)} & No (v1.0) & Loyverse incluye puntos de fidelizaci\'on; identificado como trabajo futuro en el sistema. \\
+\rowcolor{altrow}
+Gesti\'on de inventario & \textbf{S\'i (avanzado, pago)} & No & Loyverse gestiona stock e ingredientes; fuera del alcance del sistema v1.0. \\
+Reportes de ventas & \textbf{S\'i} & S\'i & Loyverse reporta por empleado, turno e \'item; el sistema por cadena, zona y sucursal. \\
+\rowcolor{altrow}
+Mapeo visual de mesas & No & No (v1.0) & Ambas carecen de plano de planta en sus versiones actuales. \\
+QR nativo para ordenar desde mesa & No nativo* & \textbf{S\'i (JWT)} & El sistema implementa QR de sesi\'on \'unica con contrase\~na; Loyverse requiere app de terceros. \\
+\rowcolor{altrow}
+Mesa virtual protegida por contrase\~na & No & \textbf{S\'i} & Diferenciador central del sistema: sesiones privadas por grupo de comensales. \\
+Divisi\'on aut\'onoma de cuenta (comensal) & No & \textbf{S\'i} & En Loyverse la divisi\'on la hace el cajero; en el sistema la hace el propio comensal. \\
+\rowcolor{altrow}
+Gesti\'on multi-nivel (cadena/zona/sucursal) & Parcial (multi-tienda) & \textbf{S\'i} & El sistema implementa jerarqu\'ia de 3 niveles con acceso por rol; Loyverse gestiona m\'ultiples tiendas pero sin jerarqu\'ia org. \\
+Funcionamiento offline & \textbf{S\'i} & No & Loyverse sincroniza ventas offline; el sistema requiere conexi\'on permanente. \\
+\rowcolor{altrow}
+Modelo de acceso & App nativa iOS/Android & PWA (navegador) & Loyverse requiere instalaci\'on de app; el sistema es accesible sin instalar nada. \\
+Costo base & \textbf{Gratuito} & Infraestructura (\$914~MXN/mes) & Loyverse no tiene costo de software base; el sistema tiene costo de infraestructura cloud. \\
+\end{longtable}
+}
+
+\noindent\footnotesize{*QR ordering en Loyverse requiere integraciones del App Marketplace (MENU~TIGER, Fuudey, Orderlina).}
+
+\normalsize
+
+\subsubsection{Síntesis del Estado del Arte}
+
+A partir de la revisi\'on acad\'emica y comercial realizada, se observa que existen avances
+importantes en digitalizaci\'on de restaurantes, autoservicio en mesa, men\'us QR, plataformas
+omnicanal y procesamiento de pagos digitales. Sin embargo, tambi\'en se identifican vac\'ios
+relevantes en la integraci\'on de estas capacidades dentro de una soluci\'on unificada centrada
+en el comensal.
+
+Los an\'alisis comparativos de Biomenus y Loyverse~POS permiten delimitar con precisi\'on las
+ventajas y las brechas del presente proyecto. \textbf{Biomenus} lidera en informaci\'on
+nutricional y filtros diet\'eticos, funcionalidades que el sistema no incluye en v1.0 pero que
+representan una oportunidad clara de diferenciaci\'on futura. En contraste, Biomenus carece
+completamente de gesti\'on de \'ordenes, KDS, cuentas por comensal y dashboard administrativo,
+\'areas en las que el sistema ofrece cobertura completa. \textbf{Loyverse~POS} supera al sistema propuesto
+en su modelo POS tradicional (gratuito, nativo, con soporte offline y programa de lealtad),
+pero no implementa el concepto de mesa virtual protegida por contrase\~na, ni la divisi\'on
+aut\'onoma de cuenta desde el dispositivo del comensal \cite{fitsmallbusiness_loyverse}. El QR ordering de
+Loyverse depende de integraciones externas y no ofrece la trazabilidad individual por comensal
+que distingue a la propuesta del presente proyecto.
+
+En particular, las plataformas comerciales existentes tienden a resolver adecuadamente la
+divisi\'on de cuenta desde la perspectiva operativa del restaurante (cajero o mesero como
+actor), pero ofrecen menor flexibilidad cuando se busca que los propios comensales gestionen,
+en tiempo real, pedidos, divisiones por \'item y contribuciones colaborativas dentro de una
+misma mesa virtual con identidad propia.
+
+La literatura muestra que el uso de tecnolog\'ias como men\'us QR y autoservicio puede mejorar
+la eficiencia operativa, aunque no garantiza por s\'i mismo una mejor experiencia de usuario
+\cite{hewage_qr_2024, nra_state_2023}. Por ello, el dise\~no de la presente soluci\'on requiere equilibrar productividad,
+facilidad de uso, transparencia en el estado de cuentas y consistencia en tiempo real.
+
+En este sentido, el presente proyecto se posiciona como una propuesta que busca integrar
+en una sola plataforma la gesti\'on de mesas, \'ordenes y liquidaci\'on de cuentas divididas,
+combinando acceso mediante c\'odigos QR con JWT de un solo uso, sincronizaci\'on en tiempo
+real v\'ia Supabase~Realtime y trazabilidad de transacciones. A diferencia de las soluciones
+comerciales analizadas, el sistema incorpora un motor de procesamiento distribuido mediante
+Apache Spark bajo una arquitectura Medallion, lo que permite transformar los datos operativos
+en inteligencia de negocio estrat\'egica para la gesti\'on multinivel de cadenas restauranteras
+en M\'exico.
+
+% ============================================================

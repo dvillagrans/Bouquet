@@ -106,6 +106,7 @@ export async function advanceOrderStatus(orderId: string, currentStatus: string)
   await notifyGuestMenuOrderUpdated(orderId);
 
   revalidatePath("/cocina");
+  revalidatePath("/barra");
   revalidatePath("/mesa/[codigo]/menu", "page");
   revalidatePath("/mesero");
 }
@@ -127,6 +128,7 @@ export async function undoOrderStatus(orderId: string, currentStatus: string) {
   await notifyGuestMenuOrderUpdated(orderId);
 
   revalidatePath("/cocina");
+  revalidatePath("/barra");
   revalidatePath("/mesa/[codigo]/menu", "page");
   revalidatePath("/mesero");
 }
@@ -149,6 +151,7 @@ export async function moveOrderToStatus(
   await notifyGuestMenuOrderUpdated(orderId);
 
   revalidatePath("/cocina");
+  revalidatePath("/barra");
   revalidatePath("/mesa/[codigo]/menu", "page");
 
 }

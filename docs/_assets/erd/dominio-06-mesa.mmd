@@ -1,0 +1,50 @@
+erDiagram
+
+    DiningTable {
+        string id PK
+        string restaurantId FK
+        int number
+        int capacity
+        string qrTokenHash
+        int qrVersion
+        string status
+        float posX
+        float posY
+        string shape
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    DiningSession {
+        string id PK
+        string restaurantId FK
+        string openedByUserId FK
+        string closedByUserId FK
+        string status
+        int pax
+        timestamp openedAt
+        timestamp closedAt
+        timestamp updatedAt
+    }
+
+    DiningSessionTable {
+        string id PK
+        string diningSessionId FK
+        string tableId FK
+        timestamp joinedAt
+        timestamp leftAt
+    }
+
+    Guest {
+        string id PK
+        string diningSessionId FK
+        string name
+        int seatNumber
+        timestamp createdAt
+    }
+
+    Restaurant ||--o{ DiningTable : "tiene"
+    Restaurant ||--o{ DiningSession : "tiene"
+    DiningTable ||--o{ DiningSessionTable : "en sesiones"
+    DiningSession ||--o{ DiningSessionTable : "ocupa mesas"
+    DiningSession ||--o{ Guest : "tiene"

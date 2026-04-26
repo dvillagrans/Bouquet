@@ -1,0 +1,41 @@
+flowchart LR
+    %% Palette & Styles
+    classDef nextjs fill:#FFFFFF,stroke:#000000,stroke-width:2px,color:#000000
+    classDef vps    fill:#FFFFFF,stroke:#475569,stroke-width:2px,color:#1E293B
+    classDef spark  fill:#FFF7ED,stroke:#EA580C,stroke-width:2px,color:#9A3412
+    classDef db     fill:#F0FDF4,stroke:#16A34A,stroke-width:2px,color:#166534
+    classDef gold   fill:#FEFCE8,stroke:#CA8A04,stroke-width:2px,color:#854D0E
+
+    subgraph CLIENT["Capa de Usuario (Next.js)"]
+        direction TB
+        DASH["<b>Dashboard Analítico</b><br/>Interfaz de Gestión"]
+        API["<b>API Orchestrator</b><br/>Gestión de Jobs"]
+    end
+
+    subgraph COMPUTE["Procesamiento (Apache Spark)"]
+        direction TB
+        BR["Capa Bronze<br/>(Raw Data)"]
+        SI["Capa Silver<br/>(Enriquecida)"]
+        GO["Capa Gold<br/>(Negocio)"]
+        BR --> SI --> GO
+    end
+
+    subgraph STORAGE["Persistencia (Supabase)"]
+        direction TB
+        OLTP[("<b>Base Operacional</b><br/>PostgreSQL")]
+        GOLD_DB[("<b>Tablas Analíticas</b><br/>Capa Gold")]
+    end
+
+    %% Interactions
+    DASH <--> API
+    API  -->|"1. Dispara Job"| COMPUTE
+    OLTP -->|"2. Lectura JDBC"| COMPUTE
+    COMPUTE -->|"3. Escritura Gold"| GOLD_DB
+    GOLD_DB -->|"4. Visualización"| DASH
+
+    %% Styling Application
+    class DASH,API nextjs
+    class BR,SI spark
+    class GO gold
+    class OLTP,GOLD_DB db
+    class COMPUTE vps

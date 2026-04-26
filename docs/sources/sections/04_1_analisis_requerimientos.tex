@@ -1,0 +1,688 @@
+\section{Levantamiento y Análisis de Requerimientos}
+\subsubsection{Requerimientos Funcionales}
+
+% -----------------------------------------------------------
+
+Los requerimientos funcionales definen las capacidades que el sistema debe proveer
+para satisfacer los objetivos espec\'ificos (OE-01 a OE-13). Se organizan en los
+mismos ocho m\'odulos definidos en el Cap\'itulo~1 y se presentan en la
+Tabla~\ref{tab:rf}.
+
+\setstretch{1.2}
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{>{\bfseries\centering\arraybackslash}p{1.5cm}
+                >{\raggedright\arraybackslash}p{6.5cm}
+                >{\raggedright\arraybackslash}p{6.5cm}
+                >{\centering\arraybackslash}p{1.5cm}}
+\caption{Requerimientos Funcionales del Sistema} \label{tab:rf} \\
+\toprule
+\thead{ID} & \thead{Requerimiento} & \thead{Criterio de aceptación} & \thead{OE ref.} \\
+\midrule
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\toprule
+\thead{ID} & \thead{Requerimiento} & \thead{Criterio de aceptación} & \thead{OE ref.} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\multicolumn{4}{l}{\textit{Módulo 1 — Infraestructura y Estructura Organizacional}} \\
+\midrule
+RF-01 & El sistema debe desplegar ambientes diferenciados de Producci\'on y Preview con pipelines de CI/CD autom\'aticos. &
+  Deploy autom\'atico al hacer push a la rama \texttt{main}. Migraciones de Prisma ejecutadas sin errores en ambos ambientes. & OE-01 \\
+\rowcolor{altrow}
+RF-02 & El sistema debe gestionar los tres niveles organizacionales: Cadena, Zona y Sucursal, con integridad referencial. &
+  CRUD completo en cada nivel. Intento de eliminar una Cadena con Zonas activas retorna error de integridad. & OE-02 \\
+\midrule
+\multicolumn{4}{l}{\textit{Módulo 2 — Autenticación y Control de Acceso}} \\
+\midrule
+RF-03 & El sistema debe autenticar usuarios colaboradores mediante email/contrase\~na y emitir JWT con el rol asignado. &
+  Login exitoso genera token con claims de rol y nivel org. Token inv\'alido retorna HTTP 401. & OE-03 \\
+\rowcolor{altrow}
+RF-04 & Las pol\'iticas RLS deben garantizar que cada usuario acceda s\'olo a los datos de su nivel organizacional. &
+  Gerente de Zona A no puede leer ni modificar registros de Zona B. Verificado v\'ia tests de integraci\'on. & OE-03 \\
+RF-05 & Al primer login con contrase\~na temporal, el sistema debe forzar el cambio de contrase\~na antes de continuar. &
+  El sistema redirige al formulario de cambio si el flag \texttt{first\_login = true}. Imposible omitir el paso. & OE-03 \\
+\rowcolor{altrow}
+RF-06 & Un usuario no puede asignar roles superiores a los propios al dar de alta nuevos colaboradores. &
+  Gerente de Sucursal que intenta crear un Gerente de Zona recibe HTTP~403. & OE-04 \\
+\midrule
+\multicolumn{4}{l}{\textit{Módulo 3 — Catálogo}} \\
+\midrule
+RF-07 & El sistema debe permitir crear, editar, activar y desactivar categor\'ias y productos del men\'u por sucursal. &
+  Producto con 3 variantes creado exitosamente. Producto inactivo no visible para comensales. & OE-05 \\
+\rowcolor{altrow}
+RF-08 & Los cambios al men\'u deben reflejarse para los comensales activos en menos de 2 segundos. &
+  Test: Gerente desactiva producto; comensal conectado no lo ve en $< 2$~s sin recargar. & OE-05 \\
+\midrule
+\multicolumn{4}{l}{\textit{Módulo 4 — Mesas Físicas y Virtuales}} \\
+\midrule
+RF-09 & El sistema debe mostrar en tiempo real el estatus de todas las mesas f\'isicas de la sucursal. &
+  Mesero ve el cambio de estatus de una mesa en $< 2$~s v\'ia Supabase Realtime sin recargar la p\'agina. & OE-06 \\
+\rowcolor{altrow}
+RF-10 & El sistema debe generar c\'odigos QR con token JWT de un solo uso (TTL 30~min) para la activaci\'on de mesas virtuales. &
+  Segundo intento de escaneo del mismo QR retorna error de token ya utilizado o expirado. & OE-07 \\
+RF-11 & Solo se pueden asociar mesas f\'isicas en estado LIBRE a una mesa virtual nueva (RB-M01). &
+  Intento de inicializar con mesa en estado POR\_LIQUIDAR retorna error descriptivo. & OE-07 \\
+\rowcolor{altrow}
+RF-12 & El anfitri\'on debe crear una contrase\~na para activar la mesa virtual; esta se almacena hasheada (bcrypt). &
+  Hash verificado en base de datos. Contrase\~na no recuperable en texto plano. & OE-07 \\
+RF-13 & El comensal puede unirse a una mesa activa ingresando el ID de mesa y la contrase\~na provista por el anfitri\'on. &
+  Credenciales incorrectas retornan HTTP~401. Credenciales correctas crean sesi\'on activa. & OE-07 \\
+\midrule
+\multicolumn{4}{l}{\textit{Módulo 5 — Órdenes y Cocina}} \\
+\midrule
+\rowcolor{altrow}
+RF-14 & El comensal puede agregar productos a su canasta, ajustar cantidades y confirmar la orden con di\'alogo expl\'icito. &
+  Canasta persiste durante la sesi\'on (Zustand). Confirmaci\'on sin di\'alogo: bloqueada. & OE-08 \\
+RF-15 & El sistema debe distinguir entre \'ordenes individuales (cargo a cuenta personal) y \'ordenes compartidas (cargo a mesa grupal). &
+  Orden individual aparece s\'olo en la cuenta del comensal. Orden compartida visible para todos los de la mesa. & OE-08 \\
+\rowcolor{altrow}
+RF-16 & El tablero del Chef debe mostrar \'ordenes nuevas en $< 2$~s con notificaci\'on sonora (Web Audio API). &
+  Test: comensal confirma orden; aparece en tablero del Chef en $< 2$~s con sonido. & OE-09 \\
+RF-17 & El Chef debe poder avanzar el estado de cada orden: PENDIENTE $\rightarrow$ EN\_PREPARACION $\rightarrow$ EN\_REPARTO. &
+  Transici\'on inversa bloqueada. Cambios reflejados en vista del comensal en tiempo real. & OE-09 \\
+\midrule
+\multicolumn{4}{l}{\textit{Módulo 6 — Liquidación}} \\
+\midrule
+\rowcolor{altrow}
+RF-18 & El sistema debe prevenir pagos concurrentes duplicados mediante \texttt{SELECT FOR UPDATE} en PostgreSQL. &
+  Test de dos peticiones simult\'aneas: solo una se procesa; la segunda recibe error descriptivo. & OE-10 \\
+RF-19 & La mesa virtual debe transicionar autom\'aticamente a LIQUIDADA cuando todos los comensales y la mesa compartida est\'en saldados. &
+  Trigger en \texttt{transacciones\_pago}: al liquidar el \'ultimo pendiente, \texttt{mesa\_virtual.estado} = LIQUIDADA. & OE-10 \\
+\rowcolor{altrow}
+RF-20 & El sistema debe emitir un comprobante digital de liquidaci\'on al completarse todos los pagos de una mesa. &
+  Comprobante generado con timestamp, \'items y montos. Verificado en ambiente de staging. & OE-11 \\
+\midrule
+\multicolumn{4}{l}{\textit{Módulo 7 — Analytics}} \\
+\midrule
+RF-21 & El dashboard debe filtrar m\'etricas autom\'aticamente seg\'un el nivel organizacional del usuario autenticado. &
+  Admin ve toda la cadena; Gerente de Zona ve solo su zona; Gerente de Sucursal solo su sucursal. & OE-12 \\
+\rowcolor{altrow}
+RF-22 & El dashboard debe mostrar: n\'umero de mesas activas, \'ordenes por per\'iodo, ingresos, top productos y tiempos de atenci\'on. &
+  Datos coherentes con las transacciones registradas en Supabase. & OE-12 \\
+\midrule
+\multicolumn{4}{l}{\textit{Módulo 8 — Seguridad}} \\
+\midrule
+RF-23 & Todas las comunicaciones deben estar cifradas con HTTPS/TLS~1.2+ (Vercel + Supabase). &
+  Escaneo OWASP~ZAP sin vulnerabilidades cr\'iticas de cifrado. & OE-13 \\
+\rowcolor{altrow}
+RF-24 & Los endpoints de autenticaci\'on y acceso a mesa virtual deben tener rate limiting (m\'ax.\ 5 intentos fallidos antes de bloqueo temporal). &
+  Test de fuerza bruta: sexto intento retorna HTTP~429 con cabecera \texttt{Retry-After}. & OE-13 \\
+\end{longtable}
+\setstretch{1.5}
+
+% -----------------------------------------------------------
+\subsubsection{Requerimientos No Funcionales}
+% -----------------------------------------------------------
+
+Los requerimientos no funcionales establecen las condiciones de calidad bajo las
+cuales el sistema debe operar. La Tabla~\ref{tab:rnf} los organiza por categor\'ia.
+
+\setstretch{1.2}
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{>{\bfseries\centering\arraybackslash}p{1.5cm}
+                >{\raggedright\arraybackslash}p{3.5cm}
+                >{\raggedright\arraybackslash}p{5.5cm}
+                >{\raggedright\arraybackslash}p{5.5cm}}
+\caption{Requerimientos No Funcionales del Sistema} \label{tab:rnf} \\
+\toprule
+\thead{ID} & \thead{Categoría} & \thead{Requerimiento} & \thead{Métrica / Criterio} \\
+\midrule
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\toprule
+\thead{ID} & \thead{Categoría} & \thead{Requerimiento} & \thead{Métrica / Criterio} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+RNF-01 & Rendimiento & Tiempo de carga de la interfaz principal en conexi\'on m\'ovil 4G. &
+  $\leq 3$~segundos medido con Lighthouse en modo m\'ovil. \\
+\rowcolor{altrow}
+RNF-02 & Rendimiento & Latencia de actualizaciones en tiempo real (\'ordenes, mesas, pagos). &
+  $< 2$~segundos extremo a extremo v\'ia Supabase Realtime \cite{supabase_license}. \\
+RNF-03 & Rendimiento & Soporte de accesos simult\'aneos en horas pico por sucursal. &
+  Sistema estable con hasta 200 conexiones concurrentes. Verificado con k6. \\
+\rowcolor{altrow}
+RNF-04 & Disponibilidad & Disponibilidad durante el horario operativo del restaurante. &
+  $\geq 99.5$\% de uptime mensual (SLA de Vercel Pro + Supabase Pro) \cite{vercel_pricing, supabase_pricing}. \\
+RNF-05 & Seguridad & Transmisi\'on cifrada en todas las rutas de la plataforma. &
+  HTTPS/TLS~1.2+ en Vercel y Supabase. SSL gestionado autom\'aticamente. \\
+\rowcolor{altrow}
+RNF-06 & Seguridad & Protecci\'on de datos sensibles en base de datos. &
+  RLS habilitado en todas las tablas sensibles. Sin datos de tarjeta almacenados. \\
+RNF-07 & Seguridad & Integridad de datos transaccionales bajo concurrencia. &
+  Transacciones ACID with \texttt{SELECT FOR UPDATE}. Sin cobros duplicados verificados
+  en pruebas de carga. \\
+\rowcolor{altrow}
+RNF-08 & Usabilidad & Interfaz Mobile-First adaptable a pantallas $\geq 375$~px. &
+  Responsive verificado en Chrome DevTools para iPhone~SE, Galaxy~S20 y iPad. \\
+RNF-09 & Usabilidad & Accesibilidad WCAG~2.1~AA: contraste $\geq 4.5$:1 para texto. &
+  Auditado con axe DevTools. Sin errores cr\'iticos de accesibilidad. \\
+\rowcolor{altrow}
+RNF-10 & Usabilidad & Curva de aprendizaje del personal operativo $\leq 4$ horas. &
+  Onboarding guiado interactivo en la app. Manual de usuario por rol. \\
+RNF-11 & Compatibilidad & Compatibilidad con navegadores modernos sin instalaci\'on nativa. &
+  Funcional en Chrome~$\geq$90, Safari~$\geq$14 y Firefox~$\geq$88. \\
+\rowcolor{altrow}
+RNF-12 & Escalabilidad & Arquitectura con escalado horizontal autom\'atico. &
+  Funciones serverless en Vercel escalan autom\'aticamente.
+  PgBouncer (Supabase) resuelve pool de conexiones \cite{mdn_pwa, ibm_bi_intro}. \\
+RNF-13 & Mantenibilidad & C\'odigo base con cobertura de pruebas unitarias $\geq 70$\%. &
+  Reportado por Jest/Vitest en pipeline de CI/CD al hacer merge a \texttt{main}. \\
+\rowcolor{altrow}
+RNF-14 & Mantenibilidad & Tipado est\'atico en todo el stack. &
+  TypeScript strict mode habilitado. Sin \texttt{any} impl\'icito en c\'odigo de producci\'on. \\
+RNF-15 & Legal & Cumplimiento de LFPDPPP antes del primer usuario real. &
+  Aviso de Privacidad publicado. Consentimiento expl\'icito implementado.
+  Mecanismo ARCO disponible. \\
+\end{longtable}
+\setstretch{1.5}
+
+
+
+% ============================================================
+\newpage
+% Casos de Uso (movidos a Cap. 4)
+\subsection{Diagramas de Casos de Uso UML}
+% -----------------------------------------------------------
+
+Los diagramas de casos de uso modelan las interacciones entre los actores del
+sistema y sus funcionalidades, siguiendo la notaci\'on UML~2.5.1 \cite{omg_uml_2017}.
+Se definen quince casos de uso principales (CU-01 a CU-15), consistentes con los
+objetivos espec\'ificos OE-06 a OE-12 y los requerimientos funcionales RF-01 a
+RF-22 descritos en la Secci\'on~4.2. Cada diagrama presenta los actores
+involucrados, las relaciones de inclusi\'on (\textit{include}), extensi\'on
+(\textit{extend}) y herencia, y la frontera del sistema.
+
+\subsubsection{CU-01: Comensal Escanea QR e Ingresa a Mesa Virtual}
+
+La Figura~\ref{fig:cu01} presenta el caso de uso del flujo de acceso a la mesa virtual mediante
+c\'odigo QR. El actor principal es el \textbf{Comensal} y el actor secundario el
+\textbf{Mesero}, quien inicializa la mesa. El sistema valida el token JWT del QR
+(RF-10) y ejecuta el flujo de activaci\'on descrito en la Figura~\ref{fig:seq_activacion}.
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-01: Comensal Escanea QR e Ingresa a Mesa Virtual}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_01.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Mesero (primario), Comensal / Anfitr\'ion (primario), Sistema \\[4pt]
+\textbf{Precondiciones} && Mesa f\'isica en estado \texttt{DISPONIBLE}.
+  El mesero ha iniciado sesi\'on con rol MESERO o superior. \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Mesero selecciona mesas f\'isicas y genera mesa virtual.\newline
+  \textbf{2.} Sistema genera QR con JWT firmado (TTL 30 min) --- \textit{include} \textbf{CU-01a}: Generar token JWT de un solo uso.\newline
+  \textbf{3.} Mesero entrega QR f\'isico o digital al anfitr\'ion del grupo.\newline
+  \textbf{4.} Anfitr\'ion escanea el QR desde su navegador m\'ovil.\newline
+  \textbf{5.} Sistema valida firma, TTL y estado del token.\newline
+  \textbf{6.} Anfitr\'ion ingresa nombre y crea contrase\~na de mesa.\newline
+  \textbf{7.} Sistema activa la mesa virtual (\texttt{PENDIENTE\_ACTIVACION} $\to$ \texttt{OCUPADA}).\newline
+  \textbf{8.} Anfitr\'ion recibe \texttt{joinCode} para compartir con sus compa\~neros.\newline
+  \textbf{9.} Comensales adicionales ingresan con ID de mesa + contrase\~na. \\[4pt]
+\textbf{Flujos alternativos} &&
+  \textit{5a.} Token expirado o ya utilizado $\to$ Sistema retorna error \texttt{HTTP 401}.\newline
+  \textit{5b.} Mesa ya activa $\to$ Sistema retorna error \texttt{HTTP 409}.\newline
+  \textit{6a.} Contrase\~na de menos de 4 caracteres $\to$ validaci\'on en frontend. \\[4pt]
+\textbf{Postcondiciones} && Mesa virtual activa. Sesi\'on de Anfitr\'ion creada con \texttt{isHost=true}.
+  Mesas f\'isicas asociadas en estado \texttt{OCUPADA}. \\[4pt]
+\textbf{RF relacionados} && RF-09, RF-10, RF-11, RF-12, RF-13 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-01: Comensal escanea QR e ingresa a mesa virtual. Relaci\'on de inclusi\'on con CU-01a (generaci\'on de token JWT de un solo uso).}
+\label{fig:cu01}
+\end{figure}
+
+\subsubsection{CU-02: Comensal Consulta Menú, Crea Pedido y Confirma Orden}
+
+La Figura~\ref{fig:cu02} modela el flujo de creaci\'on de orden desde la perspectiva del
+comensal. Incluye la consulta del men\'u digital, la gesti\'on de la canasta
+y la confirmaci\'on expl\'icita de la orden.
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-02: Comensal Consulta Menú, Crea Pedido y Confirma Orden}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_02.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Comensal (primario), Sistema, Chef (actor receptor) \\[4pt]
+\textbf{Precondiciones} && Comensal con sesi\'on activa en una mesa virtual (\texttt{isActive=true}). \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Comensal navega el men\'u digital por categor\'ias.\newline
+  \textbf{2.} Comensal agrega productos a su canasta (Optimistic UI).\newline
+  \textbf{3.} Comensal selecciona tipo de orden: \textbf{Individual} (cargo a su cuenta) o \textbf{Compartida} (cargo a la cuenta de la mesa) --- \textit{extend} \textbf{CU-02a}: Agregar variante de producto.\newline
+  \textbf{4.} Comensal confirma la orden mediante di\'alogo expl\'icito.\newline
+  \textbf{5.} Sistema crea \texttt{Order} y \texttt{OrderItem}s at\'omicamente y actualiza la \texttt{Cuenta}.\newline
+  \textbf{6.} Sistema emite evento \texttt{nueva\_orden} v\'ia Supabase Realtime.\newline
+  \textbf{7.} Chef recibe la orden en el tablero KDS (CU-03). \\[4pt]
+\textbf{Flujos alternativos} &&
+  \textit{4a.} Mesa en estado \texttt{CERRANDO} $\to$ Sistema bloquea nuevas \'ordenes (\texttt{HTTP 409}).\newline
+  \textit{2a.} Producto \texttt{isSoldOut=true} $\to$ No mostrado en el men\'u (RF-08). \\[4pt]
+\textbf{Postcondiciones} && Orden en estado \texttt{PENDING}. Cuenta del comensal actualizada. Orden visible en KDS del Chef. \\[4pt]
+\textbf{RF relacionados} && RF-07, RF-08, RF-14, RF-15 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-02: Comensal consulta men\'u, crea pedido y confirma orden. Relaci\'on de extensi\'on con CU-02a (selecci\'on de variante de producto).}
+\label{fig:cu02}
+\end{figure}
+
+\subsubsection{CU-03: Cocina Recibe Orden, Actualiza Estado y Notifica Avance}
+
+La Figura~\ref{fig:cu03} describe el flujo del Chef al gestionar \'ordenes en el KDS Kanban.
+El flujo de actualizaci\'on de estado se sincroniza en tiempo real con la vista
+del comensal mediante Supabase Realtime.
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-03: Cocina Recibe Orden, Actualiza Estado y Notifica Avance}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_03.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Chef (primario), Sistema, Comensal (actor receptor) \\[4pt]
+\textbf{Precondiciones} && Orden en estado \texttt{PENDING} en el tablero KDS. Chef autenticado con rol CHEF. \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Sistema notifica al Chef con alerta sonora (Web Audio API) al llegar una orden nueva.\newline
+  \textbf{2.} Chef visualiza la orden en la columna ``Nuevas'' del tablero Kanban.\newline
+  \textbf{3.} Chef filtra \'ordenes por estaci\'on (\texttt{COCINA} o \texttt{BARRA}) --- \textit{include} \textbf{CU-03a}: Filtrar \'ordenes por estaci\'on.\newline
+  \textbf{4.} Chef avanza la orden: \texttt{PENDING} $\to$ \texttt{IN\_PROGRESS}.\newline
+  \textbf{5.} Chef avanza la orden: \texttt{IN\_PROGRESS} $\to$ \texttt{READY}.\newline
+  \textbf{6.} Sistema emite evento \texttt{orden\_actualizada} v\'ia Supabase Realtime.\newline
+  \textbf{7.} Vista del comensal actualiza el estado de la orden en tiempo real.\newline
+  \textbf{8.} Mesero entrega el platillo y avanza a \texttt{DELIVERED}. \\[4pt]
+\textbf{Flujos alternativos} &&
+  \textit{4a.} SLA $> 60$~s sin confirmaci\'on $\to$ Alerta al gerente (RO-05).\newline
+  \textit{5a.} Chef marca orden err\'oneamente $\to$ Bot\'on \textit{Deshacer} disponible hasta siguiente transici\'on. \\[4pt]
+\textbf{Postcondiciones} && Orden en estado \texttt{DELIVERED}. Timestamp \texttt{deliveredAt} registrado. Vista del comensal actualizada. \\[4pt]
+\textbf{RF relacionados} && RF-16, RF-17 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-03: Cocina recibe orden, actualiza estado y notifica avance. Inclusi\'on con CU-03a (filtrado por estaci\'on de preparaci\'on).}
+\label{fig:cu03}
+\end{figure}
+
+\subsubsection{CU-04: Comensal Liquida Cuenta (Individual o Mesa)}
+
+La Figura~\ref{fig:cu04} detalla el proceso de cierre y pago de cuentas. Este
+flujo es cr\'itico para la integridad financiera del sistema, integrando el
+bloqueo de concurrencia (RF-18) y la transici\'on de estado de la mesa (RF-19).
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-04: Comensal Liquida Cuenta (Individual o Mesa)}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_04.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Comensal (primario), Sistema, Pasarela de Pagos (externo) \\[4pt]
+\textbf{Precondiciones} && Mesa virtual en estado \texttt{OCUPADA} o \texttt{POR\_LIQUIDAR}.
+  Comensal con ítems por pagar. \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Comensal selecciona ``Pagar Cuenta'' en su interfaz.\newline
+  \textbf{2.} Comensal elige entre liquidar su cuenta individual o la compartida de la mesa.\newline
+  \textbf{3.} Sistema bloquea los registros de la cuenta (\texttt{SELECT FOR UPDATE}) para evitar pagos duplicados --- \textit{include} \textbf{CU-04a}: Bloquear concurrencia de pago.\newline
+  \textbf{4.} Comensal ingresa datos de pago y confirma transacci\'on.\newline
+  \textbf{5.} Sistema procesa el cobro a trav\'es de la Pasarela de Pagos.\newline
+  \textbf{6.} Sistema registra el pago y actualiza el saldo de la cuenta en Supabase.\newline
+  \textbf{7.} Sistema verifica si el saldo total de la mesa es \$0.00.\newline
+  \textbf{8.} Sistema transiciona la mesa a \texttt{LIQUIDADA} (RF-19).\newline
+  \textbf{9.} Sistema genera y muestra el comprobante digital (RF-20). \\[4pt]
+\textbf{Flujos alternativos} &&
+  \textit{3a.} Intento de pago simult\'aneo detectado $\to$ Sistema aborta y notifica al usuario.\newline
+  \textit{5a.} Pago rechazado por la pasarela $\to$ Sistema libera bloqueo y permite reintento. \\[4pt]
+\textbf{Postcondiciones} && Pago registrado. Saldo actualizado. Comprobante emitido. Mesa liberada si el saldo es cero. \\[4pt]
+\textbf{RF relacionados} && RF-18, RF-19, RF-20 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-04: Comensal liquida cuenta (individual o mesa). Incluye mecanismo de control de concurrencia de pagos.}
+\label{fig:cu04}
+\end{figure}
+
+\subsubsection{CU-05: Gerente Consulta Dashboard de Analítica}
+
+La Figura~\ref{fig:cu05} ilustra el flujo de consulta de inteligencia de negocio.
+El sistema garantiza que la informaci\'on sea filtrada seg\'un el nivel de
+autoridad del usuario (RF-21).
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-05: Gerente Consulta Dashboard de Analítica}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_05.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Gerente de Sucursal / Zona / Cadena (primario), Sistema \\[4pt]
+\textbf{Precondiciones} && Usuario autenticado con rol administrativo (GERENTE o superior). \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Usuario accede al m\'odulo de Analytics en el Dashboard administrativo.\newline
+  \textbf{2.} Sistema identifica el nivel organizacional del usuario (\textit{claim} en JWT).\newline
+  \textbf{3.} Sistema aplica filtros autom\'aticos de visibilidad (RF-21).\newline
+  \textbf{4.} Sistema consulta las tablas analíticas Gold procesadas por Spark.\newline
+  \textbf{5.} Sistema renderiza m\'etricas de ventas, velocidad de productos y tiempos de servicio (RF-22).\newline
+  \textbf{6.} Usuario ajusta el rango de fechas para el an\'alisis. \\[4pt]
+\textbf{Flujos alternativos} &&
+  \textit{4a.} No hay datos procesados para el per\'iodo $\to$ Sistema muestra estado vacío (\textit{Empty State}).\newline
+  \textit{5a.} Error en el pipeline de Spark $\to$ Sistema muestra la antig\"uedad del \'ultimo dato v\'alido. \\[4pt]
+\textbf{Postcondiciones} && Visualizaci\'on de m\'etricas de negocio. Reporte generado en pantalla. \\[4pt]
+\textbf{RF relacionados} && RF-21, RF-22 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-05: Gerente consulta dashboard de analítica. El sistema aplica filtros de seguridad organizacional en tiempo real.}
+\label{fig:cu05}
+\end{figure}
+
+\subsubsection{CU-06: Gestión de Estructura Organizacional y Personal}
+
+La Figura~\ref{fig:cu06} describe el proceso de configuraci\'on de la jerarqu\'ia
+empresarial y el control de acceso del personal, fundamental para la
+seguridad multitenant (RF-01 a RF-06).
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-06: Gestión de Estructura Organizacional y Personal}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_06.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Administrador de Cadena (primario), Gerente (primario), Sistema \\[4pt]
+\textbf{Precondiciones} && Usuario autenticado con rol administrativo. \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Usuario accede al m\'odulo de Organizaci\'on.\newline
+  \textbf{2.} Administrador crea Zonas y las asigna a la Cadena (RF-01).\newline
+  \textbf{3.} Gerente de Zona crea Sucursales (RF-02).\newline
+  \textbf{4.} Usuario administrativo invita a nuevos colaboradores definiendo su rol y nivel de visibilidad (RF-03).\newline
+  \textbf{5.} Sistema genera un enlace de invitaci\'on y registra al usuario en Supabase Auth.\newline
+  \textbf{6.} Sistema asocia al usuario con su nivel organizacional para aplicar RLS (RF-04). \\[4pt]
+\textbf{Flujos alternativos} &&
+  \textit{4a.} Colaborador ya registrado $\to$ Sistema notifica conflicto y permite reasignar rol. \\[4pt]
+\textbf{Postcondiciones} && Estructura jer\'arquica actualizada. Colaboradores con acceso restringido seg\'un rol. \\[4pt]
+\textbf{RF relacionados} && RF-01, RF-02, RF-03, RF-04, RF-06 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-06: Gestión de estructura organizacional y personal. Establece la base del control de acceso multitenant.}
+\label{fig:cu06}
+\end{figure}
+
+\subsubsection{CU-07: Administración de Catálogo y Overrides de Menú}
+
+La Figura~\ref{fig:cu07} ilustra la gesti\'on flexible de productos, permitiendo
+ajustes locales sin perder la centralizaci\'on de la cadena (RF-07, RF-14).
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-07: Administración de Catálogo y Overrides de Menú}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_07.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Gerente (primario), Sistema \\[4pt]
+\textbf{Precondiciones} && Usuario con rol GERENTE o superior. \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Usuario accede al m\'odulo de Cat\'alogo.\newline
+  \textbf{2.} Usuario crea o edita productos y categor\'ias en la plantilla base.\newline
+  \textbf{3.} Usuario selecciona una Sucursal o Zona espec\'ifica para aplicar ajustes.\newline
+  \textbf{4.} Usuario define un \textit{Override} de precio o disponibilidad (\texttt{isSoldOut}) para esa unidad (RF-08, RF-14).\newline
+  \textbf{5.} Sistema actualiza la visibilidad en tiempo real para los comensales de esa sucursal. \\[4pt]
+\textbf{Flujos alternativos} &&
+  \textit{4a.} Producto marcado como agotado $\to$ Sistema oculta el item autom\'aticamente en el men\'u del comensal. \\[4pt]
+\textbf{Postcondiciones} && Cat\'alogo actualizado. Precios locales aplicados correctamente. \\[4pt]
+\textbf{RF relacionados} && RF-07, RF-08, RF-14 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-07: Administración de catálogo y overrides de menú. Permite la personalización granular de la oferta gastronómica.}
+\label{fig:cu07}
+\end{figure}
+
+\subsubsection{CU-08: Diseño de Planta y Mapeo Visual de Mesas}
+
+La Figura~\ref{fig:cu08} detalla la configuraci\'on de la infraestructura f\'isica
+del restaurante, habilitando la interfaz visual del mesero (RF-09).
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-08: Diseño de Planta y Mapeo Visual de Mesas}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_08.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Gerente de Sucursal (primario), Sistema \\[4pt]
+\textbf{Precondiciones} && Sucursal creada y usuario asignado a ella. \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Usuario accede al Editor de Planta.\newline
+  \textbf{2.} Usuario crea nuevas mesas f\'isicas asignando n\'umero y capacidad (RF-09).\newline
+  \textbf{3.} Usuario posiciona las mesas en el lienzo digital definiendo coordenadas $X, Y$.\newline
+  \textbf{4.} Sistema persiste el layout y genera identificadores para los códigos QR.\newline
+  \textbf{5.} Usuario publica el mapa para que sea visible en el tablero del mesero. \\[4pt]
+\textbf{Flujos alternativos} &&
+  \textit{3a.} Solapamiento de mesas $\to$ Sistema muestra advertencia visual pero permite el guardado. \\[4pt]
+\textbf{Postcondiciones} && Mapa de mesas configurado. Mesas físicas listas para inicialización. \\[4pt]
+\textbf{RF relacionados} && RF-09 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-08: Diseño de planta y mapeo visual de mesas. Base para la gestión operativa en el salón.}
+\label{fig:cu08}
+\end{figure}
+
+\subsubsection{CU-09: Auditoría de Acciones y Trazabilidad de Cambios}
+
+La Figura~\ref{fig:cu09} detalla el sistema de logs de auditor\'ia inmutables,
+garantizando la transparencia en las operaciones administrativas y de cat\'alogo.
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-09: Auditoría de Acciones y Trazabilidad de Cambios}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_09.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Administrador de Cadena (primario), Sistema \\[4pt]
+\textbf{Precondiciones} && Usuario con rol ADMIN autenticado. \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Usuario accede al visor de Auditor\'ia.\newline
+  \textbf{2.} Usuario filtra por actor, entidad o rango de fechas.\newline
+  \textbf{3.} Sistema recupera registros de \texttt{AuditLog}.\newline
+  \textbf{4.} Usuario selecciona un evento para ver el detalle.\newline
+  \textbf{5.} Sistema muestra el \textit{snapshot} JSON del estado anterior (\texttt{before}) y posterior (\texttt{after}) del registro.\newline
+  \textbf{6.} Usuario verifica metadatos: IP, UserAgent y RequestID de la acci\'on. \\[4pt]
+\textbf{Postcondiciones} && Trazabilidad completa de cambios operacionales garantizada. \\[4pt]
+\textbf{RF relacionados} && RF-04, RF-11 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-09: Auditoría de acciones y trazabilidad de cambios. Permite reconstruir el historial de cualquier entidad del sistema.}
+\label{fig:cu09}
+\end{figure}
+
+\subsubsection{CU-10: Configuración de Modificadores y Opciones de Platillo}
+
+La Figura~\ref{fig:cu10} describe la personalizaci\'on avanzada de productos,
+necesaria para flujos gastron\'omicos complejos (ej. t\'erminos de carne, extras).
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-10: Configuración de Modificadores y Opciones de Platillo}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_10.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Gerente (primario), Sistema \\[4pt]
+\textbf{Precondiciones} && Productos del men\'u ya creados. \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Usuario crea un \texttt{ModifierGroup} definiendo reglas de selecci\'on (m\'in/m\'ax).\newline
+  \textbf{2.} Usuario agrega \texttt{ModifierOption}s al grupo.\newline
+  \textbf{3.} Usuario define ajustes de precio (\texttt{priceAdjustmentCents}) para opciones con costo adicional.\newline
+  \textbf{4.} Usuario asocia el grupo a uno o m\'as productos (\texttt{MenuItemModifierGroup}).\newline
+  \textbf{5.} Sistema habilita el modal de personalizaci\'on en la interfaz del comensal. \\[4pt]
+\textbf{Postcondiciones} && Men\'u enriquecido con opciones de personalizaci\'on din\'amica. \\[4pt]
+\textbf{RF relacionados} && RF-14 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-10: Configuración de modificadores y opciones de platillo. Soporte para reglas de negocio complejas en la toma de comanda.}
+\label{fig:cu10}
+\end{figure}
+
+\subsubsection{CU-11: Aplicación de Descuentos, Cortesías y Reembolsos}
+
+La Figura~\ref{fig:cu11} modela el flujo de ajustes financieros y atenci\'on al
+cliente por parte de la gerencia.
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-11: Aplicación de Descuentos, Cortesías y Reembolsos}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_11.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Gerente (primario), Sistema, Pasarela de Pagos (externo) \\[4pt]
+\textbf{Precondiciones} && Cuenta activa o pago procesado con necesidad de devoluci\'on. \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Usuario selecciona un \texttt{OrderItem} o un \texttt{Payment} completo.\newline
+  \textbf{2.} Usuario aplica un \texttt{AppliedDiscount} indicando tipo (\%, fijo) y motivo obligatorio.\newline
+  \textbf{3.} Sistema recalcula el saldo pendiente de la cuenta.\newline
+  \textbf{4.} En caso de error en servicio, Usuario inicia un \texttt{Refund}.\newline
+  \textbf{5.} Sistema solicita a la Pasarela la devoluci\'on del monto y registra el \texttt{providerRefundId}.\newline
+  \textbf{6.} Sistema marca el pago original como \texttt{REFUNDED}. \\[4pt]
+\textbf{Postcondiciones} && Ajuste financiero registrado y saldo de cuenta actualizado. \\[4pt]
+\textbf{RF relacionados} && RF-18, RF-20 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-11: Aplicación de descuentos, cortesías y reembolsos. Control de excepciones financieras en la operación.}
+\label{fig:cu11}
+\end{figure}
+
+\subsubsection{CU-12: Gestión de Impuestos y Parámetros Fiscales}
+
+La Figura~\ref{fig:cu12} describe la configuraci\'on de reg\'imenes fiscales por
+cadena y sucursal.
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-12: Gestión de Impuestos y Parámetros Fiscales}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_12.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Administrador de Cadena (primario), Sistema \\[4pt]
+\textbf{Precondiciones} && Cadena de restaurantes inicializada. \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Usuario crea un \texttt{TaxGroup} (ej. IVA 16\%, IEPS 8\%).\newline
+  \textbf{2.} Usuario define la tasa en \textit{basis points} (\texttt{rateBps}).\newline
+  \textbf{3.} Usuario asigna el grupo de impuestos a una \texttt{RestaurantCategory}.\newline
+  \textbf{4.} Sistema aplica autom\'aticamente el c\'alculo de impuestos a todos los productos de la categor\'ia.\newline
+  \textbf{5.} Sistema desglosa el impuesto en el resumen de cuenta y comprobante digital. \\[4pt]
+\textbf{Postcondiciones} && Configuraci\'on fiscal aplicada al c\'alculo de precios y pagos. \\[4pt]
+\textbf{RF relacionados} && RF-11, RF-20 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-12: Gestión de impuestos y parámetros fiscales. Garantiza el cumplimiento normativo en las transacciones.}
+\label{fig:cu12}
+\end{figure}
+
+\subsubsection{CU-13: Ejecución de Análisis y Orquestación de Pipeline Medallion}
+
+La Figura~\ref{fig:cu13} describe la interacci\'on entre el backend Next.js y
+el servidor de anal\'itica Spark, implementando un patr\'on de orquestaci\'on as\'incrona.
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-13: Ejecución de Análisis y Orquestación de Pipeline Medallion}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_13.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Gerente (primario), Sistema (Next.js), Analytics Orchestrator (receptor) \\[4pt]
+\textbf{Precondiciones} && Al menos 24 horas de datos operacionales acumulados. \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Gerente solicita "Actualizar Análisis" desde el Dashboard.\newline
+  \textbf{2.} Sistema valida permisos e invoca al \textit{Orchestrator} (FastAPI) en el VPS.\newline
+  \textbf{3.} Orquestador registra el inicio en \texttt{AnalyticsJobRun} y dispara el job de Spark.\newline
+  \textbf{4.} Dashboard inicia el \textit{polling} de estado mediante el \texttt{jobId}.\newline
+  \textbf{5.} Spark procesa capas Bronze $\to$ Silver $\to$ Gold.\newline
+  \textbf{6.} Orquestador marca el job como \texttt{COMPLETED}.\newline
+  \textbf{7.} Dashboard detecta cambio de estado y refresca las gr\'aficas anal\'iticas. \\[4pt]
+\textbf{Postcondiciones} && Tablas analíticas Gold actualizadas en PostgreSQL. \\[4pt]
+\textbf{RF relacionados} && RF-21, RF-22 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-13: Ejecución de análisis y orquestación de pipeline Medallion. Separación de cargas OLTP y OLAP.}
+\label{fig:cu13}
+\end{figure}
+
+\subsubsection{CU-14: Generación de Pronósticos de Demanda (Demand Forecasting)}
+
+La Figura~\ref{fig:cu14} modela la l\'ogica de inteligencia de negocio para la
+predicci\'on de demanda basada en estacionalidad hist\'orica.
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-14: Generación de Pronósticos de Demanda (Demand Forecasting)}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_14.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Sistema (Analytics Engine), Gerente (receptor) \\[4pt]
+\textbf{Precondiciones} && Datos hist\'oricos suficientes en capa Silver.\newline
+\textbf{Flujo principal} &&
+  \textbf{1.} Spark extrae el hist\'orico de ventas de las \'ultimas 4 semanas.\newline
+  \textbf{2.} Sistema calcula la media m\'ovil ponderada por d\'ia de la semana.\newline
+  \textbf{3.} Sistema genera el \textit{Score de Confianza} basado en la variabilidad hist\'orica.\newline
+  \textbf{4.} Sistema proyecta la demanda para los pr\'oximos 7 d\'ias.\newline
+  \textbf{5.} Resultados se persisten en \texttt{analytic\_forecast} para su visualizaci\'on. \\[4pt]
+\textbf{Postcondiciones} && Proyecciones de venta disponibles en el dashboard administrativo. \\[4pt]
+\textbf{RF relacionados} && RF-21 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-14: Generación de pronósticos de demanda. Proporciona una visión predictiva para la toma de decisiones.}
+\label{fig:cu14}
+\end{figure}
+
+\subsubsection{CU-15: Análisis de Tiempos de Servicio y Eficiencia (Process Mining)}
+
+La Figura~\ref{fig:cu15} detalla la monitorizaci\'on de la eficiencia operativa
+en cocina y sal\'on.
+
+\begin{figure}[ht]
+\centering
+\begin{usecasebox}{CU-15: Análisis de Tiempos de Servicio y Eficiencia}
+\centering
+\includegraphics[width=0.95\textwidth]{casos_uso/rendered/CU_15.pdf}
+\vspace{10pt}
+\small
+\begin{tabular}{p{3.8cm} p{0.6cm} p{9cm}}
+\textbf{Actores} && Sistema (Analytics Engine), Gerente (receptor), Chef (receptor) \\[4pt]
+\textbf{Precondiciones} && Eventos de estado de orden registrados en la base de datos. \\[4pt]
+\textbf{Flujo principal} &&
+  \textbf{1.} Spark analiza la cronolog\'ia de \texttt{OrderItemStatusEvent}.\newline
+  \textbf{2.} Sistema calcula el tiempo promedio de ciclo (\texttt{NEW} $\to$ \texttt{SERVED}).\newline
+  \textbf{3.} Sistema identifica cuellos de botella mediante el \texttt{bottleneckScore} por estaci\'on.\newline
+  \textbf{4.} Sistema detecta desviaciones respecto al SLA configurado.\newline
+  \textbf{5.} M\'etricas de eficiencia se despliegan en el m\'odulo de Operaciones. \\[4pt]
+\textbf{Postcondiciones} && Identificación de áreas de mejora operativa y saturación de cocina. \\[4pt]
+\textbf{RF relacionados} && RF-16, RF-17, RF-22 \\
+\end{tabular}
+\end{usecasebox}
+\caption{CU-15: Análisis de tiempos de servicio y eficiencia. Permite el monitoreo continuo de la calidad del servicio.}
+\label{fig:cu15}
+\end{figure}
+
+
+%  CAPÍTULO 5 — DISEÑO DEL SISTEMA
+% ============================================================
+\newpage

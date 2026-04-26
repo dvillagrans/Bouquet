@@ -1,0 +1,31 @@
+erDiagram
+
+    Permission {
+        string id PK
+        string code UK
+        string description
+        string scope
+        timestamp createdAt
+    }
+
+    Role {
+        string id PK
+        string chainId FK
+        string name
+        string scope
+        string description
+        boolean isBase
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    RolePermission {
+        string roleId FK
+        string permissionId FK
+        timestamp assignedAt
+    }
+
+    Permission ||--o{ RolePermission : "asignada en"
+    Role ||--o{ RolePermission : "tiene"
+    Role }o--o| Chain : "pertenece a"

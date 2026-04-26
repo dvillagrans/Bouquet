@@ -1,0 +1,61 @@
+sequenceDiagram
+    autonumber
+    
+    %% Color Palette
+    %% primary: #1B3A5C (Dark Blue)
+    %% accent: #2E75B6 (Medium Blue)
+    %% lightest: #EBF3FA (Very Light Blue)
+    %% green: #D6EFD8
+    %% orange: #FFF0D6
+    %% red: #FDDCDC
+
+    actor M as Mesero
+    actor A as Anfitrión
+    actor C as Comensal
+    participant S as Sistema (Bouquet API)
+    participant DB as Base de Datos (PostgreSQL)
+
+    rect rgb(214, 239, 216)
+        Note over M,DB: Fase 1: Inicialización de Mesa Virtual
+        M->>S: Selecciona mesas físicas disponibles
+        S->>DB: INSERT MesaVirtual (PENDIENTE_ACTIVACION)
+        S->>DB: INSERT MesaFisica_MesaVirtual (Asociación)
+        DB-->>S: MesaVirtual creada
+        S->>S: Genera JWT (TTL 30 min, one-time use)
+        S-->>M: Entrega QR con JWT embebido
+    end
+
+    rect rgb(235, 243, 250)
+        Note over A,DB: Fase 2: Activación por el Anfitrión
+        A->>S: Escanea QR → GET /mesa/:token
+        S->>DB: SELECT status FROM MesaVirtual WHERE token = ?
+        DB-->>S: status: PENDIENTE_ACTIVACION
+        S->>S: Valida Firma JWT + Expiración
+        S->>A: Solicita Nombre y Contraseña de Mesa
+        A->>S: POST /activar { guestName, password }
+        S->>DB: UPDATE MesaVirtual (status=OCUPADA, pass_hash=bcrypt)
+        S->>DB: UPDATE MesaFisica (status=OCUPADA)
+        S->>DB: INSERT SesionComensal (isHost=true)
+        DB-->>S: Transacción Completada
+        S-->>A: Entrega joinCode (Acceso al Menú)
+    end
+
+    rect rgb(255, 240, 214)
+        Note over C,DB: Fase 3: Incorporación de Comensales
+        C->>S: POST /join { joinCode, guestName }
+        S->>DB: SELECT id FROM MesaVirtual WHERE joinCode = ?
+        DB-->>S: MesaVirtual encontrada (OCUPADA)
+        S->>DB: INSERT SesionComensal (isHost=false)
+        DB-->>S: Sesión Creada
+        S-->>C: Acceso al Menú Compartido
+    end
+
+    rect rgb(253, 220, 220)
+        Note over A,S: Flujos Alternativos y Validaciones
+        A--xS: Token expirado o reutilizado
+        S-->>A: Error 401 — Código inválido o vencido
+        A--xS: Mesa en estado incorrecto (≠ PENDIENTE)
+        S-->>A: Error 409 — Mesa ya activada por otro usuario
+        A--xS: Validación de seguridad fallida
+        S-->>A: Error 422 — Datos de activación incompletos
+    end

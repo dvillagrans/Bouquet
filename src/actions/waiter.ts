@@ -374,6 +374,7 @@ export async function waiterCreateOrder(
 
   revalidatePath("/mesero");
   revalidatePath("/cocina");
+  revalidatePath("/barra");
 
   return { orderId: newOrder.id, status: "success" };
 }

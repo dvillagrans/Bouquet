@@ -1,0 +1,31 @@
+erDiagram
+
+    AppUser {
+        string id PK
+        string email UK
+        string passwordHash
+        string firstName
+        string lastName
+        string secondLastName
+        string phone
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    UserRole {
+        string id PK
+        string userId FK
+        string roleId FK
+        string contextType
+        string chainId FK
+        string zoneId FK
+        string restaurantId FK
+        timestamp assignedAt
+    }
+
+    AppUser ||--o{ UserRole : "tiene"
+    Role ||--o{ UserRole : "asignado en"
+    Chain ||--o{ UserRole : "contexto"
+    Zone ||--o{ UserRole : "contexto"
+    Restaurant ||--o{ UserRole : "contexto"

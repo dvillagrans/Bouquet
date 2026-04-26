@@ -1,0 +1,45 @@
+graph TB
+    subgraph UserNodes [Dispositivos de Usuario]
+        PWA[Navegador PWA / Mobile]
+    end
+
+    subgraph VercelNodes [Vercel Edge Network]
+        BFF[Next.js API Routes / BFF]
+        UI[React / Next.js UI]
+        Mid[Edge Middleware]
+    end
+
+    subgraph SupabaseNodes [Supabase Platform]
+        DB[(PostgreSQL 15)]
+        Auth[Supabase Auth / JWT]
+        RT[Realtime / WebSockets]
+        Storage[Storage / S3]
+    end
+
+    subgraph VPSNodes [VPS / Dedicated Server]
+        Orch[Analytics Orchestrator]
+        Spark[Apache Spark Engine]
+        Cron[Jobs / Webhook Handlers]
+    end
+
+    PWA -- "HTTPS / TLS 1.3" --> Mid
+    Mid -- "Internal Routing" --> BFF
+    Mid -- "Static Content" --> UI
+    
+    BFF -- "Prisma / JDBC" --> DB
+    BFF -- "REST / Auth" --> Auth
+    
+    PWA -- "WebSockets" --> RT
+    RT -- "Listen/Notify" --> DB
+    
+    UI -- "S3 Assets" --> Storage
+
+    BFF -- "HTTPS + API Key" --> Orch
+    Orch -- "Subprocess" --> Spark
+    Spark -- "JDBC" --> DB
+    Cron -- "Direct JDBC" --> DB
+
+    style PWA fill:#EBF3FA,stroke:#1B3A5C,stroke-width:2px
+    style VercelNodes fill:#D6E4F0,stroke:#1B3A5C,stroke-width:1px,stroke-dasharray: 5 5
+    style SupabaseNodes fill:#EBF3FA,stroke:#1B3A5C,stroke-width:1px
+    style VPSNodes fill:#FDF4E3,stroke:#856404,stroke-width:1px

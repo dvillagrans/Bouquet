@@ -3,31 +3,31 @@ name: Login unificado Bouquet
 overview: Una sola ruta `/login` con correo y contraseña. Incluye super admin, personal de cadena/zona (ChainStaff) y personal de restaurante (Staff ADMIN/MESERO/COCINA/BARRA); sesión firmada y redirección por rol a la vista correspondiente. Sin PIN para login; migraciones Prisma y sustitución de sessionStorage/PIN.
 todos:
   - id: prisma-chainstaff-auth
-    content: "Extender ChainStaff con email (@unique) y passwordHash; migración; createTenant y altas con email/contraseña"
-    status: pending
+    content: Extender ChainStaff con email (@unique) y passwordHash; migración; createTenant y altas con email/contraseña
+    status: in_progress
   - id: prisma-staff-restaurant-auth
-    content: "Extender Staff (restaurante) con email (@unique) y passwordHash; cruce de unicidad con SuperAdmin/ChainStaff; migración PIN→password"
+    content: Extender Staff (restaurante) con email (@unique) y passwordHash; cruce de unicidad con SuperAdmin/ChainStaff; migración PIN→password
     status: pending
   - id: unified-auth-lib
-    content: "Cookie/sesión unificada + POST /api/auth/login con orden SuperAdmin → ChainStaff → Staff; claims por kind (super_admin, operator, restaurant)"
+    content: Cookie/sesión unificada + POST /api/auth/login con orden SuperAdmin → ChainStaff → Staff; claims por kind (super_admin, operator, restaurant)
     status: pending
   - id: restaurant-context-actions
-    content: "Sustituir getDefaultRestaurant y acciones que asumen una sola sucursal por contexto restaurantId en sesión (orders, KDS, dashboard)"
+    content: Sustituir getDefaultRestaurant y acciones que asumen una sola sucursal por contexto restaurantId en sesión (orders, KDS, dashboard)
     status: pending
   - id: login-page-single
-    content: "src/app/login/page.tsx — email+password; mapa de redirección por rol (incl. /dashboard /mesero /cocina /barra) + safe-redirect"
+    content: src/app/login/page.tsx — email+password; mapa de redirección por rol (incl. /dashboard /mesero /cocina /barra) + safe-redirect
     status: pending
   - id: replace-guards
-    content: "Guards cadena/zona y protección de rutas de restaurante (middleware o layout) con cookie; limpiar sessionStorage de auth"
+    content: Guards cadena/zona y protección de rutas de restaurante (middleware o layout) con cookie; limpiar sessionStorage de auth
     status: pending
   - id: chain-actions-session
-    content: "Acciones que usaban PIN/sessionStorage (chain, zone, rotación) alineadas a sesión"
+    content: Acciones que usaban PIN/sessionStorage (chain, zone, rotación) alineadas a sesión
     status: pending
   - id: admin-login-redirect
-    content: "Redirigir /admin/login → /login preservando from/error"
+    content: Redirigir /admin/login → /login preservando from/error
     status: pending
   - id: internal-links-docs
-    content: "Enlaces a /login; documentar flujo de invitación"
+    content: Enlaces a /login; documentar flujo de invitación
     status: pending
 isProject: false
 ---

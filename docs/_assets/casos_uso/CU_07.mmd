@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    
+    %% Color Palette
+    actor G as Gerente
+    participant S as Sistema (Bouquet API)
+    participant DB as Base de Datos (PostgreSQL)
+
+    rect rgb(235, 243, 250)
+        Note over G,DB: Fase 1: Gestión de Catálogo Base
+        G->>S: POST /api/catalog/items { name, basePrice }
+        S->>DB: INSERT TemplateItem
+        DB-->>S: Item Guardado
+    end
+
+    rect rgb(214, 239, 216)
+        Note over G,DB: Fase 2: Configuración de Overrides
+        G->>S: PATCH /api/restaurants/:id/menu { itemId, localPrice, isSoldOut }
+        S->>DB: UPSERT RestaurantMenuOverride
+        Note right of DB: Sobrescribe el precio base para esta sucursal
+        DB-->>S: Override Aplicado
+    end
+
+    rect rgb(255, 240, 214)
+        Note over S,G: Fase 3: Propagación Realtime
+        S->>S: Emite evento 'menu_updated' (Realtime)
+        S-->>G: Confirmación: Menú local actualizado
+        Note over S: El menú del comensal refleja el nuevo precio al instante
+    end
+
+    rect rgb(253, 220, 220)
+        Note over G,S: Validaciones
+        G--xS: Intento de poner precio negativo
+        S-->>G: Error 422 — Validación de esquema fallida
+    end

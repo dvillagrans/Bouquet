@@ -1,0 +1,63 @@
+flowchart TD
+    %% Palette & Styles
+    classDef layer fill:#F8FAFC,stroke:#94A3B8,stroke-width:1px,stroke-dasharray: 5 5,color:#475569
+    classDef node_base fill:#FFFFFF,stroke:#CBD5E1,stroke-width:1px,color:#1E293B
+    classDef nextjs fill:#FFFFFF,stroke:#000000,stroke-width:2px,color:#000000
+    classDef spark fill:#FFF7ED,stroke:#EA580C,stroke-width:1.5px,color:#9A3412
+    classDef db fill:#F0FDF4,stroke:#16A34A,stroke-width:1.5px,color:#166534
+    classDef gold fill:#FEFCE8,stroke:#CA8A04,stroke-width:1.5px,color:#854D0E
+    classDef action fill:#F1F5F9,stroke:#475569,stroke-width:1px,color:#0F172A
+
+    subgraph DASH_LAYER["FRONTEND (NEXT.JS)"]
+        direction LR
+        ADMIN["<b>Administrador</b><br/>Dashboard"]
+        API["<b>API Routes</b><br/>Orquestación"]
+        ADMIN <--> API
+    end
+
+    subgraph ORC_LAYER["ORQUESTADOR (FASTAPI)"]
+        direction TB
+        ORC["<b>Analytics Orchestrator</b><br/>Gestor de Jobs"]
+        JR[("<b>AnalyticsJobRun</b><br/>Log de ejecución")]
+        ORC --- JR
+    end
+
+    subgraph SPARK_PIPELINE["PIPELINE DE DATOS (APACHE SPARK)"]
+        direction TB
+        J0["<b>Job 0: Ingest</b><br/>JDBC Direct"]
+        J1["<b>Job 1: Silver</b><br/>Limpieza & Joins"]
+        
+        subgraph ANALYSIS["Análisis en Paralelo"]
+            J2["<b>Job 2: Metrics</b><br/>Agregados"]
+            J3["<b>Job 3: Forecast</b><br/>Media Móvil"]
+        end
+        
+        J4["<b>Job 4: Writeback</b><br/>Gold -> DB"]
+        
+        J0 --> J1
+        J1 --> J2
+        J1 --> J3
+        J2 --> J4
+        J3 --> J4
+    end
+
+    subgraph DB_LAYER["PERSISTENCIA (SUPABASE)"]
+        direction LR
+        OLTP[("<b>Base Operacional</b><br/>OLTP")]
+        ANALYTIC[("<b>Tablas Analíticas</b><br/>Gold")]
+    end
+
+    %% Flow connections
+    API -->|"1. Solicitud"| ORC
+    ORC -->|"2. spark-submit"| J0
+    OLTP -->|"3. Lectura"| J0
+    J4 -->|"4. Actualización"| ANALYTIC
+    ANALYTIC -->|"5. Visualización"| ADMIN
+
+    %% Style Assignments
+    class DASH_LAYER,ORC_LAYER,SPARK_PIPELINE,DB_LAYER layer
+    class ADMIN,API nextjs
+    class ORC,JR action
+    class J0,J1,J2,J3,J4 spark
+    class OLTP db
+    class ANALYTIC gold

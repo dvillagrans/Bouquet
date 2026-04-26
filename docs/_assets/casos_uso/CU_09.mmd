@@ -1,0 +1,36 @@
+sequenceDiagram
+    autonumber
+    
+    %% Color Palette
+    actor A as Administrador de Cadena
+    participant S as Sistema (Audit Viewer)
+    participant B as Backend (Log Engine)
+    participant DB as Base de Datos (AuditLog)
+
+    rect rgb(235, 243, 250)
+        Note over A,DB: Fase 1: Consulta y Filtrado
+        A->>S: Accede a Panel de Auditoría
+        S->>B: GET /api/audit?entity=MenuItem&actorId=...
+        B->>DB: SELECT * FROM AuditLog WHERE ...
+        DB-->>B: Lista de eventos (Inmutable)
+        B-->>S: Payload con snapshots JSON
+    end
+
+    rect rgb(214, 239, 216)
+        Note over S,A: Fase 2: Análisis de Diferencias
+        S->>S: Compara 'before' vs 'after'
+        S-->>A: Visualización de diferencias (Diff Viewer)
+        Note right of A: "El precio cambió de $150 a $175"
+    end
+
+    rect rgb(255, 240, 214)
+        Note over A,S: Fase 3: Forense y Seguridad
+        A->>S: Ver metadatos técnicos
+        S-->>A: IP: 192.168.1.1, RequestID: req_550, Browser: Chrome
+    end
+
+    rect rgb(253, 220, 220)
+        Note over A,S: Restricciones
+        A--xS: Intento de borrar log de auditoría
+        S-->>A: Operación denegada (Logs Inmutables por Diseño)
+    end

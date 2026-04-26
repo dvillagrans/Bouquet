@@ -1,0 +1,47 @@
+sequenceDiagram
+    autonumber
+    
+    %% Color Palette
+    actor G as Gerente (Dashboard)
+    participant N as Next.js Backend
+    participant O as Analytics Orchestrator (FastAPI)
+    participant S as Spark Engine
+    participant DB as PostgreSQL (AnalyticsJobRun)
+
+    rect rgb(235, 243, 250)
+        Note over G,O: Fase 1: Solicitud de Análisis
+        G->>N: Click "Actualizar Análisis"
+        N->>O: POST /run-job { restaurantId } (Auth: API Key)
+        O->>DB: INSERT JobRun (status: QUEUED)
+        O-->>N: HTTP 202 { jobId }
+        N-->>G: Muestra indicador de "Procesando..."
+    end
+
+    rect rgb(214, 239, 216)
+        Note over O,S: Fase 2: Ejecución del Pipeline
+        O->>S: spark-submit medallion_pipeline.py
+        O->>DB: UPDATE JobRun (status: RUNNING)
+        S->>S: Bronze -> Silver -> Gold
+        S-->>O: Job Finished (Exit Code 0)
+        O->>DB: UPDATE JobRun (status: COMPLETED)
+    end
+
+    rect rgb(255, 240, 214)
+        Note over G,DB: Fase 3: Polling y Visualización
+        loop Cada 5 segundos
+            N->>O: GET /status/{jobId}
+            O->>DB: SELECT status FROM AnalyticsJobRun
+            DB-->>O: status: COMPLETED
+            O-->>N: status: COMPLETED
+        end
+        N-->>G: Actualiza gráficas y métricas Gold
+    end
+
+    rect rgb(253, 220, 220)
+        Note over G,O: Control de Concurrencia
+        G->>N: Intento de ejecución duplicada
+        N->>O: POST /run-job
+        O->>DB: SELECT active_jobs
+        Note right of O: Detecta job en curso
+        O-->>N: Error 429 — Job already running
+    end

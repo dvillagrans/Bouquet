@@ -1,0 +1,479 @@
+---
+config:
+  layout: elk
+---
+erDiagram
+
+    Currency {
+        string code PK "MXN | USD | EUR"
+        string name
+        string symbol
+        boolean isActive
+        timestamp createdAt
+    }
+
+    TaxGroup {
+        string id PK
+        string name "IVA 16 | IEPS 8 | Exento"
+        int rateBps "1600 = 16 percent"
+        boolean isActive
+        timestamp createdAt
+    }
+
+    Permission {
+        string id PK
+        string code UK "CREATE_ORDER | VIEW_PAYMENTS"
+        string description
+        string scope "ENUM RESTAURANT|CHAIN|PLATFORM"
+        timestamp createdAt
+    }
+
+    Role {
+        string id PK
+        string chainId FK "nullable"
+        string name
+        string scope "ENUM RESTAURANT|CHAIN|PLATFORM"
+        string description "nullable"
+        boolean isBase "true = seed"
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    RolePermission {
+        string roleId FK
+        string permissionId FK
+        timestamp assignedAt
+    }
+
+    AppUser {
+        string id PK
+        string email UK
+        string passwordHash
+        string firstName
+        string lastName
+        string secondLastName "nullable"
+        string phone "nullable"
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    UserRole {
+        string id PK
+        string userId FK
+        string roleId FK
+        string contextType "ENUM PLATFORM|CHAIN|ZONE|RESTAURANT"
+        string chainId FK "nullable"
+        string zoneId FK "nullable"
+        string restaurantId FK "nullable"
+        timestamp assignedAt
+    }
+
+    Chain {
+        string id PK
+        string createdBy FK
+        string currency FK
+        string name
+        string logoUrl "nullable"
+        int defaultTaxBps "1600"
+        string defaultTipsBps "array bps"
+        boolean isArchived
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    Zone {
+        string id PK
+        string chainId FK
+        string name
+        boolean isArchived
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    Restaurant {
+        string id PK
+        string chainId FK
+        string zoneId FK "nullable"
+        string currency FK
+        string name
+        string logoUrl "nullable"
+        string welcomeMessage "nullable"
+        string address "nullable"
+        int taxBps "nullable"
+        string suggestedTipsBps "array bps"
+        boolean allowMobileOrdering
+        boolean allowWaiterJoinTables
+        boolean isArchived
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    AuditLog {
+        string id PK
+        string actorUserId FK
+        string chainId "nullable"
+        string restaurantId "nullable"
+        string action "ENUM CREATE|UPDATE|DELETE"
+        string entityType
+        string entityId
+        jsonb before
+        jsonb after
+        jsonb metadata "nullable"
+        string ipAddress "nullable"
+        string userAgent "nullable"
+        string requestId "nullable"
+        timestamp createdAt
+    }
+
+    Station {
+        string id PK
+        string restaurantId FK
+        string name "COCINA | BARRA"
+        string color "nullable"
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    MenuTemplate {
+        string id PK
+        string chainId FK
+        string name
+        boolean isDefault
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    TemplateCategory {
+        string id PK
+        string templateId FK
+        string name
+        int order
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    TemplateItem {
+        string id PK
+        string categoryId FK
+        string name
+        string description "nullable"
+        int basePriceCents
+        string imageUrl "nullable"
+        boolean isPopular
+        boolean isArchived
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    TemplateItemVariant {
+        string id PK
+        string templateItemId FK
+        string name
+        int priceCents
+        boolean isAvailable
+        int order
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    RestaurantCategory {
+        string id PK
+        string restaurantId FK
+        string taxGroupId FK "nullable"
+        string name
+        int order
+        boolean isArchived
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    RestaurantMenuItem {
+        string id PK
+        string restaurantId FK
+        string categoryId FK
+        string stationId FK "nullable"
+        string taxGroupId FK "nullable"
+        string templateItemId FK "nullable"
+        string name
+        string description "nullable"
+        int priceCents
+        string imageUrl "nullable"
+        boolean isPopular
+        boolean isSoldOut
+        boolean trackStock
+        int stockQuantity "nullable"
+        int lowStockThreshold "nullable"
+        timestamp archivedAt "nullable"
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    RestaurantMenuItemVariant {
+        string id PK
+        string menuItemId FK
+        string templateVariantId FK "nullable"
+        string name
+        int priceCents
+        boolean isAvailable
+        int order
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    ModifierGroup {
+        string id PK
+        string restaurantId FK
+        string name
+        boolean isRequired
+        int minSelect
+        int maxSelect
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    ModifierOption {
+        string id PK
+        string groupId FK
+        string name
+        int priceAdjustmentCents
+        boolean isAvailable
+        int order
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    MenuItemModifierGroup {
+        string menuItemId FK
+        string modifierGroupId FK
+    }
+
+    DiningTable {
+        string id PK
+        string restaurantId FK
+        int number
+        int capacity
+        string qrTokenHash
+        int qrVersion
+        string status "table_status"
+        float posX
+        float posY
+        string shape
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    DiningSession {
+        string id PK
+        string restaurantId FK
+        string openedByUserId FK
+        string closedByUserId FK "nullable"
+        string status "ENUM OPEN|CLOSED|CANCELLED"
+        int pax
+        timestamp openedAt
+        timestamp closedAt "nullable"
+        timestamp updatedAt
+    }
+
+    DiningSessionTable {
+        string id PK
+        string diningSessionId FK
+        string tableId FK
+        timestamp joinedAt
+        timestamp leftAt "nullable"
+    }
+
+    Guest {
+        string id PK
+        string diningSessionId FK
+        string name "nullable"
+        int seatNumber "nullable"
+        timestamp createdAt
+    }
+
+    RestaurantOrder {
+        string id PK
+        string restaurantId FK
+        string diningSessionId FK
+        string createdByUserId FK "nullable"
+        string source "ENUM WAITER|QR|POS"
+        string status "ENUM OPEN|SENT|READY..."
+        timestamp createdAt
+        timestamp updatedAt
+        timestamp closedAt "nullable"
+        timestamp cancelledAt "nullable"
+    }
+
+    OrderItem {
+        string id PK
+        string orderId FK
+        string menuItemId FK "nullable"
+        string variantId FK "nullable"
+        string guestId FK "nullable"
+        string stationId FK "nullable"
+        string status "ENUM NEW|SENT|READY..."
+        int quantity
+        string notes "nullable"
+        string itemNameSnapshot
+        string variantNameSnapshot "nullable"
+        int unitPriceCents
+        int subtotalCents
+        int taxAmountCents
+        int totalCents
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    OrderItemModifier {
+        string id PK
+        string orderItemId FK
+        string modifierOptionId FK "nullable"
+        string nameSnapshot
+        int quantity
+        int priceAdjustmentCents
+        timestamp createdAt
+    }
+
+    OrderItemStatusEvent {
+        string id PK
+        string orderItemId FK
+        string changedByUserId FK "nullable"
+        string fromStatus
+        string toStatus
+        timestamp createdAt
+    }
+
+    Payment {
+        string id PK
+        string restaurantId FK
+        string diningSessionId FK
+        string currency FK
+        string processedByUserId FK "nullable"
+        string status "ENUM PENDING|COMPLETED..."
+        string method "ENUM CARD|CASH|TRANSFER"
+        string splitMode "ENUM FULL|BY_ITEM|EQUAL"
+        int splitCount
+        int paxPaid
+        int subtotalCents
+        int tipAmountCents
+        int taxAmountCents
+        int totalCents
+        int amountPaidCents
+        string notes "nullable"
+        string providerReference "nullable"
+        timestamp createdAt
+        timestamp updatedAt
+        timestamp paidAt "nullable"
+    }
+
+    PaymentAllocation {
+        string id PK
+        string paymentId FK
+        string orderItemId FK "nullable"
+        string guestId FK "nullable"
+        int amountCents
+        timestamp createdAt
+    }
+
+    Refund {
+        string id PK
+        string paymentId FK
+        string createdByUserId FK
+        int amountCents
+        string reason
+        string status "ENUM PENDING|COMPLETED|FAILED"
+        string providerRefundId "nullable"
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    AppliedDiscount {
+        string id PK
+        string restaurantId FK
+        string orderItemId FK "nullable"
+        string paymentId FK "nullable"
+        string approvedByUserId FK "nullable"
+        string type "ENUM PERCENT|FIXED"
+        int valueBps "nullable"
+        int valueCents "nullable"
+        int amountCents
+        string reason
+        string description "nullable"
+        timestamp createdAt
+    }
+
+    Currency ||--o{ Chain : "usada en"
+    Currency ||--o{ Restaurant : "usada en"
+    Currency ||--o{ Payment : "usada en"
+
+    TaxGroup ||--o{ RestaurantCategory : "aplicado en"
+    TaxGroup ||--o{ RestaurantMenuItem : "aplicado en"
+
+    Permission ||--o{ RolePermission : "asignada en"
+    Role ||--o{ RolePermission : "tiene"
+    Role }o--o| Chain : "pertenece a"
+    Role ||--o{ UserRole : "asignado en"
+
+    AppUser ||--o{ UserRole : "tiene"
+    AppUser ||--o{ Chain : "crea"
+    AppUser ||--o{ AuditLog : "genera"
+    AppUser ||--o{ DiningSession : "abre"
+    AppUser ||--o{ RestaurantOrder : "crea"
+    AppUser ||--o{ Payment : "procesa"
+    AppUser ||--o{ Refund : "genera"
+    AppUser ||--o{ AppliedDiscount : "aprueba"
+    AppUser ||--o{ OrderItemStatusEvent : "registra"
+
+    Chain ||--o{ Zone : "tiene"
+    Chain ||--o{ Restaurant : "tiene"
+    Chain ||--o{ MenuTemplate : "tiene"
+
+    Zone ||--o{ Restaurant : "agrupa"
+
+    Restaurant ||--o{ Station : "tiene"
+    Restaurant ||--o{ RestaurantCategory : "tiene"
+    Restaurant ||--o{ RestaurantMenuItem : "tiene"
+    Restaurant ||--o{ ModifierGroup : "tiene"
+    Restaurant ||--o{ DiningTable : "tiene"
+    Restaurant ||--o{ DiningSession : "tiene"
+    Restaurant ||--o{ RestaurantOrder : "tiene"
+    Restaurant ||--o{ Payment : "tiene"
+    Restaurant ||--o{ AppliedDiscount : "tiene"
+
+    MenuTemplate ||--o{ TemplateCategory : "tiene"
+    TemplateCategory ||--o{ TemplateItem : "tiene"
+    TemplateItem ||--o{ TemplateItemVariant : "tiene"
+    TemplateItem ||--o{ RestaurantMenuItem : "instanciado en"
+    TemplateItemVariant ||--o{ RestaurantMenuItemVariant : "instanciada en"
+
+    RestaurantCategory ||--o{ RestaurantMenuItem : "tiene"
+    Station ||--o{ RestaurantMenuItem : "asignada a"
+    RestaurantMenuItem ||--o{ RestaurantMenuItemVariant : "tiene"
+    RestaurantMenuItem ||--o{ MenuItemModifierGroup : "tiene"
+    RestaurantMenuItem ||--o{ OrderItem : "referenciado en"
+    RestaurantMenuItemVariant ||--o{ OrderItem : "seleccionada en"
+
+    ModifierGroup ||--o{ ModifierOption : "tiene"
+    ModifierGroup ||--o{ MenuItemModifierGroup : "asignado a"
+    ModifierOption ||--o{ OrderItemModifier : "seleccionada en"
+
+    DiningTable ||--o{ DiningSessionTable : "en sesiones"
+    DiningSession ||--o{ DiningSessionTable : "ocupa mesas"
+    DiningSession ||--o{ Guest : "tiene"
+    DiningSession ||--o{ RestaurantOrder : "tiene"
+    DiningSession ||--o{ Payment : "tiene"
+
+    Guest ||--o{ OrderItem : "asociado a"
+    Guest ||--o{ PaymentAllocation : "asignada a"
+
+    RestaurantOrder ||--o{ OrderItem : "tiene"
+    OrderItem ||--o{ OrderItemModifier : "tiene"
+    OrderItem ||--o{ OrderItemStatusEvent : "tiene"
+    OrderItem ||--o{ PaymentAllocation : "cubierto en"
+    OrderItem ||--o{ AppliedDiscount : "tiene"
+
+    Payment ||--o{ PaymentAllocation : "tiene"
+    Payment ||--o{ Refund : "tiene"
+    Payment ||--o{ AppliedDiscount : "tiene"

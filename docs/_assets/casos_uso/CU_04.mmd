@@ -1,0 +1,47 @@
+sequenceDiagram
+    autonumber
+    
+    %% Color Palette
+    actor C as Comensal
+    participant S as Sistema (Bouquet API)
+    participant P as Pasarela de Pagos (Stripe)
+    participant DB as Base de Datos (PostgreSQL)
+
+    rect rgb(235, 243, 250)
+        Note over C,DB: Fase 1: Selección de Liquidación
+        C->>S: GET /api/session/checkout
+        S->>DB: SELECT items, total FROM Cuenta WHERE session_id = ?
+        DB-->>S: Resumen de consumo (Individual vs Mesa)
+        S-->>C: Despliegue de opciones de pago y propina
+        C->>S: Selecciona modalidad (Completa / Dividida)
+    end
+
+    rect rgb(214, 239, 216)
+        Note over C,DB: Fase 2: Procesamiento y Bloqueo
+        C->>S: POST /api/payment { amount, method: CARD }
+        S->>DB: BEGIN TRANSACTION + SELECT FOR UPDATE (Account)
+        Note right of DB: Bloqueo de concurrencia (Prevención de doble pago)
+        S->>P: Procesa cargo con tarjeta
+        P-->>S: Confirmación de Pago Exitoso
+        S->>DB: INSERT Payment + UPDATE Account (saldo_pendiente -= amount)
+        S->>DB: COMMIT TRANSACTION
+    end
+
+    rect rgb(255, 240, 214)
+        Note over S,DB: Fase 3: Cierre de Sesión
+        S->>DB: SELECT balance FROM Account WHERE table_id = ?
+        alt Saldo es Cero
+            S->>DB: UPDATE MesaVirtual (status = LIQUIDADA)
+            S->>DB: UPDATE MesaFisica (status = SUCIA)
+            S-->>C: Genera Comprobante Digital (PDF)
+        else Saldo Pendiente
+            S-->>C: Pago parcial registrado. Esperando demás comensales.
+        end
+    end
+
+    rect rgb(253, 220, 220)
+        Note over C,S: Escenarios de Error
+        P--xS: Pago rechazado / Fondos insuficientes
+        S-->>C: Error 402 — Transacción declinada
+        S->>DB: ROLLBACK (Libera bloqueo de cuenta)
+    end

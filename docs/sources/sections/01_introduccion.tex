@@ -1,0 +1,404 @@
+\section{Introducción}
+
+\subsection{Planteamiento del Problema}
+
+En los establecimientos del sector restaurantero, la gesti\'on de pedidos y el proceso
+de pago representan una parte fundamental de la experiencia del cliente y del control
+operativo del negocio. Sin embargo, en muchos restaurantes estos procesos a\'un dependen
+de m\'etodos tradicionales que implican la intervenci\'on constante del personal, registros
+manuales o sistemas parcialmente digitalizados \cite{toast_success_2023, nra_state_2023}. Esto genera inconvenientes como errores
+en los pedidos, retrasos en la comunicaci\'on con cocina y dificultades al momento de dividir
+la cuenta entre varios comensales.
+
+Uno de los problemas m\'as frecuentes ocurre cuando un grupo de personas comparte una
+mesa y desea pagar \'unicamente por los productos que consumi\'o. En estos casos, el personal
+del restaurante debe identificar manualmente los consumos individuales, calcular proporciones
+o dividir la cuenta total, lo cual resulta tedioso, propenso a errores y genera tiempos de espera
+innecesarios \cite{lee_digital_2024, tan_tabletop_2020}.
+
+En M\'exico, el sector de servicios de preparaci\'on de alimentos y bebidas concentra m\'as de
+700{,}000 unidades econ\'omicas de acuerdo con el Directorio Estad\'istico Nacional de Unidades
+Econ\'omicas (DENUE) del Instituto Nacional de Estad\'istica y Geograf\'ia (INEGI) \cite{inegi_denue_2024}.
+Asimismo, la C\'amara Nacional de la Industria de Restaurantes y Alimentos Condimentados (CANIRAC)
+proyect\'o un crecimiento del 4\% para 2024 \cite{inegi_canirac_2023} y de entre 5.5\% y 6\% para 2025 \cite{ramirez_canirac_2025},
+impulsado por la recuperaci\'on del consumo y la apertura de nuevas unidades.
+A pesar de esta expansi\'on, la brecha tecnol\'ogica entre los sistemas existentes y las expectativas
+de los comensales sigue siendo significativa: pocas soluciones integran en una misma plataforma
+la interacci\'on directa del comensal con el men\'u, la gesti\'on de \'ordenes y la divisi\'on
+aut\'onoma de pagos.
+
+En los \'ultimos a\~nos han surgido diferentes sistemas tecnol\'ogicos orientados a la gesti\'on
+de restaurantes, tales como sistemas de punto de venta (POS), aplicaciones de pedidos digitales
+o plataformas de administraci\'on de inventarios. No obstante, muchas de estas soluciones se
+centran principalmente en la operaci\'on interna del restaurante y no integran completamente
+la participaci\'on directa del cliente en el proceso de selecci\'on de productos, gesti\'on de
+pedidos y divisi\'on de pagos dentro de una misma plataforma \cite{katagri_smart_2025}.
+
+Ante esta problem\'atica, el presente trabajo propone el desarrollo de un sistema omnicanal
+basado en una aplicaci\'on web progresiva (PWA) que permita la creaci\'on de mesas virtuales
+mediante c\'odigos QR, a trav\'es de las cuales los comensales puedan acceder al men\'u digital
+del restaurante, seleccionar los productos que desean consumir y gestionar el pago de su consumo
+de manera individual o colaborativa.
+
+\subsection{Objetivos}
+
+\subsubsection{Objetivo General}
+
+Diseñar y desarrollar una plataforma web progresiva (PWA) de gestión de pedidos,
+liquidación de cuentas y procesamiento analítico para cadenas restauranteras,
+que permita a los comensales realizar pedidos individuales y compartidos desde
+su propio dispositivo móvil mediante una mesa virtual protegida por contraseña,
+mientras el personal operativo (meseros, chefs y gerentes) administra la operación
+en tiempo real e integra un pipeline de procesamiento batch con Apache Spark
+para la generación de métricas de negocio y pronósticos de demanda, desplegado
+sobre una infraestructura en la nube basada en Vercel y Supabase.
+
+\subsubsection{Objetivos Específicos}
+
+Los siguientes objetivos específicos describen los módulos y componentes
+funcionales que deben desarrollarse e integrarse para alcanzar el objetivo general.
+Cada uno incluye la evidencia de verificación que confirma su cumplimiento.
+
+\noindent\textbf{Módulo 1 — Infraestructura y Estructura Organizacional}
+
+\noindent\textbf{OE-01 Infraestructura.}
+Configurar el ecosistema en la nube integrado por Vercel para el despliegue de
+la PWA, Supabase para la persistencia transaccional y un servidor privado virtual
+(VPS) dedicado para el procesamiento distribuido con Apache Spark. Definir el
+schema inicial en Prisma ORM y la estructura de almacenamiento para la arquitectura
+Medallion (capas Bronze, Silver, Gold) dentro del entorno del VPS. Establecer el
+pipeline de CI/CD para la automatización de despliegues y migraciones.
+\textit{Evidencia: Entornos de producción y preview operativos en Vercel. Instancias
+de Supabase activas con políticas RLS. VPS configurado con el runtime de Spark
+y estructura de directorios Medallion lista para ingesta de datos.}
+
+\noindent\textbf{OE-02 Estructura Organizacional.}
+Desarrollar los módulos de creación, edición y visualización de los tres niveles
+organizacionales: Cadena restaurantera (nivel~1), Zona (nivel~2) y Sucursal
+(nivel~3). Cada nivel debe contener las entidades que le corresponden y garantizar
+que toda entidad inferior esté siempre ligada a su entidad superior. El acceso a
+cada nivel debe estar restringido conforme al rol y nivel organizacional del usuario
+autenticado.
+\textit{Evidencia: CRUD completo de cadena, zonas y sucursales. Validación de
+integridad referencial en base de datos. Tests de acceso: un gerente de zona no
+puede ver ni modificar sucursales de otra zona.}
+
+\noindent\textbf{Módulo 2 — Autenticación, Usuarios y Control de Acceso}
+
+\noindent\textbf{OE-03 Gobernanza de Datos: Autenticación y Control de Acceso.}
+Establecer los mecanismos de gobernanza de datos mediante la implementación de un
+sistema de autenticación robusto para usuarios colaboradores (Admin, Gerente de
+Zona, Gerente de Sucursal, Mesero, Chef) utilizando Supabase Auth. Definir
+políticas estrictas de Row Level Security (RLS) que garanticen la integridad,
+privacidad y el principio de mínimo privilegio (\textit{PoLP}), asegurando que el
+acceso a la información esté segmentado según el nivel organizacional y el rol
+asignado.
+\textit{Evidencia: Matriz de trazabilidad de permisos y roles validada. Políticas
+RLS activas que impiden fugas de datos entre niveles organizacionales. Flujo de
+primer inicio de sesión con cambio obligatorio de contraseña funcional.}
+
+\noindent\textbf{OE-04 Gestión de Usuarios.}
+Implementar el módulo de alta de usuarios donde el usuario habilitado ingresa el
+correo del nuevo colaborador, el sistema genera una contraseña temporal, y se asigna
+el rol según las reglas de negocio (un usuario no puede asignar un rol superior al
+propio). El módulo debe filtrar los niveles y sucursales disponibles para la
+asignación según el alcance del usuario creador.
+\textit{Evidencia: Admin da de alta a un Gerente de Zona (exitoso). Gerente de
+Sucursal intenta dar de alta a otro Gerente de Zona (rechazado). Nuevo usuario
+realiza primer login y cambia contraseña correctamente.}
+
+\noindent\textbf{Módulo 3 — Catálogo: Categorías y Productos}
+
+\noindent\textbf{OE-05 Catálogo.}
+Desarrollar los formularios y lógica de negocio para la gestión de catálogos en dos
+niveles: Plantillas canónicas a nivel de cadena (\textit{Templates}) para
+estandarización, e instancias locales por sucursal. El catálogo debe incluir
+categorías, productos con variantes de precio, estaciones de preparación para el
+KDS y grupos de modificadores (\textit{Extras}, \textit{Términos}) con reglas de
+selección obligatoria u opcional.
+\textit{Evidencia: CRUD completo de templates y catálogo local. Modificadores
+asignados y validados. Productos enrutados correctamente a sus estaciones. Herencia
+de impuestos por categoría verificada.}
+
+\noindent\textbf{Módulo 4 — Gestión de Mesas Físicas y Virtuales}
+
+\noindent\textbf{OE-06 Mesas Físicas.}
+Implementar la pantalla de gestión de mesas físicas accesible para meseros y
+gerentes, que permita definir la capacidad, número y ubicación de cada mesa en un
+plano interactivo (\textit{Floor Map}) mediante coordenadas $X, Y$ y formas
+geométricas. El sistema debe soportar la unión de múltiples mesas físicas en una
+sola sesión operativa para grupos grandes.
+\textit{Evidencia: Mapa de mesas funcional con representación visual de estatus.
+Unión y separación de mesas verificada en la base de datos (\texttt{DiningSessionTable}).
+Cambios de posición persistidos correctamente.}
+
+\noindent\textbf{OE-07 Mesa Virtual.}
+Desarrollar el flujo de inicialización de mesa virtual por parte del mesero/gerente
+(selección de mesas físicas libres y generación de código QR con JWT de un solo
+uso), y el flujo de activación por parte del anfitrión (escaneo del QR, creación
+de contraseña y acceso al menú del restaurante). La mesa virtual debe pasar al
+estado \textit{Por liquidar} al ser activada.
+\textit{Evidencia: QR generado con JWT de un solo uso y TTL de 30 minutos.
+Anfitrión activa mesa exitosamente. Comensal se une a la mesa con ID y contraseña correctos.}
+
+\noindent\textbf{Módulo 5 — Órdenes y Cocina}
+
+\noindent\textbf{OE-08 Órdenes.}
+Implementar la interfaz de menú para comensales donde pueden explorar el catálogo,
+agregar productos con cantidades a su canasta y confirmar la orden como individual
+(cargada a su cuenta personal) o compartida (cargada a la mesa grupal). Cada
+confirmación debe presentar un diálogo de verificación antes de enviar la orden a
+cocina. Cada ítem de orden debe generar un \textit{snapshot} inmutable (nombre,
+precio, variantes y modificadores) para garantizar la integridad histórica frente
+a cambios futuros en el catálogo.
+\textit{Evidencia: Comensal genera orden individual y aparece en su cuenta personal.
+Comensal genera orden compartida y aparece en la cuenta grupal con su nombre
+asociado. Orden rechazada si la mesa está en estado \textit{Liquidada}.}
+
+\noindent\textbf{OE-09 Tablero Cocina.}
+Desarrollar la vista de la Cocina donde se muestran todas las órdenes activas de la
+sucursal con su estatus (Pendiente, En preparación, En reparto, Entregada) y la
+posibilidad de actualizarlo. Las nuevas órdenes deben notificarse en tiempo real
+vía Supabase Realtime con indicador visual y/o sonoro.
+\textit{Evidencia: Nueva orden aparece en el tablero de la Cocina en menos de 2 segundos
+sin recargar la página. Chef cambia estatus de orden y el cambio se refleja en la
+vista del comensal en tiempo real. Órdenes de otras sucursales no visibles.}
+
+\noindent\textbf{Módulo 6 — Liquidación y Pagos}
+
+\noindent\textbf{OE-10 Liquidación.}
+Implementar la pantalla de Órdenes y Liquidaciones donde el comensal visualiza el
+desglose de cuentas individuales y el total de la mesa compartida. El comensal puede
+seleccionar qué cuentas individuales liquidar, qué monto aportar a la mesa
+compartida, o liquidar la mesa completa. El sistema debe validar que no se procesen
+pagos concurrentes duplicados mediante control de concurrencia
+(\texttt{SELECT FOR UPDATE} en PostgreSQL).
+\textit{Evidencia: Liquidación de cuenta individual exitosa. Intento de doble pago
+simultáneo: solo uno es procesado, el segundo recibe error descriptivo. Monto de
+mesa compartida no superable. Todos los comensales se muestran como
+\textit{Liquidados} al completarse sus pagos.}
+
+\noindent\textbf{OE-11 Pagos.}
+Dise\~nar e implementar el m\'odulo de liquidaci\'on que permita registrar el estado de pago
+de cada comensal (individual y mesa compartida), controlar la concurrencia mediante
+\texttt{SELECT FOR UPDATE} en PostgreSQL, soportar la aplicaci\'on de descuentos (porcentuales
+o fijos) y el registro de reembolsos con trazabilidad al pago original. La integraci\'on con
+un agregador de pago v\'ia tarjeta queda fuera del alcance de la versi\'on~1.0.
+\textit{Evidencia: Liquidaci\'on exitosa con aplicaci\'on de descuentos y reembolsos verificada
+en la base de datos. Comprobante digital generado al completarse todos los pagos.}
+
+\noindent\textbf{Módulo 7 — Analytics y Panel Administrativo}
+
+\noindent\textbf{OE-12 Analytics y Dashboard.}
+Implementar el panel de analytics accesible para Admin y Gerente, sustentado en un
+pipeline de procesamiento batch mediante Apache Spark y una arquitectura Medallion
+(Bronze, Silver, Gold). El sistema debe transformar los datos transaccionales en
+tablas anal\'iticas (\textit{Gold}) para visualizar m\'etricas de operaci\'on
+filtradas seg\'un el nivel organizacional: mesas activas, velocidades de venta,
+ingresos totales, productos m\'as vendidos y pron\'osticos de demanda.
+\textit{Evidencia: Dashboard funcional visualizando m\'etricas provenientes de tablas Gold.
+Jobs de Spark documentados y ejecutados exitosamente. Separaci\'on de carga verificada:
+las consultas anal\'iticas no afectan el rendimiento de la base transaccional.}
+
+\noindent\textbf{Módulo 8 — Seguridad y Calidad}
+
+\noindent\textbf{OE-13 Seguridad y Auditoría.}
+Garantizar comunicación cifrada en tránsito (HTTPS/TLS 1.2+) y aislamiento de datos
+mediante políticas RLS en Supabase. Implementar un Registro de Auditoría
+(\textit{Audit Log}) inmutable que documente cada creación, modificación o
+eliminación de entidades críticas (\textit{snapshots} JSON), y documentar el Aviso
+de Privacidad conforme a la LFPDPPP.
+\textit{Evidencia: Escaneo de seguridad OWASP ZAP sin vulnerabilidades críticas.
+Auditoría de políticas RLS completada. Tabla de \texttt{AuditLog} poblada
+correctamente con trazabilidad de IP y usuario actor.}
+
+\subsection{Justificación}
+
+La relevancia de este proyecto radica en proponer una soluci\'on tecnol\'ogica que atienda
+la problem\'atica descrita desde un enfoque integral. El sistema omnicanal planteado busca
+centralizar en una misma plataforma la gesti\'on de mesas, \'ordenes y pagos, permitiendo que
+los comensales participen directamente en el registro de su consumo mediante el acceso a mesas
+virtuales por c\'odigos QR \cite{koay_qr_2024, toast_contactless_2026}. A trav\'es de esta din\'amica, cada usuario podr\'a seleccionar
+productos, visualizar su consumo individual y decidir si desea pagar \'unicamente lo propio,
+contribuir a una cuenta compartida o cubrir consumos adicionales, reduciendo la dependencia
+de procesos manuales al cierre del servicio.
+
+Adem\'as del beneficio directo para los clientes, la propuesta aporta ventajas importantes
+para los restaurantes. Al contar con una base de datos centralizada y trazabilidad de las
+transacciones, el sistema facilita el control de la operaci\'on, mejora la comunicaci\'on entre
+comensales, meseros y cocina, y permite disponer de informaci\'on estructurada para la generaci\'on
+de reportes y m\'etricas administrativas. Esto representa una oportunidad para fortalecer la
+toma de decisiones, optimizar procesos internos y proporcionar capacidades avanzadas
+de an\'alisis de comportamiento de consumo e inteligencia de negocio mediante el
+procesamiento de grandes vol\'umenes de datos \cite{choo_qr_2023}.
+
+Desde la perspectiva del mercado, la digitalizaci\'on en la industria restaurantera ya no es
+opcional. La National Restaurant Association (2024) report\'o que las tecnolog\'ias orientadas
+a mejorar velocidad, precisi\'on y conveniencia son relevantes tanto para consumidores como para
+operadores \cite{nra_state_2023}, y que el inter\'es de los comensales por ordenar y pagar con mayor autonom\'ia
+dentro del restaurante ha crecido de forma sostenida \cite{gonzalez_canirac_2024}.
+A nivel global, el mercado de tecnolog\'ia para restaurantes ha registrado un crecimiento
+significativo, impulsado por la digitalizaci\'on acelerada del sector tras la pandemia \cite{gonzalez_canirac_2024, nra_state_2023}.
+
+La originalidad del trabajo se encuentra en la integraci\'on de distintas funciones que
+usualmente aparecen separadas en soluciones existentes. Mientras algunas plataformas se
+especializan en el punto de venta, otras en pedidos digitales y otras en divisi\'on de gastos,
+la propuesta desarrollada busca reunir la gesti\'on operativa del restaurante con la interacci\'on
+directa del cliente y la flexibilidad en el proceso de pago dentro de un mismo ecosistema
+tecnol\'ogico, potenciado por un motor de procesamiento distribuido para la
+generaci\'on de inteligencia de negocio avanzada \cite{iovescu_realtime_2024}.
+
+Asimismo, el proyecto presenta un nivel de complejidad significativo, ya que involucra
+conocimientos de desarrollo web, bases de datos, sincronizaci\'on en tiempo real, modelado de
+procesos, integraci\'on de pasarelas de pago y el despliegue de arquitecturas de datos anal\'iticos con
+Apache Spark para el procesamiento y an\'alisis de grandes vol\'umenes de
+informaci\'on, constituyendo una aplicaci\'on pr\'actica e integradora de los
+conocimientos adquiridos en la formaci\'on acad\'emica.
+
+\subsection{Alcances y Limitaciones}
+
+\subsubsection{Funcionalidades Incluidas en la Versión 1.0}
+
+El presente apartado delimita con precisión el conjunto de funcionalidades, módulos,
+usuarios y restricciones técnicas que comprenden el sistema en su versión~1.0.
+Todo lo listado constituye un entregable comprometido del proyecto. La
+Tabla~\ref{tab:alcances} resume los alcances funcionales confirmados.
+
+{\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.5}
+\begin{longtable}{>{\centering\bfseries\arraybackslash}p{1.2cm}
+                >{\raggedright\arraybackslash}p{14.2cm}}
+\caption{Alcances Funcionales del Sistema v1.0} \label{tab:alcances} \\
+\toprule
+\thead{ID} & \thead{Funcionalidad incluida} \\
+\midrule
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\toprule
+\thead{ID} & \thead{Funcionalidad incluida} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+AL-01 & \textbf{Gesti\'on de estructura organizacional jer\'arquica.} Creaci\'on y administraci\'on de los tres niveles: Cadena, Zona y Sucursal, con integridad referencial y herencia de configuraciones (moneda, impuestos, propinas). \\
+\rowcolor{altrow}
+AL-02 & \textbf{Gobernanza de Datos y Control de Acceso (RBAC).} Matriz de permisos detallada por rol (Admin, Gerente, Mesero, Cocina) con pol\'iticas de seguridad a nivel de fila (RLS) en Supabase. \\
+AL-03 & \textbf{Seguridad de Identidad y Contrase\~nas.} Alta de colaboradores con generaci\'on de contrase\~na temporal y flujo obligatorio de cambio en el primer inicio de sesi\'on (\texttt{isFirstLogin}). \\
+\rowcolor{altrow}
+AL-04 & \textbf{Cat\'alogo de Men\'u Multinivel.} Gesti\'on de \textit{Templates} a nivel de cadena para estandarizaci\'on y men\'us locales por sucursal con categor\'ias, productos, variantes y modificadores. \\
+AL-05 & \textbf{Gesti\'on de Mesas y Plano Interactivo (\textit{Floor Map}).} Representaci\'on visual del sal\'on mediante coordenadas $X, Y$ y formas geom\'etricas (\texttt{rect}, \texttt{circle}); visualizaci\'on en tiempo real del estatus ocupacional. \\
+\rowcolor{altrow}
+AL-06 & \textbf{Mesa Virtual y Seguridad QR.} Generaci\'on de c\'odigos QR con rotaci\'on de tokens de seguridad (\texttt{qrTokenHash}) y versi\'on para invalidaci\'on remota; activaci\'on operativa por el personal. \\
+AL-07 & \textbf{Interacci\'on Colaborativa de Comensales.} Flujo de uni\'on de comensales (\textit{Guests}) a una sesi\'on mediante clave de acceso; soporte para \'ordenes simult\'aneas sobre una misma mesa compartida. \\
+\rowcolor{altrow}
+AL-08 & \textbf{Gesti\'on de \'Ordenes con Integridad Hist\'orica.} Captura de \'ordenes individuales y compartidas con generaci\'on de \textit{snapshots} inmutables de nombre y precio para evitar inconsistencias por cambios futuros en el cat\'alogo. \\
+AL-09 & \textbf{Personalizaci\'on de Productos y Modificadores.} Soporte para grupos de modificadores (\textit{Extras}, \textit{T\'erminos}) con reglas de selecci\'on m\'inima/m\'axima y ajustes de precio autom\'aticos. \\
+\rowcolor{altrow}
+AL-10 & \textbf{Cocina Digital e Inteligencia Operativa (KDS).} Enrutamiento de comandas por estaciones de preparaci\'on; tablero en tiempo real con historial de transiciones de estado para m\'etricas de desempe\~no. \\
+AL-11 & \textbf{Divisi\'on de Cuenta Flexible (\textit{Split Bill}).} Liquidaci\'on por art\'iculos seleccionados (\textit{By Item}), partes iguales (\textit{Equal}) o cuenta completa (\textit{Full}), garantizando la consistencia financiera de la sesi\'on. \\
+\rowcolor{altrow}
+AL-12 & \textbf{M\'odulo Financiero: Pagos, Reembolsos y Descuentos.} Gesti\'on transaccional de pagos multimoneda, aplicaci\'on de descuentos autorizados (fijos o porcentuales) y registro de reembolsos con trazabilidad al proveedor. \\
+AL-13 & \textbf{Control de Concurrencia Transaccional.} Mecanismo \texttt{SELECT FOR UPDATE} para prevenir cobros duplicados en pagos simult\'aneos y asegurar la liberaci\'on correcta de la mesa (\texttt{Liquidada}). \\
+\rowcolor{altrow}
+AL-14 & \textbf{Trazabilidad y Auditor\'ia de Sistemas.} Registro inmutable (\textit{Audit Log}) de cada operaci\'on administrativa, incluyendo direcci\'on IP, agente de usuario y \textit{snapshots} del estado previo y posterior al cambio. \\
+AL-15 & \textbf{Pipeline Anal\'itico Apache Spark (Arquitectura Medallion).} Jobs batch para la ingesta y transformaci\'on de datos en capas Bronze, Silver y Gold para an\'alisis de KPI estrat\'egicos. \\
+\rowcolor{altrow}
+AL-16 & \textbf{Dashboard Administrativo de Inteligencia de Negocio.} Visualizaci\'on de m\'etricas avanzadas (velocidad de venta, ingresos por zona, saturaci\'on de estaciones) extra\'idas del entorno OLAP en el VPS y despliegue en Vercel + Supabase con ambientes Prod y Preview separados. \\
+\end{longtable}
+}
+
+\newpage
+\subsubsection{Límites del Sistema — Funcionalidades Excluidas}
+
+La Tabla~\ref{tab:limites} describe explícitamente las funcionalidades que quedan
+fuera del alcance de la versión~1.0, con su justificación correspondiente.
+
+{\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.5}
+\begin{longtable}{>{\centering\bfseries\arraybackslash}p{1.2cm}
+                >{\raggedright\arraybackslash}p{5.5cm}
+                >{\raggedright\arraybackslash}p{8.5cm}}
+\caption{Límites del Sistema v1.0 — Funcionalidades Excluidas} \label{tab:limites} \\
+\toprule
+\thead{ID} & \thead{Funcionalidad excluida} & \thead{Justificación} \\
+\midrule
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\toprule
+\thead{ID} & \thead{Funcionalidad excluida} & \thead{Justificación} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+LM-01 & Múltiples pisos o áreas por sucursal &
+  Requiere modelo de datos y plano de planta más complejo. Pospuesto para versión futura. \\
+\rowcolor{altrow}
+LM-02 & Recuperación de contraseña de usuarios colaboradores &
+  El restablecimiento se gestiona manualmente por el usuario con permisos de alta. Se incluirá en v1.1. \\
+LM-03 & Motor de recomendaciones complejo &
+  Requiere integraci\'on de modelos de grafos o filtrado colaborativo avanzado. Pospuesto para versiones posteriores. \\
+\rowcolor{altrow}
+LM-05 & Gestión de inventario en cocina &
+  La disponibilidad de productos se gestiona manualmente activando o desactivando ítems en el catálogo. \\
+LM-06 & Reservaciones y pre-orden de mesas &
+  La activación de la mesa virtual ocurre únicamente cuando el comensal está físicamente en el restaurante. \\
+\rowcolor{altrow}
+LM-07 & Aplicación móvil nativa (iOS / Android) &
+  El sistema se desarrolla como PWA accesible desde el navegador. Sin apps en App Store ni Google Play. \\
+LM-08 & Integración con sistemas POS externos &
+  La plataforma opera de forma independiente. Sin integración con Micros, Toast, Square, etc. \\
+\rowcolor{altrow}
+LM-09 & Notificaciones push nativas fuera de la app &
+  Las notificaciones se implementan vía Supabase Realtime dentro de la app abierta. Sin push del SO. \\
+LM-10 & Programa de lealtad o fidelización de comensales &
+  Los datos de consumo se registran para fines analíticos internos, no para programas al cliente final. \\
+\rowcolor{altrow}
+LM-11 & Agregador de pago v\'ia tarjeta (PCI~DSS) &
+  Procesar cobros con tarjeta sin certificaci\'on PCI~DSS expone a la empresa a sanciones de redes de pago y responsabilidad civil. Su integraci\'on en versiones futuras requerir\'a proveedor Level~1 PCI~DSS o auto-certificaci\'on. \\
+\end{longtable}
+}
+
+\subsubsection{Restricciones Técnicas Asumidas}
+
+La Tabla~\ref{tab:restricciones_asumidas} documenta las restricciones técnicas
+que han sido identificadas, evaluadas y asumidas como parte del diseño de la
+versión~1.0.
+
+{\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.5}
+\begin{longtable}{>{\bfseries\raggedright\arraybackslash}p{4.5cm}
+                >{\raggedright\arraybackslash}p{10.5cm}}
+\caption{Restricciones Técnicas Asumidas en la Versión 1.0} \label{tab:restricciones_asumidas} \\
+\toprule
+\thead{Restricción} & \thead{Descripción y justificación} \\
+\midrule
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\toprule
+\thead{Restricción} & \thead{Descripción y justificación} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Un solo piso por sucursal &
+  El m\'odulo de mesas f\'isicas gestiona una \'unica \'area plana por sucursal. No se implementa un sistema de coordenadas o plano de planta para m\'ultiples pisos o secciones. \\
+\rowcolor{altrow}
+Sin soporte offline &
+  La plataforma requiere conectividad a internet en todo momento. No se implementa sincronizaci\'on offline ni Service Worker de cach\'e de datos transaccionales. \\
+Un solo idioma (espa\~nol) &
+  La interfaz y todos los textos est\'an en espa\~nol. No se implementa internacionalizaci\'on (i18n) ni soporte multi-idioma. \\
+\rowcolor{altrow}
+Acceso mediante navegador web &
+  Los comensales acceden desde el navegador de su dispositivo m\'ovil. La PWA puede agregarse a la pantalla de inicio, pero no requiere instalaci\'on nativa. \\
+Sin agregador de pago v\'ia tarjeta en v1.0 &
+  La liquidaci\'on registra el estado de pago por comensal, pero el cobro con tarjeta se gestiona fuera de la plataforma. La integraci\'on de un gateway PCI~DSS queda documentada como trabajo futuro (LM-11). \\
+\end{longtable}
+}
+
+% ============================================================
+%  CAPÍTULO 2 — MARCO TEÓRICO Y ESTADO DEL ARTE
+% ============================================================
+\newpage

@@ -114,6 +114,7 @@ export async function submitComensalOrder({
   }
 
   revalidatePath("/cocina"); // Despertar el KDS!
+  revalidatePath("/barra");
 
   return newOrder.id;
 }
@@ -728,6 +729,7 @@ export async function cancelGuestOrder(orderId: string, tableCode: string, guest
   await broadcastKdsOrdersRefresh(table.restaurantId);
 
   revalidatePath("/cocina");
+  revalidatePath("/barra");
   revalidatePath("/mesero");
   revalidatePath("/mesa/[codigo]/menu", "page");
 

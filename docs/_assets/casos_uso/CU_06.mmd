@@ -1,0 +1,38 @@
+sequenceDiagram
+    autonumber
+    
+    %% Color Palette
+    actor A as Administrador / Gerente
+    participant S as Sistema (Bouquet API)
+    participant DB as Base de Datos (PostgreSQL)
+    participant AU as Supabase Auth
+
+    rect rgb(235, 243, 250)
+        Note over A,DB: Fase 1: Configuración Estructural
+        A->>S: POST /api/org/zones { name, chainId }
+        S->>DB: INSERT Zone
+        A->>S: POST /api/org/restaurants { name, zoneId }
+        S->>DB: INSERT Restaurant
+        DB-->>S: Estructura Creada
+    end
+
+    rect rgb(214, 239, 216)
+        Note over A,AU: Fase 2: Gestión de Talento
+        A->>S: POST /api/staff/invite { email, role, orgLevel }
+        S->>AU: Admin Invite User (Auth Email)
+        AU-->>S: User Created (ID)
+        S->>DB: INSERT Staff { authId, role, restaurantId/zoneId }
+        Note right of DB: RLS se activa automáticamente para este ID
+    end
+
+    rect rgb(255, 240, 214)
+        Note over S,A: Fase 3: Activación
+        S-->>A: Invitación enviada exitosamente
+        Note over AU,S: El usuario recibe email para configurar su PIN/Pass
+    end
+
+    rect rgb(253, 220, 220)
+        Note over A,S: Validaciones
+        A--xS: Intento de crear Zona sin permisos de Cadena
+        S-->>A: Error 403 — RLS Violation (Unauthorized)
+    end

@@ -1,0 +1,62 @@
+erDiagram
+
+    Chain {
+        string id PK
+        string createdBy FK
+        string currency FK
+        string name
+        string logoUrl
+        int defaultTaxBps
+        string defaultTipsBps
+        boolean isArchived
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    Zone {
+        string id PK
+        string chainId FK
+        string name
+        boolean isArchived
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    Restaurant {
+        string id PK
+        string chainId FK
+        string zoneId FK
+        string currency FK
+        string name
+        string logoUrl
+        string welcomeMessage
+        string address
+        int taxBps
+        string suggestedTipsBps
+        boolean allowMobileOrdering
+        boolean allowWaiterJoinTables
+        boolean isArchived
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    AuditLog {
+        string id PK
+        string actorUserId FK
+        string chainId
+        string restaurantId
+        string action
+        string entityType
+        string entityId
+        jsonb before
+        jsonb after
+        timestamp createdAt
+    }
+
+    AppUser ||--o{ Chain : "crea"
+    Chain ||--o{ Zone : "tiene"
+    Chain ||--o{ Restaurant : "tiene"
+    Zone ||--o{ Restaurant : "agrupa"
+    AppUser ||--o{ AuditLog : "genera"
+    Chain ||--o{ AuditLog : "contexto"
+    Restaurant ||--o{ AuditLog : "contexto"

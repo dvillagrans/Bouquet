@@ -1,0 +1,50 @@
+flowchart TD
+    %% Palette & Styles
+    classDef oltp   fill:#F0FDF4,stroke:#16A34A,stroke-width:1.5px,color:#166534
+    classDef silver fill:#F8FAFC,stroke:#94A3B8,stroke-width:1.5px,color:#475569
+    classDef gold   fill:#FEFCE8,stroke:#CA8A04,stroke-width:1.5px,color:#854D0E
+    classDef job    fill:#FFFFFF,stroke:#000000,stroke-width:2px,color:#000000
+    classDef trans  fill:#F1F5F9,stroke:#475569,stroke-width:1px,color:#0F172A
+
+    subgraph OLTP4["Tablas Operacionales (Bronze)"]
+        OI4["OrderItem<br/>─────────────<br/>id · orderId · menuItemId<br/>quantity · totalCents<br/>status · createdAt"]
+        RMI4["RestaurantMenuItem<br/>─────────────<br/>id · categoryId · restaurantId"]
+        RC4["RestaurantCategory<br/>─────────────<br/>id · name"]
+        RO4["RestaurantOrder<br/>─────────────<br/>id · restaurantId · createdAt"]
+    end
+
+    subgraph SILVER4["Capa de Enriquecimiento (Silver)"]
+        S5["silver_order_items_enriched<br/>─────────────<br/>orderItemId · restaurantId<br/>categoryName · quantity<br/>totalCents · createdDate<br/>dayOfWeek · status"]
+    end
+
+    subgraph TRANSFORM4["Transformación Estadística"]
+        HA["Historical Avg<br/>GROUP BY restaurantId<br/>· categoryName · dayOfWeek<br/>AVG dailyUnits → avgUnits<br/>AVG dailyRevenue → avgRevenueCents<br/>STDDEV → stddevUnits"]
+        FD["Forecast Dates<br/>+1 a +7 días desde hoy<br/>cada fecha → dayOfWeek"]
+        JOIN["JOIN<br/>historical_avg ⋈ forecast_dates<br/>ON dayOfWeek<br/>→ proyectar avgUnits<br/>por fecha futura"]
+        CONF["Confidence Score<br/>1 - (stddev / avgUnits + 1)<br/>clamp [0.0, 1.0]"]
+    end
+
+    subgraph GOLD4["Capa de Negocio (Gold)"]
+        G4["analytic_forecast<br/>─────────────<br/>restaurantId · categoryName<br/>forecastDate · projectedOrders<br/>projectedRevenueCents<br/>confidenceScore · modelUsed<br/>computedAt"]
+    end
+
+    OI4  -->|"orderId · quantity · totalCents<br/>status · createdAt"| S5
+    RMI4 -->|"id → menuItemId<br/>categoryId · restaurantId"| S5
+    RC4  -->|"id → categoryId<br/>name → categoryName"| S5
+    RO4  -->|"id → orderId<br/>restaurantId · createdAt → createdDate"| S5
+
+    S5 -->|"restaurantId · categoryName<br/>dayOfWeek · quantity<br/>totalCents (histórico 90d)"| HA
+    HA -->|"avgUnits · avgRevenueCents<br/>stddevUnits · dayOfWeek"| JOIN
+    FD -->|"forecastDate · dayOfWeek"| JOIN
+    JOIN -->|"avgUnits · stddevUnits"| CONF
+    CONF -->|"confidence = 1 / (1 + stddev/avgUnits)"| AGG4
+
+    AGG4["Job 3 — Forecast<br/>modelUsed = weighted_moving_avg_weekly<br/>projectedOrders = avgUnits.cast(int)<br/>projectedRevenueCents = avgRevenueCents.cast(int)"]
+
+    AGG4 --> G4
+
+    class OI4,RMI4,RC4,RO4 oltp
+    class S5 silver
+    class G4 gold
+    class AGG4 job
+    class HA,FD,JOIN,CONF trans

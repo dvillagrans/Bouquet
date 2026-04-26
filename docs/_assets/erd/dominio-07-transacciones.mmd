@@ -1,0 +1,130 @@
+erDiagram
+
+    RestaurantOrder {
+        string id PK
+        string restaurantId FK
+        string diningSessionId FK
+        string createdByUserId FK
+        string source
+        string status
+        timestamp createdAt
+        timestamp updatedAt
+        timestamp closedAt
+        timestamp cancelledAt
+    }
+
+    OrderItem {
+        string id PK
+        string orderId FK
+        string menuItemId FK
+        string variantId FK
+        string guestId FK
+        string stationId FK
+        string status
+        int quantity
+        string notes
+        string itemNameSnapshot
+        string variantNameSnapshot
+        int unitPriceCents
+        int subtotalCents
+        int taxAmountCents
+        int totalCents
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    OrderItemModifier {
+        string id PK
+        string orderItemId FK
+        string modifierOptionId FK
+        string nameSnapshot
+        int quantity
+        int priceAdjustmentCents
+        timestamp createdAt
+    }
+
+    OrderItemStatusEvent {
+        string id PK
+        string orderItemId FK
+        string changedByUserId FK
+        string fromStatus
+        string toStatus
+        timestamp createdAt
+    }
+
+    Payment {
+        string id PK
+        string restaurantId FK
+        string diningSessionId FK
+        string currency FK
+        string processedByUserId FK
+        string status
+        string method
+        string splitMode
+        int splitCount
+        int paxPaid
+        int subtotalCents
+        int tipAmountCents
+        int taxAmountCents
+        int totalCents
+        int amountPaidCents
+        string notes
+        string providerReference
+        timestamp createdAt
+        timestamp updatedAt
+        timestamp paidAt
+    }
+
+    PaymentAllocation {
+        string id PK
+        string paymentId FK
+        string orderItemId FK
+        string guestId FK
+        int amountCents
+        timestamp createdAt
+    }
+
+    Refund {
+        string id PK
+        string paymentId FK
+        string createdByUserId FK
+        int amountCents
+        string reason
+        string status
+        string providerRefundId
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    AppliedDiscount {
+        string id PK
+        string restaurantId FK
+        string orderItemId FK
+        string paymentId FK
+        string approvedByUserId FK
+        string type
+        int valueBps
+        int valueCents
+        int amountCents
+        string reason
+        string description
+        timestamp createdAt
+    }
+
+    Restaurant ||--o{ RestaurantOrder : "tiene"
+    DiningSession ||--o{ RestaurantOrder : "tiene"
+    RestaurantOrder ||--o{ OrderItem : "tiene"
+    OrderItem ||--o{ OrderItemModifier : "tiene"
+    OrderItem ||--o{ OrderItemStatusEvent : "tiene"
+    OrderItem ||--o{ PaymentAllocation : "cubierto en"
+    OrderItem ||--o{ AppliedDiscount : "tiene"
+
+    Payment ||--o{ PaymentAllocation : "tiene"
+    Payment ||--o{ Refund : "tiene"
+    Payment ||--o{ AppliedDiscount : "tiene"
+
+    Guest ||--o{ OrderItem : "asociado a"
+    Guest ||--o{ PaymentAllocation : "asignada a"
+    RestaurantMenuItem ||--o{ OrderItem : "referenciado en"
+    RestaurantMenuItemVariant ||--o{ OrderItem : "seleccionada en"
+    ModifierOption ||--o{ OrderItemModifier : "seleccionada en"

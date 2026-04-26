@@ -1,0 +1,24 @@
+erDiagram
+
+    Currency {
+        string code PK
+        string name
+        string symbol
+        boolean isActive
+        timestamp createdAt
+    }
+
+    TaxGroup {
+        string id PK
+        string name
+        int rateBps
+        boolean isActive
+        timestamp createdAt
+    }
+
+    Currency ||--o{ Chain : "usada en"
+    Currency ||--o{ Restaurant : "usada en"
+    Currency ||--o{ Payment : "usada en"
+
+    TaxGroup ||--o{ RestaurantCategory : "aplicado en"
+    TaxGroup ||--o{ RestaurantMenuItem : "aplicado en"

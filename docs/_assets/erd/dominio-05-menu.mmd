@@ -1,0 +1,144 @@
+erDiagram
+
+    MenuTemplate {
+        string id PK
+        string chainId FK
+        string name
+        boolean isDefault
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    TemplateCategory {
+        string id PK
+        string templateId FK
+        string name
+        int order
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    TemplateItem {
+        string id PK
+        string categoryId FK
+        string name
+        string description
+        int basePriceCents
+        string imageUrl
+        boolean isPopular
+        boolean isArchived
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    TemplateItemVariant {
+        string id PK
+        string templateItemId FK
+        string name
+        int priceCents
+        boolean isAvailable
+        int order
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    RestaurantCategory {
+        string id PK
+        string restaurantId FK
+        string taxGroupId FK
+        string name
+        int order
+        boolean isArchived
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    Station {
+        string id PK
+        string restaurantId FK
+        string name
+        string color
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    RestaurantMenuItem {
+        string id PK
+        string restaurantId FK
+        string categoryId FK
+        string stationId FK
+        string taxGroupId FK
+        string templateItemId FK
+        string name
+        string description
+        int priceCents
+        string imageUrl
+        boolean isPopular
+        boolean isSoldOut
+        boolean trackStock
+        int stockQuantity
+        int lowStockThreshold
+        timestamp archivedAt
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    RestaurantMenuItemVariant {
+        string id PK
+        string menuItemId FK
+        string templateVariantId FK
+        string name
+        int priceCents
+        boolean isAvailable
+        int order
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    ModifierGroup {
+        string id PK
+        string restaurantId FK
+        string name
+        boolean isRequired
+        int minSelect
+        int maxSelect
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    ModifierOption {
+        string id PK
+        string groupId FK
+        string name
+        int priceAdjustmentCents
+        boolean isAvailable
+        int order
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    MenuItemModifierGroup {
+        string menuItemId FK
+        string modifierGroupId FK
+    }
+
+    MenuTemplate ||--o{ TemplateCategory : "tiene"
+    TemplateCategory ||--o{ TemplateItem : "tiene"
+    TemplateItem ||--o{ TemplateItemVariant : "tiene"
+
+    RestaurantCategory ||--o{ RestaurantMenuItem : "tiene"
+    Station ||--o{ RestaurantMenuItem : "asignada a"
+    RestaurantMenuItem ||--o{ RestaurantMenuItemVariant : "tiene"
+    RestaurantMenuItem ||--o{ MenuItemModifierGroup : "tiene"
+    TemplateItem ||--o{ RestaurantMenuItem : "instanciado en"
+    TemplateItemVariant ||--o{ RestaurantMenuItemVariant : "instanciada en"
+
+    ModifierGroup ||--o{ ModifierOption : "tiene"
+    ModifierGroup ||--o{ MenuItemModifierGroup : "asignado a"
+    Restaurant ||--o{ MenuTemplate : "tiene"
+    Restaurant ||--o{ RestaurantCategory : "tiene"
+    Restaurant ||--o{ Station : "tiene"
+    Restaurant ||--o{ ModifierGroup : "tiene"
+    TaxGroup ||--o{ RestaurantCategory : "aplicado en"
+    TaxGroup ||--o{ RestaurantMenuItem : "aplicado en"

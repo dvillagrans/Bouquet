@@ -1,0 +1,45 @@
+flowchart TD
+    %% Palette & Styles
+    classDef oltp   fill:#F0FDF4,stroke:#16A34A,stroke-width:1.5px,color:#166534
+    classDef silver fill:#F8FAFC,stroke:#94A3B8,stroke-width:1.5px,color:#475569
+    classDef gold   fill:#FEFCE8,stroke:#CA8A04,stroke-width:1.5px,color:#854D0E
+    classDef job    fill:#FFFFFF,stroke:#000000,stroke-width:2px,color:#000000
+    classDef trans  fill:#F1F5F9,stroke:#475569,stroke-width:1px,color:#0F172A
+
+    subgraph OLTP3["Tablas Operacionales (Bronze)"]
+        EVT["OrderItemStatusEvent<br/>─────────────<br/>id · orderItemId<br/>fromStatus · toStatus<br/>createdAt · changedByUserId"]
+        OI3["OrderItem<br/>─────────────<br/>id · menuItemId<br/>stationId · itemNameSnapshot<br/>orderId"]
+        ST3["Station<br/>─────────────<br/>id · restaurantId<br/>name"]
+        RO3["RestaurantOrder<br/>─────────────<br/>id · restaurantId"]
+    end
+
+    subgraph SILVER3["Capa de Enriquecimiento (Silver)"]
+        S4["silver_process_events<br/>─────────────<br/>eventId · orderItemId · orderId<br/>fromStatus · toStatus · createdAt<br/>itemNameSnapshot<br/>stationId · stationName · restaurantId"]
+    end
+
+    subgraph TRANSFORM["Transformación"]
+        W["Window Function<br/>PARTITION BY orderItemId<br/>ORDER BY createdAt<br/>LAG(createdAt) → prevTs<br/>durationSeconds = ts - prevTs"]
+    end
+
+    subgraph GOLD3["Capa de Negocio (Gold)"]
+        G3["analytic_process_mining<br/>─────────────<br/>restaurantId · stationName · date<br/>avgSecondsNewToServed<br/>itemsOnTime · itemsLate<br/>slaThresholdSeconds<br/>bottleneckScore · computedAt"]
+    end
+
+    EVT -->|"orderItemId · fromStatus<br/>toStatus · createdAt"| S4
+    OI3 -->|"id → orderItemId<br/>stationId · itemNameSnapshot"| S4
+    ST3 -->|"id → stationId<br/>name → stationName<br/>restaurantId"| S4
+    RO3 -->|"id → orderId<br/>restaurantId"| S4
+
+    S4 -->|"orderItemId · toStatus<br/>createdAt · stationName<br/>restaurantId"| W
+
+    W  -->|"duration = ts(SERVED) - ts(NEW)<br/>FILTER toStatus = SERVED"| AGG3
+
+    AGG3["Job 2 — Process Mining<br/>GROUP BY stationName · restaurantId · date<br/>AVG duration<br/>COUNT itemsOnTime (≤ SLA)<br/>COUNT itemsLate (> SLA)<br/>bottleneckScore = itemsLate / total"]
+
+    AGG3 --> G3
+
+    class EVT,OI3,ST3,RO3 oltp
+    class S4 silver
+    class G3 gold
+    class AGG3 job
+    class W trans

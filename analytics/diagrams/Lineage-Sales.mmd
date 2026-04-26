@@ -1,0 +1,44 @@
+flowchart TD
+    %% Palette & Styles
+    classDef oltp   fill:#F0FDF4,stroke:#16A34A,stroke-width:1.5px,color:#166534
+    classDef silver fill:#F8FAFC,stroke:#94A3B8,stroke-width:1.5px,color:#475569
+    classDef gold   fill:#FEFCE8,stroke:#CA8A04,stroke-width:1.5px,color:#854D0E
+    classDef job    fill:#FFFFFF,stroke:#000000,stroke-width:2px,color:#000000
+
+    subgraph OLTP["Tablas Operacionales (Bronze)"]
+        RO["RestaurantOrder<br/>─────────────<br/>id · restaurantId<br/>diningSessionId · source<br/>status · createdAt"]
+        OI["OrderItem<br/>─────────────<br/>id · orderId<br/>menuItemId · guestId<br/>quantity · status<br/>unitPriceCents · totalCents<br/>taxAmountCents · categoryId"]
+        RMI["RestaurantMenuItem<br/>─────────────<br/>id · restaurantId<br/>categoryId · stationId<br/>name · priceCents"]
+        RC["RestaurantCategory<br/>─────────────<br/>id · restaurantId<br/>name · taxGroupId"]
+        REST["Restaurant<br/>─────────────<br/>id · chainId · zoneId<br/>name · currency"]
+        CH["Chain<br/>─────────────<br/>id · name<br/>currency"]
+    end
+
+    subgraph SILVER["Capa de Enriquecimiento (Silver)"]
+        S1["silver_orders_enriched<br/>─────────────<br/>orderId · restaurantId · chainId<br/>restaurantName · chainName<br/>statusLabel · createdDate · createdHour"]
+        S2["silver_order_items_enriched<br/>─────────────<br/>orderItemId · orderId · menuItemId<br/>itemNameSnapshot · categoryName<br/>unitPriceCents · totalCents<br/>taxAmountCents · quantity · status"]
+    end
+
+    subgraph GOLD["Capa de Negocio (Gold)"]
+        G["analytic_sales_daily<br/>─────────────<br/>restaurantId · restaurantName<br/>chainId · chainName<br/>categoryName · date<br/>totalOrders · totalItemsSold<br/>revenueCents · avgTicketCents<br/>cancellations · computedAt"]
+    end
+
+    RO  -->|"id → orderId<br/>restaurantId<br/>createdAt → createdDate"| S1
+    REST -->|"id → restaurantId<br/>name → restaurantName<br/>chainId"| S1
+    CH  -->|"id → chainId<br/>name → chainName"| S1
+
+    OI  -->|"id · orderId · quantity<br/>status · totalCents<br/>taxAmountCents"| S2
+    RMI -->|"id → menuItemId<br/>categoryId · name"| S2
+    RC  -->|"id → categoryId<br/>name → categoryName"| S2
+
+    S1  -->|"orderId · restaurantId<br/>chainId · restaurantName<br/>chainName · createdDate"| AGG
+    S2  -->|"orderId · categoryName<br/>totalCents · quantity · status"| AGG
+
+    AGG["Job 2 — Aggregate<br/>JOIN S1 ⋈ S2 ON orderId<br/>GROUP BY date · restaurantId · categoryName<br/>COUNT orders · SUM totalCents<br/>avgTicketCents = SUM / COUNT<br/>SUM cancellations"]
+
+    AGG --> G
+
+    class RO,OI,RMI,RC,REST,CH oltp
+    class S1,S2 silver
+    class G gold
+    class AGG job

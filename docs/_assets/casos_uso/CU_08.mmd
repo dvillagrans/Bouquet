@@ -1,0 +1,33 @@
+sequenceDiagram
+    autonumber
+    
+    %% Color Palette
+    actor G as Gerente de Sucursal
+    participant S as Sistema (Floor Editor)
+    participant DB as Base de Datos (PostgreSQL)
+
+    rect rgb(235, 243, 250)
+        Note over G,S: Fase 1: Creación de Infraestructura
+        G->>S: Crear nueva mesa (Número + Capacidad)
+        S->>S: Genera instancia visual en el lienzo
+    end
+
+    rect rgb(214, 239, 216)
+        Note over G,DB: Fase 2: Mapeo Espacial (Coordenadas)
+        G->>S: Arrastrar mesa a posición X, Y
+        G->>S: Guardar Diseño de Planta
+        S->>DB: UPSERT MesaFisica { number, capacity, posX, posY }
+        DB-->>S: Layout Persistido
+    end
+
+    rect rgb(255, 240, 214)
+        Note over S,G: Fase 3: Publicación y QR
+        S->>S: Genera identificadores únicos para QR
+        S-->>G: Mapa listo para operación del mesero
+    end
+
+    rect rgb(253, 220, 220)
+        Note over G,S: Validaciones de Planta
+        G--xS: Intento de guardar mesa con número duplicado
+        S-->>G: Error 409 — El número de mesa ya existe en esta sucursal
+    end

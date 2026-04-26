@@ -1,0 +1,321 @@
+\begin{titlepage}
+\thispagestyle{empty}
+\noindent
+% ── Panel izquierdo: logos + líneas azules ──────────────────
+\begin{minipage}[t][0.92\textheight][t]{0.16\textwidth}
+  \centering
+  \vspace{0.2cm}
+  % Logo IPN arriba
+  \includegraphics[height=2.4cm,keepaspectratio]{ipn_logo.png}
+  \vfill
+  % Líneas azules verticales (decorativas, como en la plantilla)
+  {\color{accent}\rule{1.5pt}{0.52\textheight}}
+  \hspace{2pt}
+  {\color{accent}\rule{1.5pt}{0.52\textheight}}
+  \vfill
+  % Logo ESCOM abajo
+  \includegraphics[height=2.4cm,keepaspectratio]{escom_logo.png}
+\end{minipage}
+\hspace{0.5cm}
+% ── Panel derecho: información del TT ──────────────────────
+\begin{minipage}[t][0.92\textheight][t]{0.80\textwidth}
+  \centering
+  \vspace{0.5cm}
+
+  % IPN: fuente 20 (especificación ESCOM)
+  {\fontsize{20}{24}\selectfont\bfseries INSTITUTO POLIT\'ECNICO NACIONAL\par}
+  \vspace{0.3cm}
+  % ESCOM: fuente 16 (especificación ESCOM)
+  {\fontsize{16}{19}\selectfont\bfseries ESCUELA SUPERIOR DE C\'OMPUTO\par}
+  \vspace{0.8cm}
+
+  % "Trabajo Terminal" sin número, fuente 14 en cursiva
+  {\fontsize{14}{17}\selectfont\itshape Trabajo Terminal\par}
+  \vspace{0.6cm}
+
+  % Título entre comillas, fuente 16
+  {\fontsize{16}{19}\selectfont\bfseries
+    ``Sistema Omnicanal y Plataforma Progresiva\\[0.25cm]
+    para la Gesti\'on de Mesas, \'Ordenes\\[0.25cm]
+    y Pagos en Restaurantes''\par}
+
+  \vspace{0.5cm}
+  % Código del TT, fuente 14
+  {\fontsize{14}{17}\selectfont 2026--B142\par}
+
+  \vspace{1.0cm}
+  {\fontsize{14}{17}\selectfont\itshape Presentan\par}
+  \vspace{0.3cm}
+
+  % Nombres: nombre seguido de apellido (orden especificado)
+  {\fontsize{14}{17}\selectfont\bfseries
+    Natalia Anaya Ram\'irez\par
+    \vspace{0.15cm}
+    Diego Salazar Villagr\'an\par}
+
+  \vspace{1.0cm}
+  {\fontsize{14}{17}\selectfont\itshape Directores\par}
+  \vspace{0.3cm}
+
+  % Directora con grado Dra.
+  {\fontsize{14}{17}\selectfont\bfseries
+    Dra.~Jessie Paulina Guzm\'an Flores\par}
+
+  \vfill
+
+  % Fecha: fuente 12
+  {\fontsize{12}{15}\selectfont Fecha de presentaci\'on de TT-II\par}
+  \vspace{0.15cm}
+  {\fontsize{12}{15}\selectfont Mayo 2026\par}
+\end{minipage}
+\end{titlepage}
+
+% ============================================================
+%  SEGUNDA PORTADA — Documento Técnico (pág. 2 del formato)
+% ============================================================
+\newpage
+\thispagestyle{empty}
+\noindent
+\begin{minipage}[t]{0.14\textwidth}
+  \centering
+  \vspace{0pt}
+  \includegraphics[height=1.8cm,keepaspectratio]{ipn_logo.png}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.55\textwidth}
+  \centering
+  \vspace{0pt}
+  {\fontsize{12}{15}\selectfont\bfseries INSTITUTO POLIT\'ECNICO NACIONAL\par}
+  {\fontsize{11}{13}\selectfont\bfseries ESCUELA SUPERIOR DE C\'OMPUTO\par}
+  {\fontsize{11}{13}\selectfont\bfseries SUBDIRECCI\'ON ACAD\'EMICA\par}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.14\textwidth}
+  \centering
+  \vspace{0pt}
+  \includegraphics[height=1.8cm,keepaspectratio]{escom_logo.png}
+\end{minipage}
+
+\vspace{0.4cm}
+\noindent
+{\fontsize{11}{13}\selectfont No.~de TT: 2026-B142}
+\hfill
+{\fontsize{12}{15}\selectfont Fecha de presentaci\'on de TT-II: Mayo 2026}
+
+\vspace{0.3cm}
+\begin{center}
+{\fontsize{14}{17}\selectfont\itshape Trabajo Terminal\par}
+\vspace{0.3cm}
+% Título fuente 16
+{\fontsize{16}{19}\selectfont\bfseries
+  ``Sistema Omnicanal y Plataforma Progresiva\\[0.2cm]
+  para la Gesti\'on de Mesas, \'Ordenes\\[0.2cm]
+  y Pagos en Restaurantes''\par}
+
+\vspace{0.3cm}
+% Código fuente 14
+{\fontsize{14}{17}\selectfont 2026--B142\par}
+
+\vspace{0.4cm}
+{\fontsize{11}{13}\selectfont\itshape Presentan\par}
+\vspace{0.2cm}
+
+% Nombres: nombre seguido de apellido
+{\fontsize{11}{13}\selectfont\bfseries
+  Natalia Anaya Ram\'irez\textsuperscript{1}\par
+  \vspace{0.1cm}
+  Diego Salazar Villagr\'an\textsuperscript{2}\par}
+
+\vspace{0.4cm}
+{\fontsize{11}{13}\selectfont\itshape Directores\par}
+\vspace{0.15cm}
+% Directora con Dra.
+{\fontsize{11}{13}\selectfont\bfseries
+  Dra.~Jessie Paulina Guzm\'an Flores\par}
+
+\vspace{0.5cm}
+{\fontsize{12}{15}\selectfont\bfseries RESUMEN\par}
+\end{center}
+
+\vspace{0.3cm}
+\noindent El presente sistema es una plataforma digital de gesti\'on restaurantera dise\~nada para
+modernizar el flujo de operaci\'on en cadenas de restaurantes con estructura jer\'arquica
+multinivel (cadena, zona y sucursal). El sistema permite la gesti\'on completa de mesas
+virtuales activadas mediante c\'odigo QR, el procesamiento de \'ordenes individuales y
+compartidas entre comensales, el registro del estado de liquidaci\'on de cuentas de forma
+trazable y el monitoreo en tiempo real de la operaci\'on por parte del personal colaborador.
+La plataforma contempla cuatro roles de empleado (Administrador, Gerente, Mesero y Chef)
+y dos roles de consumidor (Anfitri\'on y Comensal), cada uno con permisos diferenciados
+sobre los m\'odulos del sistema. La arquitectura t\'ecnica se apoya en Next.js con Server
+Actions, PostgreSQL como base de datos principal v\'ia Prisma, y Supabase Realtime para
+la sincronizaci\'on en tiempo real de \'ordenes, estados de mesa y liquidaciones.
+Complementariamente, se implementa una arquitectura Medallion de procesamiento de datos
+mediante Apache Spark para la generaci\'on de m\'etricas anal\'iticas, velocidades de venta
+y pron\'osticos de demanda, garantizando la separaci\'on entre las cargas transaccionales
+y las consultas anal\'iticas complejas.
+
+\vspace{0.3cm}
+\noindent\textbf{Palabras clave:} Aplicaciones Progresivas; Restaurantes;
+Sistemas Distribuidos; Inteligencia de Negocios; Bases de Datos.
+
+\vfill
+\noindent\rule{\linewidth}{0.4pt}\\[0.15cm]
+{\fontsize{9}{11}\selectfont
+$^{1}$\,\texttt{nanayar2002@gmail.com}\quad
+$^{2}$\,\texttt{dvillagrans2001@gmail.com}}
+
+% ============================================================
+%  CARTA RESPONSIVA (pág. 3 — formato ESCOM)
+% ============================================================
+\newpage
+\thispagestyle{empty}
+\begin{center}
+  {\normalsize\bfseries CARTA RESPONSIVA\par}
+  \vspace{0.2cm}
+  {\small Que otorga visto bueno y avala la conclusi\'on de documentaci\'on del Trabajo
+  Terminal bajo los lineamientos establecidos por la Comisi\'on Acad\'emica de Trabajos
+  Terminales (CATT)\par}
+\end{center}
+
+\vspace{0.6cm}
+\noindent CDMX, \underline{\hspace{1cm}} a \underline{\hspace{2cm}} de
+\underline{\hspace{2.5cm}} de 20\underline{\hspace{0.8cm}}
+
+\vspace{0.5cm}
+\noindent\textbf{M.~EN~C.~IV\'AN GIOVANNY MOSSO GARC\'IA}\\
+\textbf{PRESIDENTE DE LA COMISI\'ON ACAD\'EMICA DE TRABAJOS TERMINALES}\\
+\textbf{P~R~E~S~E~N~T~E}
+
+\vspace{0.2cm}
+\hfill\begin{minipage}{0.48\textwidth}
+  \textbf{EN ATENCI\'ON A:}\\
+  \textbf{LIC.~MILDRED SANDOVAL GARC\'IA}\\
+  \textbf{SECRETARIA EJECUTIVA}
+\end{minipage}
+
+\vspace{0.5cm}
+\noindent Por medio de la presente, se informa que el Trabajo Terminal N\'um.
+\underline{\hspace{2.5cm}}
+
+\vspace{0.3cm}
+\noindent Que lleva por T\'itulo:\\[0.2cm]
+\underline{\hspace{\linewidth}}\\[0.15cm]
+\underline{\hspace{\linewidth}}\\[0.15cm]
+\underline{\hspace{\linewidth}}
+
+\vspace{0.4cm}
+\noindent Fue concluido satisfactoriamente por:
+
+\vspace{0.3cm}
+\begin{center}
+  (Natalia Anaya Ram\'irez)\\[0.2cm]
+  (Diego Salazar Villagr\'an)
+\end{center}
+
+\vspace{0.5cm}
+\noindent Se avala que la documentaci\'on entregada mediante discos en formato DVD fue
+\textbf{revisada de manera precisa y exhaustiva} con el prop\'osito de asegurar que los
+avances desarrollados bajo la supervisi\'on de quien o quienes suscriben, hayan cumplido
+con lo planteado en el protocolo original, as\'i como en lo establecido por el Documento
+Rector de Operaci\'on y Evaluaci\'on para los Trabajos Terminales de la ESCOM.
+
+\vspace{0.6cm}
+\noindent\textbf{ATENTAMENTE}\\
+``\textbf{LA T\'ECNICA AL SERVICIO DE LA PATRIA}''
+
+\vspace{1.2cm}
+\noindent
+\begin{minipage}[t]{0.45\textwidth}
+  \centering
+  \rule{5cm}{0.4pt}\\[0.2cm]
+  Dra.~Jessie Paulina Guzm\'an Flores\\
+  Director/a
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+  \centering
+  \rule{5cm}{0.4pt}\\[0.2cm]
+  (Nombre completo y Firma)\\
+  Director/a
+\end{minipage}
+
+% ============================================================
+%  ADVERTENCIA INSTITUCIONAL (pág. 4)
+% ============================================================
+\newpage
+\thispagestyle{empty}
+\vspace*{4cm}
+\begin{center}
+  {\large\bfseries Advertencia}
+\end{center}
+\vspace{0.5cm}
+\noindent\rule{\linewidth}{0.6pt}
+\vspace{0.4cm}
+
+\noindent\textit{``Este documento contiene informaci\'on desarrollada por la Escuela
+Superior de C\'omputo del Instituto Polit\'ecnico Nacional, a partir de datos y
+documentos con derecho de propiedad y por lo tanto, su uso quedar\'a
+restringido a las aplicaciones que expl\'icitamente se convengan.''}
+
+\vspace{0.4cm}
+\noindent La aplicaci\'on no convenida exime a la escuela su responsabilidad t\'ecnica y
+da lugar a las consecuencias legales que para tal efecto se determinen.
+
+\vspace{0.5cm}
+\noindent Informaci\'on adicional sobre este reporte t\'ecnico podr\'a obtenerse en:
+
+\vspace{0.3cm}
+\noindent La Subdireccci\'on Acad\'emica de la Escuela Superior de C\'omputo del Instituto
+Polit\'ecnico Nacional, situada en Av.~Juan de Dios B\'atiz s/n. Tel\'efono:
+57296000, extensi\'on 52000.
+
+\vspace{0.5cm}
+\noindent\rule{\linewidth}{0.6pt}
+
+% ============================================================
+%  AGRADECIMIENTOS (opcional, pág. 5)
+% ============================================================
+\newpage
+\thispagestyle{empty}
+\vspace*{2cm}
+\begin{center}
+  {\large\bfseries Agradecimientos}
+\end{center}
+\vspace{1cm}
+
+\noindent\textit{[Por completar por los autores.]}
+
+\vspace{2cm}
+\begin{flushright}
+  \textit{Natalia Anaya Ram\'irez}\\[0.5cm]
+  \textit{Diego Salazar Villagr\'an}
+\end{flushright}
+
+% ============================================================
+%  ÍNDICES
+% ============================================================
+
+% ── Formato Índice de Figuras: "Figura N. Título" ─────────────
+\renewcommand{\cftfigpresnum}{Figura~}
+\renewcommand{\cftfigaftersnum}{.}
+\setlength{\cftfignumwidth}{5.5em}
+\setlength{\cftfigindent}{0pt}
+\newpage
+% ── Formato Índice de Tablas: número romano sin encimarse ─────
+% Ancho aumentado para acomodar "Tabla XXXVIII" (7+ caracteres)
+\renewcommand{\cfttabpresnum}{Tabla~}
+\renewcommand{\cfttabaftersnum}{.}
+\setlength{\cfttabnumwidth}{9.5em}
+\setlength{\cfttabindent}{0pt}
+\newpage
+% ── Índice de Contenido (sin auto-entrada en el propio TOC) ──
+\tableofcontents
+
+% ── Índice de Figuras ─────────────────────────────────────────
+\newpage
+\listoffigures
+
+% ── Índice de Tablas ──────────────────────────────────────────
+\newpage
+\listoftables
+\newpage

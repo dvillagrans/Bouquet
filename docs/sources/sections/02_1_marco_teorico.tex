@@ -1,0 +1,250 @@
+\section{Marco Teórico}
+
+\subsubsection{Restaurantes como Entornos de Operación y Servicio}
+
+Los restaurantes constituyen entornos de operaci\'on y servicio en los que convergen
+procesos de atenci\'on al cliente, coordinaci\'on del personal, gesti\'on de \'ordenes,
+preparaci\'on de alimentos y cobro de consumos. Su funcionamiento depende de la
+sincronizaci\'on continua entre actividades visibles para el cliente, como la asignaci\'on
+de mesas, la toma de pedidos y el pago, y actividades internas, como la preparaci\'on en
+cocina, la actualizaci\'on de inventario y el seguimiento del estado de las \'ordenes \cite{lee_digital_2024, oracle_consumer_study}.
+Dentro de este entorno suelen distinguirse dos grandes \'ambitos operativos: el \textit{front
+of house} y el \textit{back of house}. El primero comprende las actividades de contacto
+directo con el cliente; el segundo agrupa las tareas internas del restaurante,
+principalmente las relacionadas con cocina y coordinaci\'on de \'ordenes \cite{lee_digital_2024}.
+
+La experiencia del cliente se encuentra cada vez m\'as influida por el uso de tecnolog\'ia
+en los procesos de ordenamiento y pago. La National Restaurant Association (2024) report\'o
+que las tecnolog\'ias orientadas a mejorar velocidad, precisi\'on y conveniencia son relevantes
+tanto para consumidores como para operadores, y que existe inter\'es creciente por herramientas
+digitales para ordenar y pagar \cite{nra_state_2023}. En consecuencia, la digitalizaci\'on ya no solo responde a
+una necesidad operativa interna, sino tambi\'en a una expectativa creciente del usuario respecto
+a comodidad, rapidez y autonom\'ia durante el servicio.
+
+\subsubsection{Omnicanalidad en Sistemas Digitales de Servicio}
+
+La omnicanalidad se entiende como un enfoque integrado de interacci\'on y operaci\'on en
+el que m\'ultiples canales de contacto con el usuario funcionan de manera conectada para
+ofrecer una experiencia continua y consistente \cite{wang_omnichannel_2024}. En lugar de tratar cada canal como un
+punto aislado, la estrategia omnicanal busca unificar datos, procesos y flujos de atenci\'on
+entre interfaces digitales y f\'isicas.
+
+En el sector restaurantero, la omnicanalidad ha adquirido relevancia debido a la coexistencia
+de distintos medios de interacci\'on: consumo en sitio, pedidos digitales, pagos m\'oviles,
+plataformas de entrega, men\'us accesibles por c\'odigo QR y sistemas administrativos internos.
+Desde esta perspectiva, cuando un sistema permite que la informaci\'on de pedidos, mesas,
+pagos y estados de preparaci\'on circule de manera unificada entre comensales, meseros,
+cocina y administraci\'on, se establece una arquitectura de servicio donde cada actor
+interact\'ua con el mismo flujo de datos \cite{wang_omnichannel_2024}.
+
+\subsubsection{Aplicaciones Web Progresivas (PWA)}
+
+Las Aplicaciones Web Progresivas (PWA) son aplicaciones construidas con tecnolog\'ias
+web que buscan ofrecer una experiencia de uso similar a la de una aplicaci\'on instalada en
+una plataforma espec\'ifica. De acuerdo con MDN Web Docs, una PWA puede ejecutarse en
+m\'ultiples dispositivos desde una sola base de c\'odigo y, al mismo tiempo, ofrecer capacidades
+propias de aplicaciones nativas, como instalaci\'on en el dispositivo, funcionamiento sin
+conexi\'on y cierta integraci\'on con el sistema operativo \cite{mdn_pwa}.
+
+Una PWA no es un est\'andar \'unico ni una tecnolog\'ia aislada, sino un patr\'on de dise\~no que
+integra varias capacidades de la plataforma web. Entre sus componentes m\'as relevantes se
+encuentran el \textit{web app manifest}, que proporciona metadatos necesarios para la
+instalaci\'on y presentaci\'on de la aplicaci\'on, y los \textit{service workers}, que permiten
+controlar solicitudes de red, almacenamiento en cach\'e y experiencias fuera de l\'inea \cite{mdn_pwa, mdn_manifest}.
+Entre las ventajas m\'as importantes de las PWA destaca la posibilidad de mantener una sola
+base de c\'odigo para distintos entornos, lo que reduce costos de desarrollo y mantenimiento
+frente a estrategias que requieren aplicaciones separadas para m\'ultiples plataformas.
+
+En el contexto del presente proyecto, las PWA resultan adecuadas porque permiten ofrecer
+a comensales, meseros y personal operativo una interfaz accesible desde dispositivos m\'oviles
+o de escritorio sin requerir la instalaci\'on obligatoria de aplicaciones nativas. Esto facilita
+el acceso mediante navegador o instalaci\'on opcional, reduce barreras de adopci\'on y favorece
+la actualizaci\'on continua del sistema \cite{prisma_docs, prisma_accelerate}.
+
+\subsubsection{Arquitectura Cliente-Servidor y Modelo Serverless}
+
+La arquitectura cliente-servidor es un modelo de computaci\'on distribuida en el que una
+aplicaci\'on se divide en componentes con responsabilidades diferenciadas. En el contexto de
+aplicaciones web, esta arquitectura se manifiesta a trav\'es del intercambio de mensajes entre
+navegadores o aplicaciones m\'oviles y uno o varios servidores que alojan l\'ogica de negocio,
+servicios y acceso a datos \cite{ibm_bi_intro}.
+
+En sistemas orientados a m\'ultiples tipos de usuario, como los del \'ambito restaurantero,
+esta arquitectura permite que distintas interfaces cliente compartan una misma base de servicios
+del lado del servidor. Una vista para comensales, una interfaz para meseros, un panel de cocina
+y un m\'odulo administrativo pueden consumir la misma l\'ogica de negocio y los mismos datos
+centralizados, manteniendo reglas consistentes para el registro de \'ordenes, la actualizaci\'on
+de estados y el procesamiento de pagos \cite{ibm_bi_intro}.
+
+En el presente proyecto, la capa servidor se implementa mediante \textbf{Server Actions} de
+Next.js (modelo serverless desplegado en Vercel), lo que elimina la necesidad de gestionar
+infraestructura de servidor tradicional y facilita el escalado autom\'atico de la aplicaci\'on \cite{nextjs, vercel_pricing}.
+
+\subsubsection{Bases de Datos Relacionales y Centralización de la Información}
+
+Las bases de datos relacionales constituyen uno de los modelos m\'as utilizados para el
+almacenamiento estructurado de informaci\'on en sistemas transaccionales. Este modelo permite
+representar entidades y relaciones de forma l\'ogica, facilitando la consulta, actualizaci\'on y
+administraci\'on consistente de la informaci\'on \cite{ibm_relational_db}.
+
+Las propiedades ACID (Atomicidad, Consistencia, Aislamiento y Durabilidad) son especialmente
+relevantes en sistemas donde m\'ultiples operaciones deben ejecutarse con precisi\'on, como
+ocurre en el registro de \'ordenes, pagos y estados operativos dentro de un restaurante \cite{ibm_relational_db}.
+La integridad referencial entre entidades como usuarios, mesas, \'ordenes, productos y pagos
+resulta indispensable para mantener la trazabilidad completa de las transacciones.
+
+En el presente proyecto, \textbf{PostgreSQL} a trav\'es de \textbf{Supabase} constituye el
+n\'ucleo de almacenamiento. Supabase extiende PostgreSQL e incorpora funcionalidades adicionales
+como acceso administrado, respaldos, Row Level Security (RLS) y capacidades en tiempo real
+mediante canales de broadcast \cite{osi_licenses, supabase_license}, siendo gestionado el acceso a datos a trav\'es de
+\textbf{Prisma ORM} para garantizar tipado y seguridad en tiempo de compilaci\'on \cite{prisma_docs, prisma_accelerate}.
+
+\subsubsection{Comunicación en Tiempo Real mediante WebSockets y Supabase Realtime}
+
+La comunicaci\'on en tiempo real es un componente relevante en sistemas donde m\'ultiples actores
+requieren observar cambios de estado de manera casi inmediata. La API de WebSockets permite
+abrir una sesi\'on de comunicaci\'on interactiva de dos v\'ias entre el navegador del usuario y un
+servidor, posibilitando enviar mensajes y recibir respuestas sin necesidad de consultar
+continuamente al servidor \cite{mdn_websocket}.
+
+En aplicaciones orientadas a operaci\'on restaurantera, la comunicaci\'on en tiempo real resulta
+particularmente \'util para sincronizar el flujo de trabajo entre los distintos actores del sistema.
+Por ejemplo, cuando un comensal registra una orden, el cambio puede reflejarse de forma
+inmediata en la interfaz del mesero o en el tablero de cocina; la actualizaci\'on del estado de
+preparaci\'on de un pedido puede mostrarse en otras vistas conectadas al sistema \cite{mdn_manifest}.
+
+\textbf{Supabase Realtime} utiliza conexiones WebSocket persistentes para entregar
+actualizaciones en tiempo real a los clientes conectados \cite{supabase_license}, combinando el almacenamiento
+estructurado en PostgreSQL con mecanismos de difusi\'on de cambios sobre registros o eventos
+espec\'ificos. Esta integraci\'on constituye el mecanismo central de sincronizaci\'on del presente
+proyecto para las vistas de cocina, mesas y liquidaci\'on.
+
+\subsubsection{Sistema de Pantallas de Cocina (KDS)}
+
+Un Sistema de Pantallas de Cocina (KDS, por sus siglas en ingl\'es, \textit{Kitchen Display System}) es una soluci\'on tecnol\'ogica de visualizaci\'on y gesti\'on de flujo de trabajo dise\~nada espec\'ificamente para entornos gastron\'omicos. Funciona como el nodo receptor dentro de la arquitectura de un restaurante, reemplazando la emisi\'on tradicional de tickets de papel por interfaces digitales interactivas ubicadas en las distintas estaciones de preparaci\'on \cite{walker2017restaurant}.
+
+La funci\'on principal de un KDS es enrutar y secuenciar autom\'aticamente las \'ordenes entrantes —o comandas— capturadas desde un Punto de Venta (POS) o plataformas de autogesti\'on de mesas. El sistema desglosa los pedidos complejos y los distribuye a los centros de producci\'on correspondientes (por ejemplo, parrilla, bebidas o l\'inea de ensamblaje), organiz\'andolos seg\'un reglas de prioridad, tiempos estimados de cocci\'on o disponibilidad de la estaci\'on \cite{nyheim2011technology}.
+
+En la implementaci\'on de plataformas integrales de gesti\'on restaurantera, el KDS trasciende la simple visualizaci\'on operativa para convertirse en un punto crucial de captura de telemetr\'ia. Al registrar marcas de tiempo (\textit{timestamps}) granulares en cada transici\'on de estado del pedido (recibido, en preparaci\'on, despachado), el sistema genera conjuntos de datos estructurados. Esta informaci\'on es fundamental para auditar el rendimiento operativo en tiempo real y alimentar modelos anal\'iticos posteriores que optimicen la rotaci\'on de mesas y reduzcan los tiempos de latencia en el servicio \cite{barrows2012introduction}.
+
+\subsubsection{Códigos QR como Mecanismo de Acceso a Mesas Virtuales}
+
+Los c\'odigos QR (Quick Response) son c\'odigos bidimensionales dise\~nados para almacenar
+informaci\'on de manera compacta y permitir su lectura r\'apida mediante dispositivos \'opticos.
+Se encuentran estandarizados internacionalmente bajo la norma ISO/IEC~18004, lo que ha
+favorecido su adopci\'on amplia en distintos contextos de identificaci\'on, acceso y enlace a
+recursos digitales \cite{denso_qr_standards}.
+
+En el sector restaurantero, los c\'odigos QR han adquirido relevancia como mecanismo para
+desplegar men\'us digitales, habilitar ordenamiento en mesa y facilitar pagos desde dispositivos
+m\'oviles. Un estudio de MiQ~Digital (2022) se\~nala que el 73\% de los consumidores mexicanos
+han escaneado un c\'odigo QR al menos una vez, y el 64\% lo han hecho para acceder a un men\'u
+de restaurante \cite{nra_state_2023}, lo que indica que la curva de aprendizaje para el flujo de activaci\'on de
+la mesa virtual propuesto en este trabajo es m\'inima en la poblaci\'on objetivo.
+
+Desde una perspectiva de dise\~no de sistemas, el uso de c\'odigos QR como punto de entrada
+permite asociar un identificador f\'isico con una entidad l\'ogica del sistema. En el presente
+proyecto, dicha entidad corresponde a una \textbf{mesa virtual} identificada por un JWT de
+un solo uso con tiempo de expiraci\'on, lo que a\~nade una capa de seguridad que no est\'a
+presente en soluciones que simplemente redireccionar a una URL est\'atica.
+
+\subsubsection{Gobernanza de Datos}
+
+La gobernanza de datos (del ingl\'es \textit{Data Governance}) se define como la ejecuci\'on y aplicaci\'on de autoridad, control y toma de decisiones compartida sobre la gesti\'on de los activos de datos de una organizaci\'on. Comprende el establecimiento de pol\'iticas, procedimientos, est\'andares y m\'etricas que garantizan la disponibilidad, usabilidad, consistencia, integridad y seguridad de la informaci\'on \cite{dama2017dmbok, ladley2012data}. A diferencia de la gesti\'on de datos tradicional, que se enfoca en la ejecuci\'on y arquitectura t\'ecnica, la gobernanza proporciona el marco estrat\'egico \cite{khatri2010designing}.
+
+En el contexto de una plataforma de Software como Servicio (SaaS) orientada a la administraci\'on operativa —tales como la gesti\'on de mesas, control de flujos de atenci\'on y procesamiento de pagos en restaurantes—, la gobernanza de datos resulta un pilar normativo y funcional cr\'itico. 
+
+Este marco establece las directrices para el manejo de informaci\'on sensible (asegurando el cumplimiento de normativas de privacidad y est\'andares financieros), define los roles y permisos de acceso para los distintos usuarios del sistema, y asegura que los datos transaccionales recopilados mantengan un nivel de calidad (\textit{Data Quality}) \'optimo. Una gobernanza estricta garantiza que la informaci\'on extra\'ida para su posterior procesamiento anal\'itico o por lotes sea confiable, auditable y segura.
+
+\subsubsection{Seguridad a Nivel de Fila (RLS)}
+
+La Seguridad a Nivel de Fila (RLS, por sus siglas en ingl\'es, \textit{Row-Level Security}) es un mecanismo avanzado de control de acceso en bases de datos relacionales que restringe la visualizaci\'on y manipulaci\'on de datos a nivel de registro. Se basa en el contexto de ejecuci\'on del usuario y en pol\'iticas de seguridad predefinidas en el motor de la base de datos \cite{postgresql_rls}. A diferencia del control de acceso basado en roles (RBAC) tradicional, que otorga o deniega permisos sobre tablas completas, RLS aplica una capa de filtrado din\'amico e ineludible \cite{obe2017postgresql}.
+
+T\'ecnicamente, cuando se habilitan las pol\'iticas RLS en un gestor como PostgreSQL, el motor eval\'ua expresiones booleanas contra cada fila para cualquier operaci\'on \texttt{SELECT}, \texttt{INSERT}, \texttt{UPDATE} o \texttt{DELETE}. Si la pol\'itica no se cumple, la fila se vuelve invisible u oculta para la transacci\'on en curso, asegurando que las aplicaciones cliente solo puedan interactuar con los datos estrictamente autorizados.
+
+En la arquitectura de plataformas de Software como Servicio (SaaS) multi-inquilino (\textit{multi-tenant}) —como sistemas administrativos con estructuras jer\'arquicas para cadenas y sucursales restauranteras—, las pol\'iticas RLS son imperativas. Permiten consolidar los datos de m\'ultiples entidades operativas en una \'unica base de datos compartida, garantizando la separaci\'on l\'ogica, la seguridad de las transacciones y la privacidad de la informaci\'on financiera. Esto mitiga el riesgo de fugas de datos y reduce la dependencia exclusiva de la l\'ogica de autorizaci\'on a nivel de aplicaci\'on \cite{chapple2018isc2}.
+
+\subsubsection{Control de Acceso Basado en Roles (RBAC)}
+
+El Control de Acceso Basado en Roles (RBAC, por sus siglas en ingl\'es, \textit{Role-Based Access Control}) es un modelo de seguridad inform\'atica que restringe el acceso a los recursos del sistema bas\'andose en las funciones o responsabilidades de los usuarios dentro de una organizaci\'on. En lugar de asignar permisos de manera directa e individual, los privilegios de lectura, escritura o ejecuci\'on se asocian l\'ogicamente a roles espec\'ificos, y los usuarios adquieren dichos privilegios al ser asignados a uno o m\'ultiples roles \cite{sandhu1996role}. 
+
+T\'ecnicamente, RBAC simplifica dr\'asticamente la administraci\'on de la seguridad al abstraer la complejidad de los permisos subyacentes. Este modelo fue formalizado por el Instituto Nacional de Est\'andares y Tecnolog\'ia (NIST) y se ha convertido en el mecanismo de autorizaci\'on predominante en el desarrollo de software empresarial \cite{ferraiolo2001proposed}.
+
+En el dise\~no arquitect\'onico de plataformas de Software como Servicio (SaaS) con estructuras jer\'arquicas —tales como sistemas de administraci\'on centralizada para cadenas comerciales y sus respectivas sucursales—, la implementaci\'on de RBAC resulta indispensable. Permite modelar con precisi\'on la l\'ogica del negocio, creando perfiles de usuario mutuamente excluyentes (por ejemplo, \textit{Administrador Global}, \textit{Gerente de Sucursal}, \textit{Personal de Cocina} o \textit{Mesero}). 
+
+Es importante destacar que, dentro de una arquitectura robusta, RBAC opera en la capa de aplicaci\'on y enrutamiento para controlar el acceso a m\'odulos o interfaces (como el acceso a un panel KDS o a la configuraci\'on de pasarelas de pago), trabajando en sinergia con mecanismos de base de datos como la Seguridad a Nivel de Fila (RLS) para garantizar una protecci\'on integral \cite{anderson2020security}.
+
+\subsubsection{Protocolos HTTPS y TLS 1.2+}
+
+El Protocolo Seguro de Transferencia de Hipertexto (HTTPS, por sus siglas en ingl\'es, \textit{Hypertext Transfer Protocol Secure}) es una extensi\'on del protocolo HTTP dise\~nada para asegurar la comunicaci\'on a trav\'es de redes de computadoras. Esta seguridad se logra encapsulando el tr\'afico HTTP dentro de un canal cifrado utilizando el protocolo de Seguridad de la Capa de Transporte (TLS, \textit{Transport Layer Security}) \cite{dierks2008tls}.
+
+Las versiones modernas del protocolo, espec\'ificamente TLS 1.2 y su sucesor TLS 1.3, establecen los est\'andares criptogr\'aficos actuales de la industria. Proporcionan tres garant\'ias fundamentales: la \textbf{confidencialidad} (mediante el cifrado sim\'etrico de los datos), la \textbf{integridad} (asegurando, mediante c\'odigos de autenticaci\'on de mensajes, que los datos no sean alterados en tr\'ansito) y la \textbf{autenticaci\'on} (verificando la identidad del servidor mediante certificados digitales X.509) \cite{rescorla2018tls}. A diferencia de sus predecesores obsoletos (como SSL o TLS 1.0/1.1), TLS 1.2+ exige el uso de suites de cifrado robustas y soporta el Secreto Hacia Adelante (\textit{Forward Secrecy}), impidiendo que la vulneraci\'on futura de una clave privada comprometa las sesiones pasadas.
+
+En la arquitectura de sistemas administrativos y pasarelas integradas, la implementaci\'on estricta de conexiones HTTPS/TLS 1.2+ es un requisito normativo insoslayable. Constituye el mecanismo subyacente que protege en tiempo real la transmisi\'on de \textit{tokens} de pago, credenciales de acceso a nivel de sucursal y telemetr\'ia operativa. Adem\'as, las interfaces de programaci\'on de aplicaciones (APIs) de los proveedores financieros exigen exclusivamente conexiones TLS 1.2 o superiores, formando un pilar obligatorio para mantener el cumplimiento del Est\'andar de Seguridad de Datos de la Industria de Tarjetas de Pago (PCI~DSS) \cite{pci_dss_4}.
+
+\subsubsection{Tiempo de Vida (TTL)}
+
+El Tiempo de Vida (TTL, por sus siglas en ingl\'es, \textit{Time To Live}) es un mecanismo inform\'atico que delimita la vida \'util o el per\'iodo de validez de un dato, registro o paquete dentro de un sistema computacional o red de telecomunicaciones. Inicialmente concebido en el dise\~no de protocolos de enrutamiento para evitar que los paquetes de datos circularan indefinidamente en caso de bucles de red \cite{rfc791}, el concepto de TTL ha evolucionado para convertirse en un patr\'on arquitect\'onico esencial en el desarrollo de software moderno \cite{kurose2017computer}.
+
+En el contexto del desarrollo de aplicaciones web y plataformas SaaS, el TTL se implementa principalmente en estrategias de almacenamiento en cach\'e y gesti\'on de sesiones. Permite establecer un l\'imite temporal de retenci\'on para la informaci\'on que se almacena temporalmente en la memoria (como respuestas de API recurrentes o el estado ef\'imero de la interfaz), garantizando que los clientes interact\'uen con datos eventualmente consistentes y actualizados sin sobrecargar la base de datos principal.
+
+Adem\'as de la optimizaci\'on del rendimiento, el TTL ejerce un rol cr\'itico en la seguridad y el control de concurrencia. En flujos de pago digital y autenticaci\'on, se utiliza para expirar de manera autom\'atica \textit{tokens} criptogr\'aficos, enlaces de transacci\'on de un solo uso y bloqueos de recursos (por ejemplo, cuando se reserva temporalmente una mesa o se inicia un proceso de liquidaci\'on), mitigando el riesgo de ataques por intercepci\'on y previniendo interbloqueos (\textit{deadlocks}) en operaciones simult\'aneas \cite{stuttard2011web}.
+
+\subsubsection{Sistemas de Pago Digital y Pasarelas de Pago}
+
+Los sistemas de pago digital comprenden el conjunto de tecnolog\'ias y servicios que permiten
+procesar transacciones electr\'onicas entre usuarios, comercios e instituciones financieras.
+Las pasarelas de pago act\'uan como intermediarios tecnol\'ogicos entre el comercio, el cliente y
+los servicios financieros involucrados en la transacci\'on \cite{pci_dss_4, stripe_pricing}.
+
+En el \'ambito restaurantero, los sistemas de pago digital aportan ventajas particulares debido a
+que la liquidaci\'on de una cuenta puede realizarse de distintas maneras: pago total, pago
+individual, pago compartido o m\'ultiples pagos parciales sobre una misma orden. En el presente
+proyecto, la integraci\'on se realiza con un proveedor certificado PCI~DSS~Level~1 mediante
+\textbf{tokenizaci\'on}, de modo que la plataforma nunca almacena datos de tarjeta \cite{conasami_2024}, y el
+control de concurrencia mediante \texttt{SELECT FOR UPDATE} en PostgreSQL garantiza que no
+se procesen cobros duplicados.
+
+\subsubsection{Servidor Privado Virtual (VPS)}
+
+Un Servidor Privado Virtual (VPS, por sus siglas en ingl\'es, \textit{Virtual Private Server}) es una m\'aquina virtual comercializada como un servicio de infraestructura por un proveedor de la nube o alojamiento web. Un VPS ejecuta su propia copia de un sistema operativo y opera de manera aislada, otorgando al administrador acceso de superusuario (\textit{root}) para instalar, configurar y gestionar cualquier software a nivel de sistema \cite{buyya2010cloud}.
+
+T\'ecnicamente, esta arquitectura se logra mediante la implementaci\'on de un hipervisor (Monitor de M\'aquina Virtual o VMM), el cual particiona y asigna de manera estricta los recursos f\'isicos de un servidor subyacente ---tales como ciclos de CPU, memoria RAM y ancho de banda--- en m\'ultiples entornos virtuales independientes \cite{rosenblum2005virtual}. A diferencia de los entornos de alojamiento compartido, donde el rendimiento puede degradarse por el fen\'omeno del ``vecino ruidoso'' (\textit{noisy neighbor}), un VPS garantiza recursos dedicados y a\'isla los procesos de red y almacenamiento.
+
+En el despliegue de plataformas de Software como Servicio (SaaS), como los sistemas administrativos y de gesti\'on de mesas, un VPS proporciona el nivel de abstracci\'on e independencia (IaaS) necesario \cite{mell2011nist}. Permite orquestar la arquitectura completa: configurar proxys inversos, establecer el entorno de ejecuci\'on para aplicaciones de pila completa (\textit{full-stack}) y aislar las bases de datos relacionales. Esto resulta cr\'itico para mantener la alta disponibilidad del servicio y salvaguardar la integridad de las transacciones procesadas.
+
+\subsubsection{Inteligencia de Negocio y Arquitectura de Datos Analíticos}
+
+La inteligencia de negocio (BI) comprende los procesos y tecnolog\'ias para transformar datos
+en informaci\'on accionable para la toma de decisiones \cite{mdn_pwa}. En sistemas modernos,
+esta capacidad suele implementarse separando las cargas de trabajo mediante patrones como
+CQRS (Command Query Responsibility Segregation), donde las operaciones de escritura
+(transaccionales) y lectura (anal\'iticas) se gestionan por canales optimizados de forma
+independiente \cite{iovescu_realtime_2024}.
+
+Para lograr esta separaci\'on, se distinguen dos entornos fundamentales:
+\begin{itemize}
+    \item \textbf{OLTP (Online Transactional Processing):} Sistemas optimizados para el registro
+          r\'apido y consistente de transacciones individuales (ej. registrar una orden o un pago).
+    \item \textbf{OLAP (Online Analytical Processing):} Sistemas optimizados para consultas
+          complejas sobre grandes vol\'umenes de datos hist\'oricos (ej. tendencias de ventas por zona).
+\end{itemize}
+
+\subsubsection{Procesamiento por Lotes (Batch Processing) y Apache Spark}
+
+A diferencia del procesamiento transaccional en tiempo real ---fundamental para gestionar el estado de las mesas y asegurar la concurrencia en las pasarelas de pago---, el procesamiento por lotes (\textit{batch processing}) consiste en la ejecuci\'on automatizada de tareas sobre grandes vol\'umenes de datos acumulados previamente, sin intervenci\'on manual durante su ejecuci\'on \cite{kleppmann2017designing}. En el contexto operativo de la plataforma, este paradigma resulta id\'oneo para procesos como la conciliaci\'on financiera de las pasarelas de pago o la generaci\'on de reportes estrat\'egicos al final de la jornada.
+
+Para la ejecuci\'on de estas cargas de trabajo anal\'iticas, herramientas como Apache Spark operan bajo este modelo. El motor central de Spark est\'a dise\~nado nativamente bajo el paradigma \textit{batch}, operando sobre abstracciones de datos inmutables y distribuidas en la memoria del cl\'uster \cite{zaharia2012resilient}. Es importante destacar que, incluso en arquitecturas de transmisi\'on continua, Spark implementa un modelo de micro-lotes (\textit{micro-batching}), acumulando peque\~nos fragmentos de datos temporales para procesarlos como lotes independientes y aprovechar su motor de ejecuci\'on secuencial y optimizado \cite{chambers2018spark}.
+
+\subsubsection{Arquitectura Medall\'on (Bronze, Silver, Gold)}
+
+La Arquitectura Medall\'on (\textit{Medallion Architecture}) es un patr\'on de dise\~no l\'ogico utilizado en la ingenier\'ia de datos para organizar y gestionar el flujo de informaci\'on dentro de un \textit{Data Lakehouse}. Este enfoque estructura el procesamiento de datos en tres capas progresivas —Bronce, Plata y Oro— con el objetivo de incrementar incrementalmente la calidad, fiabilidad y estructura de los datos a medida que transitan por el sistema \cite{armbrust2021lakehouse, reis2022fundamentals}.
+
+Cada capa cumple una funci\'on espec\'ifica dentro del ciclo de vida del dato:
+\begin{itemize}
+    \item \textbf{Capa Bronce (Ingesta Cruda):} Act\'ua como la zona de aterrizaje (\textit{landing zone}). Almacena los datos crudos exactamente en el mismo formato y estado en que fueron extra\'idos de los sistemas origen (por ejemplo, registros de transacciones de pasarelas de pago o telemetr\'ia del KDS). Es de solo adici\'on (\textit{append-only}) y proporciona un historial inmutable para auditor\'ias o reprocesamiento \cite{chambers2018spark}.
+    \item \textbf{Capa Plata (Datos Refinados):} En esta fase, los datos crudos se filtran, limpian, normalizan y se les aplica esquemas estrictos. Se eliminan duplicados y se resuelven inconsistencias, transformando la informaci\'on en una fuente \'unica de verdad (\textit{Single Source of Truth}) confiable a nivel de entidad \cite{reis2022fundamentals}.
+    \item \textbf{Capa Oro (Agregados de Negocio):} Es la capa de consumo final. Los datos se modelan y agregan (frecuentemente en esquemas de estrella) para responder a requerimientos estrat\'egicos espec\'ificos. Est\'a optimizada para operaciones de baja latencia y alta concurrencia, alimentando directamente cuadros de mando (BI), reportes financieros y modelos de \textit{Machine Learning}.
+\end{itemize}
+
+Para sistemas transaccionales distribuidos, la adopci\'on de este marco metodol\'ogico —frecuentemente orquestado mediante motores de procesamiento por lotes como Apache Spark— permite aislar las cargas de trabajo anal\'iticas de las operativas. Esto garantiza que la extracci\'on masiva de datos no impacte el rendimiento de la base de datos principal, al mismo tiempo que proporciona un ecosistema robusto para el an\'alisis predictivo de la operaci\'on comercial.

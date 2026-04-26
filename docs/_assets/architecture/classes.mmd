@@ -1,0 +1,67 @@
+classDiagram
+    class Cadena {
+        +UUID id
+        +String nombre
+        +getZonas()
+    }
+    class Zona {
+        +UUID id
+        +String nombre
+        +getSucursales()
+    }
+    class Sucursal {
+        +UUID id
+        +String nombre
+        +getMesas()
+    }
+    class MesaFisica {
+        +UUID id
+        +int numero
+        +TableStatus estado
+        +posX, posY
+    }
+    class MesaVirtual {
+        +UUID id
+        +VirtualStatus estado
+        +String joinCode
+        +activar()
+        +liberar()
+    }
+    class SesionComensal {
+        +UUID id
+        +bool esAnfitrion
+        +getOrdenes()
+    }
+    class Orden {
+        +UUID id
+        +OrderStatus estado
+        +avanzar()
+    }
+    class Cuenta {
+        +UUID id
+        +float total
+        +liquidar()
+    }
+    class AppUser {
+        +UUID id
+        +RolUsuario rol
+        +autenticar()
+    }
+
+    Cadena "1" *-- "*" Zona
+    Zona "1" *-- "*" Sucursal
+    Sucursal "1" *-- "*" MesaFisica
+    MesaFisica "*" o-- "1" MesaVirtual : Agregación (Tabla unida)
+    MesaVirtual "1" *-- "*" SesionComensal
+    SesionComensal "1" *-- "*" Orden
+    SesionComensal "1" -- "1" Cuenta
+    AppUser "1" -- "*" SesionComensal
+
+    style Cadena fill:#1B3A5C,color:#FFF
+    style Zona fill:#1B3A5C,color:#FFF
+    style Sucursal fill:#1B3A5C,color:#FFF
+    style MesaFisica fill:#D6E4F0,stroke:#1B3A5C
+    style MesaVirtual fill:#D6E4F0,stroke:#1B3A5C
+    style SesionComensal fill:#EBF3FA,stroke:#1B3A5C
+    style Orden fill:#FDF4E3,stroke:#856404
+    style Cuenta fill:#FDF4E3,stroke:#856404

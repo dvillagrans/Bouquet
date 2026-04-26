@@ -1,0 +1,51 @@
+erDiagram
+    CHAIN ||--o{ ZONE : contains
+    ZONE ||--o{ RESTAURANT : contains
+    RESTAURANT ||--o{ DINING_TABLE : has
+    RESTAURANT ||--o{ STAFF : employs
+    
+    DINING_TABLE ||--o{ SESSION : hosts
+    SESSION ||--o{ GUEST : includes
+    SESSION ||--o{ RESTAURANT_ORDER : places
+    RESTAURANT_ORDER ||--o{ ORDER_ITEM : contains
+    ORDER_ITEM ||--o{ ORDER_ITEM_MODIFIER : has
+    
+    SESSION ||--o{ PAYMENT : settles
+    PAYMENT ||--o{ PAYMENT_ALLOCATION : details
+    PAYMENT ||--o{ REFUND : processes
+    
+    CHAIN ||--o{ MENU_TEMPLATE : defines
+    MENU_TEMPLATE ||--o{ TEMPLATE_CATEGORY : has
+    TEMPLATE_CATEGORY ||--o{ TEMPLATE_ITEM : has
+    
+    RESTAURANT ||--o{ RESTAURANT_CATEGORY : has
+    RESTAURANT_CATEGORY ||--o{ RESTAURANT_MENU_ITEM : has
+    RESTAURANT_MENU_ITEM }|..|| TEMPLATE_ITEM : overrides
+    
+    RESTAURANT_MENU_ITEM ||--o{ ORDER_ITEM : instantiates
+
+    CHAIN {
+        string id PK
+        string name
+        int taxRateBps
+    }
+    RESTAURANT {
+        string id PK
+        string name
+        boolean allowMobileOrdering
+    }
+    DINING_TABLE {
+        string id PK
+        int number
+        string status
+    }
+    SESSION {
+        string id PK
+        string status
+        timestamp openedAt
+    }
+    PAYMENT {
+        string id PK
+        int amountCents
+        string status
+    }

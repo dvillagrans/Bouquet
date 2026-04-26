@@ -62,7 +62,10 @@ model ChainStaff {
   zoneId  String?   // null = acceso a toda la cadena
   name    String
   role    ChainRole
-  pin     String
+  /// @deprecated Almacenamiento legacy; el login unificado usa email + passwordHash
+  pin     String?
+  email   String?   @unique
+  passwordHash String?
   isActive Boolean  @default(true)
 
   chain Chain  @relation(fields: [chainId], references: [id], onDelete: Cascade)
@@ -73,6 +76,7 @@ model ChainStaff {
 
   @@index([chainId])
   @@index([zoneId])
+  @@index([email])
 }
 
 // ------------------------------------
@@ -337,7 +341,10 @@ model Staff {
   restaurantId String
   name         String
   role         Role
-  pin          String
+  /// @deprecated Login unificado: usar email + passwordHash
+  pin          String?
+  email        String?  @unique
+  passwordHash String?
   isActive     Boolean @default(true)
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -346,6 +353,7 @@ model Staff {
   updatedAt DateTime @updatedAt
 
   @@index([restaurantId])
+  @@index([email])
 }
 
 // ------------------------------------

@@ -1,0 +1,49 @@
+sequenceDiagram
+    autonumber
+    
+    %% Color Palette
+    %% primary: #1B3A5C (Dark Blue)
+    %% accent: #2E75B6 (Medium Blue)
+    %% lightest: #EBF3FA (Very Light Blue)
+    %% green: #D6EFD8
+    %% orange: #FFF0D6
+    %% red: #FDDCDC
+
+    actor C as Comensal
+    participant S as Sistema (Bouquet API)
+    participant DB as Base de Datos (PostgreSQL)
+    participant K as Tablero KDS (Chef)
+
+    rect rgb(235, 243, 250)
+        Note over C,DB: Fase 1: Selección y Navegación
+        C->>S: Navega menú digital por categorías
+        S->>DB: SELECT items FROM MenuItem WHERE restaurantId = ?
+        DB-->>S: Lista de productos activos
+        S-->>C: Despliegue de menú interactivo
+        C->>S: Agrega productos a la canasta (Optimistic UI)
+    end
+
+    rect rgb(214, 239, 216)
+        Note over C,DB: Fase 2: Confirmación de Pedido
+        C->>S: POST /api/orders { items, type: INDIVIDUAL | GROUP }
+        S->>DB: SELECT status FROM MesaVirtual WHERE id = ?
+        DB-->>S: Mesa en estado OCUPADA
+        S->>DB: atomic: INSERT Order + OrderItem
+        S->>DB: UPDATE Cuenta (monto_total += items.price)
+        DB-->>S: Orden Registrada (PENDING)
+    end
+
+    rect rgb(255, 240, 214)
+        Note over S,K: Fase 3: Sincronización en Tiempo Real
+        S->>S: Emite evento 'nueva_orden' (Supabase Realtime)
+        S-->>K: Alerta sonora + Nueva orden en columna PENDIENTE
+        S-->>C: Confirmación de orden enviada a cocina
+    end
+
+    rect rgb(253, 220, 220)
+        Note over C,S: Validaciones y Errores
+        C--xS: Intento de orden en mesa CERRANDO
+        S-->>C: Error 409 — Mesa en proceso de liquidación
+        C--xS: Producto agotado (isSoldOut = true)
+        S-->>C: Error 422 — Item no disponible para pedido
+    end

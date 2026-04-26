@@ -1,0 +1,33 @@
+sequenceDiagram
+    autonumber
+    
+    %% Color Palette
+    actor G as Gerente
+    participant S as Sistema (Menu Editor)
+    participant DB as Base de Datos (PostgreSQL)
+
+    rect rgb(235, 243, 250)
+        Note over G,DB: Fase 1: Definición de Grupo
+        G->>S: Crear ModifierGroup (ej. "Término de Carne")
+        S->>DB: INSERT ModifierGroup { min: 1, max: 1, isRequired: true }
+    end
+
+    rect rgb(214, 239, 216)
+        Note over G,DB: Fase 2: Opciones y Precios
+        G->>S: Agregar "Bien Cocido" ($0)
+        G->>S: Agregar "Extra Queso" (+$20)
+        S->>DB: INSERT ModifierOption { name, priceAdjustment }
+    end
+
+    rect rgb(255, 240, 214)
+        Note over G,S: Fase 3: Asociación a Producto
+        G->>S: Vincular Grupo a "Hamburguesa Bouquet"
+        S->>DB: INSERT MenuItemModifierGroup
+        Note over S: El menú del comensal ahora obliga a elegir término
+    end
+
+    rect rgb(253, 220, 220)
+        Note over G,S: Validaciones
+        G--xS: Intento de borrar opción con órdenes activas
+        S-->>G: Error 409 — La opción está referenciada en ítems vigentes
+    end

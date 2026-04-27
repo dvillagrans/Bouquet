@@ -1,0 +1,43 @@
+% -----------------------------------------------------------
+\newpage
+\subsection{Diseño de Base de Datos}
+% -----------------------------------------------------------
+
+El sistema emplea una base de datos relacional implementada en PostgreSQL~16 gestionada a través de la plataforma Supabase. La arquitectura de datos se fundamenta en un modelo normalizado que asegura la integridad referencial y aplica políticas de seguridad a nivel de fila (Row Level Security, RLS) para garantizar el aislamiento de la información.
+
+\subsubsection{Convenciones del Modelo}
+
+La definición del esquema de datos en Bouquet OPS se rige por un conjunto de convenciones técnicas orientadas a la consistencia y escalabilidad:
+
+\begin{itemize}
+  \item Los identificadores primarios se definen consistentemente como tipos \texttt{text} (UUID v4).
+  \item El almacenamiento de valores monetarios se realiza en centavos (tipo \texttt{int}), eliminando la posibilidad de errores de redondeo asociados al uso de tipos de punto flotante.
+  \item Las tasas porcentuales se registran en puntos base o \textit{basis points} (\texttt{int}), estableciendo una relación de $100\,\text{bps} = 1\%$.
+  \item Se incorpora un mecanismo de eliminación lógica (\textit{soft delete}) mediante el atributo \texttt{archivedAt}.
+  \item La gestión de los campos de auditoría \texttt{createdAt} y \texttt{updatedAt} se delega al mapeo objeto-relacional (ORM).
+\end{itemize}
+
+\subsubsection{Dominios del Modelo}
+
+El esquema se distribuye funcionalmente en siete dominios lógicos que agrupan las entidades del sistema:
+
+\begin{enumerate}
+  \item Catálogos globales: Entidades de referencia compartidas que estandarizan datos maestros.
+  \item Control de acceso (RBAC): Gestión de roles, permisos y la jerarquía de privilegios del sistema.
+  \item Identidad: Administración de perfiles de usuario y contextos operativos.
+  \item Organización: Representación de la estructura corporativa desde la cadena hasta el restaurante individual.
+  \item Menú: Definición de la oferta gastronómica, incluyendo plantillas centrales y configuraciones locales.
+  \item Operación de mesa: Control de sesiones de servicio, asignación de mesas y gestión de comensales.
+  \item Transacciones: Registro de comandas, flujo de pagos y aplicación de reglas de negocio para descuentos.
+\end{enumerate}
+
+\begin{landscape}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth,height=0.9\textheight,keepaspectratio]{erd/rendered/DB-simple.pdf}
+  \caption{Modelo de Entidad-Relación Global (Simplificado) --- Bouquet OPS}
+  \label{fig:erd-global}
+\end{figure}
+\end{landscape}
+
+\clearpage

@@ -1,45 +1,128 @@
-graph TB
-    subgraph UserNodes [Dispositivos de Usuario]
-        PWA[Navegador PWA / Mobile]
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#ffffff',
+    'primaryTextColor': '#000000',
+    'primaryBorderColor': '#000000',
+    'lineColor': '#000000',
+    'secondaryColor': '#ffffff',
+    'tertiaryColor': '#ffffff',
+    'mainBkg': '#ffffff',
+    'nodeBorder': '#000000',
+    'clusterBkg': '#ffffff',
+    'clusterBorder': '#000000',
+    'titleColor': '#000000',
+    'edgeLabelBackground': '#ffffff',
+    'fontFamily': 'arial, sans-serif',
+    'fontSize': '100px',
+    'subgraphTitleFontSize': '100px',
+    'clusterTitleFontSize': '100px'
+  },
+  'flowchart': {
+        'padding': 40,
+        'nodeSpacing': 90,
+        'rankSpacing': 120,
+    'htmlLabels': true,
+    'curve': 'basis'
+  }
+}}%%
+
+flowchart LR
+
+    %% ── COLUMNA 1: USUARIOS ──
+    subgraph USERS["<br/>CAPA USUARIOS"]
+        direction TB
+        CLI(["CLIENTE<br/>QR · Menú · Pago"])
+        MES(["MESERO<br/>Mesas · Órdenes"])
+        KDS(["COCINA<br/>KDS · Estados"])
+        ADM(["ADMIN<br/>Config · Reports"])
     end
 
-    subgraph VercelNodes [Vercel Edge Network]
-        BFF[Next.js API Routes / BFF]
-        UI[React / Next.js UI]
-        Mid[Edge Middleware]
+    %% ── COLUMNA 2: VERCEL ──
+    subgraph VERCEL["<br/> VERCEL INFRASTRUCTURE"]
+        direction TB
+
+        subgraph FRONTEND["<br/>FRONTEND · Next.js PWA"]
+            direction TB
+            PWA_APP[["Bouquet App Core"]]
+            FEATURES["Menú · Carrito · Pagos<br/>División · Notificaciones"]
+            PWA_APP --- FEATURES
+        end
+
+        subgraph BACKEND["<br/>BACKEND · API SERVICES"]
+            direction TB
+            MW{"MW<br/>JWT · RBAC"}
+            subgraph CTRL["<br/>Controllers REST"]
+                direction LR
+                R1["/mesas"] --- R2["/órdenes"] --- R3["/pagos"] --- R4["/reportes"]
+            end
+            subgraph SVC["<br/>Servicios de Negocio"]
+                direction LR
+                S1["Mesas<br/>QR"] --- S2["Órdenes<br/>Estados"] --- S3["Pagos<br/>Split"] --- S4["Notif<br/>Push"]
+            end
+            WH[["Webhooks<br/>Pagos · Auth"]]
+        end
+
+        ORM[("PRISMA ORM")]
     end
 
-    subgraph SupabaseNodes [Supabase Platform]
-        DB[(PostgreSQL 15)]
-        Auth[Supabase Auth / JWT]
-        RT[Realtime / WebSockets]
-        Storage[Storage / S3]
+    %% ── COLUMNA 3: SUPABASE ──
+    subgraph SUPABASE["<br/> SUPABASE DATA CLOUD"]
+        direction TB
+        AUTH["AUTH<br/>JWT · Sessions"]
+        DB[("DATABASE<br/>PostgreSQL<br/>34 tablas")]
+        RT["REALTIME<br/>WebSockets"]
+        STORE["STORAGE<br/>Assets · CDN"]
     end
 
-    subgraph VPSNodes [VPS / Dedicated Server]
-        Orch[Analytics Orchestrator]
-        Spark[Apache Spark Engine]
-        Cron[Jobs / Webhook Handlers]
+    %% ── COLUMNA 4: EXTERNOS ──
+    subgraph EXTERNAL["<br/>EXTERNAL SERVICES"]
+        direction TB
+        PAY[["STRIPE / MP<br/>Pagos"]]
+        EMAIL[["RESEND<br/>Email"]]
+        GEO[["NOMINATIM<br/>Geocoding"]]
+        QR_GEN[["QR SERVICE<br/>Tokens"]]
     end
 
-    PWA -- "HTTPS / TLS 1.3" --> Mid
-    Mid -- "Internal Routing" --> BFF
-    Mid -- "Static Content" --> UI
-    
-    BFF -- "Prisma / JDBC" --> DB
-    BFF -- "REST / Auth" --> Auth
-    
-    PWA -- "WebSockets" --> RT
-    RT -- "Listen/Notify" --> DB
-    
-    UI -- "S3 Assets" --> Storage
+    %% ── FILA INFERIOR: DEVOPS ──
+    subgraph DEVOPS["<br/>DEVOPS · CI/CD"]
+        direction LR
+        CICD["GitHub → Tests → Build → Deploy → CDN"]
+        MON["Analytics · Sentry · Logs · Uptime"]
+    end
 
-    BFF -- "HTTPS + API Key" --> Orch
-    Orch -- "Subprocess" --> Spark
-    Spark -- "JDBC" --> DB
-    Cron -- "Direct JDBC" --> DB
+    %% ══════════════════════════════════════════════════════
+    %% FLUJOS
+    %% ══════════════════════════════════════════════════════
 
-    style PWA fill:#EBF3FA,stroke:#1B3A5C,stroke-width:2px
-    style VercelNodes fill:#D6E4F0,stroke:#1B3A5C,stroke-width:1px,stroke-dasharray: 5 5
-    style SupabaseNodes fill:#EBF3FA,stroke:#1B3A5C,stroke-width:1px
-    style VPSNodes fill:#FDF4E3,stroke:#856404,stroke-width:1px
+    USERS       ==>|"HTTPS/TLS"| FRONTEND
+    FRONTEND    ==>|"API Calls"| MW
+    MW           --> CTRL
+    CTRL         --> SVC
+    SVC          --> ORM
+    ORM         ==>|"SQL"| DB
+
+    MW          -.->|"Auth"| AUTH
+    WH          -.->|"Sync"| AUTH
+    FRONTEND   <-->|"WebSocket"| RT
+    RT         <-->|"Events"| DB
+    STORE       -.->|"URLs"| FRONTEND
+
+    WH         <==>|"Hooks"| PAY
+    S4           -->|"HTTPS"| EMAIL
+    FRONTEND    -.->|"Client"| GEO
+    BACKEND     -.->|"Gen"| QR_GEN
+
+    VERCEL      -.-|"Deploy"| CICD
+    VERCEL      -.-|"Monitor"| MON
+
+    %% ══════════════════════════════════════════════════════
+    %% ESTILOS
+    %% ══════════════════════════════════════════════════════
+    classDef hi   fill:#000,stroke:#000,color:#fff,font-weight:bold,stroke-width:12px
+    classDef std  fill:#fff,stroke:#000,color:#000,stroke-width:10px
+    classDef soft fill:#fff,stroke:#666,color:#333,stroke-width:8px
+
+    class PWA_APP,MW,DB,ORM hi
+    class CLI,MES,KDS,ADM,AUTH,RT,WH std
+    class FEATURES,CICD,MON,R1,R2,R3,R4,S1,S2,S3,S4 soft

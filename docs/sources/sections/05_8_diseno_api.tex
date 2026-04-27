@@ -1,0 +1,82 @@
+% -----------------------------------------------------------
+\subsection{Diseño de API}
+% -----------------------------------------------------------
+
+La API sigue convenciones REST con respuestas en JSON. Todos los endpoints
+requieren el header \texttt{Authorization: Bearer \{jwt\}} con el token de
+Supabase Auth.
+
+\subsubsection{Módulo: Mesas}
+
+\begin{table}[ht]
+\caption{Endpoints REST — Módulo Mesas}
+\label{tab:api_mesas}
+\centering
+\small
+\begin{tabular}{>{\centering\arraybackslash}p{1.5cm}
+                >{\raggedright\arraybackslash}p{5cm}
+                >{\raggedright\arraybackslash}p{3.5cm}
+                >{\raggedright\arraybackslash}p{6cm}}
+\toprule
+\thead{Método} & \thead{Endpoint} & \thead{Auth requerida} & \thead{Descripción} \\
+\midrule
+GET & \texttt{/api/sucursales/:id/mesas} & Empleados & Lista mesas físicas. \\
+POST & \texttt{/api/mesas-virtuales} & Empleados & Inicializa mesa virtual. \\
+POST & \texttt{/api/mesas-virtuales/:id/activar} & Pública & Activa la mesa. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Server Actions Implementadas (Next.js)}
+\label{sec:server_actions}
+
+Las siguientes son las funciones de servidor actualmente implementadas mediante
+Server Actions de Next.js.
+
+\setstretch{1.2}
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{>{\ttfamily\raggedright\arraybackslash}p{4cm}
+                >{\ttfamily\raggedright\arraybackslash}p{4cm}
+                >{\raggedright\arraybackslash}p{8cm}}
+\caption{Inventario de Server Actions por Archivo} \label{tab:actions} \\
+\toprule
+\thead{Archivo} & \thead{Función} & \thead{Descripción} \\
+\midrule
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\toprule
+\thead{Archivo} & \thead{Función} & \thead{Descripción} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+restaurant.ts & getDefaultRestaurant & Obtiene restaurante por defecto. \\
+\rowcolor{altrow}
+menu.ts & getMenuData & Categorías e ítems del menú. \\
+orders.ts & getLiveOrders & Órdenes del día para KDS. \\
+\rowcolor{altrow}
+tables.ts & getTables & Lista mesas del restaurante. \\
+waiter.ts & getTableDetail & Detalle de mesa: sesión, órdenes. \\
+\rowcolor{altrow}
+comensal.ts & submitComensalOrder & Envía pedido desde flujo comensal. \\
+\end{longtable}
+\setstretch{1.5}
+
+\subsubsection{Servicios Externos}
+
+\begin{table}[ht]
+\caption{Servicios Externos}
+\label{tab:servicios}
+\centering
+\small
+\begin{tabular}{>{\bfseries\raggedright\arraybackslash}p{4cm}
+                >{\raggedright\arraybackslash}p{12cm}}
+\toprule
+\thead{Servicio} & \thead{Uso} \\
+\midrule
+PostgreSQL & Base de datos principal vía Prisma. \\
+\rowcolor{altrow}
+Supabase & Cliente SSR y canales en tiempo real. \\
+\bottomrule
+\end{tabular}
+\end{table}

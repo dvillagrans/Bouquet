@@ -1,13 +1,9 @@
 sequenceDiagram
     autonumber
     
-    %% Color Palette
-    %% primary: #1B3A5C (Dark Blue)
-    %% accent: #2E75B6 (Medium Blue)
-    %% lightest: #EBF3FA (Very Light Blue)
-    %% green: #D6EFD8
-    %% orange: #FFF0D6
-    %% red: #FDDCDC
+    %% Bouquet Premium Theme
+    accTitle: CU-01: Comensal Escanea QR e Ingresa a Mesa Virtual
+    accDescr: Flujo de inicialización, activación y acceso compartido a mesa virtual.
 
     actor M as Mesero
     actor A as Anfitrión
@@ -15,47 +11,45 @@ sequenceDiagram
     participant S as Sistema (Bouquet API)
     participant DB as Base de Datos (PostgreSQL)
 
-    rect rgb(214, 239, 216)
-        Note over M,DB: Fase 1: Inicialización de Mesa Virtual
-        M->>S: Selecciona mesas físicas disponibles
-        S->>DB: INSERT MesaVirtual (PENDIENTE_ACTIVACION)
-        S->>DB: INSERT MesaFisica_MesaVirtual (Asociación)
-        DB-->>S: MesaVirtual creada
-        S->>S: Genera JWT (TTL 30 min, one-time use)
+    rect rgb(235, 243, 250)
+        Note over M,DB: Fase 1: Inicialización (Mesero)
+        M->>S: Selecciona mesas físicas
+        S->>DB: INSERT MesaVirtual (PENDIENTE)
+        S->>DB: UPDATE MesaFisica (status=DISPONIBLE)
+        S->>S: Genera JWT (TTL 30 min, one-time)
         S-->>M: Entrega QR con JWT embebido
     end
 
     rect rgb(235, 243, 250)
-        Note over A,DB: Fase 2: Activación por el Anfitrión
-        A->>S: Escanea QR → GET /mesa/:token
-        S->>DB: SELECT status FROM MesaVirtual WHERE token = ?
-        DB-->>S: status: PENDIENTE_ACTIVACION
+        Note over A,DB: Fase 2: Activación de Mesa (Anfitrión)
+        A->>S: Escanea QR (GET /api/mesa/:token)
+        S->>DB: SELECT status FROM MesaVirtual
+        DB-->>S: status: PENDIENTE
         S->>S: Valida Firma JWT + Expiración
-        S->>A: Solicita Nombre y Contraseña de Mesa
+        S->>A: Solicita Credenciales de Mesa
         A->>S: POST /activar { guestName, password }
-        S->>DB: UPDATE MesaVirtual (status=OCUPADA, pass_hash=bcrypt)
+        Note right of S: Cifrado bcrypt de la contraseña
+        S->>DB: UPDATE MesaVirtual (status=OCUPADA, pass_hash)
         S->>DB: UPDATE MesaFisica (status=OCUPADA)
         S->>DB: INSERT SesionComensal (isHost=true)
         DB-->>S: Transacción Completada
-        S-->>A: Entrega joinCode (Acceso al Menú)
+        S-->>A: Retorna joinCode y Sesión Activa
     end
 
-    rect rgb(255, 240, 214)
+    rect rgb(235, 243, 250)
         Note over C,DB: Fase 3: Incorporación de Comensales
         C->>S: POST /join { joinCode, guestName }
-        S->>DB: SELECT id FROM MesaVirtual WHERE joinCode = ?
-        DB-->>S: MesaVirtual encontrada (OCUPADA)
+        S->>DB: SELECT id FROM MesaVirtual
+        DB-->>S: Mesa encontrada (OCUPADA)
         S->>DB: INSERT SesionComensal (isHost=false)
         DB-->>S: Sesión Creada
         S-->>C: Acceso al Menú Compartido
     end
 
-    rect rgb(253, 220, 220)
-        Note over A,S: Flujos Alternativos y Validaciones
+    rect rgb(248, 215, 218)
+        Note over A,S: Flujos Alternativos y Errores
         A--xS: Token expirado o reutilizado
-        S-->>A: Error 401 — Código inválido o vencido
-        A--xS: Mesa en estado incorrecto (≠ PENDIENTE)
-        S-->>A: Error 409 — Mesa ya activada por otro usuario
-        A--xS: Validación de seguridad fallida
-        S-->>A: Error 422 — Datos de activación incompletos
+        S-->>A: HTTP 401 — Código inválido
+        A--xS: Mesa ya ocupada o cerrada
+        S-->>A: HTTP 409 — Conflicto de estado
     end

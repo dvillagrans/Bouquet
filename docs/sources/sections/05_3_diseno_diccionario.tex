@@ -1,0 +1,281 @@
+\subsection{Diccionario de Datos}
+
+\subsubsection*{\textit{Dominio 1 — Catálogos Globales}}
+
+\begin{center}
+  \includegraphics[width=0.8\textwidth,height=0.4\textheight,keepaspectratio]{erd/rendered/dominio-01-catalogos.pdf}
+\end{center}
+
+\dictable{Currency}{%
+Catálogo de monedas soportadas por la plataforma. Permite que cadenas y restaurantes operen en diferentes divisas sin duplicar lógica de conversión.}
+\campo{code}{text}{No}{PK}{Código ISO 4217 de la moneda (ej. \texttt{MXN}, \texttt{USD}).}
+\campo{name}{text}{No}{—}{Nombre completo de la moneda.}
+\campo{symbol}{text}{No}{—}{Símbolo de representación visual (ej. \texttt{\$}, \texttt{€}).}
+\campo{isActive}{boolean}{No}{—}{Indica si la moneda está disponible.}
+\campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
+\dictableend
+
+\dictable{TaxGroup}{%
+Catálogo de grupos de impuestos aplicables a categorías y productos. Permite modelar distintos regímenes fiscales sin acoplar la tasa directamente a cada producto.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{name}{text}{No}{—}{Nombre descriptivo del grupo (ej. \textit{IVA 16\%}).}
+\campo{rateBps}{int}{No}{—}{Tasa expresada en basis points. $1\,600 = 16\%$.}
+\campo{isActive}{boolean}{No}{—}{Indica si el grupo está disponible.}
+\campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
+\dictableend
+
+\subsubsection*{\textit{Dominio 2 — Control de Acceso (RBAC)}}
+
+\begin{center}
+  \includegraphics[width=0.8\textwidth,height=0.4\textheight,keepaspectratio]{erd/rendered/dominio-02-rbac.pdf}
+\end{center}
+
+\dictable{Permission}{%
+Catálogo de permisos atómicos del sistema. Cada permiso representa una acción específica que puede realizarse en la plataforma.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{code}{text}{No}{UK}{Código único del permiso (ej. \texttt{MANAGE\_MENU}).}
+\campo{description}{text}{No}{—}{Descripción legible del permiso.}
+\campo{scope}{enum}{No}{—}{Nivel de aplicación: \texttt{PLATFORM}, \texttt{CHAIN} o \texttt{RESTAURANT}.}
+\campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
+\dictableend
+
+\dictable{Role}{%
+Roles del sistema (RBAC). Un rol agrupa permisos y puede ser de plataforma (base) o propio de una cadena.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{chainId}{text}{Sí}{FK}{Referencia a \texttt{Chain}. \texttt{NULL} indica rol base de plataforma.}
+\campo{name}{text}{No}{—}{Nombre del rol (ej. \textit{ADMIN}, \textit{MESERO}).}
+\campo{scope}{enum}{No}{—}{Nivel de operación del rol.}
+\campo{description}{text}{Sí}{—}{Propósito del rol.}
+\campo{isBase}{boolean}{No}{—}{Si es \texttt{true}, no puede eliminarse.}
+\campo{isActive}{boolean}{No}{—}{Indica disponibilidad para asignación.}
+\campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
+\campo{updatedAt}{timestamp}{No}{—}{Fecha y hora de modificación.}
+\dictableend
+
+\dictable{RolePermission}{%
+Tabla pivote que asocia roles con permisos.}
+\campo{roleId}{text}{No}{FK}{Referencia a \texttt{Role}.}
+\campo{permissionId}{text}{No}{FK}{Referencia a \texttt{Permission}.}
+\campo{assignedAt}{timestamp}{No}{—}{Fecha y hora de asignación.}
+\dictableend
+
+\subsubsection*{\textit{Dominio 3 — Identidad}}
+
+\begin{center}
+  \includegraphics[width=0.8\textwidth,height=0.4\textheight,keepaspectratio]{erd/rendered/dominio-03-identidad.pdf}
+\end{center}
+
+\dictable{AppUser}{%
+Tabla central de identidad. Unifica superadministradores, personal de cadena y personal de restaurante.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{email}{text}{No}{UK}{Correo electrónico único utilizado para autenticación.}
+\campo{passwordHash}{text}{No}{—}{Hash de la contraseña generado con \textit{bcrypt}.}
+\campo{firstName}{text}{No}{—}{Nombre(s) del usuario.}
+\campo{lastName}{text}{No}{—}{Apellido paterno.}
+\campo{secondLastName}{text}{Sí}{—}{Apellido materno.}
+\campo{phone}{text}{Sí}{—}{Teléfono de contacto.}
+\campo{isActive}{boolean}{No}{—}{Estado de habilitación de la cuenta.}
+\campo{isFirstLogin}{boolean}{No}{—}{Flag para forzar cambio de contraseña.}
+\campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
+\dictableend
+
+\dictable{UserRole}{%
+Asignación contextual de roles. Define en qué contexto opera cada usuario y con qué rol.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{userId}{text}{No}{FK}{Referencia a \texttt{AppUser}.}
+\campo{roleId}{text}{No}{FK}{Referencia a \texttt{Role}.}
+\campo{contextType}{enum}{No}{—}{Tipo de contexto: \texttt{PLATFORM}, \texttt{CHAIN}, \texttt{ZONE} o \texttt{RESTAURANT}.}
+\campo{chainId}{text}{Sí}{FK}{Relacionado según \texttt{contextType}.}
+\campo{zoneId}{text}{Sí}{FK}{Relacionado según \texttt{contextType}.}
+\campo{restaurantId}{text}{Sí}{FK}{Relacionado según \texttt{contextType}.}
+\campo{assignedAt}{timestamp}{No}{—}{Fecha y hora de asignación.}
+\dictableend
+
+\subsubsection*{\textit{Dominio 4 — Organización}}
+
+\begin{center}
+  \includegraphics[width=0.9\textwidth,height=0.85\textheight,keepaspectratio]{erd/rendered/dominio-04-organizacion.pdf}
+\end{center}
+
+\dictable{Chain}{%
+Cadena de restaurantes. Entidad raíz de la jerarquía organizacional.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{createdBy}{text}{No}{FK}{Referencia al superadministrador creador.}
+\campo{currency}{text}{No}{FK}{Moneda predeterminada.}
+\campo{name}{text}{No}{—}{Nombre comercial.}
+\campo{logoUrl}{text}{Sí}{—}{URL del logotipo.}
+\campo{defaultTaxBps}{int}{No}{—}{Tasa de impuesto base (basis points).}
+\campo{defaultTipsBps}{int[]}{Sí}{—}{Opciones de propina sugeridas.}
+\campo{isArchived}{boolean}{No}{—}{Eliminación lógica.}
+\dictableend
+
+\dictable{Zone}{%
+Agrupación geográfica de restaurantes dentro de una cadena.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{chainId}{text}{No}{FK}{Cadena propietaria.}
+\campo{name}{text}{No}{—}{Nombre de la zona.}
+\dictableend
+
+\dictable{Restaurant}{%
+Sucursal operacional. Entidad central del dominio operativo.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{chainId}{text}{No}{FK}{Cadena propietaria.}
+\campo{zoneId}{text}{Sí}{FK}{Zona de pertenencia (opcional).}
+\campo{currency}{text}{No}{FK}{Moneda de operación.}
+\campo{name}{text}{No}{—}{Nombre de la sucursal.}
+\campo{welcomeMessage}{text}{Sí}{—}{Mensaje en interfaz comensal.}
+\campo{taxBps}{int}{Sí}{—}{Tasa local. Si es \texttt{NULL}, hereda de la cadena.}
+\campo{suggestedTipsBps}{int[]}{Sí}{—}{Propinas locales. Si es \texttt{NULL}, hereda de cadena.}
+\campo{allowMobileOrdering}{boolean}{No}{—}{Habilitación de pedidos vía QR.}
+\dictableend
+
+\dictable{AuditLog}{%
+Registro inmutable de auditoría de acciones administrativas.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{actorUserId}{text}{No}{FK}{Usuario que realizó la acción.}
+\campo{action}{enum}{No}{—}{\texttt{CREATE}, \texttt{UPDATE}, \texttt{ARCHIVE}, \texttt{DELETE}.}
+\campo{entityType}{text}{No}{—}{Entidad afectada.}
+\campo{before}{jsonb}{Sí}{—}{Estado previo al cambio.}
+\campo{after}{jsonb}{Sí}{—}{Estado posterior al cambio.}
+\campo{ipAddress}{text}{Sí}{—}{Origen de la solicitud.}
+\dictableend
+
+\subsubsection*{\textit{Dominio 5 — Menú}}
+
+\begin{center}
+  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{erd/rendered/dominio-05-menu.pdf}
+\end{center}
+
+\dictable{MenuTemplate}{%
+Plantilla centralizada de menú definida a nivel de cadena.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{chainId}{text}{No}{FK}{Cadena propietaria.}
+\campo{name}{text}{No}{—}{Nombre de la plantilla.}
+\campo{isDefault}{boolean}{No}{—}{Template predeterminado.}
+\dictableend
+
+\dictable{TemplateItem}{%
+Producto base definido en una plantilla de menú.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{categoryId}{text}{No}{FK}{Categoría del template.}
+\campo{name}{text}{No}{—}{Nombre del producto.}
+\campo{basePriceCents}{int}{No}{—}{Precio de referencia en centavos.}
+\dictableend
+
+\dictable{Station}{%
+Estación de preparación en restaurante (ej. Cocina, Barra).}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante propietario.}
+\campo{name}{text}{No}{—}{Nombre de la estación.}
+\campo{color}{text}{Sí}{—}{Identificador visual para KDS.}
+\dictableend
+
+\dictable{RestaurantMenuItem}{%
+Producto vendible en un restaurante. Única entidad para generar ítems de orden.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante propietario.}
+\campo{categoryId}{text}{No}{FK}{Categoría local.}
+\campo{stationId}{text}{Sí}{FK}{Estación de enrutamiento KDS.}
+\campo{name}{text}{No}{—}{Nombre comercial local.}
+\campo{priceCents}{int}{No}{—}{Precio de venta local en centavos.}
+\campo{isSoldOut}{boolean}{No}{—}{Estado de disponibilidad manual.}
+\campo{trackStock}{boolean}{No}{—}{Habilitación de control de inventario.}
+\campo{stockQuantity}{int}{Sí}{—}{Existencias disponibles.}
+\dictableend
+
+\dictable{ModifierGroup}{%
+Grupo de modificadores aplicables a productos (ej. Extras, Término).}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante.}
+\campo{isRequired}{boolean}{No}{—}{Selección obligatoria.}
+\campo{minSelect}{int}{No}{—}{Mínimo de opciones.}
+\campo{maxSelect}{int}{No}{—}{Máximo de opciones.}
+\dictableend
+
+\dictable{ModifierOption}{%
+Opción individual dentro de un grupo de modificadores.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{groupId}{text}{No}{FK}{Grupo al que pertenece.}
+\campo{name}{text}{No}{—}{Nombre de la opción.}
+\campo{priceAdjustmentCents}{int}{No}{—}{Costo adicional en centavos.}
+\dictableend
+
+\subsubsection*{\textit{Dominio 6 — Operación de Mesa}}
+
+\begin{center}
+  \includegraphics[width=0.8\textwidth,height=0.5\textheight,keepaspectratio]{erd/rendered/dominio-06-mesa.pdf}
+\end{center}
+
+\dictable{DiningTable}{%
+Representa una mesa física. Incluye posición y estado operacional (caché).}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante.}
+\campo{number}{int}{No}{—}{Número identificador.}
+\campo{capacity}{int}{No}{—}{Capacidad (pax).}
+\campo{status}{enum}{No}{—}{\texttt{DISPONIBLE}, \texttt{OCUPADA} o \texttt{RESERVADA}.}
+\campo{posX}{float}{No}{—}{Coordenada X en el plano.}
+\campo{posY}{float}{No}{—}{Coordenada Y en el plano.}
+\dictableend
+
+\dictable{DiningSession}{%
+Sesión activa de comensales. Contenedora de órdenes y pagos.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante.}
+\campo{openedByUserId}{text}{No}{FK}{Personal que abrió la sesión.}
+\campo{status}{enum}{No}{—}{\texttt{OPEN}, \texttt{CLOSED}, \texttt{CANCELLED}.}
+\campo{openedAt}{timestamp}{No}{—}{Fecha y hora de inicio.}
+\dictableend
+
+\dictable{Guest}{%
+Comensal individual en una sesión. Soporta división de cuenta personal.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{diningSessionId}{text}{No}{FK}{Sesión de pertenencia.}
+\campo{name}{text}{Sí}{—}{Nombre opcional.}
+\dictableend
+
+\subsubsection*{\textit{Dominio 7 — Transacciones}}
+
+\begin{center}
+  \includegraphics[width=\textwidth,height=0.6\textheight,keepaspectratio]{erd/rendered/dominio-07-transacciones.pdf}
+\end{center}
+
+\dictable{RestaurantOrder}{%
+Comanda enviada a cocina o barra dentro de una sesión.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{diningSessionId}{text}{No}{FK}{Sesión asociada.}
+\campo{source}{enum}{No}{—}{\texttt{WAITER}, \texttt{QR} o \texttt{POS}.}
+\campo{status}{enum}{No}{—}{Estado: \texttt{OPEN}, \texttt{READY}, \texttt{CLOSED}, etc.}
+\dictableend
+
+\dictable{OrderItem}{%
+Ítem individual en una orden con snapshot histórico de atributos.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{orderId}{text}{No}{FK}{Orden asociada.}
+\campo{guestId}{text}{Sí}{FK}{Comensal asociado (división de cuenta).}
+\campo{status}{enum}{No}{—}{Estado en KDS.}
+\campo{quantity}{int}{No}{—}{Cantidad solicitada.}
+\campo{itemNameSnapshot}{text}{No}{—}{Nombre al momento de ordenar.}
+\campo{unitPriceCents}{int}{No}{—}{Precio al momento de ordenar.}
+\campo{totalCents}{int}{No}{—}{Monto total (\texttt{subtotal + impuesto}).}
+\dictableend
+
+\dictable{Payment}{%
+Registro de transacción financiera asociada a una sesión.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{diningSessionId}{text}{No}{FK}{Sesión liquidada.}
+\campo{status}{enum}{No}{—}{\texttt{PENDING}, \texttt{COMPLETED}, \texttt{FAILED}, etc.}
+\campo{method}{enum}{No}{—}{\texttt{CARD}, \texttt{CASH} o \texttt{TRANSFER}.}
+\campo{splitMode}{enum}{No}{—}{\texttt{FULL}, \texttt{BY\_ITEM} o \texttt{EQUAL}.}
+\campo{amountPaidCents}{int}{No}{—}{Monto recibido en centavos.}
+\campo{paidAt}{timestamp}{Sí}{—}{Confirmación de pago.}
+\dictableend
+
+\dictable{AppliedDiscount}{%
+Cortesía o descuento aplicado a un ítem o a la cuenta total.}
+\campo{id}{text}{No}{PK}{UUID.}
+\campo{orderItemId}{text}{Sí}{FK}{Asociación a producto (XOR).}
+\campo{paymentId}{text}{Sí}{FK}{Asociación a pago total (XOR).}
+\campo{type}{enum}{No}{—}{\texttt{PERCENT} o \texttt{FIXED}.}
+\campo{amountCents}{int}{No}{—}{Monto final descontado.}
+\campo{reason}{text}{No}{—}{Justificación obligatoria.}
+\dictableend

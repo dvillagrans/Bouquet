@@ -1,0 +1,100 @@
+% -----------------------------------------------------------
+\subsection{Flujos de Negocio}
+% -----------------------------------------------------------
+
+\subsubsection{Login de Usuario Colaborador}
+
+Roles participantes: Admin, Gerente, Mesero, Chef. El usuario ingresa su correo
+y contraseña en la pantalla de login. En el primer acceso el sistema detecta la
+contraseña temporal y redirige al flujo de cambio de contraseña. Tras la
+autenticación exitosa, el sistema redirige según el rol.
+
+\subsubsection{Alta de Zonas}
+
+Roles participantes: Admin. El usuario accede al módulo de Zonas desde la barra
+de navegación, puede visualizar zonas existentes y crear nuevas.
+
+\subsubsection{Alta de Sucursales}
+
+Roles participantes: Admin, Gerente Zona. El Gerente Zona únicamente puede dar
+de alta sucursales dentro de las zonas que tiene asignadas.
+
+\subsubsection{Alta de Categorías y Productos}
+
+Roles participantes: Admin, Gerente. Las categorías agrupan los productos del
+menú. La creación está filtrada por las zonas o sucursales asignadas al usuario.
+
+\subsubsection{Alta de Usuarios con Roles}
+
+Roles participantes: Admin, Gerente. El usuario creador ingresa el correo del
+nuevo usuario; el sistema genera una contraseña temporal.
+
+\subsubsection{Creación de Mesa Física}
+
+Roles participantes: Mesero, Gerente. Desde la pantalla de visualización de
+mesas, el usuario puede crear una nueva mesa física.
+
+\subsubsection{Inicialización de Mesa Virtual}
+
+Roles participantes: Mesero, Gerente. Desde la pantalla de Mesas, el usuario
+selecciona una o más mesas físicas en estado LIBRE. El sistema crea la mesa
+virtual y genera el QR.
+
+\subsubsection{Acceso de Comensales a la Mesa Virtual}
+
+Roles participantes: Anfitrión, Comensal. Existen dos sub-flujos:
+(1)~\textbf{Activar Mesa} (Anfitrión) y (2)~\textbf{Unirse a Mesa} (Comensal).
+
+\subsubsection{Diagrama de Secuencia --- Flujo de Activación de Mesa Virtual}
+
+La Figura~\ref{fig:seq_activacion} muestra el diagrama de secuencia del flujo de activaci\'on de mesa virtual
+por parte del Anfitr\'ion, que es el flujo m\'as cr\'itico del sistema por involucrar
+la generaci\'on del JWT, la validaci\'on del QR y la creaci\'on de la sesi\'on.
+
+\begin{figure}[ht]
+\centering
+\small
+\fbox{
+\begin{minipage}{0.90\textwidth}
+\centering
+\textbf{Diagrama de Secuencia --- Activación de Mesa Virtual (Flujo Anfitrión)}\\[8pt]
+\begin{tabular}{>{\raggedright\arraybackslash}p{13cm}}
+\textbf{Actores:} :Mesero, :Next.js API, :Supabase Auth, :Prisma, :Anfitrión \\
+\end{tabular}\\[4pt]
+\begin{tabular}{>{\raggedright\arraybackslash}p{13cm}}
+\textbf{1.} Mesero $\rightarrow$ API: \texttt{POST /api/mesas-virtuales} \{mesa\_fisica\_ids[]\} \\
+\textbf{2.} API $\rightarrow$ Auth: verificar JWT del mesero (rol: MESERO) \\
+\textbf{3.} Auth $\rightarrow$ API: claims v\'alidos \\
+\textbf{4.} API $\rightarrow$ Prisma: \texttt{verificar estado LIBRE} de mesas físicas (RB-M01) \\
+\textbf{5.} Prisma $\rightarrow$ API: mesas disponibles \\
+\textbf{6.} API $\rightarrow$ Prisma: \texttt{crear MesaVirtual(estado=PENDIENTE\_ACTIVACION, jwt=sign(id, TTL=30min))} \\
+\textbf{7.} Prisma $\rightarrow$ API: mesa\_virtual.id + token\_qr \\
+\textbf{8.} API $\rightarrow$ Mesero: QR generado (imagen + token JWT) \\[6pt]
+\textit{--- El mesero entrega el QR al Anfitrión ---} \\[6pt]
+\textbf{9.} Anfitrión $\rightarrow$ API: \texttt{POST /api/mesas-virtuales/:id/activar} \{token\_qr, password\} \\
+\textbf{10.} API: verificar token\_qr (firma JWT, TTL, flag usado=false) \\
+\quad\quad \textbf{[alt: token inv\'alido o expirado]} $\rightarrow$ HTTP~401 \\
+\textbf{11.} API $\rightarrow$ Prisma: \texttt{atomic: marcar QR como usado=true + crear SesionComensal(es\_anfitri\'on=true) + actualizar MesaVirtual(estado=POR\_LIQUIDAR, pass\_hash=bcrypt(password))} \\
+\textbf{12.} Prisma $\rightarrow$ API: sesion\_id \\
+\textbf{13.} API $\rightarrow$ Supabase Realtime: broadcast evento \texttt{mesa\_actualizada} (estado=POR\_LIQUIDAR) \\
+\textbf{14.} API $\rightarrow$ Anfitrión: HTTP~200 + sesion\_id + codigo\_publico \\
+\textbf{15.} Anfitrión: redirigido al Home de la mesa (/mesa/:codigo) \\
+\end{tabular}
+\end{minipage}
+}
+\caption{Diagrama de secuencia del flujo de activaci\'on de mesa virtual por el Anfitr\'ion.
+Los pasos 11 son at\'omicos (transacci\'on PostgreSQL) para prevenir activaciones concurrentes (RO-07).}
+\label{fig:seq_activacion}
+\end{figure}
+
+
+\subsubsection{Creación y Solicitud de Órdenes}
+
+Roles participantes: Anfitrión, Comensal. El comensal navega el menú, selecciona
+productos y los agrega a su canasta. Elige entre ordenar individual o a la mesa.
+
+\subsubsection{Flujo de Liquidación}
+
+Roles participantes: Anfitrión, Comensal, Mesero. El comensal accede a
+``Proceder al pago'' y visualiza el desglose de cuentas. Selecciona qué liquidar.
+Cuando todo está pagado, la mesa cambia a LIQUIDADA.

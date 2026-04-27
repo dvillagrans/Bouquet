@@ -1,0 +1,14 @@
+% -----------------------------------------------------------
+\newpage
+\subsection{Reglas de Negocio del Modelo}
+% -----------------------------------------------------------
+
+\begin{enumerate}
+  \item \textbf{Herencia de configuración.} Si \texttt{Restaurant.taxBps} es \texttt{NULL}, se hereda \texttt{Chain.defaultTaxBps}. La l\'ogica de herencia se aplica en la capa de aplicaci\'on.
+  \item \textbf{Eliminación lógica.} Las entidades de cat\'alogo no se eliminan f\'isicamente; se marca \texttt{archivedAt}. Esto preserva la integridad de los \texttt{OrderItem} hist\'oricos.
+  \item \textbf{Snapshots en órdenes.} Al crear un \texttt{OrderItem}, se copian el nombre, precio unitario y tasa de impuesto vigentes. Los snapshots son inmutables.
+  \item \textbf{Estado de mesa como caché.} \texttt{DiningTable.status} es un campo derivado actualizado transaccionalmente al abrir o cerrar sesiones.
+  \item \textbf{Unicidad de email.} \texttt{AppUser.email} es único en toda la plataforma.
+  \item \textbf{Descuento exclusivo.} Un \texttt{AppliedDiscount} se aplica a un ítem \textbf{o} a un pago, nunca a ambos (XOR).
+  \item \textbf{Valores monetarios enteros.} Todos los cálculos se realizan en centavos para evitar errores de punto flotante.
+\end{enumerate}

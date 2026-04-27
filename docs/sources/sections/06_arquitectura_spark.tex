@@ -96,7 +96,7 @@ La capa Silver transforma los datos crudos de Bronze mediante tres operaciones p
 
 La capa Gold contiene cuatro tablas de métricas listas para consumo directo por el dashboard. A diferencia de Bronze y Silver, los DataFrames Gold se escriben tanto en Parquet (para historial en VPS) como de vuelta a PostgreSQL mediante JDBC (para consulta desde Next.js).
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.95\textwidth,height=0.85\textheight,keepaspectratio]{../_assets/spark/rendered/Spark-Tecnico.pdf}
   \caption{Pipeline técnico de Spark — Vista detallada. Se muestran los cinco jobs secuenciales, el almacenamiento Parquet por capa y el flujo de escritura hacia las tablas analíticas en Supabase.}

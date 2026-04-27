@@ -1,0 +1,80 @@
+% -----------------------------------------------------------
+\subsection{Arquitectura del Sistema}
+% -----------------------------------------------------------
+
+La arquitectura de Bouquet se fundamenta en un modelo de capas desacopladas
+bajo un paradigma serverless first, diseñado para garantizar alta disponibilidad,
+baja latencia y una experiencia de usuario fluida en entornos de alta concurrencia como lo es la
+operación restaurantera en tiempo real. 
+
+Esta estructura permite separar las preocupaciones de presentación, lógica de negocio y persistencia, 
+utilizando un enfoque de Backend-for-Frontend (BFF) integrado en Next.js para optimizar 
+la entrega de datos hacia las diferentes interfaces (Comensal, Mesero, Cocina y Admin).
+
+\subsubsection{Descripción de las Capas Arquitectónicas}
+
+La plataforma se organiza en cuatro capas principales, cada una con responsabilidades técnicas
+definidas y contratos de comunicación estrictos:
+
+\begin{enumerate}[leftmargin=1.5em]
+    \item Capa de Presentación (Frontend PWA): Construida con Next.js 16 y React 19. 
+    Se prioriza el renderizado híbrido: SSR para SEO y carga inicial rápida en menús, 
+    y CSR con Zustand para la gestión de estados complejos como la canasta de 
+    compras y la división de cuentas. Su naturaleza de Progressive Web App 
+    permite una experiencia cuasi-nativa en dispositivos móviles sin la fricción 
+    de descarga en tiendas.
+
+    \item Capa de Aplicación y API (BFF): Implementada mediante Next.js API Routes. 
+    Actúa como orquestador de seguridad mediante Middleware que valida la identidad del usuario 
+    vía JWT (Supabase Auth). Esta capa encapsula las reglas de negocio críticas, gestiona la idempotencia en pagos 
+    y coordina la comunicación con servicios externos.
+
+    \item Capa de Dominio (ORM): Utiliza Prisma ORM 7 como puente entre la lógica de negocio 
+    y la base de datos. El uso de un ORM tipado garantiza la integridad de los datos en tiempo de compilación 
+    y facilita la construcción de consultas complejas de manera eficiente y segura contra inyecciones SQL.
+
+    \item Capa de Persistencia y Realtime: Basada en el ecosistema de Supabase. 
+    La persistencia relacional reside en PostgreSQL 16, protegida por políticas de Row Level Security 
+    (RLS) que aseguran que cada restaurante solo acceda a sus datos. La reactividad del sistema se logra 
+    mediante el motor de Realtime de Supabase, que permite sincronizar estados de órdenes y pagos 
+    a través de WebSockets sin necesidad de polling constante.
+\end{enumerate}
+
+\begin{table}[H]
+\caption{Matriz Tecnológica y Responsabilidades por Capa}
+\label{tab:capas_arq}
+\centering
+\small
+\setstretch{1.1}
+\begin{tabular}{>{\bfseries\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{4cm}
+                >{\raggedright\arraybackslash}p{9cm}}
+\toprule
+\thead{Capa} & \thead{Stack Tecnológico} & \thead{Responsabilidad Primaria} \\
+\midrule
+Presentaci\'on & Next.js 16 · React 19 · Tailwind 4 & 
+  Entrega de UI adaptativa, gestión de estado global y experiencia PWA. \\
+\rowcolor{altrow}
+API / Orquestación & Edge Functions · JWT · Middleware & 
+  Validación de seguridad, orquestación de pagos y contratos REST/Actions. \\
+Lógica de Datos & Prisma ORM 7 · TypeScript & 
+  Modelado de entidades, integridad referencial y abstracción de persistencia. \\
+\rowcolor{altrow}
+Infraestructura & Supabase · PostgreSQL 16 · Realtime & 
+  Persistencia atómica, aislamiento multitenant vía RLS y eventos WebSocket. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A continuación, en la Figura~\ref{fig:deployment}, se presenta la representación visual de 
+esta arquitectura, detallando la interacción entre los diferentes módulos y el ecosistema 
+de servicios que sostienen la operación de la plataforma.
+
+\clearpage
+\begin{sidewaysfigure}
+    \centering
+    \includegraphics[width=\textheight]{architecture/rendered/deployment.pdf}
+    \caption{Diagrama de despliegue de la arquitectura Bouquet.}
+    \label{fig:deployment}
+\end{sidewaysfigure}
+\clearpage

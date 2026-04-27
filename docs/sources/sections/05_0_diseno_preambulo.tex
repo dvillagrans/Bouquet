@@ -1,0 +1,44 @@
+\section{Diseño del Sistema}
+
+En este cap\'itulo se presenta la arquitectura del sistema, el dise\~no detallado
+de la base de datos (incluyendo el diccionario de datos), las reglas de negocio
+operacionales y el dise\~no de las interfaces de usuario.
+
+% ── Macros para el Diccionario de Datos ──────────────────────
+\newif\ifaltrow
+\newcommand{\dictable}[2]{%
+  \subsubsection{Tabla: #1}
+  {\justifying #2 \par}
+  \vspace{6pt}
+  \setstretch{1.2}
+  \altrowfalse
+  \begin{longtable}{>{\raggedright\arraybackslash\ttfamily}p{3.5cm}
+                  >{\raggedright\arraybackslash\ttfamily}p{2.2cm}
+                  >{\centering\arraybackslash}p{1cm}
+                  >{\centering\arraybackslash}p{1cm}
+                  >{\raggedright\arraybackslash}p{6.8cm}}
+  \caption{Diccionario de datos: tabla #1} \label{tab:dd_#1} \\
+  \toprule
+  \thead{Campo} & \thead{Tipo} & \thead{Nulo} & \thead{Clave} & \thead{Descripción} \\
+  \midrule
+  \endfirsthead
+  \caption[]{TABLA \thetable{} (Continuación)} \\
+  \toprule
+  \thead{Campo} & \thead{Tipo} & \thead{Nulo} & \thead{Clave} & \thead{Descripción} \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+}
+
+\newcommand{\campo}[5]{%
+  \ifaltrow \rowcolor{altrow} \fi
+  #1 & #2 & #3 & #4 & #5 \\
+  \ifaltrow \altrowfalse \else \altrowtrue \fi
+}
+
+\newcommand{\dictableend}{%
+  \end{longtable}
+  \setstretch{1.5}
+  \vspace{12pt}
+}

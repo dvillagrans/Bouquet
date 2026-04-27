@@ -1,0 +1,133 @@
+---
+config:
+  layout: elk
+  elk:
+    mergeEdges: true
+    nodePlacementStrategy: BRANDES_KOEPF
+---
+erDiagram
+
+    %% ── CATÁLOGOS ──
+    Currency        { string code PK }
+    TaxGroup        { string id PK }
+
+    %% ── RBAC ──
+    Permission      { string id PK }
+    Role            { string id PK }
+    RolePermission  { string roleId FK }
+    AppUser         { string id PK }
+    UserRole        { string id PK }
+
+    %% ── ORGANIZACIÓN ──
+    Chain           { string id PK }
+    Zone            { string id PK }
+    Restaurant      { string id PK }
+    AuditLog        { string id PK }
+
+    %% ── MENÚ TEMPLATE ──
+    MenuTemplate        { string id PK }
+    TemplateCategory    { string id PK }
+    TemplateItem        { string id PK }
+    TemplateItemVariant { string id PK }
+
+    %% ── MENÚ LOCAL ──
+    Station                  { string id PK }
+    RestaurantCategory       { string id PK }
+    RestaurantMenuItem       { string id PK }
+    RestaurantMenuItemVariant{ string id PK }
+    ModifierGroup            { string id PK }
+    ModifierOption           { string id PK }
+    MenuItemModifierGroup    { string menuItemId FK }
+
+    %% ── OPERACIÓN ──
+    DiningTable        { string id PK }
+    DiningSession      { string id PK }
+    DiningSessionTable { string id PK }
+    Guest              { string id PK }
+
+    %% ── ÓRDENES ──
+    RestaurantOrder      { string id PK }
+    OrderItem            { string id PK }
+    OrderItemModifier    { string id PK }
+    OrderItemStatusEvent { string id PK }
+
+    %% ── PAGOS ──
+    Payment          { string id PK }
+    PaymentAllocation{ string id PK }
+    Refund           { string id PK }
+    AppliedDiscount  { string id PK }
+
+    %% ── RELACIONES ──
+
+    Currency ||--o{ Chain              : " "
+    Currency ||--o{ Restaurant         : " "
+    Currency ||--o{ Payment            : " "
+
+    TaxGroup ||--o{ RestaurantCategory : " "
+    TaxGroup ||--o{ RestaurantMenuItem : " "
+
+    Permission ||--o{ RolePermission   : " "
+    Role       ||--o{ RolePermission   : " "
+    Role       }o--o| Chain            : " "
+    Role       ||--o{ UserRole         : " "
+    AppUser    ||--o{ UserRole         : " "
+
+    AppUser ||--o{ Chain               : " "
+    AppUser ||--o{ AuditLog            : " "
+    AppUser ||--o{ DiningSession       : " "
+    AppUser ||--o{ RestaurantOrder     : " "
+    AppUser ||--o{ Payment             : " "
+    AppUser ||--o{ Refund              : " "
+    AppUser ||--o{ AppliedDiscount     : " "
+    AppUser ||--o{ OrderItemStatusEvent: " "
+
+    Chain      ||--o{ Zone             : " "
+    Chain      ||--o{ Restaurant       : " "
+    Chain      ||--o{ MenuTemplate     : " "
+    Zone       ||--o{ Restaurant       : " "
+
+    Restaurant ||--o{ Station              : " "
+    Restaurant ||--o{ RestaurantCategory   : " "
+    Restaurant ||--o{ RestaurantMenuItem   : " "
+    Restaurant ||--o{ ModifierGroup        : " "
+    Restaurant ||--o{ DiningTable          : " "
+    Restaurant ||--o{ DiningSession        : " "
+    Restaurant ||--o{ RestaurantOrder      : " "
+    Restaurant ||--o{ Payment              : " "
+    Restaurant ||--o{ AppliedDiscount      : " "
+
+    MenuTemplate     ||--o{ TemplateCategory     : " "
+    TemplateCategory ||--o{ TemplateItem         : " "
+    TemplateItem     ||--o{ TemplateItemVariant   : " "
+    TemplateItem     ||--o{ RestaurantMenuItem    : " "
+    TemplateItemVariant ||--o{ RestaurantMenuItemVariant : " "
+
+    RestaurantCategory    ||--o{ RestaurantMenuItem       : " "
+    Station               ||--o{ RestaurantMenuItem       : " "
+    RestaurantMenuItem    ||--o{ RestaurantMenuItemVariant: " "
+    RestaurantMenuItem    ||--o{ MenuItemModifierGroup    : " "
+    RestaurantMenuItem    ||--o{ OrderItem                : " "
+    RestaurantMenuItemVariant ||--o{ OrderItem            : " "
+
+    ModifierGroup  ||--o{ ModifierOption         : " "
+    ModifierGroup  ||--o{ MenuItemModifierGroup  : " "
+    ModifierOption ||--o{ OrderItemModifier      : " "
+
+    DiningTable   ||--o{ DiningSessionTable : " "
+    DiningSession ||--o{ DiningSessionTable : " "
+    DiningSession ||--o{ Guest              : " "
+    DiningSession ||--o{ RestaurantOrder    : " "
+    DiningSession ||--o{ Payment            : " "
+
+    Guest ||--o{ OrderItem         : " "
+    Guest ||--o{ PaymentAllocation : " "
+
+    RestaurantOrder ||--o{ OrderItem            : " "
+    OrderItem       ||--o{ OrderItemModifier    : " "
+    OrderItem       ||--o{ OrderItemStatusEvent : " "
+    OrderItem       ||--o{ PaymentAllocation    : " "
+    OrderItem       ||--o{ AppliedDiscount      : " "
+
+    Payment ||--o{ PaymentAllocation : " "
+    Payment ||--o{ Refund            : " "
+    Payment ||--o{ AppliedDiscount   : " "

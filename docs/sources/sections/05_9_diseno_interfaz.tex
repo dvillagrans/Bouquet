@@ -1,0 +1,60 @@
+% -----------------------------------------------------------
+\subsection{Diseño de Interfaces de Usuario (UI/UX)}
+% -----------------------------------------------------------
+
+El diseño de interfaces sigue tres principios rectores: \textit{Progressive
+Disclosure}, \textit{Mobile-First} y accesibilidad WCAG 2.1 nivel AA.
+
+\subsubsection{Inventario de Pantallas}
+
+\setstretch{1.2}
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{>{\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{2cm}
+                >{\ttfamily\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{4.5cm}
+                >{\centering\arraybackslash}p{1.5cm}}
+\caption{Inventario de Pantallas y Características Técnicas} \label{tab:inventario} \\
+\toprule
+\thead{Pantalla} & \thead{Rol} & \thead{Ruta} &
+\thead{Componentes clave} & \thead{Realtime} \\
+\midrule
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\toprule
+\thead{Pantalla} & \thead{Rol} & \thead{Ruta} &
+\thead{Componentes clave} & \thead{Realtime} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+Home comensales & Comensal & / & Botones de acción, logo. & No \\
+\rowcolor{altrow}
+Activar mesa & Anfitrión & /activar & Cámara QR, formulario. & No \\
+Menú restaurante & Comensal & /mesa/:id/menu & Filtros, cards, variantes. & No \\
+\rowcolor{altrow}
+Canasta & Comensal & /mesa/:id/canasta & Lista ítems, total. & No \\
+Liquidación & Comensal & /mesa/:id/pagar & Desglose individual/mesa. & Sí \\
+\rowcolor{altrow}
+Tablero Chef & Chef & /cocina & Kanban, alertas sonoras. & Sí \\
+Mesas físicas & Mesero & /mesas & Mapa interactivo, estatus. & Sí \\
+\end{longtable}
+\setstretch{1.5}
+
+\subsubsection{Mapa de Navegación por Rol}
+
+\noindent\textbf{Comensales.} Home $\rightarrow$ Activar/Unirse $\rightarrow$ Menú $\rightarrow$ Canasta $\rightarrow$ Pago.
+
+\noindent\textbf{Mesero.} Login $\rightarrow$ Mesas $\rightarrow$ Detalle de mesa $\rightarrow$ Tomar pedido.
+
+\noindent\textbf{Chef.} Login $\rightarrow$ Tablero Kanban (Cocina).
+
+\subsubsection{Especificación de Componentes Clave}
+
+\noindent\textbf{Tablero Kanban del Chef (/cocina).} Actualización en tiempo
+real vía Supabase Realtime suscrito al canal \texttt{ordenes}. Filtros por
+sucursal. Cambio de estados PENDIENTE $\rightarrow$ PREPARANDO $\rightarrow$ LISTO.
+
+\noindent\textbf{Componente de Liquidación (/mesa/:id/pagar).} Desglose de
+cuentas por comensal y mesa compartida. Integración con gateway de pagos.
+Control de concurrencia para evitar doble pago.

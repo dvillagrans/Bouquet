@@ -51,7 +51,7 @@ La Tabla~\ref{tab:permisos} presenta la matriz de permisos por rol del sistema.
                 >{\centering\arraybackslash}p{1.1cm}
                 >{\centering\arraybackslash}p{0.8cm}}
 \caption{Matriz de Permisos por Rol} \label{tab:permisos} \\
-\toprule
+\hline
 \thead{Acción / Permiso} &
 \thead{Chef} &
 \thead{Comensal} &
@@ -59,10 +59,10 @@ La Tabla~\ref{tab:permisos} presenta la matriz de permisos por rol del sistema.
 \thead{Mesero} &
 \thead{Gerente} &
 \thead{Admin} \\
-\midrule
+\hline
 \endfirsthead
 \caption[]{TABLA \thetable{} (Continuación)} \\
-\toprule
+\hline
 \thead{Acción / Permiso} &
 \thead{Chef} &
 \thead{Comensal} &
@@ -70,35 +70,28 @@ La Tabla~\ref{tab:permisos} presenta la matriz de permisos por rol del sistema.
 \thead{Mesero} &
 \thead{Gerente} &
 \thead{Admin} \\
-\midrule
+\hline
 \endhead
-\bottomrule
+\hline
 \endfoot
-Dar de alta Zonas                          &   &   &   &   &   & X \\
-\rowcolor{altrow}
+Dar de alta Zonas                          &   &   &   &   &   & X \\ \rowcolor{altrow}
 Dar de alta usuarios con rol Admin         &   &   &   &   &   & X \\
-Dar de alta usuarios con otros roles       &   &   &   &   & X & X \\
-\rowcolor{altrow}
+Dar de alta usuarios con otros roles       &   &   &   &   & X & X \\ \rowcolor{altrow}
 Acceso al Dashboard de Analytics           &   &   &   &   & X & X \\
-Dar de alta Sucursales                     &   &   &   &   & X & X \\
-\rowcolor{altrow}
+Dar de alta Sucursales                     &   &   &   &   & X & X \\ \rowcolor{altrow}
 Agregar, eliminar o editar menús/productos &   &   &   &   & X &   \\
-Crear, editar y liberar mesas físicas      &   &   &   &   & X & X \\
-\rowcolor{altrow}
+Crear, editar y liberar mesas físicas      &   &   &   &   & X & X \\ \rowcolor{altrow}
 Visualizar mesas físicas y características &   &   &   &   & X & X \\
-Inicializar mesa virtual y su identificador&   &   &   & X & X & X \\
-\rowcolor{altrow}
+Inicializar mesa virtual y su identificador&   &   &   & X & X & X \\ \rowcolor{altrow}
 Activar mesa virtual y crear contraseña    &   &   & X &   &   &   \\
-Visualizar y compartir contraseña de acceso&   & X & X &   &   &   \\
-\rowcolor{altrow}
+Visualizar y compartir contraseña de acceso&   & X & X &   &   &   \\ \rowcolor{altrow}
 Generar órdenes individuales               &   & X & X &   &   &   \\
-Generar órdenes compartidas                &   & X & X &   &   &   \\
-\rowcolor{altrow}
+Generar órdenes compartidas                &   & X & X &   &   &   \\ \rowcolor{altrow}
 Visualizar órdenes y su estatus            & X &   &   & X & X & X \\
-Visualizar montos de cuentas por comensal  &   & X & X & X & X & X \\
-\rowcolor{altrow}
-Liquidar cuentas o aportar a mesa compartida&  & X & X &   &   &   \\
+Visualizar montos de cuentas por comensal  &   & X & X & X & X & X \\ \rowcolor{altrow}
+Liquidar cuentas o aportar a mesa compartida&  & X & X &   &   &   \\ \rowcolor{altrow}
 Visualizar estatus de liquidación          &   & X & X & X & X & X \\
+\hline
 \end{longtable}
 \setstretch{1.5}
 
@@ -122,22 +115,20 @@ de usuario del sistema.
                 >{\centering\arraybackslash}p{2cm}
                 >{\centering\arraybackslash}p{2cm}
                 >{\centering\arraybackslash}p{2cm}}
-\toprule
+\hline
 \thead{¿Puede dar de alta?} &
 \thead{Admin} &
 \thead{Gerente Zona} &
 \thead{Gerente Suc.} &
 \thead{Mesero} &
 \thead{Chef} \\
-\midrule
-Admin                & X & X & X & X & X \\
-\rowcolor{altrow}
+\hline
+Admin                & X & X & X & X & X \\ \rowcolor{altrow}
 Gerente Zona         &   &   & X & X & X \\
-Gerente Sucursal     &   &   &   & X & X \\
-\rowcolor{altrow}
+Gerente Sucursal     &   &   &   & X & X \\ \rowcolor{altrow}
 Mesero               &   &   &   &   &   \\
 Chef                 &   &   &   &   &   \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 

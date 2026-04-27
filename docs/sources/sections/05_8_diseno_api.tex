@@ -17,13 +17,13 @@ Supabase Auth.
                 >{\raggedright\arraybackslash}p{5cm}
                 >{\raggedright\arraybackslash}p{3.5cm}
                 >{\raggedright\arraybackslash}p{6cm}}
-\toprule
+\hline
 \thead{Método} & \thead{Endpoint} & \thead{Auth requerida} & \thead{Descripción} \\
-\midrule
+\hline
 GET & \texttt{/api/sucursales/:id/mesas} & Empleados & Lista mesas físicas. \\
 POST & \texttt{/api/mesas-virtuales} & Empleados & Inicializa mesa virtual. \\
 POST & \texttt{/api/mesas-virtuales/:id/activar} & Pública & Activa la mesa. \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -39,25 +39,22 @@ Server Actions de Next.js.
                 >{\ttfamily\raggedright\arraybackslash}p{4cm}
                 >{\raggedright\arraybackslash}p{8cm}}
 \caption{Inventario de Server Actions por Archivo} \label{tab:actions} \\
-\toprule
+\hline
 \thead{Archivo} & \thead{Función} & \thead{Descripción} \\
-\midrule
+\hline
 \endfirsthead
 \caption[]{TABLA \thetable{} (Continuación)} \\
-\toprule
+\hline
 \thead{Archivo} & \thead{Función} & \thead{Descripción} \\
-\midrule
+\hline
 \endhead
-\bottomrule
+\hline
 \endfoot
-restaurant.ts & getDefaultRestaurant & Obtiene restaurante por defecto. \\
-\rowcolor{altrow}
+restaurant.ts & getDefaultRestaurant & Obtiene restaurante por defecto. \\ \rowcolor{altrow}
 menu.ts & getMenuData & Categorías e ítems del menú. \\
-orders.ts & getLiveOrders & Órdenes del día para KDS. \\
-\rowcolor{altrow}
+orders.ts & getLiveOrders & Órdenes del día para KDS. \\ \rowcolor{altrow}
 tables.ts & getTables & Lista mesas del restaurante. \\
-waiter.ts & getTableDetail & Detalle de mesa: sesión, órdenes. \\
-\rowcolor{altrow}
+waiter.ts & getTableDetail & Detalle de mesa: sesión, órdenes. \\ \rowcolor{altrow}
 comensal.ts & submitComensalOrder & Envía pedido desde flujo comensal. \\
 \end{longtable}
 \setstretch{1.5}
@@ -71,12 +68,11 @@ comensal.ts & submitComensalOrder & Envía pedido desde flujo comensal. \\
 \small
 \begin{tabular}{>{\bfseries\raggedright\arraybackslash}p{4cm}
                 >{\raggedright\arraybackslash}p{12cm}}
-\toprule
+\hline
 \thead{Servicio} & \thead{Uso} \\
-\midrule
-PostgreSQL & Base de datos principal vía Prisma. \\
-\rowcolor{altrow}
+\hline
+PostgreSQL & Base de datos principal vía Prisma. \\ \rowcolor{altrow}
 Supabase & Cliente SSR y canales en tiempo real. \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}

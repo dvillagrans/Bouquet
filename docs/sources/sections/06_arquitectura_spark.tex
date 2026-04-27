@@ -58,7 +58,7 @@ La partición por fecha permite mantener historial de ejecuciones y facilita la 
 
 La capa Bronze contiene copias exactas de las tablas operacionales leídas desde PostgreSQL mediante el conector JDBC de Spark. Se utilizan las siguientes tablas como fuentes primarias:
 
-\begin{longtable}{|p{6cm}|p{10cm}|}
+\begin{longtable}{p{6cm}p{10cm}}
 \hline
 \textbf{Archivo Parquet} & \textbf{Tabla(s) fuente} \\
 \hline
@@ -149,7 +149,7 @@ Para un entendimiento profundo del procesamiento, es necesario observar cómo vi
 \begin{table}[H]
 \centering
 \caption{Diccionario de Métricas — Sales Daily}
-\begin{tabular}{|p{4cm}|p{5cm}|p{7cm}|}
+\begin{tabular}{p{4cm}p{5cm}p{7cm}}
 \hline
 \textbf{Métrica} & \textbf{Cálculo (Spark SQL)} & \textbf{Descripción} \\ \hline
 \texttt{totalOrders} & \texttt{COUNT(DISTINCT orderId)} & Volumen de transacciones únicas. \\ \hline
@@ -169,7 +169,7 @@ Para un entendimiento profundo del procesamiento, es necesario observar cómo vi
 \begin{table}[H]
 \centering
 \caption{Diccionario de Métricas — Item Velocity}
-\begin{tabular}{|p{4cm}|p{6cm}|p{6cm}|}
+\begin{tabular}{p{4cm}p{6cm}p{6cm}}
 \hline
 \textbf{Métrica} & \textbf{Cálculo (Spark SQL)} & \textbf{Descripción} \\ \hline
 \texttt{unitsSold} & \texttt{SUM(quantity)} & Volumen físico de ventas. \\ \hline
@@ -188,7 +188,7 @@ Para un entendimiento profundo del procesamiento, es necesario observar cómo vi
 \begin{table}[H]
 \centering
 \caption{Diccionario de Métricas — Process Mining}
-\begin{tabular}{|p{4cm}|p{6cm}|p{6cm}|}
+\begin{tabular}{p{4cm}p{6cm}p{6cm}}
 \hline
 \textbf{Métrica} & \textbf{Cálculo (Spark SQL)} & \textbf{Descripción} \\ \hline
 \texttt{avgSeconds} & \texttt{AVG(ts\_served - ts\_new)} & Tiempo promedio de ciclo completo. \\ \hline
@@ -207,7 +207,7 @@ Para un entendimiento profundo del procesamiento, es necesario observar cómo vi
 \begin{table}[H]
 \centering
 \caption{Diccionario de Métricas — Forecast}
-\begin{tabular}{|p{4cm}|p{6cm}|p{6cm}|}
+\begin{tabular}{p{4cm}p{6cm}p{6cm}}
 \hline
 \textbf{Métrica} & \textbf{Cálculo (Spark SQL)} & \textbf{Descripción} \\ \hline
 \texttt{projectedOrders} & \texttt{AVG(hist\_daily\_orders)} & Demanda esperada según estacionalidad. \\ \hline
@@ -238,7 +238,7 @@ El servicio expone dos endpoints:
 
 Las tablas analíticas son el punto de integración entre el pipeline de Spark y el dashboard de Next.js. Son escritas exclusivamente por el Job 4 del pipeline y leídas exclusivamente por la capa de presentación mediante Prisma. Ninguna operación OLTP escribe en estas tablas.
 
-\begin{longtable}{|p{6cm}|p{10cm}|}
+\begin{longtable}{p{6cm}p{10cm}}
 \hline
 \textbf{Tabla} & \textbf{Contenido} \\
 \hline

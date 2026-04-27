@@ -15,27 +15,27 @@ Tabla~\ref{tab:rf}.
                 >{\raggedright\arraybackslash}p{6.5cm}
                 >{\centering\arraybackslash}p{1.5cm}}
 \caption{Requerimientos Funcionales del Sistema} \label{tab:rf} \\
-\toprule
+\hline
 \thead{ID} & \thead{Requerimiento} & \thead{Criterio de aceptación} & \thead{OE ref.} \\
-\midrule
+\hline
 \endfirsthead
 \caption[]{TABLA \thetable{} (Continuación)} \\
-\toprule
+\hline
 \thead{ID} & \thead{Requerimiento} & \thead{Criterio de aceptación} & \thead{OE ref.} \\
-\midrule
+\hline
 \endhead
-\bottomrule
+\hline
 \endfoot
 \multicolumn{4}{l}{\textit{Módulo 1 — Infraestructura y Estructura Organizacional}} \\
-\midrule
+\hline
 RF-01 & El sistema debe desplegar ambientes diferenciados de Producci\'on y Preview con pipelines de CI/CD autom\'aticos. &
   Deploy autom\'atico al hacer push a la rama \texttt{main}. Migraciones de Prisma ejecutadas sin errores en ambos ambientes. & OE-01 \\
 \rowcolor{altrow}
 RF-02 & El sistema debe gestionar los tres niveles organizacionales: Cadena, Zona y Sucursal, con integridad referencial. &
   CRUD completo en cada nivel. Intento de eliminar una Cadena con Zonas activas retorna error de integridad. & OE-02 \\
-\midrule
+\hline
 \multicolumn{4}{l}{\textit{Módulo 2 — Autenticación y Control de Acceso}} \\
-\midrule
+\hline
 RF-03 & El sistema debe autenticar usuarios colaboradores mediante email/contrase\~na y emitir JWT con el rol asignado. &
   Login exitoso genera token con claims de rol y nivel org. Token inv\'alido retorna HTTP 401. & OE-03 \\
 \rowcolor{altrow}
@@ -46,22 +46,22 @@ RF-05 & Al primer login con contrase\~na temporal, el sistema debe forzar el cam
 \rowcolor{altrow}
 RF-06 & Un usuario no puede asignar roles superiores a los propios al dar de alta nuevos colaboradores. &
   Gerente de Sucursal que intenta crear un Gerente de Zona recibe HTTP~403. & OE-04 \\
-\midrule
+\hline
 \multicolumn{4}{l}{\textit{Módulo 3 — Catálogo}} \\
-\midrule
+\hline
 RF-07 & El sistema debe permitir crear, editar, activar y desactivar categor\'ias y productos del men\'u por sucursal. &
   Producto con 3 variantes creado exitosamente. Producto inactivo no visible para comensales. & OE-05 \\
 \rowcolor{altrow}
 RF-08 & Los cambios al men\'u deben reflejarse para los comensales activos en menos de 2 segundos. &
   Test: Gerente desactiva producto; comensal conectado no lo ve en $< 2$~s sin recargar. & OE-05 \\
-\midrule
+\hline
 \multicolumn{4}{l}{\textit{Módulo 4 — Mesas Físicas y Virtuales}} \\
-\midrule
+\hline
 RF-09 & El sistema debe mostrar en tiempo real el estatus de todas las mesas f\'isicas de la sucursal. &
   Mesero ve el cambio de estatus de una mesa en $< 2$~s v\'ia Supabase Realtime sin recargar la p\'agina. & OE-06 \\
 \rowcolor{altrow}
-RF-10 & El sistema debe generar c\'odigos QR con token JWT de un solo uso (TTL 30~min) para la activaci\'on de mesas virtuales. &
-  Segundo intento de escaneo del mismo QR retorna error de token ya utilizado o expirado. & OE-07 \\
+RF-10 & El sistema debe generar c\'odigos QR con firma criptogr\'afica HMAC-SHA256 para la activaci\'on de mesas virtuales. &
+  El enlace del QR contiene una firma v\'alida generada en el servidor. Enlaces alterados retornan error de validaci\'on. & OE-07 \\
 RF-11 & Solo se pueden asociar mesas f\'isicas en estado LIBRE a una mesa virtual nueva (RB-M01). &
   Intento de inicializar con mesa en estado POR\_LIQUIDAR retorna error descriptivo. & OE-07 \\
 \rowcolor{altrow}
@@ -69,9 +69,9 @@ RF-12 & El anfitri\'on debe crear una contrase\~na para activar la mesa virtual;
   Hash verificado en base de datos. Contrase\~na no recuperable en texto plano. & OE-07 \\
 RF-13 & El comensal puede unirse a una mesa activa ingresando el ID de mesa y la contrase\~na provista por el anfitri\'on. &
   Credenciales incorrectas retornan HTTP~401. Credenciales correctas crean sesi\'on activa. & OE-07 \\
-\midrule
+\hline
 \multicolumn{4}{l}{\textit{Módulo 5 — Órdenes y Cocina}} \\
-\midrule
+\hline
 \rowcolor{altrow}
 RF-14 & El comensal puede agregar productos a su canasta, ajustar cantidades y confirmar la orden con di\'alogo expl\'icito. &
   Canasta persiste durante la sesi\'on (Zustand). Confirmaci\'on sin di\'alogo: bloqueada. & OE-08 \\
@@ -82,28 +82,28 @@ RF-16 & El tablero del Chef debe mostrar \'ordenes nuevas en $< 2$~s con notific
   Test: comensal confirma orden; aparece en tablero del Chef en $< 2$~s con sonido. & OE-09 \\
 RF-17 & El Chef debe poder avanzar el estado de cada orden: PENDIENTE $\rightarrow$ EN\_PREPARACION $\rightarrow$ EN\_REPARTO. &
   Transici\'on inversa bloqueada. Cambios reflejados en vista del comensal en tiempo real. & OE-09 \\
-\midrule
+\hline
 \multicolumn{4}{l}{\textit{Módulo 6 — Liquidación}} \\
-\midrule
+\hline
 \rowcolor{altrow}
-RF-18 & El sistema debe prevenir pagos concurrentes duplicados mediante \texttt{SELECT FOR UPDATE} en PostgreSQL. &
+RF-18 & El sistema debe prevenir registros de aportaci\'on concurrentes duplicados mediante \texttt{SELECT FOR UPDATE} en PostgreSQL. &
   Test de dos peticiones simult\'aneas: solo una se procesa; la segunda recibe error descriptivo. & OE-10 \\
-RF-19 & La mesa virtual debe transicionar autom\'aticamente a LIQUIDADA cuando todos los comensales y la mesa compartida est\'en saldados. &
-  Trigger en \texttt{transacciones\_pago}: al liquidar el \'ultimo pendiente, \texttt{mesa\_virtual.estado} = LIQUIDADA. & OE-10 \\
+RF-19 & La mesa virtual debe transicionar autom\'aticamente a LIQUIDADA cuando la suma de aportaciones internas cubra el total de la cuenta. &
+  Lógica de negocio: al liquidar el \'ultimo pendiente, \texttt{mesa\_virtual.estado} = LIQUIDADA. & OE-10 \\
 \rowcolor{altrow}
-RF-20 & El sistema debe emitir un comprobante digital de liquidaci\'on al completarse todos los pagos de una mesa. &
-  Comprobante generado con timestamp, \'items y montos. Verificado en ambiente de staging. & OE-11 \\
-\midrule
+RF-20 & El sistema debe emitir un comprobante digital de liquidaci\'on interna al completarse el registro de aportaciones de una mesa. &
+  Comprobante generado con desglose de ítems, aportaciones y saldo cero. & OE-11 \\
+\hline
 \multicolumn{4}{l}{\textit{Módulo 7 — Analytics}} \\
-\midrule
+\hline
 RF-21 & El dashboard debe filtrar m\'etricas autom\'aticamente seg\'un el nivel organizacional del usuario autenticado. &
   Admin ve toda la cadena; Gerente de Zona ve solo su zona; Gerente de Sucursal solo su sucursal. & OE-12 \\
 \rowcolor{altrow}
 RF-22 & El dashboard debe mostrar: n\'umero de mesas activas, \'ordenes por per\'iodo, ingresos, top productos y tiempos de atenci\'on. &
   Datos coherentes con las transacciones registradas en Supabase. & OE-12 \\
-\midrule
+\hline
 \multicolumn{4}{l}{\textit{Módulo 8 — Seguridad}} \\
-\midrule
+\hline
 RF-23 & Todas las comunicaciones deben estar cifradas con HTTPS/TLS~1.2+ (Vercel + Supabase). &
   Escaneo OWASP~ZAP sin vulnerabilidades cr\'iticas de cifrado. & OE-13 \\
 \rowcolor{altrow}
@@ -126,16 +126,16 @@ cuales el sistema debe operar. La Tabla~\ref{tab:rnf} los organiza por categor\'
                 >{\raggedright\arraybackslash}p{5.8cm}
                 >{\raggedright\arraybackslash}p{5.8cm}}
 \caption{Requerimientos No Funcionales del Sistema} \label{tab:rnf} \\
-\toprule
+\hline
 \thead{ID} & \thead{Categoría} & \thead{Requerimiento} & \thead{Métrica / Criterio} \\
-\midrule
+\hline
 \endfirsthead
 \caption[]{TABLA \thetable{} (Continuación)} \\
-\toprule
+\hline
 \thead{ID} & \thead{Categoría} & \thead{Requerimiento} & \thead{Métrica / Criterio} \\
-\midrule
+\hline
 \endhead
-\bottomrule
+\hline
 \endfoot
 RNF-01 & Rendimiento & Tiempo de carga de la interfaz principal en conexi\'on m\'ovil 4G. &
   $\leq 3$~segundos medido con Lighthouse en modo m\'ovil. \\
@@ -204,7 +204,7 @@ involucrados, las relaciones de inclusi\'on (\textit{include}), extensi\'on
 
 La Figura~\ref{fig:cu01} presenta el caso de uso del flujo de acceso a la mesa virtual mediante
 c\'odigo QR. El actor principal es el \textbf{Comensal} y el actor secundario el
-\textbf{Mesero}, quien inicializa la mesa. El sistema valida el token JWT del QR
+\textbf{Mesero}, quien inicializa la mesa. El sistema valida la firma HMAC-SHA256 del QR
 (RF-10) y ejecuta el flujo de activaci\'on descrito en la Figura~\ref{fig:seq_activacion}.
 
 \begin{figure}[H]
@@ -218,23 +218,23 @@ c\'odigo QR. El actor principal es el \textbf{Comensal} y el actor secundario el
   El mesero ha iniciado sesi\'on con rol MESERO o superior. \\
 \textbf{Flujo principal} &
   \textbf{1.} Mesero selecciona mesas f\'isicas y genera mesa virtual.\newline
-  \textbf{2.} Sistema genera QR con JWT firmado (TTL 30 min) --- \textit{include} \textbf{CU-01a}: Generar token JWT de un solo uso.\newline
+  \textbf{2.} Sistema genera QR con firma HMAC-SHA256 --- \textit{include} \textbf{CU-01a}: Generar firma de seguridad para acceso.\newline
   \textbf{3.} Mesero entrega QR f\'isico o digital al anfitr\'ion del grupo.\newline
   \textbf{4.} Anfitr\'ion escanea el QR desde su navegador m\'ovil.\newline
-  \textbf{5.} Sistema valida firma, TTL y estado del token.\newline
+  \textbf{5.} Sistema valida la firma del enlace.\newline
   \textbf{6.} Anfitr\'ion ingresa nombre y crea contrase\~na de mesa.\newline
   \textbf{7.} Sistema activa la mesa virtual (\texttt{PENDIENTE\_ACTIVACION} $\to$ \texttt{OCUPADA}).\newline
   \textbf{8.} Anfitr\'ion recibe \texttt{joinCode} para compartir con sus compa\~neros.\newline
   \textbf{9.} Comensales adicionales ingresan con ID de mesa + contrase\~na. \\
 \textbf{Flujos alternativos} &
-  \textit{5a.} Token expirado o ya utilizado $\to$ Sistema retorna error \texttt{HTTP 401}.\newline
+  \textit{5a.} Firma inv\'alida o alterada $\to$ Sistema retorna error \texttt{HTTP 401}.\newline
   \textit{5b.} Mesa ya activa $\to$ Sistema retorna error \texttt{HTTP 409}.\newline
   \textit{6a.} Contrase\~na de menos de 4 caracteres $\to$ validaci\'on en frontend. \\
 \textbf{Postcondiciones} & Mesa virtual activa. Sesi\'on de Anfitr\'ion creada con \texttt{isHost=true}.
   Mesas f\'isicas asociadas en estado \texttt{OCUPADA}. \\
 \textbf{RF relacionados} & RF-09, RF-10, RF-11, RF-12, RF-13 \\
 \end{tabular}
-\caption{CU-01: Comensal escanea QR e ingresa a mesa virtual. Relaci\'on de inclusi\'on con CU-01a (generaci\'on de token JWT de un solo uso).}
+\caption{CU-01: Comensal escanea QR e ingresa a mesa virtual. Relaci\'on de inclusi\'on con CU-01a (generaci\'on de firma de seguridad para acceso).}
 \label{fig:cu01}
 \end{figure}
 

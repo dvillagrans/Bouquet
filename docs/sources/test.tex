@@ -1,0 +1,40 @@
+\documentclass{article}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage[table]{xcolor}
+\ExplSyntaxOn
+\cs_if_exist:NF \tag_mc_end: { \cs_new_eq:NN \tag_mc_end: \prg_do_nothing: }
+\cs_if_exist:NF \tbl_gdecr_row_count: { \cs_new_eq:NN \tbl_gdecr_row_count: \prg_do_nothing: }
+\ExplSyntaxOff
+
+\makeatletter
+\providecommand{\insert@pcolumn}{\insert@column}
+\makeatother
+
+\newcommand{\dictable}[2]{%
+  \begin{longtable}{>{\raggedright\arraybackslash\ttfamily}p{3.5cm}
+                  >{\raggedright\arraybackslash\ttfamily}p{2.2cm}
+                  >{\raggedright\arraybackslash}p{6.8cm}}
+  \caption{Diccionario de datos: tabla #1}  \\
+  \hline
+  head1 & head2 & head3 \\
+  \hline
+  \endfirsthead
+  \caption[]{TABLA (Continuacion)} \\
+  \hline
+  head1 & head2 & head3 \\
+  \hline
+  \endhead
+  \hline
+  \endfoot
+}
+
+\newcommand{\dictableend}{%
+  \end{longtable}
+}
+
+\begin{document}
+\dictable{Table}{Desc}
+ a & b & c \\
+\dictableend
+\end{document}

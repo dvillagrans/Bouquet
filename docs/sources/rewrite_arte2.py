@@ -1,4 +1,8 @@
-\section{Estado del Arte}
+import re
+
+file_path = r"C:\Users\dvill\Downloads\Bouquet\docs\sources\sections\02_0_estado_del_arte.tex"
+
+new_content = r"""\section{Estado del Arte}
 
 \subsection{Antecedentes Acad\'emicos y T\'ecnicos}
 
@@ -93,9 +97,10 @@ Los sistemas transaccionales (OLTP) est\'an dise\~nados para registrar operacion
 mantener consistencia y responder con baja latencia a acciones del usuario. Sin embargo,
 las consultas anal\'iticas complejas, los agregados hist\'oricos y los indicadores de negocio
 pueden afectar el rendimiento de la operaci\'on si se ejecutan directamente sobre la base
-transaccional. Por ello, la evoluci\'on de las plataformas de datos ---desde los almacenes tradicionales (Data Warehouses) hasta los modernos entornos unificados (Data Lakehouses)--- ha fundamentado la necesidad de separar estructuralmente los entornos de captura y procesamiento anal\'itico \cite{armbrust2021lakehouse}.
+transaccional. Por ello, diversos enfoques de arquitectura de datos proponen separar la
+capa operativa de la capa anal\'itica \cite{kleppmann2017designing}.
 
-En este contexto de plataformas unificadas, la arquitectura \textit{Medallion} (popularizada en arquitecturas Lakehouse) organiza el flujo anal\'itico en capas
+En este contexto, la arquitectura Medallion organiza el flujo anal\'itico en capas
 progresivas de refinamiento. La capa Bronze almacena datos crudos provenientes de la
 operaci\'on; la capa Silver contiene datos limpios, normalizados y enriquecidos; y la capa
 Gold concentra agregados orientados a consumo anal\'itico. Este enfoque permite conservar
@@ -255,5 +260,9 @@ transaccional con trazabilidad hist\'orica; y tercero, el procesamiento anal\'it
 Spark para generar datasets Gold y dashboards administrativos. Esta integraci\'on permite
 abordar el caso restaurantero no solo como un problema de software operativo, sino como un
 problema de ingenier\'ia y an\'alisis de datos.
+"""
 
-\newpage
+with open(file_path, "w", encoding="utf-8") as f:
+    f.write(new_content)
+
+print("success")

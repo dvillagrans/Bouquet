@@ -49,20 +49,18 @@ definidas y contratos de comunicación estrictos:
 \begin{tabular}{>{\bfseries\raggedright\arraybackslash}p{3cm}
                 >{\raggedright\arraybackslash}p{4cm}
                 >{\raggedright\arraybackslash}p{9cm}}
-\toprule
+\hline
 \thead{Capa} & \thead{Stack Tecnológico} & \thead{Responsabilidad Primaria} \\
-\midrule
+\hline
 Presentaci\'on & Next.js 16 · React 19 · Tailwind 4 & 
-  Entrega de UI adaptativa, gestión de estado global y experiencia PWA. \\
-\rowcolor{altrow}
+  Entrega de UI adaptativa, gestión de estado global y experiencia PWA. \\ \rowcolor{altrow}
 API / Orquestación & Edge Functions · JWT · Middleware & 
   Validación de seguridad, orquestación de pagos y contratos REST/Actions. \\
 Lógica de Datos & Prisma ORM 7 · TypeScript & 
-  Modelado de entidades, integridad referencial y abstracción de persistencia. \\
-\rowcolor{altrow}
+  Modelado de entidades, integridad referencial y abstracción de persistencia. \\ \rowcolor{altrow}
 Infraestructura & Supabase · PostgreSQL 16 · Realtime & 
   Persistencia atómica, aislamiento multitenant vía RLS y eventos WebSocket. \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 

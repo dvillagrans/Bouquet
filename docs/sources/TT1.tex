@@ -18,7 +18,7 @@
 \usepackage{longtable}
 \usepackage{multirow}
 \usepackage[table]{xcolor}
-\usepackage{colortbl}
+% \usepackage{colortbl}
 \usepackage{graphicx}
 \usepackage{caption}
 \usepackage{cite}
@@ -40,6 +40,15 @@
 \usepackage[most]{tcolorbox}
 \usepackage{pdflscape}
 \tcbuselibrary{skins}
+
+% Parches para bug de colortbl y longtable en LaTeX > 2023
+\ExplSyntaxOn
+\cs_if_exist:NF \tag_mc_end: { \cs_new_eq:NN \tag_mc_end: \prg_do_nothing: }
+\cs_if_exist:NF \tbl_gdecr_row_count: { \cs_new_eq:NN \tbl_gdecr_row_count: \prg_do_nothing: }
+\ExplSyntaxOff
+\makeatletter
+\providecommand{\insert@pcolumn}{\insert@column}
+\makeatother
 
 % ── Estilo premium para Casos de Uso y Diagramas ───────────
 \newtcolorbox{usecasebox}[1]{
@@ -156,7 +165,7 @@
 
 % Comando para celdas de encabezado de tabla
 \newcommand{\thead}[1]{%
-  \cellcolor{tableheader}\color{white}\bfseries #1}
+\cellcolor{tableheader}\color{white}\bfseries #1}
 
 % ── Configuración de listings para PySpark ──
 \lstdefinestyle{pyspark}{
@@ -188,7 +197,8 @@
 \input{sections/00_frontmatter}
 
 % ── Capítulos ─────────────────────────────────────────────
-\input{sections/01_introduccion}
+\input{sections/01_0_introduccion}
+\input{sections/01_1_alcances_y_limitaciones}
 \input{sections/02_0_estado_del_arte}
 \input{sections/02_1_marco_teorico}
 \input{sections/03_factibilidad}

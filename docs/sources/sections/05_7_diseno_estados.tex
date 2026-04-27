@@ -18,22 +18,19 @@ La Tabla~\ref{tab:estados_mesa} describe los estados posibles de una mesa virtua
 \begin{tabular}{>{\bfseries\raggedright\arraybackslash}p{4cm}
                 >{\raggedright\arraybackslash}p{9cm}
                 >{\centering\arraybackslash}p{3cm}}
-\toprule
+\hline
 \thead{Estado} & \thead{Descripción} & \thead{Semántica} \\
-\midrule
+\hline
 \rowcolor{orange}
 PENDIENTE\_ACTIVACION &
-  Mesa inicializada por Mesero/Gerente. QR generado. Aún no activada por el Anfitrión. & En espera \\
-\rowcolor{green}
+  Mesa inicializada por Mesero/Gerente. QR generado. Aún no activada por el Anfitrión. & En espera \\ \rowcolor{green}
 POR\_LIQUIDAR &
-  Anfitrión escaneó el QR y creó contraseña. Comensales pueden ordenar. & Activa \\
-\rowcolor{lightblue}
+  Anfitrión escaneó el QR y creó contraseña. Comensales pueden ordenar. & Activa \\ \rowcolor{lightblue}
 LIQUIDADA &
-  Todos los comensales y la cuenta compartida están en estado LIQUIDADA. & Completada \\
-\rowcolor{altrow}
+  Todos los comensales y la cuenta compartida están en estado LIQUIDADA. & Completada \\ \rowcolor{altrow}
 LIBRE &
   Liberada manualmente por Mesero o Gerente. Las mesas físicas vuelven a estar libres. & Disponible \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -48,17 +45,15 @@ LIBRE &
                 >{\raggedright\arraybackslash}p{3cm}
                 >{\raggedright\arraybackslash}p{2.5cm}
                 >{\raggedright\arraybackslash}p{3.5cm}}
-\toprule
+\hline
 \thead{Estado Origen} & \thead{Evento / Condición} & \thead{Estado Destino} &
 \thead{Actor} & \thead{Regla de Negocio} \\
-\midrule
-(Inexistente) & Mesero/Gerente inicializa & PENDIENTE\_ACTIVACION & Mesero/Gerente & RB-M01 \\
-\rowcolor{altrow}
+\hline
+(Inexistente) & Mesero/Gerente inicializa & PENDIENTE\_ACTIVACION & Mesero/Gerente & RB-M01 \\ \rowcolor{altrow}
 PENDIENTE\_ACTIVACION & Anfitrión activa & POR\_LIQUIDAR & Anfitrión & Primera activación \\
-POR\_LIQUIDAR & Todos liquidados & LIQUIDADA & Sistema & RB-L01 \\
-\rowcolor{altrow}
+POR\_LIQUIDAR & Todos liquidados & LIQUIDADA & Sistema & RB-L01 \\ \rowcolor{altrow}
 LIQUIDADA & Liberación manual & LIBRE & Mesero/Gerente & RB-M03 \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -72,14 +67,11 @@ LIQUIDADA & Liberación manual & LIBRE & Mesero/Gerente & RB-M03 \\
 \begin{tabular}{>{\bfseries\raggedright\arraybackslash}p{3.5cm}
                 >{\raggedright\arraybackslash}p{9.5cm}
                 >{\centering\arraybackslash}p{3cm}}
-\toprule
+\hline
 \thead{Estado} & \thead{Descripción} & \thead{Semántica} \\
-\midrule
-\rowcolor{orange} PENDIENTE & Recibida por el sistema. & Esperando \\
-\rowcolor{lightblue} EN\_PREPARACION & Chef confirmó la orden. & En proceso \\
-\rowcolor{purple} EN\_REPARTO & Preparación finalizada. & Lista \\
-\rowcolor{green} ENTREGADA & Comensal confirma recepción. & Completada \\
-\bottomrule
+\hline
+\rowcolor{orange} PENDIENTE & Recibida por el sistema. & Esperando \\ \rowcolor{lightblue} EN\_PREPARACION & Chef confirmó la orden. & En proceso \\ \rowcolor{purple} EN\_REPARTO & Preparación finalizada. & Lista \\ \rowcolor{green} ENTREGADA & Comensal confirma recepción. & Completada \\
+\hline
 \end{tabular}
 \end{table}
 
@@ -93,11 +85,10 @@ LIQUIDADA & Liberación manual & LIBRE & Mesero/Gerente & RB-M03 \\
 \begin{tabular}{>{\bfseries\raggedright\arraybackslash}p{3.5cm}
                 >{\raggedright\arraybackslash}p{9.5cm}
                 >{\centering\arraybackslash}p{3cm}}
-\toprule
+\hline
 \thead{Estado} & \thead{Descripción} & \thead{Semántica} \\
-\midrule
-\rowcolor{orange} POR\_LIQUIDAR & Cuenta activa con saldo pendiente. & Con deuda \\
-\rowcolor{green} LIQUIDADA & Monto total cubierto completamente. & Saldada \\
-\bottomrule
+\hline
+\rowcolor{orange} POR\_LIQUIDAR & Cuenta activa con saldo pendiente. & Con deuda \\ \rowcolor{green} LIQUIDADA & Monto total cubierto completamente. & Saldada \\
+\hline
 \end{tabular}
 \end{table}

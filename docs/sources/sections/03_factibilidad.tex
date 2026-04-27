@@ -42,23 +42,18 @@ de adopción.
                 >{\raggedright\arraybackslash}p{1.5cm}
                 >{\raggedright\arraybackslash}p{6cm}
                 >{\raggedright\arraybackslash}p{2.5cm}}
-\toprule
-\thead{Tecnología} & \thead{Categoría} & \thead{Versión} &
-\thead{Adopción} & \thead{Licencia} \\
-\midrule
-Next.js 14 & Framework frontend + API & 14.x & 44\% de desarrolladores lo usan activamente \cite{state_of_js_2023} & MIT \\
-\rowcolor{altrow}
+\hline
+\thead{Tecnología} & \thead{Categoría} & \thead{Versión} & \thead{Adopción} & \thead{Licencia} \\
+\hline
+Next.js 14 & Framework frontend + API & 14.x & 44\% de desarrolladores lo usan activamente \cite{state_of_js_2023} & MIT \\ \rowcolor{altrow}
 React 18 & Biblioteca UI & 18.x & 84\% de los desarrolladores web la usan \cite{state_of_js_2023} & MIT \\
-TypeScript 5 & JS tipado & 5.x & 38.87\% de desarrolladores la usan \cite{stackoverflow_2023_results} & Apache 2.0 \\
-\rowcolor{altrow}
+TypeScript 5 & JS tipado & 5.x & 38.87\% de desarrolladores la usan \cite{stackoverflow_2023_results} & Apache 2.0 \\ \rowcolor{altrow}
 Supabase & BaaS: PostgreSQL + Auth + Realtime & GA 2023 & +65,000 estrellas en GitHub; 200,000+ proyectos activos \cite{supabase_pricing} & Apache 2.0 \\
-PostgreSQL 15 & SGBD relacional & 15.x & 45.55\% de popularidad \cite{stackoverflow_2023_results} & PostgreSQL License \\
-\rowcolor{altrow}
+PostgreSQL 15 & SGBD relacional & 15.x & 45.55\% de popularidad \cite{stackoverflow_2023_results} & PostgreSQL License \\ \rowcolor{altrow}
 Prisma ORM 5 & ORM para Node.js/TS & 5.x & ORM preferido en ecosistema Next.js/TS \cite{prisma_docs} & Apache 2.0 \\
-Vercel & Hosting serverless & PaaS & Plataforma l\'ider para despliegue Next.js \cite{vercel_pricing, nextjs} & Propietario \\
-\rowcolor{altrow}
+Vercel & Hosting serverless & PaaS & Plataforma l\'ider para despliegue Next.js \cite{vercel_pricing, nextjs} & Propietario \\ \rowcolor{altrow}
 Node.js 20 LTS & Runtime JS servidor & 20.x LTS & framework m\'as usado (42.65\%) \cite{stackoverflow_2023_results} & MIT \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -103,17 +98,15 @@ para cada tipo de usuario final.
                 >{\raggedright\arraybackslash}p{2.5cm}
                 >{\raggedright\arraybackslash}p{5.5cm}
                 >{\raggedright\arraybackslash}p{5cm}}
-\toprule
+\hline
 \thead{Tipo de usuario} & \thead{Dispositivo} & \thead{Requerimiento mínimo} & \thead{Observación} \\
-\midrule
-Comensal / Anfitrión & Smartphone personal & Chrome $\geq$90, Firefox $\geq$88 o Safari $\geq$14. Cámara para QR. & El 87.3\% de mexicanos de 18--44 años usa smartphone con internet \cite{inegi_endutih_2022}. \\
-\rowcolor{altrow}
+\hline
+Comensal / Anfitrión & Smartphone personal & Chrome $\geq$90, Firefox $\geq$88 o Safari $\geq$14. Cámara para QR. & El 87.3\% de mexicanos de 18--44 años usa smartphone con internet \cite{inegi_endutih_2022}. \\ \rowcolor{altrow}
 Mesero & Tablet del restaurante & Chrome $\geq$90, Firefox $\geq$88 o Safari $\geq$14. Pantalla $\geq$8 pulgadas recomendada. & Tablet de gama media ($\sim{\$4,500 MXN}$). \\
-Chef & Tablet del restaurante & Pantalla $\geq$8 pulgadas recomendada para tablero de órdenes. & Tablet o monitor con PC básica. \\
-\rowcolor{altrow}
+Chef & Tablet del restaurante & Pantalla $\geq$8 pulgadas recomendada para tablero de órdenes. & Tablet o monitor con PC básica. \\ \rowcolor{altrow}
 Gerente / Admin & PC, laptop o tablet & Navegador moderno. Pantalla $\geq$11 pulgadas recomendada para Dashboard. & Equipo existente en la mayoría de negocios. \\
 Servidor (VPS) & VPS en la nube & 2 vCPU, 4~GB RAM, 40~GB SSD. Ubuntu 22.04~LTS. & Hetzner CX22: \$6.37~USD/mes. \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -141,24 +134,22 @@ y las soluciones disponibles para cada una.
 \begin{tabular}{>{\raggedright\arraybackslash}p{4cm}
                 >{\raggedright\arraybackslash}p{4cm}
                 >{\raggedright\arraybackslash}p{7.5cm}}
-\toprule
+\hline
 \thead{Restricción técnica} & \thead{Impacto potencial} & \thead{Solución técnica disponible} \\
-\midrule
+\hline
 Límite de conexiones PostgreSQL en funciones serverless &
   Pool de conexiones agotado en horas pico &
-  Prisma Accelerate o PgBouncer (integrado en Supabase Pro). Solución probada y documentada \cite{prisma_docs, prisma_accelerate}. \\
-\rowcolor{altrow}
+  Prisma Accelerate o PgBouncer (integrado en Supabase Pro). Solución probada y documentada \cite{prisma_docs, prisma_accelerate}. \\ \rowcolor{altrow}
 Timeout de funciones Vercel (60~s en plan Pro) &
   Operaciones largas de pago podrían fallar &
   Diseño de endpoints con respuesta $<$5~s. Procesamiento asíncrono para operaciones largas. \\
 Latencia de Supabase Realtime bajo carga alta &
   Retrasos en actualización del tablero del Chef &
-  Supabase Realtime plan Pro soporta hasta 500 conexiones simultáneas. Escalable bajo demanda \cite{supabase_pricing}. \\
-\rowcolor{altrow}
+  Supabase Realtime plan Pro soporta hasta 500 conexiones simultáneas. Escalable bajo demanda \cite{supabase_pricing}. \\ \rowcolor{altrow}
 Acceso a internet requerido en todo momento &
   Sin conectividad, la app no funciona &
   Restricción asumida y documentada. El contexto de uso (restaurante) garantiza conectividad WiFi. \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -212,17 +203,15 @@ La Tabla~\ref{tab:capacitacion} detalla la curva de aprendizaje estimada por rol
                 >{\raggedright\arraybackslash}p{4.5cm}
                 >{\raggedright\arraybackslash}p{2.5cm}
                 >{\raggedright\arraybackslash}p{6.5cm}}
-\toprule
+\hline
 \thead{Rol} & \thead{Flujos principales} & \thead{Curva de aprendizaje} & \thead{Capacitación requerida} \\
-\midrule
-Mesero & Inicializar mesa, entregar QR, visualizar estatus, liberar mesa. & 2--4 horas & Sesión práctica de 1~hora + manual de 1~página. \\
-\rowcolor{altrow}
+\hline
+Mesero & Inicializar mesa, entregar QR, visualizar estatus, liberar mesa. & 2--4 horas & Sesión práctica de 1~hora + manual de 1~página. \\ \rowcolor{altrow}
 Chef & Visualizar tablero de órdenes, actualizar estatus de orden. & 1--2 horas & Sesión práctica de 30~minutos. Interfaz de una sola pantalla. \\
-Gerente de Sucursal & Todo lo anterior + gestión de menú, usuarios y dashboard. & 4--8 horas & Capacitación de 2~horas + documentación de usuario. \\
-\rowcolor{altrow}
+Gerente de Sucursal & Todo lo anterior + gestión de menú, usuarios y dashboard. & 4--8 horas & Capacitación de 2~horas + documentación de usuario. \\ \rowcolor{altrow}
 Gerente de Zona / Admin & Gestión multi-sucursal, zonas, analytics. & 6--10 horas & Capacitación de 3~horas + acceso a modo sandbox. \\
 Comensal / Anfitrión & Escanear QR, crear contraseña, ordenar, pagar. & 0~horas & Interfaz autoexplicativa con flujo guiado y apoyo del mesero. \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -240,24 +229,22 @@ implantación del sistema y los mecanismos de mitigación propuestos.
 \begin{tabular}{>{\raggedright\arraybackslash}p{3.5cm}
                 >{\raggedright\arraybackslash}p{5.5cm}
                 >{\raggedright\arraybackslash}p{7cm}}
-\toprule
+\hline
 \thead{Factor de cambio} & \thead{Impacto para el personal} & \thead{Mitigación propuesta} \\
-\midrule
+\hline
 El comensal genera su propia orden &
   El mesero deja de tomar órdenes en papel. Puede percibirse como reducción de su rol. &
-  Comunicar que el mesero se libera para atención de mayor valor. No implica reducción de plantilla. \\
-\rowcolor{altrow}
+  Comunicar que el mesero se libera para atención de mayor valor. No implica reducción de plantilla. \\ \rowcolor{altrow}
 Nuevo flujo de activación de mesa &
   Paso adicional al proceso actual (inicializar mesa virtual antes de sentar comensales). &
   El flujo toma menos de 60~segundos. Onboarding interactivo integrado en la app. \\
 Chef visualiza tablero digital &
   Cambio de medio: papel $\rightarrow$ pantalla. Puede generar resistencia en personal de mayor edad. &
-  Interfaz con fuente grande. Notificación sonora de nuevas órdenes. Período de transición paralela recomendado. \\
-\rowcolor{altrow}
+  Interfaz con fuente grande. Notificación sonora de nuevas órdenes. Período de transición paralela recomendado. \\ \rowcolor{altrow}
 Comensales pagan con tarjeta desde su teléfono &
   Comensales que prefieren efectivo pueden percibir fricción. &
   El sistema no bloquea el pago en caja como alternativa. El mesero puede registrar cierres manuales. \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -314,39 +301,33 @@ horas por actividad y f\'ormulas editables, se encuentra en la hoja
                 >{\centering\arraybackslash}p{2.5cm}
                 >{\centering\arraybackslash}p{2cm}}
 \caption{Estimación de Costos de Desarrollo por Módulo (Bottom-Up)} \label{tab:costos_dev} \\
-\toprule
+\hline
 \thead{Módulo / Fase} & \thead{Actividades principales} &
 \thead{Horas est.} & \thead{Costo RRHH\,(MXN)} & \thead{Fase} \\
-\midrule
+\hline
 \endfirsthead
 \caption[]{TABLA \thetable{} (Continuación)} \\
-\toprule
+\hline
 \thead{Módulo / Fase} & \thead{Actividades principales} &
 \thead{Horas est.} & \thead{Costo RRHH\,(MXN)} & \thead{Fase} \\
-\midrule
+\hline
 \endhead
-\bottomrule
+\hline
 \endfoot
-OE-01 Infraestructura & Vercel CI/CD, schema Prisma, Supabase base & 160 & \$80,000 & 2 \\
-\rowcolor{altrow}
+OE-01 Infraestructura & Vercel CI/CD, schema Prisma, Supabase base & 160 & \$80,000 & 2 \\ \rowcolor{altrow}
 OE-02 Estructura Org. & CRUD Cadena/Zona/Sucursal + RLS & 60 & \$30,000 & 2 \\
-OE-03 Auth \& Roles & Supabase Auth + RLS policies + JWT RS256 & 100 & \$50,000 & 2 \\
-\rowcolor{altrow}
+OE-03 Auth \& Roles & Supabase Auth + RLS policies + JWT RS256 & 100 & \$50,000 & 2 \\ \rowcolor{altrow}
 OE-04 Gestión Usuarios & Alta usuarios + contrase\~na temporal & 50 & \$25,000 & 2 \\
-OE-05 Cat\'alogo & CRUD categor\'ias + productos + variantes & 90 & \$45,000 & 2 \\
-\rowcolor{altrow}
-OE-06/07 Mesas & Mesas f\'isicas + mesa virtual + QR JWT & 150 & \$75,000 & 2 \\
-OE-08/09 \'Ordenes + Chef & Canasta, \'ordenes, tablero KDS Realtime & 170 & \$85,000 & 2 \\
-\rowcolor{altrow}
+OE-05 Cat\'alogo & CRUD categor\'ias + productos + variantes & 90 & \$45,000 & 2 \\ \rowcolor{altrow}
+OE-06/07 Mesas & Mesas f\'isicas + mesa virtual + QR HMAC & 150 & \$75,000 & 2 \\
+OE-08/09 \'Ordenes + Chef & Canasta, \'ordenes, tablero KDS Realtime & 170 & \$85,000 & 2 \\ \rowcolor{altrow}
 OE-10/11 Liquidaci\'on & Concurrencia \texttt{SELECT FOR UPDATE} + comprobante & 140 & \$70,000 & 2 \\
-OE-12 Dashboard & Pipeline Spark (Medallion) + Dashboard multi-nivel & 120 & \$60,000 & 2 \\
-\rowcolor{altrow}
+OE-12 Dashboard & Pipeline Spark (Medallion) + Dashboard multi-nivel & 120 & \$60,000 & 2 \\ \rowcolor{altrow}
 OE-13 Seguridad & Rate limiting + RLS audit + pruebas carga & 80 & \$40,000 & 2 \\
-Pruebas QA & Unitarias + integraci\'on + carga (k6) & 80 & \$40,000 & 2 \\
-\rowcolor{altrow}
+Pruebas QA & Unitarias + integraci\'on + carga (k6) & 80 & \$40,000 & 2 \\ \rowcolor{altrow}
 Fase 1 --- An\'alisis y Dise\~no (Natalia) & Marco te\'orico, flujos, UML, BD, wireframes, TT & 660 & \$330,000 & 1 \\
 Gesti\'on de Proyecto (ambos) & Ceremonias Scrum, documentaci\'on, retrospectivas & 80 & \$40,000 & 1/2 \\
-\midrule
+\hline
 \rowcolor{green}
 \textbf{TOTAL RRHH} & & \textbf{1,940} & \textbf{\$970,000} & --- \\
 \end{longtable}
@@ -370,20 +351,18 @@ mensuales y anuales para el primer a\~no del proyecto (11 meses operativos).
                 >{\centering\arraybackslash}p{1.5cm}
                 >{\centering\arraybackslash}p{2.5cm}
                 >{\raggedright\arraybackslash}p{5cm}}
-\toprule
+\hline
 \thead{Servicio} & \thead{Plan} & \thead{USD/mes} &
 \thead{MXN/mes} & \thead{MXN\,(11 meses)} & \thead{Referencia} \\
-\midrule
-Vercel & Pro (1 seat) & \$20 & \$350 & \$3,850 & vercel.com/pricing (2026) \cite{vercel_pricing} \\
-\rowcolor{altrow}
+\hline
+Vercel & Pro (1 seat) & \$20 & \$350 & \$3,850 & vercel.com/pricing (2026) \cite{vercel_pricing} \\ \rowcolor{altrow}
 Supabase & Pro & \$25 & \$437.50 & \$4,812.50 & supabase.com/pricing (2026) \cite{supabase_pricing} \\
-VPS Hetzner CX22 & 2~vCPU / 4~GB RAM & \$6.37 & \$111.50 & \$1,226.50 & hetzner.com/cloud (2026) \\
-\rowcolor{altrow}
+VPS Hetzner CX22 & 2~vCPU / 4~GB RAM & \$6.37 & \$111.50 & \$1,226.50 & hetzner.com/cloud (2026) \\ \rowcolor{altrow}
 Dominio .com.mx & Anual & \$0.83 & \$14.53 & \$159.83 & NIC M\'exico / GoDaddy (2026) \\
-\midrule
+\hline
 \rowcolor{green}
 \textbf{Total infraestructura} & & \textbf{\$52.20} & \textbf{\$913.53} & \textbf{\$10,048.83} & \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -402,30 +381,25 @@ a\~no, incluyendo la reserva de contingencia del 15\% conforme al PMI PMBOK \cit
                 >{\centering\arraybackslash}p{2cm}
                 >{\centering\arraybackslash}p{3.5cm}
                 >{\centering\arraybackslash}p{3.5cm}}
-\toprule
+\hline
 \thead{Concepto} & \thead{Tipo} & \thead{Costo MXN} & \thead{Costo USD} \\
-\midrule
-Recursos Humanos --- Desarrollo (Diego) & Directo/Fijo & \$620,000 & \$35,429 \\
-\rowcolor{altrow}
+\hline
+Recursos Humanos --- Desarrollo (Diego) & Directo/Fijo & \$620,000 & \$35,429 \\ \rowcolor{altrow}
 Recursos Humanos --- An\'alisis y Dise\~no (Natalia) & Directo/Fijo & \$330,000 & \$18,857 \\
-Gesti\'on de Proyecto (ambos) & Directo/Fijo & \$40,000 & \$2,286 \\
-\rowcolor{altrow}
+Gesti\'on de Proyecto (ambos) & Directo/Fijo & \$40,000 & \$2,286 \\ \rowcolor{altrow}
 Infraestructura cloud (11 meses) & Directo/Fijo & \$10,049 & \$574 \\
-Capacitaci\'on del personal (onboarding) & Directo/Fijo & \$12,000 & \$686 \\
-\rowcolor{altrow}
+Capacitaci\'on del personal (onboarding) & Directo/Fijo & \$12,000 & \$686 \\ \rowcolor{altrow}
 Consultor\'ia legal (LFPDPPP + T\'erminos) & Indirecto/Fijo & \$25,000 & \$1,429 \\
-Herramientas de dise\~no (Figma Pro 6 meses) & Directo/Variable & \$3,150 & \$180 \\
-\rowcolor{altrow}
+Herramientas de dise\~no (Figma Pro 6 meses) & Directo/Variable & \$3,150 & \$180 \\ \rowcolor{altrow}
 Herramientas de documentaci\'on y PM & Indirecto/Variable & \$1,750 & \$100 \\
-\midrule
+\hline
 \rowcolor{orange}
-\textbf{Subtotal Base} & & \textbf{\$1,041,949} & \textbf{\$59,540} \\
-\rowcolor{orange}
+\textbf{Subtotal Base} & & \textbf{\$1,041,949} & \textbf{\$59,540} \\ \rowcolor{orange}
 Reserva de Contingencia (15\% --- PMI PMBOK) & Buffer & \$156,292 & \$8,931 \\
-\midrule
+\hline
 \rowcolor{green}
 \textbf{PRESUPUESTO TOTAL A\~NO 1} & & \textbf{\$1,198,241 MXN} & \textbf{\$68,471 USD} \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -446,29 +420,24 @@ Tabla~\ref{tab:build_buy} presenta la comparaci\'on para una cadena de 3~sucursa
                 >{\centering\arraybackslash}p{3.5cm}
                 >{\centering\arraybackslash}p{2cm}
                 >{\raggedright\arraybackslash}p{4.5cm}}
-\toprule
+\hline
 \thead{Solución} & \thead{Costo/suc./mes\,(MXN)} & \thead{Costo anual\,3 suc.\,(MXN)} &
 \thead{Propie-dad código} & \thead{Observación} \\
-\midrule
+\hline
 \textbf{El presente sistema} & \textbf{\$304} & \textbf{\$10,049} & \textbf{Sí} &
-  Solo infraestructura; desarrollo es one-time. \\
-\rowcolor{altrow}
+  Solo infraestructura; desarrollo es one-time. \\ \rowcolor{altrow}
 Toast POS + Mobile Order~\&~Pay & \$2,500 & \$90,000 & No &
   Sin mesa virtual con contrase\~na. \\
 Square for Restaurants + KDS & \$2,200 & \$79,200 & No &
-  Split bill desde cajero, no desde comensal. \\
-\rowcolor{altrow}
+  Split bill desde cajero, no desde comensal. \\ \rowcolor{altrow}
 Lightspeed Restaurant & \$3,500 & \$126,000 & No &
   Sin jerarqu\'ia cadena/zona/sucursal. \\
 Yumminn & \$2,000 & \$72,000 & No &
-  Sin KDS propio ni cuentas individuales. \\
-\rowcolor{altrow}
+  Sin KDS propio ni cuentas individuales. \\ \rowcolor{altrow}
 Oracle MICROS POS & \$15,000 & \$540,000 & No &
-  Enterprise. Hardware adicional requerido. \\
-\midrule
-\rowcolor{green}
+  Enterprise. Hardware adicional requerido. \\ \rowcolor{green}
 \textbf{Ahorro anual vs.\ promedio SaaS\,(excl.\ Oracle)} & & \textbf{\$81,360 MXN/a\~no} & & \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -521,22 +490,21 @@ cumplimiento en la versión 1.0 de la plataforma.
                 >{\raggedright\arraybackslash}p{6.5cm}
                 >{\raggedright\arraybackslash}p{4cm}}
 \caption{Obligaciones LFPDPPP Aplicables a la Plataforma} \label{tab:lfpdppp} \\
-\toprule
+\hline
 \thead{Obligación legal} & \thead{Artículo} & \thead{Acción requerida} & \thead{Estado en v1.0} \\
-\midrule
+\hline
 \endfirsthead
 \caption[]{TABLA \thetable{} (Continuación)} \\
-\toprule
+\hline
 \thead{Obligación legal} & \thead{Artículo} & \thead{Acción requerida} & \thead{Estado en v1.0} \\
-\midrule
+\hline
 \endhead
-\bottomrule
+\hline
 \endfoot
 Aviso de Privacidad &
   Art.\ 15--16 &
   Redactar y publicar el Aviso de Privacidad antes del primer tratamiento de datos. Incluir identidad del responsable, finalidades, derechos ARCO y transferencias a Supabase/Vercel. &
-  \textbf{Requerido} antes del lanzamiento. \\
-\rowcolor{altrow}
+  \textbf{Requerido} antes del lanzamiento. \\ \rowcolor{altrow}
 Consentimiento del titular &
   Art.\ 8 &
   Obtener consentimiento expreso al crear cuenta o acceder por primera vez. &
@@ -544,8 +512,7 @@ Consentimiento del titular &
 Principio de licitud &
   Art.\ 7 &
   Los datos solo pueden tratarse para las finalidades declaradas en el Aviso de Privacidad. &
-  Cumplido por diseño: datos usados solo para operar el servicio. \\
-\rowcolor{altrow}
+  Cumplido por diseño: datos usados solo para operar el servicio. \\ \rowcolor{altrow}
 Principio de minimización &
   Art.\ 7 &
   Solo recolectar los datos estrictamente necesarios. &
@@ -553,8 +520,7 @@ Principio de minimización &
 Derechos ARCO &
   Art.\ 28--37 &
   Implementar mecanismo para acceso, rectificación, cancelación y oposición. Plazo: 20 días hábiles. &
-  Módulo de eliminación de cuenta requerido. \\
-\rowcolor{altrow}
+  Módulo de eliminación de cuenta requerido. \\ \rowcolor{altrow}
 Medidas de seguridad &
   Art.\ 19 &
   TLS, cifrado en tránsito y en reposo, RLS en PostgreSQL, acceso mínimo por rol. &
@@ -562,8 +528,7 @@ Medidas de seguridad &
 Transferencias internacionales &
   Art.\ 36 &
   Datos alojados en Supabase (AWS us-east) están fuera de México. Debe declararse en el Aviso. &
-  Requiere cláusula específica en el Aviso de Privacidad. \\
-\rowcolor{altrow}
+  Requiere cláusula específica en el Aviso de Privacidad. \\ \rowcolor{altrow}
 Responsable de datos &
   Art.\ 3 fracc.\ XIV &
   Designar un responsable de datos (Data Controller) dentro de la organización. &
@@ -601,16 +566,14 @@ M\'exico para cuando se eval\'ue esta integraci\'on en versiones futuras.
                 >{\raggedright\arraybackslash}p{3.5cm}
                 >{\raggedright\arraybackslash}p{4.5cm}
                 >{\raggedright\arraybackslash}p{5cm}}
-\toprule
+\hline
 \thead{Proveedor} & \thead{Certificación} & \thead{Comisión (México)} & \thead{Integración} \\
-\midrule
-Stripe & Level 1 PCI DSS & 2.9\% + \$3~MXN (nacional) / 3.6\% + \$3~MXN (int.) & SDK oficial para Next.js (Stripe.js) \cite{pci_dss_4}. \\
-\rowcolor{altrow}
+\hline
+Stripe & Level 1 PCI DSS & 2.9\% + \$3~MXN (nacional) / 3.6\% + \$3~MXN (int.) & SDK oficial para Next.js (Stripe.js) \cite{pci_dss_4}. \\ \rowcolor{altrow}
 Conekta & Level 1 PCI DSS & 2.8\% + \$3.5~MXN + IVA & SDK para Node.js \cite{stripe_pricing}. \\
-OpenPay (BBVA) & Level 1 PCI DSS & 2.8\% + \$3~MXN + IVA & REST API + SDK JS. \\
-\rowcolor{altrow}
+OpenPay (BBVA) & Level 1 PCI DSS & 2.8\% + \$3~MXN + IVA & REST API + SDK JS. \\ \rowcolor{altrow}
 Clip & Level 1 PCI DSS & 3.6\% (tarjeta no presente) + IVA & REST API. \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -643,27 +606,25 @@ en la plataforma.
 \begin{tabular}{>{\raggedright\arraybackslash}p{4cm}
                 >{\centering\arraybackslash}p{2cm}
                 >{\raggedright\arraybackslash}p{10cm}}
-\toprule
+\hline
 \thead{Obligación LFPC} & \thead{Artículo} & \thead{Implementación en la plataforma} \\
-\midrule
+\hline
 Información clara sobre precios antes de confirmar la compra &
   Art.\ 7 &
-  La pantalla de pagos muestra el desglose completo del monto antes de solicitar datos de pago. \\
-\rowcolor{altrow}
+  La pantalla de pagos muestra el desglose completo del monto antes de solicitar datos de pago. \\ \rowcolor{altrow}
 Confirmación explícita del pedido &
   Art.\ 76 BIS fracc.\ II &
   Diálogo de confirmación antes de enviar cada orden. Confirmación final antes de procesar el pago. \\
 Derecho a cancelar antes de confirmar &
   Art.\ 76 BIS fracc.\ III &
-  El comensal puede vaciar su canasta o cancelar el flujo de pago antes de confirmar la transacción. \\
-\rowcolor{altrow}
+  El comensal puede vaciar su canasta o cancelar el flujo de pago antes de confirmar la transacción. \\ \rowcolor{altrow}
 Términos y condiciones accesibles &
   Art.\ 76 BIS fracc.\ I &
   Términos de Uso publicados y aceptados al acceder por primera vez a la plataforma. \\
 Mecanismo de quejas &
   Art.\ 24 &
   Publicar correo o formulario de atención al cliente. PROFECO puede recibir quejas sobre el servicio. \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -684,24 +645,20 @@ restricciones incompatibles con el modelo de negocio SaaS de la plataforma \cite
                 >{\centering\arraybackslash}p{2.5cm}
                 >{\centering\arraybackslash}p{2.5cm}
                 >{\raggedright\arraybackslash}p{5cm}}
-\toprule
+\hline
 \thead{Componente} & \thead{Licencia} & \thead{¿Uso comercial?} &
 \thead{¿Publicar código?} & \thead{Restricciones relevantes} \\
-\midrule
-Next.js & MIT License & Sí & No & Mantener aviso de copyright. \\
-\rowcolor{altrow}
+\hline
+Next.js & MIT License & Sí & No & Mantener aviso de copyright. \\ \rowcolor{altrow}
 React & MIT License & Sí & No & Mantener aviso de copyright. \\
-TypeScript & Apache 2.0 & Sí & No & Incluir copia de la licencia en distribuciones. \\
-\rowcolor{altrow}
+TypeScript & Apache 2.0 & Sí & No & Incluir copia de la licencia en distribuciones. \\ \rowcolor{altrow}
 Prisma ORM & Apache 2.0 & Sí & No & Incluir copia de la licencia en distribuciones. \\
-Supabase (cliente JS) & MIT License & Sí & No & Mantener aviso de copyright. \\
-\rowcolor{altrow}
+Supabase (cliente JS) & MIT License & Sí & No & Mantener aviso de copyright. \\ \rowcolor{altrow}
 PostgreSQL & PostgreSQL License & Sí & No & Sin restricciones comerciales. \\
-Node.js & MIT License & Sí & No & Mantener aviso de copyright. \\
-\rowcolor{altrow}
+Node.js & MIT License & Sí & No & Mantener aviso de copyright. \\ \rowcolor{altrow}
 Vercel (plataforma) & Propietario (SaaS) & Sí (Plan Pro) & N/A & Sujeto a Términos de Servicio de Vercel. \\
 Supabase (plataforma) & Propietario + AGPLv3 & Sí (Plan Pro cloud) & Solo en self-hosting & En modo BaaS cloud, el código cliente no está sujeto a AGPL \cite{osi_licenses}. \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -753,13 +710,13 @@ Tabla~\ref{tab:matriz_compuesta}.
                 >{\centering\arraybackslash}p{2.5cm}
                 >{\centering\arraybackslash}p{2.5cm}
                 >{\centering\arraybackslash}p{2.5cm}}
-\toprule
+\hline
 \thead{Prob. \textbackslash\ Impacto} & \thead{Bajo} & \thead{Medio} & \thead{Alto} \\
-\midrule
+\hline
 Alta  & \cellcolor{orange}ALTO    & \cellcolor{orange}ALTO     & \cellcolor{red}CR\'ITICO \\
 Media & \cellcolor{altrow}MEDIO   & \cellcolor{orange}ALTO     & \cellcolor{orange}ALTO \\
 Baja  & \cellcolor{green}BAJO     & \cellcolor{altrow}MEDIO    & \cellcolor{orange}ALTO \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -784,18 +741,15 @@ lanzamiento de la plataforma.
                 >{\centering\arraybackslash}p{1.5cm}
                 >{\raggedright\arraybackslash}p{5cm}
                 >{\centering\arraybackslash}p{2.5cm}}
-\toprule
+\hline
 \thead{Nivel} & \thead{\# Riesgos} & \thead{Criterio de acción} & \thead{Prioridad} \\
-\midrule
+\hline
 \rowcolor{red}
-CR\'ITICO & 5 & Acci\'on inmediata antes del lanzamiento. & Inmediata \\
-\rowcolor{orange}
-ALTO     & 17 & Atender en el sprint actual o pr\'oximo. & Alta \\
-\rowcolor{altrow}
-MEDIO    & 5  & Planificar mitigaci\'on en los primeros 2 meses post-lanzamiento. & Media \\
-\rowcolor{green}
+CR\'ITICO & 5 & Acci\'on inmediata antes del lanzamiento. & Inmediata \\ \rowcolor{orange}
+ALTO     & 17 & Atender en el sprint actual o pr\'oximo. & Alta \\ \rowcolor{altrow}
+MEDIO    & 5  & Planificar mitigaci\'on en los primeros 2 meses post-lanzamiento. & Media \\ \rowcolor{green}
 BAJO     & 1  & Monitorear; atender si la frecuencia aumenta. & Baja \\
-\bottomrule
+\hline
 \end{tabular}
 \end{table}
 
@@ -828,18 +782,18 @@ ordenados por nivel de criticidad.
                 >{\raggedright\arraybackslash}p{6cm}
                 >{\centering\arraybackslash}p{1.2cm}}
 \caption{Matriz de Riesgos Técnicos} \label{tab:riesgos_tecnicos} \\
-\toprule
+\hline
 \thead{ID} & \thead{Descripción del riesgo} & \thead{Prob.} &
 \thead{Impacto} & \thead{Nivel} & \thead{Estrategia de mitigación} & \thead{Trat.} \\
-\midrule
+\hline
 \endfirsthead
 \caption[]{TABLA \thetable{} (Continuación)} \\
-\toprule
+\hline
 \thead{ID} & \thead{Descripción del riesgo} & \thead{Prob.} &
 \thead{Impacto} & \thead{Nivel} & \thead{Estrategia de mitigación} & \thead{Trat.} \\
-\midrule
+\hline
 \endhead
-\bottomrule
+\hline
 \endfoot
 \rowcolor{red}
 RT-01 &
@@ -848,79 +802,69 @@ RT-01 &
   Alta & Alto & CR\'ITICO &
   Bloqueo optimista (versioning) o pesimista (mutex por ID de comensal).
   Validar saldo pendiente al aplicar el pago, no al iniciar el flujo. &
-  Mitigar \\
-\rowcolor{red}
+  Mitigar \\ \rowcolor{red}
 RT-02 &
   Sobrepago en mesa compartida: aportes simult\'aneos superan el monto total pendiente. &
   Alta & Alto & CR\'ITICO &
   Transacciones at\'omicas con bloqueo a nivel de fila (\texttt{SELECT FOR UPDATE}).
   Retornar error al segundo pago si el monto ya fue cubierto.
   Implementar \texttt{idempotency\_keys} por operaci\'on. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RT-03 &
   Brecha de seguridad: credenciales de mesa virtual interceptadas en tr\'ansito
   (ID + contrase\~na). &
   Media & Alto & ALTO &
   Forzar HTTPS/TLS~1.2+ en todas las comunicaciones. Almacenar contrase\~na
   hasheada (bcrypt). Limitar la vida \'util de la contrase\~na al ciclo de la mesa. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RT-04 &
   Fuerza bruta sobre contrase\~na de mesa virtual: intentos masivos de acceso. &
   Media & Medio & ALTO &
   Rate limiting por IP y por ID de mesa (m\'ax.\ 5 intentos antes de bloqueo
   temporal). Registrar intentos fallidos para audit\'oria \cite{mdn_websocket}. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RT-05 &
   Inconsistencia de datos de orden: el Chef visualiza una orden cancelada sin
   actualizaci\'on en tiempo real. &
   Media & Alto & ALTO &
   WebSockets v\'ia Supabase~Realtime para el tablero del Chef \cite{supabase_license}.
   Estados de orden con transiciones at\'omicas e irreversibles. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RT-06 &
   Degradaci\'on del flujo de liquidaci\'on manual: el comensal no puede completar
   su registro de pago por fallo de conectividad. &
   Baja & Alto & ALTO &
   Implementar reintentos autom\'aticos con backoff exponencial.
   Mostrar mensaje de error con instrucci\'on de pago alternativo en caja. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RT-07 &
   Gesti\'on de sesiones deficiente: sesi\'on del anfitri\'on expira bloqueando la
   mesa. &
   Media & Medio & ALTO &
   Refresh tokens con vida prolongada (m\'inimo igual al turno del restaurante).
   Permitir reingreso por ID + contrase\~na sin re-escaneo de QR. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RT-08 &
   P\'erdida o corrupci\'on de datos transaccionales por ca\'ida de base de datos
   durante liquidaci\'on activa. &
   Baja & Alto & ALTO &
   WAL (Write-Ahead Logging) y r\'eplicas en PostgreSQL/Supabase. Transacciones
   ACID. Respaldos autom\'aticos. RTO $<$ 4~hrs \cite{mdn_pwa}. &
-  Mitigar \\
-\rowcolor{altrow}
+  Mitigar \\ \rowcolor{altrow}
 RT-09 &
   C\'odigo QR clonado o reutilizado: un QR de sesi\'on previa permite acceso
   no autorizado. &
   Baja & Medio & MEDIO &
-  QR de un solo uso con JWT firmado que expire al ser escaneado o en 30~minutos.
+  QR con firma HMAC-SHA256 v\'alida que impida la manipulaci\'on de enlaces.
   Invalidar el token en el backend al activarse. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RT-10 &
   Escalabilidad insuficiente en horas pico: degradaci\'on con m\'ultiples mesas
   activas. &
   Media & Medio & ALTO &
   Pruebas de carga antes del despliegue (k6, JMeter). Cach\'e en lecturas del
   men\'u. Arquitectura serverless con escalado horizontal (Vercel + Supabase) \cite{vercel_pricing, supabase_pricing}. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RT-11 &
   Inyecci\'on de datos maliciosos: cantidades negativas o caracteres especiales en
   campos de orden. &
@@ -947,18 +891,18 @@ procesos, comportamiento humano y procedimientos de operaci\'on diaria.
                 >{\raggedright\arraybackslash}p{6cm}
                 >{\centering\arraybackslash}p{1.2cm}}
 \caption{Matriz de Riesgos Operativos} \label{tab:riesgos_operativos} \\
-\toprule
+\hline
 \thead{ID} & \thead{Descripción del riesgo} & \thead{Prob.} &
 \thead{Impacto} & \thead{Nivel} & \thead{Estrategia de mitigación} & \thead{Trat.} \\
-\midrule
+\hline
 \endfirsthead
 \caption[]{TABLA \thetable{} (Continuación)} \\
-\toprule
+\hline
 \thead{ID} & \thead{Descripción del riesgo} & \thead{Prob.} &
 \thead{Impacto} & \thead{Nivel} & \thead{Estrategia de mitigación} & \thead{Trat.} \\
-\midrule
+\hline
 \endhead
-\bottomrule
+\hline
 \endfoot
 \rowcolor{red}
 RO-01 &
@@ -968,8 +912,7 @@ RO-01 &
   Protocolo operativo: el mesero puede visualizar el identificador y generar una
   contrase\~na de emergencia desde su rol. Flujo de recuperaci\'on incluido en el
   roadmap (v1.1). &
-  Aceptar \\
-\rowcolor{orange}
+  Aceptar \\ \rowcolor{orange}
 RO-02 &
   Mesero inicializa una mesa virtual con mesas f\'isicas incorrectas (asociaci\'on
   err\'onea). &
@@ -977,16 +920,14 @@ RO-02 &
   Confirmaci\'on visual con n\'umero de mesa antes de confirmar la inicializaci\'on.
   Permitir correcci\'on antes de que el anfitri\'on escanee el QR.
   Registrar log de inicializaci\'on. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RO-03 &
   Personal sin capacitaci\'on adecuada: errores operativos desde el primer d\'ia. &
   Alta & Medio & ALTO &
   Manual de usuario por rol. Onboarding interactivo en la app (tooltips, tutorial
   guiado). Modo sandbox para pr\'actica. Superusuario de sucursal para soporte
   de primer nivel. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RO-04 &
   Men\'u desactualizado: comensales ordenan productos descontinuados o con precios
   incorrectos. &
@@ -994,8 +935,7 @@ RO-04 &
   Sincronizaci\'on peri\'odica entre el men\'u f\'isico y la plataforma. Acceso del
   gerente para actualizar en tiempo real. Alertas si un producto no ha sido
   actualizado en m\'as de 30~d\'ias. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RO-05 &
   Chef no recibe notificaci\'on de nuevas \'ordenes en tiempo real, generando
   retrasos en cocina. &
@@ -1003,32 +943,28 @@ RO-05 &
   Notificaciones push o sonoras ante nuevas \'ordenes (Web Audio API).
   SLA de respuesta: confirmaci\'on de orden en $<$60~s. Alerta al gerente si una
   orden no es confirmada a tiempo \cite{supabase_license}. &
-  Mitigar \\
-\rowcolor{altrow}
+  Mitigar \\ \rowcolor{altrow}
 RO-06 &
   Mesa compartida abandonada: comensales se van sin liquidar su parte. &
   Baja & Medio & MEDIO &
   Mesero y gerente visualizan el estatus de liquidaci\'on en tiempo real.
   Protocolo de cobro en caja como respaldo. Decisi\'on de negocio sobre bloqueo
   de mesa hasta liquidaci\'on total. &
-  Aceptar \\
-\rowcolor{altrow}
+  Aceptar \\ \rowcolor{altrow}
 RO-07 &
   Dos personas intentan activar la misma mesa virtual como anfitri\'on
   simult\'aneamente. &
   Media & Bajo & MEDIO &
   Activaci\'on de mesa permitida una sola vez (PENDIENTE~$\rightarrow$~ACTIVA).
   El segundo intento retorna error indicando que la mesa ya fue activada. &
-  Mitigar \\
-\rowcolor{altrow}
+  Mitigar \\ \rowcolor{altrow}
 RO-08 &
   Credenciales de mesa compartidas con personas externas al grupo. &
   Baja & Medio & MEDIO &
   Advertencia expl\'icita al anfitri\'on sobre no compartir la contrase\~na.
   L\'imite m\'aximo configurable de comensales por mesa.
   Mesero puede auditar el n\'umero de comensales activos. &
-  Aceptar \\
-\rowcolor{green}
+  Aceptar \\ \rowcolor{green}
 RO-09 &
   El mesero olvida cambiar el estatus de la mesa de Liquidada a Libre. &
   Baja & Bajo & BAJO &
@@ -1056,18 +992,18 @@ presenta los 8~riesgos legales identificados.
                 >{\raggedright\arraybackslash}p{6cm}
                 >{\centering\arraybackslash}p{1.2cm}}
 \caption{Matriz de Riesgos Legales y Regulatorios} \label{tab:riesgos_legales} \\
-\toprule
+\hline
 \thead{ID} & \thead{Descripción del riesgo} & \thead{Prob.} &
 \thead{Impacto} & \thead{Nivel} & \thead{Estrategia de mitigación} & \thead{Trat.} \\
-\midrule
+\hline
 \endfirsthead
 \caption[]{TABLA \thetable{} (Continuación)} \\
-\toprule
+\hline
 \thead{ID} & \thead{Descripción del riesgo} & \thead{Prob.} &
 \thead{Impacto} & \thead{Nivel} & \thead{Estrategia de mitigación} & \thead{Trat.} \\
-\midrule
+\hline
 \endhead
-\bottomrule
+\hline
 \endfoot
 \rowcolor{red}
 RL-01 &
@@ -1077,8 +1013,7 @@ RL-01 &
   Redactar y publicar Aviso de Privacidad (Art.~16 LFPDPPP). Consentimiento expreso
   al registrarse. Nombrar un Data Controller. Definir plazos de retenci\'on y
   procedimiento de eliminaci\'on (Art.~19) \cite{covermanager_pricing}. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RL-02 &
   PCI~DSS: procesamiento de pagos con tarjeta sin certificaci\'on adecuada, con
   exposici\'on a sanciones de redes de pago y responsabilidad civil ante fraudes \cite{conasami_2024}. &
@@ -1086,8 +1021,7 @@ RL-02 &
   \textbf{Decisión de alcance v1.0:} la plataforma \textbf{no integra} agregador de
   pago v\'ia tarjeta. Este riesgo queda \textbf{eliminado} en la versi\'on actual.
   La integraci\'on futura requerir\'a proveedor Level~1 PCI~DSS o auto-certificaci\'on. &
-  Evitar \\
-\rowcolor{orange}
+  Evitar \\ \rowcolor{orange}
 RL-03 &
   Obligaci\'on fiscal SAT: transacciones de pago podr\'ian requerir emisi\'on de CFDI
   conforme al CFF Art.~29 \cite{conekta_pricing}. &
@@ -1095,8 +1029,7 @@ RL-03 &
   Consultor\'ia fiscal para determinar responsabilidad de emisi\'on de CFDI
   (cadena restaurantera vs.\ plataforma). Evaluar integraci\'on con PAC
   autorizado por el SAT \cite{cff_art29} en versiones futuras. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RL-04 &
   Responsabilidad por cobros no autorizados o err\'oneos: disputa del comensal
   ante PROFECO o banco (chargeback). &
@@ -1104,8 +1037,7 @@ RL-04 &
   Comprobante de pago digital inmediato. Registro detallado e inmutable de
   transacciones (qu\'e, a qui\'en, monto, timestamp). Pol\'itica de devoluciones
   publicada en Términos de Servicio \cite{sat_pac}. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RL-05 &
   Ausencia de T\'erminos y Condiciones de Uso: plataforma opera sin contratos
   que delimiten responsabilidades entre partes. &
@@ -1113,16 +1045,14 @@ RL-05 &
   Redactar T\'erminos y Condiciones aceptados al acceder por primera vez.
   Especificar limitaci\'on de responsabilidad, jurisdicci\'on (M\'exico) y
   mecanismo de quejas \cite{sat_pac}. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RL-06 &
   Acceso de menores de edad a la plataforma sin consentimiento de padres o tutores. &
   Baja & Alto & ALTO &
   T\'erminos de Uso restringen el acceso a mayores de 18~a\~nos. Confirmaci\'on de
   mayor\'ia de edad al registrarse. Supervisi\'on operativa a trav\'es del
   anfitri\'on adulto. &
-  Mitigar \\
-\rowcolor{orange}
+  Mitigar \\ \rowcolor{orange}
 RL-07 &
   Violaci\'on de derechos ARCO: usuario solicita eliminar sus datos y la
   plataforma no tiene mecanismo (Arts.~28--37 LFPDPPP) \cite{covermanager_pricing}. &
@@ -1130,8 +1060,7 @@ RL-07 &
   Funcionalidad de eliminaci\'on de cuenta y datos asociados.
   Procedimiento ARCO publicado en la app.
   Respuesta en plazo legal de 20~d\'ias h\'abiles. &
-  Mitigar \\
-\rowcolor{altrow}
+  Mitigar \\ \rowcolor{altrow}
 RL-08 &
   Propiedad intelectual: uso de librer\'ias con licencias incompatibles con uso
   comercial (GPL, AGPL). &
@@ -1153,23 +1082,22 @@ identificados, priorizando los de nivel Cr\'itico y Alto.
                 >{\raggedright\arraybackslash}p{3cm}
                 >{\raggedright\arraybackslash}p{9.5cm}}
 \caption{Hoja de Ruta de Mitigación de Riesgos} \label{tab:hoja_ruta} \\
-\toprule
+\hline
 \thead{Etapa} & \thead{Riesgos a atender} & \thead{Acciones principales} \\
-\midrule
+\hline
 \endfirsthead
 \caption[]{TABLA \thetable{} (Continuación)} \\
-\toprule
+\hline
 \thead{Etapa} & \thead{Riesgos a atender} & \thead{Acciones principales} \\
-\midrule
+\hline
 \endhead
-\bottomrule
+\hline
 \endfoot
 Antes del lanzamiento &
   RT-01, RT-02, RT-03, RT-09, RL-01, RO-01 &
   Control de concurrencia (\texttt{SELECT FOR UPDATE}), TLS/HTTPS, QR de un
-  solo uso con JWT, Aviso de Privacidad (LFPDPPP), protocolo de emergencia
-  para mesa sin contrase\~na. \\
-\rowcolor{altrow}
+  solo uso con firma HMAC, Aviso de Privacidad (LFPDPPP), protocolo de emergencia
+  para mesa sin contrase\~na. \\ \rowcolor{altrow}
 Sprint~1 post-lanzamiento (sem.\ 1--4) &
   RT-04, RT-05, RT-07, RT-11, RL-03, RL-04, RL-05 &
   Rate limiting, Supabase Realtime para tablero del Chef, gesti\'on de sesiones,
@@ -1179,8 +1107,7 @@ Sprint~2 post-lanzamiento (sem.\ 5--8) &
   RT-06, RT-10, RO-02, RO-03, RO-05, RL-06, RL-07 &
   Reintentos con backoff, pruebas de carga (k6), confirmaci\'on visual de mesas,
   capacitaci\'on y onboarding, notificaciones al Chef, restricci\'on de menores,
-  mecanismo ARCO. \\
-\rowcolor{altrow}
+  mecanismo ARCO. \\ \rowcolor{altrow}
 Mediano plazo (mes~3--6) &
   RT-08, RO-04, RO-06, RO-07, RO-08, RO-09, RL-08 &
   Plan de recuperaci\'on ante desastres (RTO $<$ 4~hrs), gesti\'on de men\'u en

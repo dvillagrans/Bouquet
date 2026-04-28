@@ -32,67 +32,86 @@ flowchart LR
     %% ── COLUMNA 1: USUARIOS ──
     subgraph USERS["<br/>CAPA USUARIOS"]
         direction TB
-        CLI(["CLIENTE<br/>QR · Menú · Pago"])
+        CLI(["CLIENTE<br/>QR · Menú · Liquidación"])
         MES(["MESERO<br/>Mesas · Órdenes"])
         KDS(["COCINA<br/>KDS · Estados"])
-        ADM(["ADMIN<br/>Config · Reports"])
+        ADM(["ADMIN<br/>Config · BI"])
     end
 
     %% ── COLUMNA 2: VERCEL ──
-    subgraph VERCEL["<br/> VERCEL INFRASTRUCTURE"]
+    subgraph VERCEL["<br/>VERCEL · NEXT.JS PWA"]
         direction TB
 
-        subgraph FRONTEND["<br/>FRONTEND · Next.js PWA"]
+        subgraph FRONTEND["<br/>FRONTEND · INTERFACES"]
             direction TB
             PWA_APP[["Bouquet App Core"]]
-            FEATURES["Menú · Carrito · Pagos<br/>División · Notificaciones"]
+            FEATURES["Menú · Carrito · Órdenes<br/>Liquidación · Notificaciones"]
+            DASH["Dashboard BI<br/>Gold Metrics"]
             PWA_APP --- FEATURES
+            PWA_APP --- DASH
         end
 
-        subgraph BACKEND["<br/>BACKEND · API SERVICES"]
+        subgraph BACKEND["<br/>BACKEND · BFF / API"]
             direction TB
-            MW{"MW<br/>JWT · RBAC"}
-            subgraph CTRL["<br/>Controllers REST"]
+            MW{"MW<br/>Auth · RBAC"}
+            subgraph CTRL["<br/>Controllers / Actions"]
                 direction LR
-                R1["/mesas"] --- R2["/órdenes"] --- R3["/pagos"] --- R4["/reportes"]
+                R1["/mesas"] --- R2["/órdenes"] --- R3["/liquidación"] --- R4["/analytics"]
             end
             subgraph SVC["<br/>Servicios de Negocio"]
                 direction LR
-                S1["Mesas<br/>QR"] --- S2["Órdenes<br/>Estados"] --- S3["Pagos<br/>Split"] --- S4["Notif<br/>Push"]
+                S1["Mesas<br/>QR HMAC"] --- S2["Órdenes<br/>Estados"] --- S3["Liquidación<br/>Aportes"] --- S4["Notif<br/>Realtime"]
             end
-            WH[["Webhooks<br/>Pagos · Auth"]]
+            JOBAPI[["Analytics API<br/>Job Status"]]
         end
 
         ORM[("PRISMA ORM")]
     end
 
     %% ── COLUMNA 3: SUPABASE ──
-    subgraph SUPABASE["<br/> SUPABASE DATA CLOUD"]
+    subgraph SUPABASE["<br/>SUPABASE · OLTP DATA CLOUD"]
         direction TB
-        AUTH["AUTH<br/>JWT · Sessions"]
-        DB[("DATABASE<br/>PostgreSQL<br/>34 tablas")]
+        AUTH["AUTH<br/>Sessions · Roles"]
+        DB[("POSTGRESQL<br/>Modelo Transaccional<br/>RLS · AuditLog")]
         RT["REALTIME<br/>WebSockets"]
         STORE["STORAGE<br/>Assets · CDN"]
     end
 
-    %% ── COLUMNA 4: EXTERNOS ──
-    subgraph EXTERNAL["<br/>EXTERNAL SERVICES"]
+    %% ── COLUMNA 4: VPS ANALÍTICO ──
+    subgraph VPS["<br/>VPS · ANALYTICS ENGINE"]
         direction TB
-        PAY[["STRIPE / MP<br/>Pagos"]]
+        ORCH[["Analytics Orchestrator<br/>FastAPI"]]
+        SPARK[["APACHE SPARK<br/>Batch Jobs"]]
+
+        subgraph MEDALLION["<br/>MEDALLION"]
+            direction TB
+            BRONZE[("BRONZE<br/>Raw Data")]
+            SILVER[("SILVER<br/>Clean Data")]
+            GOLD[("GOLD<br/>Business Metrics")]
+            BRONZE --> SILVER --> GOLD
+        end
+
+        ORCH --> SPARK
+        SPARK --> MEDALLION
+    end
+
+    %% ── COLUMNA 5: SERVICIOS AUXILIARES ──
+    subgraph EXTERNAL["<br/>SERVICIOS AUXILIARES"]
+        direction TB
         EMAIL[["RESEND<br/>Email"]]
         GEO[["NOMINATIM<br/>Geocoding"]]
-        QR_GEN[["QR SERVICE<br/>Tokens"]]
+        QR_GEN[["QR HMAC<br/>Firma Servidor"]]
     end
 
     %% ── FILA INFERIOR: DEVOPS ──
     subgraph DEVOPS["<br/>DEVOPS · CI/CD"]
         direction LR
         CICD["GitHub → Tests → Build → Deploy → CDN"]
-        MON["Analytics · Sentry · Logs · Uptime"]
+        MON["Logs · Uptime · Analytics"]
     end
 
     %% ══════════════════════════════════════════════════════
-    %% FLUJOS
+    %% FLUJOS OPERATIVOS
     %% ══════════════════════════════════════════════════════
 
     USERS       ==>|"HTTPS/TLS"| FRONTEND
@@ -100,21 +119,35 @@ flowchart LR
     MW           --> CTRL
     CTRL         --> SVC
     SVC          --> ORM
-    ORM         ==>|"SQL"| DB
+    ORM         ==>|"SQL OLTP"| DB
 
     MW          -.->|"Auth"| AUTH
-    WH          -.->|"Sync"| AUTH
     FRONTEND   <-->|"WebSocket"| RT
     RT         <-->|"Events"| DB
     STORE       -.->|"URLs"| FRONTEND
 
-    WH         <==>|"Hooks"| PAY
     S4           -->|"HTTPS"| EMAIL
     FRONTEND    -.->|"Client"| GEO
-    BACKEND     -.->|"Gen"| QR_GEN
+    BACKEND     -.->|"HMAC"| QR_GEN
+
+    %% ══════════════════════════════════════════════════════
+    %% FLUJOS ANALÍTICOS
+    %% ══════════════════════════════════════════════════════
+
+    JOBAPI      ==>|"Trigger / Status"| ORCH
+    ORCH        ==>|"Extract Batch"| DB
+    SPARK       ==>|"Read OLTP Snapshot"| DB
+    GOLD        ==>|"Write Metrics"| DB
+    DASH        ==>|"Read Gold Tables"| DB
+
+    %% ══════════════════════════════════════════════════════
+    %% DEVOPS
+    %% ══════════════════════════════════════════════════════
 
     VERCEL      -.-|"Deploy"| CICD
+    VPS         -.-|"Deploy Jobs"| CICD
     VERCEL      -.-|"Monitor"| MON
+    VPS         -.-|"Monitor"| MON
 
     %% ══════════════════════════════════════════════════════
     %% ESTILOS
@@ -123,6 +156,6 @@ flowchart LR
     classDef std  fill:#fff,stroke:#000,color:#000,stroke-width:10px
     classDef soft fill:#fff,stroke:#666,color:#333,stroke-width:8px
 
-    class PWA_APP,MW,DB,ORM hi
-    class CLI,MES,KDS,ADM,AUTH,RT,WH std
-    class FEATURES,CICD,MON,R1,R2,R3,R4,S1,S2,S3,S4 soft
+    class PWA_APP,MW,DB,ORM,SPARK,GOLD hi
+    class CLI,MES,KDS,ADM,AUTH,RT,ORCH,BRONZE,SILVER std
+    class FEATURES,DASH,CICD,MON,R1,R2,R3,R4,S1,S2,S3,S4,JOBAPI,EMAIL,GEO,QR_GEN,STORE soft

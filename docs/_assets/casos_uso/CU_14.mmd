@@ -3,32 +3,32 @@ sequenceDiagram
     
     %% Color Palette
     participant S as Spark (Silver Layer)
-    participant ML as Spark ML (Demand Model)
-    participant DB as PostgreSQL (analytic_forecast)
+    participant M as Spark Engine (Exploratory Model)
+    participant DB as PostgreSQL (analytic_estimations)
     actor G as Gerente (Visualización)
 
     rect rgb(235, 243, 250)
-        Note over S,ML: Fase 1: Extracción Estacional
-        S->>ML: Cargar histórico (Últimas 4 semanas)
-        ML->>ML: Agrupar por Día de la Semana (DOW)
-        ML->>ML: Calcular Media Móvil Ponderada (Poder 0.8 semana actual)
+        Note over S,M: Fase 1: Extracción Estacional
+        S->>M: Cargar histórico (Últimas 4 semanas)
+        M->>M: Agrupar por Día de la Semana (DOW)
+        M->>M: Calcular Media Móvil Ponderada
     end
 
     rect rgb(214, 239, 216)
-        Note over ML,DB: Fase 2: Estimación de Confianza
-        ML->>ML: Calcular Desviación Estándar (StdDev)
-        ML->>ML: Score = 1 / (1 + (StdDev / Mean))
-        ML->>DB: UPSERT proyecciones 7 días (Gold)
+        Note over M,DB: Fase 2: Estimación de Confianza
+        M->>M: Calcular Desviación Estándar (StdDev)
+        M->>M: Score = 1 / (1 + (StdDev / Mean))
+        M->>DB: UPSERT estimaciones 7 días (Gold)
     end
 
     rect rgb(255, 240, 214)
         Note over G,DB: Fase 3: Decisión de Negocio
         G->>DB: Consulta demanda proyectada
-        Note right of G: "Confianza 92%: Preparar 50 porciones de Pasta"
+        Note right of G: "Confianza 92%: Sugerencia de stock para Pasta"
     end
 
     rect rgb(253, 220, 220)
-        Note over ML,G: Alertas de Incertidumbre
-        ML->>ML: Detecta Score < 40% (Alta volatilidad)
+        Note over M,G: Alertas de Incertidumbre
+        M->>M: Detecta Score < 40% (Alta volatilidad)
         Note over G: Dashboard muestra advertencia de datos insuficientes
     end

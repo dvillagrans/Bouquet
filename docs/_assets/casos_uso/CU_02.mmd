@@ -27,10 +27,10 @@ sequenceDiagram
         Note over C,DB: Fase 2: Confirmación de Pedido
         C->>S: POST /api/orders { items, type: INDIVIDUAL | GROUP }
         S->>DB: SELECT status FROM MesaVirtual WHERE id = ?
-        DB-->>S: Mesa en estado OCUPADA
+        DB-->>S: Mesa en estado ACTIVA
         S->>DB: atomic: INSERT Order + OrderItem
         S->>DB: UPDATE Cuenta (monto_total += items.price)
-        DB-->>S: Orden Registrada (PENDING)
+        DB-->>S: Orden Registrada (PENDIENTE)
     end
 
     rect rgb(255, 240, 214)
@@ -43,7 +43,7 @@ sequenceDiagram
     rect rgb(253, 220, 220)
         Note over C,S: Validaciones y Errores
         C--xS: Intento de orden en mesa CERRANDO
-        S-->>C: Error 409 — Mesa en proceso de liquidación
+        S-->>C: Error 409 — Mesa en proceso de liquidación interna
         C--xS: Producto agotado (isSoldOut = true)
         S-->>C: Error 422 — Item no disponible para pedido
     end

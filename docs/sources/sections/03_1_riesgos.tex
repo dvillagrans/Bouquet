@@ -1,0 +1,485 @@
+\subsection{Análisis y Mitigación de Riesgos}
+% -----------------------------------------------------------
+
+\subsubsection{Metodología de Evaluación}
+
+Se identificaron y evaluaron 28 riesgos distribuidos en tres dimensiones complementarias:
+\textbf{técnica} (seguridad de datos, integridad transaccional, concurrencia, disponibilidad
+y calidad del software), \textbf{operativa} (errores humanos, capacitación del personal y
+continuidad del negocio) y \textbf{legal} (LFPDPPP, CFF/SAT, LFPC,
+responsabilidad civil y PCI DSS como riesgo evitado por alcance).
+
+Cada riesgo fue calificado conforme a la escala que se describe a continuación. La
+probabilidad refleja la frecuencia esperada de ocurrencia: \textit{Alta} ($>$50\%),
+\textit{Media} (20--50\%) o \textit{Baja} ($<$20\%). El impacto pondera las consecuencias
+sobre la operaci\'on, los datos personales y la exposici\'on legal: \textit{Alto}, \textit{Medio}
+o \textit{Bajo}. El nivel de riesgo compuesto se determina mediante la
+Tabla~\ref{tab:matriz_compuesta}.
+
+\begin{table}[H]
+\caption{Matriz de Calificación Compuesta Probabilidad $\times$ Impacto}
+\label{tab:matriz_compuesta}
+\centering
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{>{\bfseries\raggedright\arraybackslash}p{2.5cm}
+                >{\centering\arraybackslash}p{2.5cm}
+                >{\centering\arraybackslash}p{2.5cm}
+                >{\centering\arraybackslash}p{2.5cm}}
+\hline
+\thead{Prob. \textbackslash\ Impacto} & \thead{Bajo} & \thead{Medio} & \thead{Alto} \\
+\hline
+Alta  & \cellcolor{orange}ALTO    & \cellcolor{orange}ALTO     & \cellcolor{red}CR\'ITICO \\
+Media & \cellcolor{altrow}MEDIO   & \cellcolor{orange}ALTO     & \cellcolor{orange}ALTO \\
+Baja  & \cellcolor{green}BAJO     & \cellcolor{altrow}MEDIO    & \cellcolor{orange}ALTO \\
+\hline
+\end{tabular}
+\end{table}
+
+Los tipos de tratamiento aplicados son: \textbf{Mitigar} (controles t\'ecnicos u operativos
+para reducir probabilidad o impacto), \textbf{Transferir} (delegar el riesgo a un tercero),
+\textbf{Aceptar} (documentar y monitorear cuando el costo de mitigaci\'on supera el impacto)
+y \textbf{Evitar} (eliminar la actividad que genera el riesgo).
+
+\subsubsection{Resumen Ejecutivo de Riesgos}
+
+La distribuci\'on por nivel de riesgo se resume en la Tabla~\ref{tab:resumen_riesgos}.
+Se identificaron 28 riesgos; 27 permanecen activos y 1 queda evitado en v1.0.
+Entre los activos, 4~se clasifican como cr\'iticos, 17 como altos, 5 como medios y 1 como bajo.
+
+\begin{table}[H]
+\caption{Distribución de Riesgos por Nivel}
+\label{tab:resumen_riesgos}
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{>{\bfseries\centering\arraybackslash}p{2.5cm}
+                >{\centering\arraybackslash}p{1.5cm}
+                >{\raggedright\arraybackslash}p{5cm}
+                >{\centering\arraybackslash}p{2.5cm}}
+\hline
+\thead{Nivel} & \thead{\# Riesgos} & \thead{Criterio de acción} & \thead{Prioridad} \\
+\hline
+\rowcolor{red}
+CR\'ITICO & 4 & Acci\'on inmediata antes de la prueba piloto o demostración con usuarios. & Inmediata \\ \rowcolor{orange}
+ALTO     & 17 & Atender en el sprint actual o pr\'oximo. & Alta \\ \rowcolor{altrow}
+MEDIO    & 5  & Planificar mitigaci\'on en los primeros 2 meses post-lanzamiento. & Media \\ \rowcolor{green}
+BAJO     & 1  & Monitorear; atender si la frecuencia aumenta. & Baja \\
+\rowcolor{altrow}
+EVITADO  & 1  & No requiere mitigaci\'on en v1.0; el alcance se excluye por dise\~no. & N/A \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent Los hallazgos críticos que requieren atención obligatoria antes de la
+prueba piloto o demostración con usuarios son: RT-01 y RT-02, relacionados con
+concurrencia en liquidación interna; RL-01, relacionado con el cumplimiento de la
+LFPDPPP; y RO-01, relacionado con la recuperación de acceso a una mesa virtual
+activa. Además, se recomienda atender antes del piloto los riesgos altos RT-03 y
+RT-09 por su relación directa con la seguridad de acceso a mesas virtuales.
+
+\noindent\textit{Nota importante --- alcance de tarjetas en v1.0:} La versión~1.0 de la
+plataforma no contempla integración de tarjeta ni procesamiento de datos de tarjeta.
+El riesgo RL-02 queda por tanto \textbf{evitado} en esta versión; cualquier integración
+posterior deberá tratarse como trabajo futuro y requerirá certificación correspondiente
+o contratación de un proveedor Level~1 PCI~DSS que asuma el alcance del entorno de datos
+de tarjeta (CDE).
+
+\subsubsection{Riesgos Técnicos (RT)}
+
+La Tabla~\ref{tab:riesgos_tecnicos} presenta los 11~riesgos t\'ecnicos identificados,
+ordenados por nivel de criticidad.
+
+\setstretch{1.2}
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{>{\bfseries\centering\arraybackslash}p{0.7cm}
+                >{\raggedright\arraybackslash}p{4cm}
+                >{\centering\arraybackslash}p{1.1cm}
+                >{\centering\arraybackslash}p{1.1cm}
+                >{\centering\arraybackslash}p{1.4cm}
+                >{\raggedright\arraybackslash}p{6cm}
+                >{\centering\arraybackslash}p{1.2cm}}
+\caption{Matriz de Riesgos Técnicos} \label{tab:riesgos_tecnicos} \\
+\hline
+\thead{ID} & \thead{Descripción del riesgo} & \thead{Prob.} &
+\thead{Impacto} & \thead{Nivel} & \thead{Estrategia de mitigación} & \thead{Trat.} \\
+\hline
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\hline
+\thead{ID} & \thead{Descripción del riesgo} & \thead{Prob.} &
+\thead{Impacto} & \thead{Nivel} & \thead{Estrategia de mitigación} & \thead{Trat.} \\
+\hline
+\endhead
+\hline
+\endfoot
+\rowcolor{red}
+RT-01 &
+  Concurrencia en liquidación interna: dos comensales registran aportaciones sobre
+  el mismo saldo pendiente de forma simultánea. &
+  Alta & Alto & CRÍTICO &
+  Usar transacciones ACID con bloqueo a nivel de fila (\texttt{SELECT FOR UPDATE}).
+  Validar el saldo pendiente dentro de la transacción antes de confirmar la aportación. &
+  Mitigar \\ \rowcolor{red}
+
+RT-02 &
+  Sobreliquidación en mesa compartida: aportes simultáneos superan el monto total
+  pendiente. &
+  Alta & Alto & CRÍTICO &
+  Transacciones atómicas con bloqueo a nivel de fila (\texttt{SELECT FOR UPDATE}).
+  Rechazar la operación que exceda el monto restante y retornar error al origen.
+  Implementar \texttt{idempotency\_keys} por operación para evitar duplicados. &
+  Mitigar \\ \rowcolor{orange}
+
+RT-03 &
+  Brecha de seguridad: credenciales de mesa virtual interceptadas en tránsito
+  (ID + contraseña). &
+  Media & Alto & ALTO &
+  Forzar HTTPS/TLS en todas las comunicaciones. Almacenar la contraseña de mesa
+  mediante hash seguro y limitar su vigencia al ciclo de vida de la mesa activa. &
+  Mitigar \\ \rowcolor{orange}
+
+RT-04 &
+  Fuerza bruta sobre contraseña de mesa virtual: intentos masivos de acceso. &
+  Media & Medio & ALTO &
+  Aplicar rate limiting por IP y por ID de mesa, bloqueo temporal tras intentos
+  fallidos y registro de eventos para auditoría. &
+  Mitigar \\ \rowcolor{orange}
+
+RT-05 &
+  Inconsistencia de datos de orden: cocina visualiza una orden cancelada o
+  desactualizada. &
+  Media & Alto & ALTO &
+  Utilizar Supabase Realtime para actualizar el tablero de cocina y definir
+  transiciones de estado controladas para las órdenes. &
+  Mitigar \\ \rowcolor{orange}
+
+RT-06 &
+  Degradación del flujo de liquidación interna: el comensal no puede completar
+  su registro de aportación por fallo de conectividad. &
+  Baja & Alto & ALTO &
+  Implementar reintentos con backoff exponencial y mostrar alternativa operativa
+  para registrar la aportación en caja o con apoyo del mesero. &
+  Mitigar \\ \rowcolor{orange}
+
+RT-07 &
+  Gestión de sesiones deficiente: la sesión del anfitrión expira o se invalida
+  durante una mesa activa, dificultando el seguimiento operativo. &
+  Media & Medio & ALTO &
+  Definir una duración de sesión acorde al turno operativo del restaurante.
+  Permitir reingreso mediante ID de mesa y contraseña, siempre que la mesa virtual
+  permanezca activa. Registrar eventos de expiración y reingreso para auditoría. &
+  Mitigar \\ \rowcolor{orange}
+
+RT-08 &
+  Pérdida o corrupción de datos transaccionales por caída de base de datos durante
+  una sesión activa. &
+  Baja & Alto & ALTO &
+  Utilizar transacciones ACID, respaldos automáticos, Write-Ahead Logging y
+  mecanismos de recuperación provistos por PostgreSQL/Supabase. Definir un plan
+  básico de recuperación y validar respaldos durante pruebas. &
+  Mitigar \\ \rowcolor{orange}
+
+RT-09 &
+  Reutilización de enlace QR fotografiado: una persona conserva el enlace firmado
+  e intenta usarlo en una sesión posterior de la misma mesa. &
+  Media & Medio & ALTO &
+  Validar que el acceso dependa no solo del QR firmado, sino también del estado
+  activo de la mesa virtual y de la contraseña de sesión. Documentar la rotación
+  de QR o versionado de mesa como mejora futura. &
+  Mitigar \\ \rowcolor{orange}
+
+RT-10 &
+  Escalabilidad insuficiente en horas pico: degradación con múltiples mesas
+  activas. &
+  Media & Medio & ALTO &
+  Realizar pruebas de carga antes del despliegue, optimizar consultas frecuentes,
+  cachear lecturas del menú y separar los procesos analíticos batch para que no
+  afecten la operación transaccional. &
+  Mitigar \\ \rowcolor{orange}
+
+RT-11 &
+  Inyección de datos maliciosos: cantidades negativas, caracteres especiales o
+  campos manipulados en órdenes y liquidaciones internas. &
+  Media & Medio & ALTO &
+  Validar y sanitizar todos los datos de entrada en el backend. Utilizar esquemas
+  de validación, consultas parametrizadas mediante Prisma ORM, límites de cantidad
+  y reglas de negocio para impedir montos negativos o valores fuera de rango. &
+  Mitigar \\
+\end{longtable}
+\setstretch{1.5}
+
+\subsubsection{Riesgos Operativos (RO)}
+
+La Tabla~\ref{tab:riesgos_operativos} presenta los 9~riesgos operativos, derivados de
+procesos, comportamiento humano y procedimientos de operaci\'on diaria.
+
+\setstretch{1.2}
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{>{\bfseries\centering\arraybackslash}p{0.7cm}
+                >{\raggedright\arraybackslash}p{4cm}
+                >{\centering\arraybackslash}p{1.1cm}
+                >{\centering\arraybackslash}p{1.1cm}
+                >{\centering\arraybackslash}p{1.4cm}
+                >{\raggedright\arraybackslash}p{6cm}
+                >{\centering\arraybackslash}p{1.2cm}}
+\caption{Matriz de Riesgos Operativos} \label{tab:riesgos_operativos} \\
+\hline
+\thead{ID} & \thead{Descripción del riesgo} & \thead{Prob.} &
+\thead{Impacto} & \thead{Nivel} & \thead{Estrategia de mitigación} & \thead{Trat.} \\
+\hline
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\hline
+\thead{ID} & \thead{Descripción del riesgo} & \thead{Prob.} &
+\thead{Impacto} & \thead{Nivel} & \thead{Estrategia de mitigación} & \thead{Trat.} \\
+\hline
+\endhead
+\hline
+\endfoot
+\rowcolor{red}
+RO-01 &
+  Anfitrión olvida contraseña de mesa y ningún comensal la conoce: mesa queda
+  inaccesible con órdenes activas. &
+  Alta & Alto & CRÍTICO &
+  Implementar en v1.0 un flujo de recuperación controlado: el mesero o gerente
+  podrá regenerar la contraseña de emergencia desde su rol, registrando el evento
+  en auditoría y notificando a los comensales activos. &
+  Mitigar \\ \rowcolor{orange}
+RO-02 &
+  Mesero inicializa una mesa virtual con mesas físicas incorrectas o selecciona
+  una mesa que no corresponde al grupo de comensales. &
+  Media & Medio & ALTO &
+  Mostrar confirmación visual antes de inicializar la mesa virtual, incluyendo
+  número de mesa, zona o ubicación y capacidad. Permitir corrección antes de que
+  el anfitrión escanee el QR y registrar el evento de inicialización en auditoría. &
+  Mitigar \\ \rowcolor{orange}
+RO-03 &
+  Personal sin capacitaci\'on adecuada: errores operativos desde el primer d\'ia. &
+  Alta & Medio & ALTO &
+  Manual de usuario por rol. Onboarding interactivo en la app (tooltips, tutorial
+  guiado). Modo sandbox para pr\'actica. Superusuario de sucursal para soporte
+  de primer nivel. &
+  Mitigar \\ \rowcolor{orange}
+RO-04 &
+  Men\'u desactualizado: comensales ordenan productos descontinuados o con precios
+  incorrectos. &
+  Media & Medio & ALTO &
+  Sincronizaci\'on peri\'odica entre el men\'u f\'isico y la plataforma. Acceso del
+  gerente para actualizar en tiempo real. Alertas si un producto no ha sido
+  actualizado en m\'as de 30~d\'ias. &
+  Mitigar \\ \rowcolor{orange}
+RO-05 &
+  Chef no recibe notificaci\'on de nuevas \'ordenes en tiempo real, generando
+  retrasos en cocina. &
+  Media & Alto & ALTO &
+  Notificaciones push o sonoras ante nuevas \'ordenes (Web Audio API).
+  SLA de respuesta: confirmaci\'on de orden en $<$60~s. Alerta al gerente si una
+  orden no es confirmada a tiempo. &
+  Mitigar \\ \rowcolor{altrow}
+RO-06 &
+  Mesa compartida abandonada: comensales se van sin liquidar su parte. &
+  Baja & Medio & MEDIO &
+  Mesero y gerente visualizan el estatus de liquidaci\'on en tiempo real.
+  Se define protocolo de validación y cierre en caja como respaldo operativo.
+  La decisión de liberar o bloquear la mesa queda documentada como política del restaurante. &
+  Aceptar \\ \rowcolor{altrow}
+RO-07 &
+  Dos personas intentan activar la misma mesa virtual como anfitri\'on
+  simult\'aneamente. &
+  Media & Bajo & MEDIO &
+  Activaci\'on de mesa permitida una sola vez (PENDIENTE~$\rightarrow$~ACTIVA).
+  El segundo intento retorna error indicando que la mesa ya fue activada. &
+  Mitigar \\ \rowcolor{altrow}
+RO-08 &
+  Credenciales de mesa compartidas con personas externas al grupo. &
+  Baja & Medio & MEDIO &
+  Advertencia expl\'icita al anfitri\'on sobre no compartir la contrase\~na.
+  L\'imite m\'aximo configurable de comensales por mesa.
+  Mesero puede auditar el n\'umero de comensales activos. &
+  Aceptar \\ \rowcolor{green}
+RO-09 &
+  El mesero olvida cambiar el estatus de la mesa de Liquidada a Libre. &
+  Baja & Bajo & BAJO &
+  Notificaci\'on autom\'atica al mesero/gerente cuando la mesa pasa a estado
+  Liquidada. Transici\'on autom\'atica a Libre tras tiempo configurable de
+  inactividad post-liquidaci\'on. &
+  Mitigar \\
+\end{longtable}
+\setstretch{1.5}
+
+\subsubsection{Riesgos Legales y Regulatorios (RL)}
+
+El marco normativo aplicable comprende la LFPDPPP, el C\'odigo Fiscal de la
+Federaci\'on (CFF), la Ley Federal de Protecci\'on al Consumidor (LFPC), el est\'andar
+PCI~DSS~v4.0 y el C\'odigo Civil Federal. La Tabla~\ref{tab:riesgos_legales}
+presenta los 8~riesgos legales identificados, incluyendo uno evitado en v1.0.
+
+\setstretch{1.2}
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{>{\bfseries\centering\arraybackslash}p{0.7cm}
+                >{\raggedright\arraybackslash}p{4cm}
+                >{\centering\arraybackslash}p{1.1cm}
+                >{\centering\arraybackslash}p{1.1cm}
+                >{\centering\arraybackslash}p{1.4cm}
+                >{\raggedright\arraybackslash}p{6cm}
+                >{\centering\arraybackslash}p{1.2cm}}
+\caption{Matriz de Riesgos Legales y Regulatorios} \label{tab:riesgos_legales} \\
+\hline
+\thead{ID} & \thead{Descripción del riesgo} & \thead{Prob.} &
+\thead{Impacto} & \thead{Nivel} & \thead{Estrategia de mitigación} & \thead{Trat.} \\
+\hline
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\hline
+\thead{ID} & \thead{Descripción del riesgo} & \thead{Prob.} &
+\thead{Impacto} & \thead{Nivel} & \thead{Estrategia de mitigación} & \thead{Trat.} \\
+\hline
+\endhead
+\hline
+\endfoot
+\rowcolor{red}
+RL-01 &
+  Incumplimiento LFPDPPP: recoleci\'on de datos personales sin aviso de privacidad
+  ni consentimiento expl\'icito. Sanciones de hasta 320,000 d\'ias de SMGV \cite{reglamento_lfpdppp}. &
+  Alta & Alto & CR\'ITICO &
+  Redactar y publicar Aviso de Privacidad (Art.~16 LFPDPPP). Consentimiento expreso
+  al registrarse. Nombrar un responsable de datos. Definir plazos de retenci\'on y
+  procedimiento de eliminaci\'on (Art.~19). &
+  Mitigar \\ \rowcolor{orange}
+RL-02 &
+  PCI~DSS: procesamiento de tarjeta fuera de alcance en v1.0, con exposición a sanciones
+  contractuales y responsabilidad civil si se habilitara sin certificación adecuada. &
+  --- & Alto & EVITADO &
+  Mantener fuera del alcance de v1.0 el almacenamiento, transmisión o procesamiento
+  de datos de tarjeta. Documentar cualquier integración con agregadores de pago como
+  trabajo futuro mediante proveedores certificados y reducción de alcance PCI. &
+  Evitar \\
+RL-03 &
+  Obligación fiscal SAT: los consumos registrados en la plataforma podrían requerir
+  emisión de CFDI por parte del restaurante conforme al CFF Art.~29. &
+  Media & Alto & ALTO &
+  Consultoría fiscal para determinar responsabilidad de emisión de CFDI
+  entre la cadena restaurantera y la plataforma. Documentar que la versión 1.0
+  no emite facturas y que la integración con un PAC queda como trabajo futuro. &
+  Mitigar \\ \rowcolor{orange}
+RL-04 &
+  Responsabilidad por liquidaciones internas no reconocidas o erróneas: disputa del
+  comensal o del restaurante sobre el monto registrado. &
+  Media & Alto & ALTO &
+  Generar constancia interna de estado de cuenta, registrar sesión, mesa, productos,
+  monto, usuario/comensal, fecha y hora. Publicar una política de aclaraciones
+  en los Términos de Servicio y aclarar que la plataforma no procesa pagos bancarios
+  reales en v1.0. &
+  Mitigar \\ \rowcolor{orange}
+RL-05 &
+  Ausencia de T\'erminos y Condiciones de Uso: plataforma opera sin contratos
+  que delimiten responsabilidades entre partes. &
+  Media & Medio & ALTO &
+  Redactar T\'erminos y Condiciones aceptados al acceder por primera vez.
+  Especificar limitaci\'on de responsabilidad, jurisdicci\'on (M\'exico) y
+  mecanismo de quejas. &
+  Mitigar \\ \rowcolor{altrow}
+RL-06 &
+  Uso de la plataforma por menores de edad sin acompañamiento de un adulto. &
+  Baja & Medio & MEDIO &
+  Establecer en Términos de Uso que el acceso y autorización de consumo debe
+  realizarse bajo responsabilidad del anfitrión o adulto responsable de la mesa.
+  Evitar la recolección de datos personales sensibles de menores. &
+  Mitigar \\ \rowcolor{orange}
+RL-07 &
+  Violaci\'on de derechos ARCO: usuario solicita eliminar sus datos y la
+  plataforma no tiene mecanismo (Arts.~28--37 LFPDPPP). &
+  Baja & Alto & ALTO &
+  Funcionalidad de eliminaci\'on de cuenta y datos asociados.
+  Procedimiento ARCO publicado en la app.
+  Respuesta en plazo legal de 20~d\'ias h\'abiles. &
+  Mitigar \\ \rowcolor{altrow}
+RL-08 &
+  Propiedad intelectual: uso de librer\'ias con licencias incompatibles con uso
+  comercial (GPL, AGPL). &
+  Baja & Medio & MEDIO &
+  Auditor\'ia de licencias del stack antes de la prueba piloto o demostración con usuarios (FOSSA, licensecheck).
+  Preferir MIT, Apache~2.0, BSD. Documentar todas las dependencias. &
+  Mitigar \\
+\end{longtable}
+\setstretch{1.5}
+
+\subsubsection{Hoja de Ruta de Mitigación}
+
+La Tabla~\ref{tab:hoja_ruta} define el orden de atenci\'on recomendado para los riesgos
+identificados, priorizando los de nivel Cr\'itico y Alto.
+
+\setstretch{1.2}
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{>{\bfseries\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{9.5cm}}
+\caption{Hoja de Ruta de Mitigación de Riesgos} \label{tab:hoja_ruta} \\
+\hline
+\thead{Etapa} & \thead{Riesgos a atender} & \thead{Acciones principales} \\
+\hline
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\hline
+\thead{Etapa} & \thead{Riesgos a atender} & \thead{Acciones principales} \\
+\hline
+\endhead
+\hline
+\endfoot
+Antes de la prueba piloto o demostración con usuarios &
+  RT-01, RT-02, RT-03, RT-09, RL-01, RO-01 &
+  Control de concurrencia (\texttt{SELECT FOR UPDATE}), TLS/HTTPS, QR firmado con
+  HMAC-SHA256, validaci\'on de sesi\'on activa, regeneraci\'on controlada de contrase\~na
+  de mesa, registro de auditor\'ia y Aviso de Privacidad conforme a la LFPDPPP. \\ \rowcolor{altrow}
+Sprint~1 post-piloto (sem.\ 1--4) &
+  RT-04, RT-05, RT-07, RT-11, RL-03, RL-04, RL-05 &
+  Rate limiting, Supabase Realtime para tablero del Chef, gesti\'on de sesiones,
+  validaci\'on de inputs, consultor\'ia fiscal SAT/CFDI, constancia interna,
+  T\'erminos y Condiciones. \\
+Sprint~2 post-piloto (sem.\ 5--8) &
+  RT-06, RT-10, RO-02, RO-03, RO-05, RL-06, RL-07 &
+  Reintentos con backoff, pruebas de carga (k6), confirmaci\'on visual de mesas,
+  capacitaci\'on y onboarding, notificaciones al Chef, restricci\'on de menores,
+  mecanismo ARCO. \\ \rowcolor{altrow}
+Mediano plazo (mes~3--6) &
+  RT-08, RO-04, RO-06, RO-07, RO-08, RO-09, RL-08 &
+  Plan de recuperaci\'on ante desastres (RTO $<$ 4~hrs), gesti\'on de men\'u en
+  tiempo real, pol\'iticas de retenci\'on de datos, automatizaci\'on de
+  transici\'on de estatus de mesa, auditor\'ia de licencias. \\
+\end{longtable}
+\setstretch{1.5}
+
+\subsubsection{Conclusiones del Análisis de Riesgos}
+
+\noindent\textbf{Factibilidad T\'ecnica.}
+La plataforma es t\'ecnicamente factible. Los riesgos t\'ecnicos identificados son manejables
+mediante patrones de ingenier\'ia est\'andar (control de concurrencia, cifrado, validaci\'on
+de inputs, WebSockets). El principal riesgo de implementaci\'on radica en la gesti\'on de
+transacciones concurrentes (RT-01, RT-02), que debe resolverse en la capa de backend antes
+de realizar una prueba piloto o demostración con usuarios mediante \texttt{SELECT FOR UPDATE} en PostgreSQL.
+
+\noindent\textbf{Factibilidad Operativa.}
+La plataforma es operativamente viable siempre que se acompa\~ne de un programa de
+capacitaci\'on por rol y se definan protocolos claros para escenarios de falla. El riesgo
+operativo m\'as urgente (RO-01) requiere una decisi\'on de producto antes de la
+prueba piloto o demostración con usuarios:
+implementar la regeneraci\'on de contrase\~na de emergencia en v1.0 y registrar el evento
+en auditor\'ia.
+
+\noindent\textbf{Factibilidad Legal.}
+El cumplimiento de la LFPDPPP es no negociable y debe resolverse antes de procesar
+cualquier dato personal. El riesgo RL-02 (PCI~DSS) ha sido \textbf{evitado} dentro del alcance de v1.0
+mediante la decisi\'on de no integrar un agregador de pago v\'ia tarjeta ni procesar datos
+de tarjeta.
+
+\noindent\textbf{Veredicto.}
+El proyecto es factible en sus tres dimensiones, condicionado a la resoluci\'on de los
+4~riesgos cr\'iticos antes de la prueba piloto o demostración con usuarios. Con las mitigaciones propuestas implementadas,
+el perfil de riesgo residual de la plataforma es aceptable para una prueba controlada,
+demostraci\'on acad\'emica y eventual despliegue piloto.
+
+% ============================================================
+%  CAPÍTULO 4 — METODOLOGÍA Y ANÁLISIS
+% ============================================================
+\newpage

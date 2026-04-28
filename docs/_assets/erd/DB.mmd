@@ -22,7 +22,7 @@ erDiagram
 
     Permission {
         string id PK
-        string code UK "CREATE_ORDER | VIEW_PAYMENTS"
+        string code UK "CREATE_ORDER | VIEW_SETTLEMENTS | MANAGE_ADJUSTMENTS"
         string description
         string scope "ENUM RESTAURANT|CHAIN|PLATFORM"
         timestamp createdAt
@@ -115,7 +115,7 @@ erDiagram
         string actorUserId FK
         string chainId "nullable"
         string restaurantId "nullable"
-        string action "ENUM CREATE|UPDATE|DELETE"
+        string action "ENUM CREATE|UPDATE|DELETE|LOGIN|OPEN_SESSION|CLOSE_SESSION|APPLY_ADJUSTMENT|REGISTER_CONTRIBUTION|RUN_ANALYTICS_JOB"
         string entityType
         string entityId
         jsonb before
@@ -255,9 +255,8 @@ erDiagram
         string restaurantId FK
         int number
         int capacity
-        string qrTokenHash
         int qrVersion
-        string status "table_status"
+        string status "ENUM LIBRE|OCUPADA|NO_DISPONIBLE"
         float posX
         float posY
         string shape
@@ -270,7 +269,9 @@ erDiagram
         string restaurantId FK
         string openedByUserId FK
         string closedByUserId FK "nullable"
-        string status "ENUM OPEN|CLOSED|CANCELLED"
+        string status "ENUM PENDIENTE_ACTIVACION|ACTIVA|EN_CONSUMO|POR_LIQUIDAR|LIQUIDADA|CERRADA|CANCELADA"
+        string joinCode UK
+        string accessCodeHash
         int pax
         timestamp openedAt
         timestamp closedAt "nullable"
@@ -290,6 +291,10 @@ erDiagram
         string diningSessionId FK
         string name "nullable"
         int seatNumber "nullable"
+        boolean isHost
+        boolean isActive
+        timestamp joinedAt
+        timestamp leftAt "nullable"
         timestamp createdAt
     }
 
@@ -299,7 +304,7 @@ erDiagram
         string diningSessionId FK
         string createdByUserId FK "nullable"
         string source "ENUM WAITER|QR|POS"
-        string status "ENUM OPEN|SENT|READY..."
+        string status "ENUM ABIERTA|ENVIADA|COMPLETADA|CANCELADA"
         timestamp createdAt
         timestamp updatedAt
         timestamp closedAt "nullable"
@@ -313,11 +318,13 @@ erDiagram
         string variantId FK "nullable"
         string guestId FK "nullable"
         string stationId FK "nullable"
-        string status "ENUM NEW|SENT|READY..."
+        string status "ENUM PENDIENTE|EN_PREPARACION|LISTA|ENTREGADA|CANCELADA"
         int quantity
         string notes "nullable"
         string itemNameSnapshot
         string variantNameSnapshot "nullable"
+        string stationNameSnapshot "nullable"
+        int taxRateBpsSnapshot
         int unitPriceCents
         int subtotalCents
         int taxAmountCents
@@ -340,62 +347,57 @@ erDiagram
         string id PK
         string orderItemId FK
         string changedByUserId FK "nullable"
-        string fromStatus
-        string toStatus
         timestamp createdAt
     }
 
-    Payment {
+    Settlement {
         string id PK
         string restaurantId FK
         string diningSessionId FK
         string currency FK
-        string processedByUserId FK "nullable"
-        string status "ENUM PENDING|COMPLETED..."
-        string method "ENUM CARD|CASH|TRANSFER"
-        string splitMode "ENUM FULL|BY_ITEM|EQUAL"
-        int splitCount
-        int paxPaid
+        string status "ENUM OPEN|PARTIAL|SETTLED|CANCELLED"
+        string splitMode "ENUM FULL|BY_ITEM|EQUAL|CUSTOM"
         int subtotalCents
+        int discountCents
         int tipAmountCents
         int taxAmountCents
         int totalCents
-        int amountPaidCents
+        int amountSettledCents
+        int remainingCents
         string notes "nullable"
-        string providerReference "nullable"
         timestamp createdAt
         timestamp updatedAt
-        timestamp paidAt "nullable"
+        timestamp settledAt "nullable"
     }
 
-    PaymentAllocation {
+    SettlementAllocation {
         string id PK
-        string paymentId FK
+        string settlementId FK
         string orderItemId FK "nullable"
         string guestId FK "nullable"
         int amountCents
         timestamp createdAt
     }
 
-    Refund {
+    SettlementContribution {
         string id PK
-        string paymentId FK
-        string createdByUserId FK
+        string settlementId FK
+        string guestId FK "nullable"
+        string registeredByUserId FK "nullable"
+        string method "ENUM CASH|EXTERNAL|COURTESY|OTHER"
         int amountCents
-        string reason
-        string status "ENUM PENDING|COMPLETED|FAILED"
-        string providerRefundId "nullable"
+        string note "nullable"
         timestamp createdAt
-        timestamp updatedAt
     }
 
-    AppliedDiscount {
+    AppliedAdjustment {
         string id PK
         string restaurantId FK
         string orderItemId FK "nullable"
-        string paymentId FK "nullable"
+        string settlementId FK "nullable"
         string approvedByUserId FK "nullable"
-        string type "ENUM PERCENT|FIXED"
+        string type "ENUM DISCOUNT|COURTESY"
+        string calculationMode "ENUM PERCENT|FIXED"
         int valueBps "nullable"
         int valueCents "nullable"
         int amountCents
@@ -404,9 +406,67 @@ erDiagram
         timestamp createdAt
     }
 
+    AnalyticsJobRun {
+        string id PK
+        string restaurantId FK
+        string status "ENUM QUEUED|RUNNING|COMPLETED|FAILED"
+        string triggeredByUserId FK "nullable"
+        timestamp startedAt
+        timestamp finishedAt "nullable"
+        string errorMessage "nullable"
+        jsonb metadata "nullable"
+    }
+
+    AnalyticSalesDaily {
+        string id PK
+        string restaurantId FK
+        date businessDate
+        int orderCount
+        int itemCount
+        int grossConsumptionCents
+        int discountCents
+        int netConsumptionCents
+        int avgServiceTimeSeconds
+        timestamp computedAt
+    }
+
+    AnalyticItemVelocity {
+        string id PK
+        string restaurantId FK
+        string menuItemId FK "nullable"
+        date businessDate
+        string itemNameSnapshot
+        int quantitySold
+        int grossConsumptionCents
+        timestamp computedAt
+    }
+
+    AnalyticServiceTimes {
+        string id PK
+        string restaurantId FK
+        string stationId FK "nullable"
+        date businessDate
+        int avgPrepSeconds
+        int p50PrepSeconds
+        int p90PrepSeconds
+        int delayedItemsCount
+        timestamp computedAt
+    }
+
+    AnalyticForecast {
+        string id PK
+        string restaurantId FK
+        string menuItemId FK "nullable"
+        date forecastDate
+        int expectedQuantity
+        int confidenceBps
+        string method
+        timestamp computedAt
+    }
+
     Currency ||--o{ Chain : "usada en"
     Currency ||--o{ Restaurant : "usada en"
-    Currency ||--o{ Payment : "usada en"
+    Currency ||--o{ Settlement : "usada en"
 
     TaxGroup ||--o{ RestaurantCategory : "aplicado en"
     TaxGroup ||--o{ RestaurantMenuItem : "aplicado en"
@@ -421,10 +481,10 @@ erDiagram
     AppUser ||--o{ AuditLog : "genera"
     AppUser ||--o{ DiningSession : "abre"
     AppUser ||--o{ RestaurantOrder : "crea"
-    AppUser ||--o{ Payment : "procesa"
-    AppUser ||--o{ Refund : "genera"
-    AppUser ||--o{ AppliedDiscount : "aprueba"
+    AppUser ||--o{ SettlementContribution : "registra"
+    AppUser ||--o{ AppliedAdjustment : "aprueba"
     AppUser ||--o{ OrderItemStatusEvent : "registra"
+    AppUser ||--o{ AnalyticsJobRun : "inicia"
 
     Chain ||--o{ Zone : "tiene"
     Chain ||--o{ Restaurant : "tiene"
@@ -439,8 +499,13 @@ erDiagram
     Restaurant ||--o{ DiningTable : "tiene"
     Restaurant ||--o{ DiningSession : "tiene"
     Restaurant ||--o{ RestaurantOrder : "tiene"
-    Restaurant ||--o{ Payment : "tiene"
-    Restaurant ||--o{ AppliedDiscount : "tiene"
+    Restaurant ||--o{ Settlement : "tiene"
+    Restaurant ||--o{ AppliedAdjustment : "tiene"
+    Restaurant ||--o{ AnalyticsJobRun : "tiene"
+    Restaurant ||--o{ AnalyticSalesDaily : "tiene"
+    Restaurant ||--o{ AnalyticItemVelocity : "tiene"
+    Restaurant ||--o{ AnalyticServiceTimes : "tiene"
+    Restaurant ||--o{ AnalyticForecast : "tiene"
 
     MenuTemplate ||--o{ TemplateCategory : "tiene"
     TemplateCategory ||--o{ TemplateItem : "tiene"
@@ -463,17 +528,18 @@ erDiagram
     DiningSession ||--o{ DiningSessionTable : "ocupa mesas"
     DiningSession ||--o{ Guest : "tiene"
     DiningSession ||--o{ RestaurantOrder : "tiene"
-    DiningSession ||--o{ Payment : "tiene"
+    DiningSession ||--o{ Settlement : "tiene"
 
     Guest ||--o{ OrderItem : "asociado a"
-    Guest ||--o{ PaymentAllocation : "asignada a"
+    Guest ||--o{ SettlementAllocation : "asignada a"
+    Guest ||--o{ SettlementContribution : "realiza"
 
     RestaurantOrder ||--o{ OrderItem : "tiene"
     OrderItem ||--o{ OrderItemModifier : "tiene"
     OrderItem ||--o{ OrderItemStatusEvent : "tiene"
-    OrderItem ||--o{ PaymentAllocation : "cubierto en"
-    OrderItem ||--o{ AppliedDiscount : "tiene"
+    OrderItem ||--o{ SettlementAllocation : "cubierto en"
+    OrderItem ||--o{ AppliedAdjustment : "tiene"
 
-    Payment ||--o{ PaymentAllocation : "tiene"
-    Payment ||--o{ Refund : "tiene"
-    Payment ||--o{ AppliedDiscount : "tiene"
+    Settlement ||--o{ SettlementAllocation : "distribuye"
+    Settlement ||--o{ SettlementContribution : "recibe"
+    Settlement ||--o{ AppliedAdjustment : "tiene"

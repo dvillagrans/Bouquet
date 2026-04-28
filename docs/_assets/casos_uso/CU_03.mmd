@@ -10,26 +10,26 @@ sequenceDiagram
     rect rgb(235, 243, 250)
         Note over K,S: Fase 1: Recepción de Órdenes
         S->>K: Notificación Realtime (Evento: nueva_orden)
-        K->>S: GET /api/orders?status=PENDING
-        S->>DB: SELECT orders WHERE restaurantId = ? AND status = PENDING
+        K->>S: GET /api/orders?status=PENDIENTE
+        S->>DB: SELECT orders WHERE restaurantId = ? AND status = PENDIENTE
         DB-->>S: Lista de órdenes pendientes
         S-->>K: Despliegue en Tablero KDS (Kanban)
     end
 
     rect rgb(214, 239, 216)
         Note over K,DB: Fase 2: Gestión de Preparación
-        K->>S: PATCH /api/orders/:id { status: IN_PROGRESS }
-        S->>DB: UPDATE Order SET status = IN_PROGRESS
-        K->>S: PATCH /api/orders/:id { status: READY }
-        S->>DB: UPDATE Order SET status = READY
+        K->>S: PATCH /api/orders/:id { status: EN_PREPARACION }
+        S->>DB: UPDATE Order SET status = EN_PREPARACION
+        K->>S: PATCH /api/orders/:id { status: LISTA }
+        S->>DB: UPDATE Order SET status = LISTA
     end
 
     rect rgb(255, 240, 214)
         Note over S,C: Fase 3: Notificación de Entrega
         S->>S: Emite evento 'orden_lista' (Realtime)
-        S-->>C: Notificación Push / Update UI: "Pedido en Camino"
-        K->>S: PATCH /api/orders/:id { status: DELIVERED }
-        S->>DB: UPDATE Order SET status = DELIVERED, deliveredAt = NOW()
+        S-->>C: Notificación Push / Update UI: "Tu orden está lista"
+        K->>S: PATCH /api/orders/:id { status: ENTREGADA }
+        S->>DB: UPDATE Order SET status = ENTREGADA, deliveredAt = NOW()
         S-->>C: Estado Final: Platillo Entregado
     end
 

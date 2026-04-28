@@ -3,31 +3,31 @@ sequenceDiagram
     
     %% Color Palette
     participant E as Events (OrderItemStatusEvent)
-    participant S as Spark (Process Mining)
-    participant DB as PostgreSQL (analytic_process_mining)
+    participant S as Spark (Service Time Analysis)
+    participant DB as PostgreSQL (analytic_service_efficiency)
     actor G as Gerente / Chef
 
     rect rgb(235, 243, 250)
         Note over E,S: Fase 1: Análisis de Ciclo de Vida
-        E->>S: Cargar eventos: NEW, PREPARING, SERVED
-        S->>S: Calcular Duración (ts_served - ts_new)
+        E->>S: Cargar eventos: PENDIENTE, EN_PREPARACION, LISTA, ENTREGADA
+        S->>S: Calcular Duración (ts_entregada - ts_pendiente)
         S->>S: Cruzar con SLA de Producto (ej. 15 min)
     end
 
     rect rgb(214, 239, 216)
         Note over S,DB: Fase 2: Detección de Cuellos de Botella
-        S->>S: Calcular bottleneckScore por Estación (itemsLate / total)
+        S->>S: Calcular efficiencyScore por Estación (itemsLate / total)
         S->>DB: UPSERT métricas de eficiencia (Gold)
     end
 
     rect rgb(255, 240, 214)
         Note over G,DB: Fase 3: Optimización Operativa
         G->>DB: Identificar estaciones saturadas
-        Note right of G: "Estación BARRA excediendo SLA en 20%"
+        Note right of G: "Estación BARRA excediendo tiempos promedio en 20%"
     end
 
     rect rgb(253, 220, 220)
         Note over G,S: Hallazgos Críticos
         G->>S: Ver detalle de ítems críticos
-        Note over S: Identifica tendencia de retrasos los viernes a las 20:00
+        Note over S: Identifica tendencia de retrasos por franja horaria
     end

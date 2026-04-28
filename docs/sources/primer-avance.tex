@@ -480,14 +480,13 @@ Por ello, estas soluciones se consideran complementarias al sistema propuesto: n
 
 \begin{table}[H]
 \centering
-\setlength{\aboverulesep}{0pt}
-\setlength{\belowrulesep}{0pt}
-\begin{tabularx}{\textwidth}{p{2.5cm}p{3cm}p{2.2cm}p{2cm}X}
+\small
+\renewcommand{\arraystretch}{1.22}
+\setlength{\tabcolsep}{5pt}
+\begin{tabularx}{\textwidth}{p{2.3cm}p{2.9cm}p{1.8cm}p{1.9cm}X}
 \toprule
 \textbf{Proveedor} & \textbf{Producto} & \textbf{QR / mesa} & \textbf{Split bill} & \textbf{Observaciones} \\
 \midrule
-\hline
-\textbf{Proveedor} & \textbf{Producto} & \textbf{QR / mesa} & \textbf{Split bill} & \textbf{Observaciones} \\ \hline
 Toast & POS + Mobile Order \& Pay + KDS & Sí & Sí & Ecosistema robusto, fuerte integración interna, pero con dependencia del stack del proveedor. \\
 Square & Square for Restaurants + KDS & Sí & Sí & Soporta pagos múltiples y división por ítems, con fuerte integración de pagos propios. \\
 Lightspeed & Restaurant + Order Anywhere + KDS & Sí & Sí & Buen soporte para cuenta dividida y pedidos por QR, aunque con variaciones según región. \\

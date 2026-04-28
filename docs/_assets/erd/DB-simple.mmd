@@ -51,17 +51,24 @@ erDiagram
     OrderItemModifier    { string id PK }
     OrderItemStatusEvent { string id PK }
 
-    %% ── PAGOS ──
-    Payment          { string id PK }
-    PaymentAllocation{ string id PK }
-    Refund           { string id PK }
-    AppliedDiscount  { string id PK }
+    %% ── LIQUIDACIÓN ──
+    Settlement          { string id PK }
+    SettlementAllocation{ string id PK }
+    SettlementContribution{ string id PK }
+    AppliedAdjustment   { string id PK }
+
+    %% ── ANALYTICS ──
+    AnalyticsJobRun     { string id PK }
+    AnalyticSalesDaily  { string id PK }
+    AnalyticItemVelocity{ string id PK }
+    AnalyticServiceTimes{ string id PK }
+    AnalyticForecast    { string id PK }
 
     %% ── RELACIONES ──
 
     Currency ||--o{ Chain              : " "
     Currency ||--o{ Restaurant         : " "
-    Currency ||--o{ Payment            : " "
+    Currency ||--o{ Settlement         : " "
 
     TaxGroup ||--o{ RestaurantCategory : " "
     TaxGroup ||--o{ RestaurantMenuItem : " "
@@ -76,9 +83,9 @@ erDiagram
     AppUser ||--o{ AuditLog            : " "
     AppUser ||--o{ DiningSession       : " "
     AppUser ||--o{ RestaurantOrder     : " "
-    AppUser ||--o{ Payment             : " "
-    AppUser ||--o{ Refund              : " "
-    AppUser ||--o{ AppliedDiscount     : " "
+    AppUser ||--o{ SettlementContribution: " "
+    AppUser ||--o{ AppliedAdjustment   : " "
+    AppUser ||--o{ AnalyticsJobRun     : " "
     AppUser ||--o{ OrderItemStatusEvent: " "
 
     Chain      ||--o{ Zone             : " "
@@ -93,8 +100,13 @@ erDiagram
     Restaurant ||--o{ DiningTable          : " "
     Restaurant ||--o{ DiningSession        : " "
     Restaurant ||--o{ RestaurantOrder      : " "
-    Restaurant ||--o{ Payment              : " "
-    Restaurant ||--o{ AppliedDiscount      : " "
+    Restaurant ||--o{ Settlement           : " "
+    Restaurant ||--o{ AppliedAdjustment    : " "
+    Restaurant ||--o{ AnalyticsJobRun      : " "
+    Restaurant ||--o{ AnalyticSalesDaily   : " "
+    Restaurant ||--o{ AnalyticItemVelocity  : " "
+    Restaurant ||--o{ AnalyticServiceTimes  : " "
+    Restaurant ||--o{ AnalyticForecast     : " "
 
     MenuTemplate     ||--o{ TemplateCategory     : " "
     TemplateCategory ||--o{ TemplateItem         : " "
@@ -117,17 +129,18 @@ erDiagram
     DiningSession ||--o{ DiningSessionTable : " "
     DiningSession ||--o{ Guest              : " "
     DiningSession ||--o{ RestaurantOrder    : " "
-    DiningSession ||--o{ Payment            : " "
+    DiningSession ||--o{ Settlement         : " "
 
-    Guest ||--o{ OrderItem         : " "
-    Guest ||--o{ PaymentAllocation : " "
+    Guest ||--o{ OrderItem            : " "
+    Guest ||--o{ SettlementAllocation : " "
+    Guest ||--o{ SettlementContribution: " "
 
     RestaurantOrder ||--o{ OrderItem            : " "
     OrderItem       ||--o{ OrderItemModifier    : " "
     OrderItem       ||--o{ OrderItemStatusEvent : " "
-    OrderItem       ||--o{ PaymentAllocation    : " "
-    OrderItem       ||--o{ AppliedDiscount      : " "
+    OrderItem       ||--o{ SettlementAllocation : " "
+    OrderItem       ||--o{ AppliedAdjustment    : " "
 
-    Payment ||--o{ PaymentAllocation : " "
-    Payment ||--o{ Refund            : " "
-    Payment ||--o{ AppliedDiscount   : " "
+    Settlement      ||--o{ SettlementAllocation : " "
+    Settlement      ||--o{ SettlementContribution: " "
+    Settlement      ||--o{ AppliedAdjustment    : " "

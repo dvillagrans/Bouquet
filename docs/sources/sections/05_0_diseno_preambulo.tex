@@ -7,13 +7,12 @@ de la base de datos (incluyendo el diccionario de datos), las reglas de negocio
 operacionales y el dise\~no de las interfaces de usuario.
 
 % ── Macros para el Diccionario de Datos ──────────────────────
-\newif\ifaltrow
 \newcommand{\dictable}[2]{%
   \subsubsection{Tabla: #1}
   {\justifying #2 \par}
   \vspace{6pt}
   \setstretch{1.2}
-  \altrowfalse
+  \rowcolors{2}{altrow}{white}%
   \begin{longtable}{>{\raggedright\arraybackslash\ttfamily}p{3.5cm}
                   >{\raggedright\arraybackslash\ttfamily}p{2.2cm}
                   >{\centering\arraybackslash}p{1cm}
@@ -34,9 +33,7 @@ operacionales y el dise\~no de las interfaces de usuario.
 }
 
 \newcommand{\campo}[5]{%
-  \ifaltrow \rowcolor{altrow} \fi
   #1 & #2 & #3 & #4 & #5 \\
-  \ifaltrow \altrowfalse \else \altrowtrue \fi
 }
 
 \newcommand{\dictableend}{%

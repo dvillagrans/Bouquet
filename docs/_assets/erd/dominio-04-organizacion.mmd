@@ -45,18 +45,21 @@ erDiagram
         string actorUserId FK
         string chainId
         string restaurantId
-        string action
+        string action "CREATE|UPDATE|DELETE|LOGIN|OPEN_SESSION|CLOSE_SESSION|APPLY_ADJUSTMENT|REGISTER_CONTRIBUTION|RUN_ANALYTICS_JOB"
         string entityType
         string entityId
         jsonb before
         jsonb after
+        jsonb metadata
+        string ipAddress
+        string userAgent
         timestamp createdAt
     }
 
-    AppUser ||--o{ Chain : "crea"
     Chain ||--o{ Zone : "tiene"
     Chain ||--o{ Restaurant : "tiene"
     Zone ||--o{ Restaurant : "agrupa"
+    AppUser ||--o{ Chain : "crea"
     AppUser ||--o{ AuditLog : "genera"
-    Chain ||--o{ AuditLog : "contexto"
-    Restaurant ||--o{ AuditLog : "contexto"
+    Currency ||--o{ Chain : "usada"
+    Currency ||--o{ Restaurant : "usada"

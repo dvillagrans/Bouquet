@@ -1,49 +1,96 @@
+% ===========================================================
 \section{Arquitectura de Datos y Procesamiento Analítico}
+% ===========================================================
 
 \subsection{Motivación y Contexto}
 
-El modelo operacional de \textbf{Bouquet OPS} está diseñado para un entorno OLTP (\textit{Online Transaction Processing}): alta concurrencia, escrituras frecuentes, integridad referencial estricta y normalización en Tercera Forma Normal (3NF). Este diseño es óptimo para las operaciones del restaurante en tiempo real —apertura de mesas, captura de órdenes, procesamiento de pagos— pero presenta limitaciones inherentes para consultas analíticas complejas que involucran múltiples \textit{joins}, agregaciones históricas y modelos de pronóstico.
+El modelo operacional de \textbf{Bouquet} está diseñado para un entorno OLTP
+(\textit{Online Transaction Processing}), caracterizado por alta concurrencia,
+escrituras frecuentes, integridad referencial estricta y consultas de baja latencia.
+Este diseño resulta adecuado para la operación diaria del restaurante, incluyendo
+apertura de mesas, activación de sesiones virtuales, captura de órdenes, cambios de
+estado en cocina, liquidación interna y cierre operativo de mesas.
 
-Para cubrir el dominio analítico sin comprometer el rendimiento operacional, \textbf{Bouquet OPS} implementa una \textbf{capa de procesamiento analítico separada}, basada en Apache Spark, que opera sobre los datos operacionales de forma \textit{on-demand} y almacena sus resultados en \textbf{tablas analíticas precalculadas} (Capa Gold) dentro de la misma instancia de Supabase/PostgreSQL.
+Sin embargo, las consultas analíticas históricas requieren operaciones diferentes a las
+consultas transaccionales. Para obtener métricas de consumo, productos más solicitados,
+tiempos de preparación, comportamiento por franja horaria o estimaciones exploratorias
+de demanda, es necesario realizar agregaciones sobre múltiples dominios: órdenes,
+ítems, sesiones de mesa, comensales, estados de cocina, aportaciones internas,
+ajustes autorizados, productos, categorías, estaciones y sucursales.
 
-Esta separación sigue el principio de \textbf{CQRS} (\textit{Command Query Responsibility Segregation}) aplicado a nivel de infraestructura: las operaciones de escritura y lectura operacional se gestionan por la capa Next.js + Prisma, mientras que las consultas analíticas se delegan a resultados pre-calculados por el pipeline de Spark.
+Ejecutar estas consultas directamente sobre la base transaccional cada vez que se carga
+el dashboard podría afectar el rendimiento percibido por los usuarios operativos. Por
+ello, Bouquet incorpora una capa de procesamiento analítico separada, basada en
+Apache Spark, que extrae datos operacionales de forma controlada, los transforma bajo
+una arquitectura Medallion y almacena resultados precalculados en tablas analíticas
+Gold dentro de PostgreSQL.
+
+De esta manera, el dashboard administrativo consulta tablas preparadas para análisis,
+en lugar de recalcular métricas pesadas sobre el modelo OLTP. Esta separación sigue el
+principio de CQRS (\textit{Command Query Responsibility Segregation}) aplicado al diseño
+de datos: las operaciones transaccionales se atienden mediante el modelo operacional,
+mientras que las consultas históricas y agregadas se atienden mediante estructuras
+analíticas derivadas.
 
 \subsection{Visión General de la Arquitectura}
 
-La arquitectura analítica de Bouquet OPS sigue el patrón \textbf{Medallion Architecture}, propuesto por Databricks y adoptado ampliamente en pipelines de datos modernos. Este patrón organiza el procesamiento en tres capas progresivas de calidad y utilidad del dato: Bronze, Silver y Gold.
+La arquitectura analítica de Bouquet sigue el patrón \textbf{Medallion Architecture},
+el cual organiza el procesamiento de datos en tres capas progresivas: Bronze, Silver
+y Gold. Cada capa cumple una función específica dentro del refinamiento del dato, desde
+la extracción cruda hasta la generación de métricas listas para consumo por el dashboard.
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.95\textwidth,height=0.4\textheight,keepaspectratio]{../_assets/spark/rendered/Spark-Ejecutivo.pdf}
-  \caption{Arquitectura analítica de Bouquet OPS — Vista ejecutiva. El flujo va desde las tablas operacionales en Supabase hasta el dashboard de analítica en Next.js, pasando por el procesamiento en Spark sobre tablas analíticas (Gold).}
+  \caption{Arquitectura analítica de Bouquet --- Vista ejecutiva. El flujo inicia en las tablas transaccionales de PostgreSQL, continúa con el procesamiento batch en Apache Spark y termina en tablas Gold consultadas por el dashboard administrativo.}
   \label{fig:spark-ejecutivo}
 \end{figure}
 
-El flujo completo, ilustrado en la Figura \ref{fig:spark-ejecutivo}, opera de la siguiente manera:
+El flujo general opera de la siguiente forma:
 
-\begin{enumerate}
-  \item El administrador solicita la generación de un análisis desde el dashboard.
-  \item Next.js envía una solicitud HTTP al \textit{Analytics Orchestrator} en el servidor VPS.
-  \item El orquestador crea un identificador de job, ejecuta el pipeline de Spark y actualiza el estado en la tabla \texttt{AnalyticsJobRun}.
-  \item El dashboard realiza \textit{polling} del estado del job mediante el identificador recibido.
-  \item Al completarse el job, Next.js consulta las tablas analíticas mediante Prisma y renderiza los resultados.
+\begin{enumerate}[leftmargin=1.5em]
+  \item El dashboard administrativo solicita métricas históricas o dispara una actualización
+  analítica autorizada.
+  \item Next.js envía la solicitud al \textit{Analytics Orchestrator}, desplegado en el
+  servidor VPS.
+  \item El orquestador crea un registro en \texttt{AnalyticsJobRun}, indicando tipo de job,
+  restaurante procesado, estado inicial y ventana de datos.
+  \item El orquestador ejecuta los jobs de Spark mediante \texttt{spark-submit}.
+  \item Spark extrae datos transaccionales hacia Bronze, construye datos limpios en Silver
+  y genera agregados Gold.
+  \item Las tablas Gold se escriben en PostgreSQL junto con el \texttt{jobRunId} que permite
+  rastrear su origen.
+  \item El dashboard consulta las tablas Gold mediante Prisma y renderiza las métricas
+  sin ejecutar agregaciones pesadas sobre las tablas OLTP.
 \end{enumerate}
 
-Este diseño garantiza que el dashboard nunca bloquea esperando el procesamiento: la interfaz muestra el estado del análisis en tiempo real y carga los resultados una vez disponibles.
+Este diseño permite que el procesamiento analítico se ejecute de forma programada o bajo
+solicitud autorizada, sin bloquear la experiencia operativa de meseros, cocina, comensales
+o administradores.
 
 \subsection{Arquitectura Medallion}
 
 \subsubsection{Principio General}
 
-La arquitectura Medallion organiza los datos en tres capas con responsabilidades distintas y progresivamente mayor valor analítico:
+La arquitectura Medallion organiza los datos en tres capas de refinamiento progresivo:
 
-\begin{itemize}
-  \item \textbf{Bronze} (\textit{Raw}): copia fiel de los datos operacionales, sin transformaciones. Funciona como seguro de vida: si una transformación posterior falla, es posible reprocesar desde esta capa sin volver a leer la base de datos operacional.
-  \item \textbf{Silver} (\textit{Cleansed \& Enriched}): datos limpios, enriquecidos mediante \textit{joins} entre dominios, con enumeraciones convertidas a texto legible y valores nulos gestionados. Esta capa es la fuente para los procesos de agregación y pronóstico.
-  \item \textbf{Gold} (\textit{Business Ready}): tablas de negocio listas para consumo directo por el dashboard. Estas tablas conservan los identificadores mínimos necesarios (\texttt{restaurantId}, \texttt{chainId}) para garantizar el aislamiento multi-tenant y permitir el filtrado en la interfaz, pero exponen métricas ya procesadas en unidades comprensibles para el operador.
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Bronze} (\textit{Raw Data}): contiene copias crudas de los datos
+  transaccionales. Conserva identificadores, marcas temporales y relaciones mínimas
+  necesarias para reprocesar información sin volver a consultar todo el modelo operacional.
+
+  \item \textbf{Silver} (\textit{Cleaned and Enriched Data}): contiene datos limpios,
+  normalizados y enriquecidos mediante relaciones entre dominios. En esta capa se resuelven
+  joins, se estandarizan estados, se normalizan fechas y se preparan campos para agregación.
+
+  \item \textbf{Gold} (\textit{Business Ready Data}): contiene métricas agregadas listas
+  para consumo por el dashboard. Estas tablas reducen la carga de consulta sobre el modelo
+  OLTP y permiten mostrar indicadores de negocio de forma eficiente.
 \end{itemize}
 
-Todas las capas se almacenan en formato \textbf{Apache Parquet} en el servidor VPS, bajo una estructura de directorios particionada por fecha de ejecución:
+Las capas Bronze, Silver y Gold se almacenan como archivos Apache Parquet en el VPS, bajo
+una estructura particionada por fecha de ejecución y tipo de job. Las tablas Gold, además,
+se escriben de vuelta en PostgreSQL para que Next.js pueda consultarlas mediante Prisma.
 
 \begin{verbatim}
 /data/
@@ -52,221 +99,494 @@ Todas las capas se almacenan en formato \textbf{Apache Parquet} en el servidor V
   gold/YYYY-MM-DD/
 \end{verbatim}
 
-La partición por fecha permite mantener historial de ejecuciones y facilita la depuración ante resultados inesperados.
+La partición por fecha permite mantener historial de ejecuciones, facilita la depuración
+de resultados y habilita reprocesamiento por ventanas específicas.
 
-\subsubsection{Capa Bronze — Ingesta Raw}
+\subsubsection{Capa Bronze --- Ingesta Cruda}
 
-La capa Bronze contiene copias exactas de las tablas operacionales leídas desde PostgreSQL mediante el conector JDBC de Spark. Se utilizan las siguientes tablas como fuentes primarias:
+La capa Bronze contiene datos crudos extraídos desde PostgreSQL mediante JDBC. Su objetivo
+es capturar una fotografía de las entidades transaccionales necesarias para el análisis,
+sin aplicar transformaciones de negocio.
 
 \begin{longtable}{p{6cm}p{10cm}}
+\caption{Fuentes de datos para la capa Bronze} \label{tab:bronze_sources} \\
 \hline
 \textbf{Archivo Parquet} & \textbf{Tabla(s) fuente} \\
 \hline
-\texttt{bronze\_orders} & \texttt{RestaurantOrder} \\
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
 \hline
-\texttt{bronze\_order\_items} & \texttt{OrderItem}, \texttt{OrderItemModifier} \\
+\textbf{Archivo Parquet} & \textbf{Tabla(s) fuente} \\
 \hline
-\texttt{bronze\_status\_events} & \texttt{OrderItemStatusEvent} \\
+\endhead
 \hline
-\texttt{bronze\_payments} & \texttt{Payment}, \texttt{PaymentAllocation} \\
+\endfoot
+\texttt{bronze\_orders} &
+\texttt{RestaurantOrder} \\
 \hline
-\texttt{bronze\_menu} & \texttt{RestaurantMenuItem}, \texttt{RestaurantCategory} \\
+\texttt{bronze\_order\_items} &
+\texttt{OrderItem}, \texttt{OrderItemModifier} \\
 \hline
-\texttt{bronze\_sessions} & \texttt{DiningSession}, \texttt{DiningTable} \\
+\texttt{bronze\_status\_events} &
+\texttt{OrderItemStatusEvent} \\
 \hline
-\texttt{bronze\_catalog} & \texttt{Chain}, \texttt{Zone}, \texttt{Restaurant}, \texttt{Station} \\
+\texttt{bronze\_settlements} &
+\texttt{Settlement}, \texttt{SettlementContribution}, \texttt{SettlementAllocation},
+\texttt{AppliedAdjustment} \\
+\hline
+\texttt{bronze\_menu} &
+\texttt{RestaurantMenuItem}, \texttt{RestaurantCategory}, \texttt{ModifierGroup},
+\texttt{ModifierOption} \\
+\hline
+\texttt{bronze\_sessions} &
+\texttt{DiningSession}, \texttt{DiningSessionTable}, \texttt{DiningTable}, \texttt{Guest} \\
+\hline
+\texttt{bronze\_catalog} &
+\texttt{Chain}, \texttt{Zone}, \texttt{Restaurant}, \texttt{Station} \\
 \hline
 \end{longtable}
 
-La lectura se realiza utilizando la \textbf{URL de conexión directa} de Supabase (sin pgBouncer), ya que el conector JDBC de Spark no es compatible con el modo de pooling transaccional de pgBouncer. El particionamiento de la lectura se realiza por fecha para evitar cargar la totalidad de cada tabla en un solo proceso:
+La extracción puede realizarse de forma incremental utilizando las marcas temporales
+\texttt{createdAt}, \texttt{updatedAt} o campos específicos de eventos, según la tabla.
+La ventana procesada se registra en \texttt{AnalyticsJobRun.dataWindowStart} y
+\texttt{AnalyticsJobRun.dataWindowEnd}, lo que permite reprocesar periodos específicos
+sin recalcular todo el histórico.
 
+\subsubsection{Capa Silver --- Limpieza y Enriquecimiento}
 
-\subsubsection{Capa Silver — Limpieza y Enriquecimiento}
+La capa Silver transforma los datos crudos de Bronze en datasets limpios y enriquecidos.
+Esta capa funciona como el punto intermedio entre el modelo transaccional normalizado y
+las métricas de negocio.
 
-La capa Silver transforma los datos crudos de Bronze mediante tres operaciones principales:
+Las transformaciones principales son:
 
-\begin{enumerate}
-  \item \textbf{Joins entre dominios}: se unen las tablas de órdenes, ítems, productos, categorías y restaurantes en DataFrames enriquecidos que eliminan la necesidad de \textit{joins} en consulta.
-  \item \textbf{Normalización semántica}: los enumerados almacenados como texto (\texttt{PENDING}, \texttt{COMPLETED}, etc.) se mapean a etiquetas legibles en español para el contexto de negocio mexicano.
-  \item \textbf{Gestión de nulos y tipos}: campos opcionales se normalizan, timestamps se estandarizan a zona horaria \texttt{America/Mexico\_City} y montos en centavos se convierten a pesos para campos de display.
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Resolución de relaciones entre dominios:} se integran órdenes, ítems,
+  sesiones, productos, categorías, estaciones, restaurantes y liquidaciones internas.
+
+  \item \textbf{Normalización de estados:} los estados operativos, como
+  \texttt{PENDIENTE}, \texttt{EN\_PREPARACION}, \texttt{LISTA}, \texttt{ENTREGADA},
+  \texttt{ABIERTA}, \texttt{PARCIAL} y \texttt{LIQUIDADA}, se transforman en etiquetas
+  homogéneas para análisis.
+
+  \item \textbf{Gestión de fechas y zona horaria:} las marcas temporales se estandarizan
+  a la zona \texttt{America/Mexico\_City} para evitar errores en cortes diarios,
+  horarios pico y ventanas de operación.
+
+  \item \textbf{Conservación de montos en centavos:} los campos monetarios se mantienen
+  como enteros en centavos para cálculo. La conversión a pesos se realiza únicamente en
+  campos derivados de visualización.
+
+  \item \textbf{Preparación de eventos de cocina:} a partir de
+  \texttt{OrderItemStatusEvent} se calculan tiempos entre estados, como inicio de
+  preparación, finalización y entrega.
+
+  \item \textbf{Preparación de liquidación interna:} se consolidan aportaciones,
+  asignaciones y ajustes autorizados para calcular saldos, montos netos y comportamiento
+  de cierre.
 \end{enumerate}
 
+La capa Silver evita que las tablas Gold tengan que resolver joins complejos sobre el
+modelo OLTP y permite reutilizar datasets limpios para diferentes métricas.
 
-\subsubsection{Capa Gold — Agregados de Negocio}
+\subsubsection{Capa Gold --- Agregados de Negocio}
 
-La capa Gold contiene cuatro tablas de métricas listas para consumo directo por el dashboard. A diferencia de Bronze y Silver, los DataFrames Gold se escriben tanto en Parquet (para historial en VPS) como de vuelta a PostgreSQL mediante JDBC (para consulta desde Next.js).
+La capa Gold contiene las tablas analíticas listas para el dashboard. A diferencia de
+Bronze y Silver, que viven principalmente como Parquet en el VPS, los resultados Gold se
+escriben también en PostgreSQL. Esto permite que la aplicación Next.js consulte métricas
+mediante Prisma, sin depender de Spark durante la carga del dashboard.
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\textwidth,height=0.85\textheight,keepaspectratio]{../_assets/spark/rendered/Spark-Tecnico.pdf}
-  \caption{Pipeline técnico de Spark — Vista detallada. Se muestran los cinco jobs secuenciales, el almacenamiento Parquet por capa y el flujo de escritura hacia las tablas analíticas en Supabase.}
+  \caption{Pipeline técnico de Spark --- Vista detallada. Se muestran las capas Bronze, Silver y Gold, así como la escritura de métricas hacia tablas analíticas en PostgreSQL.}
   \label{fig:spark-tecnico}
 \end{figure}
 
+Las tablas Gold consideradas son:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{analytic\_sales\_daily}
+  \item \texttt{analytic\_item\_velocity}
+  \item \texttt{analytic\_service\_times}
+  \item \texttt{analytic\_demand\_estimate}
+\end{itemize}
+
+Cada registro Gold conserva \texttt{jobRunId}, lo que permite rastrear qué ejecución del
+pipeline generó la métrica.
+
 \subsection{Jobs del Pipeline}
 
-El pipeline se compone de cinco jobs que se ejecutan de forma secuencial bajo la coordinación del \textit{Analytics Orchestrator}. Los jobs 2 y 3 (\textit{Aggregate Metrics} y \textit{Forecast Demand}) son lógicamente independientes entre sí y consumen ambos de la capa Silver, por lo que en implementaciones futuras podrían ejecutarse en paralelo.
+El pipeline se compone de cinco jobs secuenciales coordinados por el
+\textit{Analytics Orchestrator}. Cada job actualiza su estado en \texttt{AnalyticsJobRun}
+o en los metadatos asociados de ejecución.
 
-\subsubsection{Job 2 — Aggregate Metrics}
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Job 1 --- Extract Bronze:} extrae datos transaccionales desde PostgreSQL
+  hacia archivos Parquet en la capa Bronze.
 
-Este job produce las tablas \texttt{analytic\_sales\_daily}, \texttt{analytic\_item\_velocity} y \texttt{analytic\_process\_mining}.
+  \item \textbf{Job 2 --- Build Silver:} limpia, normaliza y enriquece datos Bronze,
+  resolviendo relaciones entre órdenes, ítems, sesiones, liquidaciones, menú, restaurantes
+  y estaciones.
 
+  \item \textbf{Job 3 --- Aggregate Gold Metrics:} genera métricas de consumo diario,
+  velocidad de productos y tiempos de servicio.
 
+  \item \textbf{Job 4 --- Demand Estimate:} calcula estimaciones exploratorias de demanda
+  mediante métodos simples e interpretables sobre históricos.
 
-\subsubsection{Job 3 — Forecast Demand}
+  \item \textbf{Job 5 --- Write Back:} escribe tablas Gold en PostgreSQL y actualiza el
+  estado final del job analítico.
+\end{enumerate}
 
-Este job produce la tabla \texttt{analytic\_forecast}. El modelo estadístico base utilizado es una \textbf{media móvil ponderada con estacionalidad semanal}: se calcula el promedio de ventas de las últimas cuatro semanas para cada día de la semana, ponderando con mayor peso las semanas más recientes. Este enfoque es simple, interpretable y suficiente para el caso de uso de un restaurante con patrones de demanda relativamente estables.
+\subsubsection{Job 1 --- Extract Bronze}
 
-El modelo está diseñado como módulo reemplazable: en versiones posteriores puede sustituirse por un modelo ARIMA, Prophet o un estimador de MLlib sin modificar la arquitectura del pipeline. Para cuantificar la fiabilidad de la predicción, se calcula un \textbf{Score de Confianza} basado en el Coeficiente de Variación histórico ($1 / (1 + CV)$), donde una baja desviación estándar respecto al promedio resulta en una confianza cercana al 100\%.
+Este job consulta las tablas transaccionales mediante JDBC y genera archivos Parquet
+crudos. La extracción se limita a la ventana definida por \texttt{dataWindowStart} y
+\texttt{dataWindowEnd}, cuando dicha ventana está disponible.
 
+Su propósito es reducir el número de consultas directas sobre PostgreSQL y permitir que
+las transformaciones posteriores se realicen sobre archivos locales del VPS.
 
-\subsubsection{Job 4 — Write Back}
+\subsubsection{Job 2 --- Build Silver}
 
-El último job del pipeline lee los cuatro DataFrames Gold desde Parquet y los escribe en las tablas analíticas de PostgreSQL mediante JDBC. Para garantizar la integridad multi-tenant, la escritura se realiza mediante un reemplazo controlado: el pipeline elimina los registros existentes correspondientes al \texttt{restaurantId} procesado antes de insertar los nuevos resultados, evitando así afectar la información de otros locales o cadenas.
+Este job lee los archivos Bronze y produce datasets Silver limpios y enriquecidos. Entre
+sus responsabilidades se encuentran:
 
+\begin{itemize}[leftmargin=1.5em]
+  \item unir órdenes con ítems, comensales, sesiones y restaurantes;
+  \item unir ítems con productos, categorías y estaciones;
+  \item integrar eventos de estado para reconstruir tiempos de cocina;
+  \item integrar liquidaciones, aportaciones, asignaciones y ajustes;
+  \item normalizar estados, fechas y montos;
+  \item descartar o marcar registros incompletos que no puedan utilizarse en agregados.
+\end{itemize}
+
+\subsubsection{Job 3 --- Aggregate Gold Metrics}
+
+Este job produce las tablas \texttt{analytic\_sales\_daily},
+\texttt{analytic\_item\_velocity} y \texttt{analytic\_service\_times}. Sus agregaciones
+se basan en datos Silver enriquecidos, evitando que el dashboard ejecute joins históricos
+sobre la base OLTP.
+
+Las métricas generadas incluyen:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item número de órdenes registradas por fecha operativa;
+  \item número de ítems solicitados;
+  \item monto bruto de consumo registrado;
+  \item monto reducido por descuentos o cortesías autorizadas;
+  \item monto neto de consumo registrado;
+  \item productos más solicitados;
+  \item tiempos promedio de preparación;
+  \item percentiles de preparación por estación;
+  \item ítems retrasados según umbral operativo.
+\end{itemize}
+
+\subsubsection{Job 4 --- Demand Estimate}
+
+Este job produce la tabla \texttt{analytic\_demand\_estimate}. Su objetivo es generar
+estimaciones exploratorias de demanda por producto y fecha. No se considera un sistema
+predictivo avanzado, sino un mecanismo inicial para observar patrones históricos y apoyar
+decisiones administrativas.
+
+El método base propuesto es una media móvil ponderada con estacionalidad semanal. Para
+cada producto se calcula el comportamiento histórico por día de la semana, asignando mayor
+peso a los registros recientes. Este enfoque es simple, interpretable y adecuado para una
+primera versión académica.
+
+El campo \texttt{confidenceBps} se interpreta como un indicador opcional de confiabilidad
+de la estimación. Puede calcularse a partir de la variabilidad histórica, por ejemplo
+mediante una función basada en el coeficiente de variación:
+
+\[
+  \texttt{confidenceBps} = \frac{10000}{1 + CV}
+\]
+
+donde $CV$ representa el coeficiente de variación histórico. Al utilizar basis points,
+un valor de $10000$ representa una confiabilidad estimada del $100\%$.
+
+En versiones futuras, este módulo podría reemplazarse por métodos estadísticos o de
+aprendizaje automático más sofisticados sin modificar la interfaz de salida de la tabla
+Gold.
+
+\subsubsection{Job 5 --- Write Back}
+
+El último job lee los DataFrames Gold y los escribe en tablas analíticas de PostgreSQL.
+La escritura se realiza mediante una estrategia de reemplazo controlado por restaurante,
+tabla y ventana de datos procesada.
+
+Para evitar duplicados, cada tabla Gold define llaves lógicas, por ejemplo:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{restaurantId + businessDate} para \texttt{analytic\_sales\_daily};
+  \item \texttt{restaurantId + menuItemId + businessDate} para \texttt{analytic\_item\_velocity};
+  \item \texttt{restaurantId + stationId + businessDate} para \texttt{analytic\_service\_times};
+  \item \texttt{restaurantId + menuItemId + estimateDate} para \texttt{analytic\_demand\_estimate}.
+\end{itemize}
+
+Cuando la tabla lo permite, se utiliza una operación tipo \textit{upsert} para actualizar
+métricas existentes sin afectar datos fuera de la ventana procesada. Cada registro escrito
+mantiene \texttt{jobRunId}, permitiendo rastrear su origen analítico.
 
 \subsection{Seguridad y Control Operacional}
 
-Dada la naturaleza intensiva del procesamiento analítico, el sistema incorpora mecanismos de protección y control:
+Dado que el procesamiento analítico puede consumir recursos considerables, el sistema
+incorpora mecanismos de protección y control:
 
-\begin{itemize}
-    \item \textbf{Seguridad de API}: La comunicación entre Next.js y el \textit{Analytics Orchestrator} está protegida mediante una \textit{API Key} compartida y almacenada en variables de entorno. Esto asegura que solo el servidor de aplicaciones autorizado pueda disparar ejecuciones de Spark.
-    \item \textbf{Control de Concurrencia}: El orquestador consulta la tabla \texttt{AnalyticsJobRun} antes de iniciar un nuevo proceso. Si detecta que ya existe un job en estado \texttt{QUEUED} o \texttt{RUNNING} para el mismo \texttt{restaurantId}, la solicitud es rechazada para evitar sobrecarga del servidor y condiciones de carrera en la base de datos.
-    \item \textbf{Aislamiento de Recursos}: Spark se configura con límites estrictos de memoria y núcleos de CPU para asegurar que el procesamiento analítico no degrade el rendimiento de los servicios operacionales (Base de Datos y Web Server) que residen en el mismo VPS.
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Seguridad de API:} la comunicación entre Next.js y el
+  \textit{Analytics Orchestrator} se protege mediante una \textit{API Key} compartida,
+  almacenada en variables de entorno.
+
+  \item \textbf{Control de concurrencia:} antes de iniciar un nuevo proceso, el
+  orquestador consulta \texttt{AnalyticsJobRun}. Si existe un job en estado
+  \texttt{QUEUED} o \texttt{RUNNING} para el mismo \texttt{restaurantId} y tipo de job,
+  la solicitud se rechaza para evitar sobrecarga y condiciones de carrera.
+
+  \item \textbf{Aislamiento de recursos:} Spark se configura con límites de memoria y
+  núcleos de CPU para evitar consumo excesivo de recursos en el VPS.
+
+  \item \textbf{Separación de ejecución:} el procesamiento analítico no se ejecuta dentro
+  de Vercel ni dentro del proceso principal de la aplicación web; se ejecuta en el VPS
+  mediante el orquestador.
+
+  \item \textbf{Ventanas de procesamiento:} cada ejecución registra
+  \texttt{dataWindowStart} y \texttt{dataWindowEnd}, permitiendo limitar el rango de datos
+  procesado.
 \end{itemize}
 
 \subsection{Linaje de Datos y Transformaciones}
 
-Para un entendimiento profundo del procesamiento, es necesario observar cómo viajan los campos específicos y qué transformaciones matemáticas se aplican en cada etapa. A continuación se detalla el linaje de las cuatro tablas principales de la capa Gold.
+El linaje de datos permite explicar cómo se transforma la información desde el modelo
+transaccional hasta las tablas Gold. Esto facilita validación, depuración y defensa de
+métricas durante revisiones técnicas.
+
+\subsubsection{Linaje de \texttt{analytic\_sales\_daily}}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\textwidth,height=0.6\textheight,keepaspectratio]{../_assets/spark/rendered/Lineage-Sales.pdf}
-  \caption{Linaje de \texttt{analytic\_sales\_daily}. El flujo consolida el núcleo operacional (órdenes e ítems) con el catálogo (restaurantes y cadenas) para generar una visión de ingresos por categoría y tiempo.}
+  \caption{Linaje de \texttt{analytic\_sales\_daily}. El flujo consolida órdenes, ítems, sesiones, restaurantes y ajustes autorizados para generar métricas diarias de consumo.}
   \label{fig:lineage-sales}
 \end{figure}
 
 \begin{table}[H]
 \centering
-\caption{Diccionario de Métricas — Sales Daily}
+\caption{Diccionario de Métricas --- Sales Daily}
 \begin{tabular}{p{4cm}p{5cm}p{7cm}}
 \hline
-\textbf{Métrica} & \textbf{Cálculo (Spark SQL)} & \textbf{Descripción} \\ \hline
-\texttt{totalOrders} & \texttt{COUNT(DISTINCT orderId)} & Volumen de transacciones únicas. \\ \hline
-\texttt{revenueCents} & \texttt{SUM(totalCents)} & Ingresos brutos antes de impuestos. \\ \hline
-\texttt{avgTicketCents} & \texttt{revenueCents / totalOrders} & Gasto promedio por orden. \\ \hline
-\texttt{cancellations} & \texttt{COUNT(status = 'CANCELLED')} & Conteo de ítems no concretados. \\ \hline
+\textbf{Métrica} & \textbf{Cálculo (Spark SQL)} & \textbf{Descripción} \\
+\hline
+\texttt{orderCount} &
+\texttt{COUNT(DISTINCT orderId)} &
+Número de órdenes registradas en la fecha operativa. \\
+\hline
+\texttt{itemCount} &
+\texttt{SUM(quantity)} &
+Número total de ítems registrados. \\
+\hline
+\texttt{grossConsumptionCents} &
+\texttt{SUM(totalCents)} &
+Monto bruto de consumo registrado. \\
+\hline
+\texttt{discountCents} &
+\texttt{SUM(adjustmentAmountCents)} &
+Monto reducido mediante descuentos o cortesías autorizadas. \\
+\hline
+\texttt{netConsumptionCents} &
+\texttt{grossConsumptionCents - discountCents} &
+Monto neto de consumo registrado después de ajustes. \\
+\hline
 \end{tabular}
 \end{table}
+
+\subsubsection{Linaje de \texttt{analytic\_item\_velocity}}
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.95\textwidth,height=0.6\textheight,keepaspectratio]{../_assets/spark/rendered/Lineage-Velocity.pdf}
-  \caption{Linaje de \texttt{analytic\_item\_velocity}. Se enfoca en el comportamiento de cada producto, calculando ventanas de tiempo (7d/30d) y extrayendo la hora pico de demanda mediante funciones de agregación por hora.}
+  \caption{Linaje de \texttt{analytic\_item\_velocity}. Se enfoca en el comportamiento de consumo por producto, considerando cantidad solicitada y monto bruto asociado.}
   \label{fig:lineage-velocity}
 \end{figure}
 
 \begin{table}[H]
 \centering
-\caption{Diccionario de Métricas — Item Velocity}
+\caption{Diccionario de Métricas --- Item Velocity}
 \begin{tabular}{p{4cm}p{6cm}p{6cm}}
 \hline
-\textbf{Métrica} & \textbf{Cálculo (Spark SQL)} & \textbf{Descripción} \\ \hline
-\texttt{unitsSold} & \texttt{SUM(quantity)} & Volumen físico de ventas. \\ \hline
-\texttt{peakHour} & \texttt{MODE(HOUR(createdAt))} & Hora del día con mayor volumen de ventas (frecuencia máxima). \\ \hline
-\texttt{revenueCents} & \texttt{SUM(totalCents)} & Ingresos generados por el producto. \\ \hline
+\textbf{Métrica} & \textbf{Cálculo (Spark SQL)} & \textbf{Descripción} \\
+\hline
+\texttt{quantitySold} &
+\texttt{SUM(quantity)} &
+Cantidad solicitada del producto en el periodo. \\
+\hline
+\texttt{grossConsumptionCents} &
+\texttt{SUM(totalCents)} &
+Monto bruto asociado al producto. \\
+\hline
+\texttt{itemNameSnapshot} &
+\texttt{LAST(itemNameSnapshot)} &
+Nombre histórico usado para análisis aunque el catálogo cambie. \\
+\hline
 \end{tabular}
 \end{table}
 
+\subsubsection{Linaje de \texttt{analytic\_service\_times}}
+
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.95\textwidth,height=0.6\textheight,keepaspectratio]{../_assets/spark/rendered/Lineage-Mining.pdf}
-  \caption{Linaje de \texttt{analytic\_process\_mining}. Utiliza funciones de ventana para medir el ciclo de vida de cada ítem, desde su creación (\texttt{NEW}) hasta su entrega (\texttt{SERVED}).}
-  \label{fig:lineage-mining}
+  \includegraphics[width=0.95\textwidth,height=0.6\textheight,keepaspectratio]{../_assets/spark/rendered/Lineage-ServiceTimes.pdf}
+  \caption{Linaje de \texttt{analytic\_service\_times}. Utiliza eventos de estado de \texttt{OrderItemStatusEvent} para calcular tiempos de preparación por estación a partir de las transiciones \texttt{PENDIENTE}, \texttt{EN\_PREPARACION} y \texttt{LISTA}.}
+  \label{fig:lineage-service-times}
 \end{figure}
 
 \begin{table}[H]
 \centering
-\caption{Diccionario de Métricas — Process Mining}
+\caption{Diccionario de Métricas --- Service Times}
 \begin{tabular}{p{4cm}p{6cm}p{6cm}}
 \hline
-\textbf{Métrica} & \textbf{Cálculo (Spark SQL)} & \textbf{Descripción} \\ \hline
-\texttt{avgSeconds} & \texttt{AVG(ts\_served - ts\_new)} & Tiempo promedio de ciclo completo. \\ \hline
-\texttt{itemsLate} & \texttt{COUNT(duration > SLA)} & Ítems que excedieron el umbral de servicio. \\ \hline
-\texttt{bottleneckScore} & \texttt{itemsLate / totalItems} & Indicador de saturación de la estación. \\ \hline
+\textbf{Métrica} & \textbf{Cálculo (Spark SQL)} & \textbf{Descripción} \\
+\hline
+\texttt{avgPrepSeconds} &
+\texttt{AVG(ts\_lista - ts\_preparacion)} &
+Tiempo promedio de preparación. \\
+\hline
+\texttt{p50PrepSeconds} &
+\texttt{PERCENTILE(duration, 0.50)} &
+Mediana del tiempo de preparación. \\
+\hline
+\texttt{p90PrepSeconds} &
+\texttt{PERCENTILE(duration, 0.90)} &
+Percentil 90 del tiempo de preparación. \\
+\hline
+\texttt{delayedItemsCount} &
+\texttt{COUNT(duration > threshold)} &
+Ítems que superan el umbral operativo definido. \\
+\hline
 \end{tabular}
 \end{table}
 
+\subsubsection{Linaje de \texttt{analytic\_demand\_estimate}}
+
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.95\textwidth,height=0.6\textheight,keepaspectratio]{../_assets/spark/rendered/Lineage-Forecast.pdf}
-  \caption{Linaje de \texttt{analytic\_forecast}. Implementa una transformación estadística que cruza el promedio histórico por día de la semana con fechas futuras.}
-  \label{fig:lineage-forecast}
+  \includegraphics[width=0.95\textwidth,height=0.6\textheight,keepaspectratio]{../_assets/spark/rendered/Lineage-DemandEstimate.pdf}
+  \caption{Linaje de \texttt{analytic\_demand\_estimate}. Genera estimaciones exploratorias de demanda por producto y fecha a partir de históricos agregados por día de la semana.}
+  \label{fig:lineage-demand-estimate}
 \end{figure}
 
 \begin{table}[H]
 \centering
-\caption{Diccionario de Métricas — Forecast}
+\caption{Diccionario de Métricas --- Demand Estimate}
 \begin{tabular}{p{4cm}p{6cm}p{6cm}}
 \hline
-\textbf{Métrica} & \textbf{Cálculo (Spark SQL)} & \textbf{Descripción} \\ \hline
-\texttt{projectedOrders} & \texttt{AVG(hist\_daily\_orders)} & Demanda esperada según estacionalidad. \\ \hline
-\texttt{confidenceScore} & \texttt{1 / (1 + (stddev / avg))} & Fiabilidad basada en la estabilidad histórica. \\ \hline
+\textbf{Métrica} & \textbf{Cálculo (Spark SQL)} & \textbf{Descripción} \\
+\hline
+\texttt{expectedQuantity} &
+\texttt{weighted\_avg(hist\_quantity)} &
+Cantidad esperada estimada a partir de históricos. \\
+\hline
+\texttt{confidenceBps} &
+\texttt{10000 / (1 + CV)} &
+Indicador opcional de confiabilidad basado en variabilidad histórica. \\
+\hline
 \end{tabular}
 \end{table}
 
 \subsection{Analytics Orchestrator}
 
-El \textbf{Analytics Orchestrator} es un servicio ligero implementado en \textbf{FastAPI} que reside en el servidor VPS y actúa como intermediario entre Next.js y el pipeline de Spark. Sus responsabilidades son:
+El \textbf{Analytics Orchestrator} es un servicio ligero implementado en \textbf{FastAPI}
+que reside en el servidor VPS. Actúa como intermediario entre la aplicación Next.js y
+el pipeline de Spark.
 
-\begin{itemize}
-  \item Recibir solicitudes de ejecución desde la API de Next.js.
-  \item Generar un identificador único de job (\texttt{jobId}).
-  \item Ejecutar los jobs de Spark mediante \texttt{spark-submit} como subprocesos.
-  \item Actualizar el estado del job en la tabla \texttt{AnalyticsJobRun} de PostgreSQL.
-  \item Exponer el estado del job para el mecanismo de \textit{polling} del dashboard.
+Sus responsabilidades son:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item recibir solicitudes de ejecución desde la API de Next.js;
+  \item generar un identificador único de job;
+  \item crear y actualizar registros en \texttt{AnalyticsJobRun};
+  \item ejecutar jobs de Spark mediante \texttt{spark-submit};
+  \item rechazar ejecuciones concurrentes conflictivas;
+  \item exponer el estado del job para el mecanismo de consulta del dashboard.
 \end{itemize}
 
-El servicio expone dos endpoints:
+El servicio expone endpoints internos protegidos por API Key:
 
-\begin{itemize}
-  \item \texttt{POST /run-job} — inicia el pipeline y retorna el \texttt{jobId}.
-  \item \texttt{GET /status/\{jobId\}} — retorna el estado actual del job.
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{POST /jobs}: inicia una ejecución del pipeline y retorna el identificador del job.
+  \item \texttt{GET /jobs/\{jobId\}}: retorna el estado actual del job.
 \end{itemize}
 
-\subsection{Tablas Analíticas (Gold en PostgreSQL)}
+Estos endpoints no están diseñados para consumo directo por el cliente final; son invocados
+por la capa de aplicación.
 
-Las tablas analíticas son el punto de integración entre el pipeline de Spark y el dashboard de Next.js. Son escritas exclusivamente por el Job 4 del pipeline y leídas exclusivamente por la capa de presentación mediante Prisma. Ninguna operación OLTP escribe en estas tablas.
+\subsection{Tablas Analíticas Gold en PostgreSQL}
+
+Las tablas analíticas son el punto de integración entre Spark y el dashboard de Next.js.
+Son escritas por el pipeline analítico y leídas por la capa de aplicación mediante Prisma.
+Ninguna operación OLTP escribe directamente en estas tablas.
 
 \begin{longtable}{p{6cm}p{10cm}}
+\caption{Tablas analíticas Gold} \label{tab:gold_tables} \\
 \hline
 \textbf{Tabla} & \textbf{Contenido} \\
 \hline
-\texttt{analytic\_sales\_daily} & Ventas agregadas por día, restaurante y categoría. Incluye total de órdenes, ítems vendidos, ingresos totales, ticket promedio y propinas. \\
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
 \hline
-\texttt{analytic\_item\_velocity} & Velocidad de venta por producto en los últimos 7 y 30 días. Incluye hora pico de venta, ingresos por variante y conteo de cancelaciones. \\
+\textbf{Tabla} & \textbf{Contenido} \\
 \hline
-\texttt{analytic\_process\_mining} & Tiempos de preparación por estación y día. Incluye tiempo promedio NEW→SERVED, ítems dentro y fuera del SLA, y \textit{bottleneck score} por estación. \\
+\endhead
 \hline
-\texttt{analytic\_forecast} & Proyección de demanda para los próximos 7 días por categoría y restaurante. Incluye órdenes proyectadas, ingresos estimados y score de confianza del modelo. \\
+\endfoot
+\texttt{analytic\_sales\_daily} &
+Métricas diarias de consumo por restaurante. Incluye órdenes registradas, ítems,
+monto bruto de consumo, ajustes aplicados y monto neto de consumo. \\
 \hline
-\texttt{AnalyticsJobRun} & Historial de ejecuciones del pipeline. Permite al dashboard mostrar la antigüedad del último análisis y el estado de jobs en curso. \\
+\texttt{analytic\_item\_velocity} &
+Velocidad de consumo por producto y día. Incluye cantidad solicitada, monto bruto
+asociado y nombre histórico del producto. \\
+\hline
+\texttt{analytic\_service\_times} &
+Tiempos de preparación por estación y día. Incluye promedio, percentil 50, percentil 90
+e ítems retrasados según umbral operativo. \\
+\hline
+\texttt{analytic\_demand\_estimate} &
+Estimaciones exploratorias de demanda por producto y fecha. Incluye cantidad esperada,
+método utilizado e indicador opcional de confiabilidad. \\
+\hline
+\texttt{AnalyticsJobRun} &
+Historial de ejecuciones del pipeline. Permite conocer estado, ventana procesada,
+errores, metadatos y antigüedad del último análisis. \\
 \hline
 \end{longtable}
 
 \subsection{Consideraciones de Escalabilidad}
 
-La arquitectura analítica de Bouquet OPS está diseñada para el contexto de un MVP con datos de prueba y escala de restaurante individual o pequeña cadena. Sin embargo, incorpora decisiones de diseño que facilitan su evolución:
+La arquitectura analítica de Bouquet está diseñada para una primera versión académica y
+operativa, con escala de restaurante individual o pequeña cadena. Sin embargo, incorpora
+decisiones que facilitan su evolución futura:
 
-\begin{itemize}
-  \item \textbf{Particionamiento por fecha}: el almacenamiento Parquet particionado permite agregar nuevas ejecuciones sin reescribir datos históricos. En el futuro, puede migrarse a un sistema de almacenamiento distribuido (HDFS, S3, GCS) sin cambiar la lógica de los jobs.
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Particionamiento por fecha:} el almacenamiento Parquet particionado permite
+  agregar nuevas ejecuciones sin reescribir datos históricos completos. En el futuro puede
+  migrarse a almacenamiento distribuido como S3, GCS o HDFS sin cambiar la lógica central
+  de los jobs.
 
-  \item \textbf{Pipeline modular}: cada job es un script independiente invocado por el orquestador. Pueden añadirse nuevos jobs (ej. análisis de inventario, segmentación de clientes) sin modificar los existentes.
+  \item \textbf{Pipeline modular:} cada job es un componente independiente invocado por el
+  orquestador. Esto permite agregar nuevos análisis, como inventario o segmentación de
+  comportamiento, sin modificar todos los jobs existentes.
 
-  \item \textbf{Modelo de forecast reemplazable}: el módulo de pronóstico está diseñado como componente intercambiable. La media móvil con estacionalidad semanal puede sustituirse por modelos más sofisticados (ARIMA, Facebook Prophet, Spark MLlib) manteniendo la misma interfaz de salida (\texttt{analytic\_forecast}).
+  \item \textbf{Estimación reemplazable:} el módulo de demanda utiliza un método simple e
+  interpretable, pero puede reemplazarse por modelos estadísticos como ARIMA, Prophet o
+  métodos de Spark MLlib manteniendo la misma tabla de salida.
 
-  \item \textbf{Separación OLTP/OLAP}: al no modificar las tablas operacionales durante el procesamiento analítico, el pipeline puede ejecutarse sin afectar el rendimiento del sistema en producción.
+  \item \textbf{Separación OLTP/OLAP:} el procesamiento analítico se ejecuta fuera del flujo
+  operacional, evitando que el dashboard histórico afecte la captura de órdenes, estados
+  de cocina o liquidaciones internas.
 
-  \item \textbf{Multi-tenant}: aunque la implementación actual procesa por \texttt{restaurantId}, el esquema multi-tenant del modelo operacional (\texttt{chainId}, \texttt{zoneId}) permite extender el análisis a nivel de cadena completa sin cambios estructurales.
+  \item \textbf{Diseño multi-tenant:} aunque la primera implementación puede procesar por
+  \texttt{restaurantId}, el modelo organizacional permite extender análisis a nivel de zona
+  o cadena mediante agregación sobre varias sucursales.
 \end{itemize}
-

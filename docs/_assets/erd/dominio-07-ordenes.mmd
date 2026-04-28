@@ -1,0 +1,66 @@
+erDiagram
+
+    RestaurantOrder {
+        string id PK
+        string restaurantId FK
+        string diningSessionId FK
+        string createdByUserId FK
+        string source "WAITER | QR | INTERNAL"
+        string status "ABIERTA | ENVIADA | COMPLETADA | CANCELADA"
+        timestamp createdAt
+        timestamp updatedAt
+        timestamp closedAt
+        timestamp cancelledAt
+    }
+
+    OrderItem {
+        string id PK
+        string orderId FK
+        string menuItemId FK
+        string variantId FK
+        string guestId FK
+        string stationId FK
+        string status "PENDIENTE | EN_PREPARACION | LISTA | ENTREGADA | CANCELADA"
+        int quantity
+        string notes
+        string itemNameSnapshot
+        string variantNameSnapshot
+        string stationNameSnapshot
+        int taxRateBpsSnapshot
+        int unitPriceCents
+        int subtotalCents
+        int taxAmountCents
+        int totalCents
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
+    OrderItemModifier {
+        string id PK
+        string orderItemId FK
+        string modifierOptionId FK
+        string nameSnapshot
+        int quantity
+        int unitAdjustmentCents
+        int totalAdjustmentCents
+        timestamp createdAt
+    }
+
+    OrderItemStatusEvent {
+        string id PK
+        string orderItemId FK
+        string changedByUserId FK
+        string fromStatus
+        string toStatus
+        timestamp createdAt
+    }
+
+    DiningSession ||--o{ RestaurantOrder : "tiene"
+    RestaurantOrder ||--o{ OrderItem : "tiene"
+    OrderItem ||--o{ OrderItemModifier : "tiene"
+    OrderItem ||--o{ OrderItemStatusEvent : "tiene"
+    Guest ||--o{ OrderItem : "pide"
+    AppUser ||--o{ RestaurantOrder : "crea"
+    AppUser ||--o{ OrderItemStatusEvent : "registra"
+    Station ||--o{ OrderItem : "prepara"
+    RestaurantMenuItem ||--o{ OrderItem : "instancia"

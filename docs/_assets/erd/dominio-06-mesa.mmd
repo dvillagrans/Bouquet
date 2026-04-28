@@ -3,11 +3,11 @@ erDiagram
     DiningTable {
         string id PK
         string restaurantId FK
+        string publicCode UK
         int number
         int capacity
-        string qrTokenHash
         int qrVersion
-        string status
+        string status "LIBRE | OCUPADA | NO_DISPONIBLE"
         float posX
         float posY
         string shape
@@ -20,9 +20,15 @@ erDiagram
         string restaurantId FK
         string openedByUserId FK
         string closedByUserId FK
-        string status
+        string status "PENDIENTE_ACTIVACION | ACTIVA | EN_CONSUMO | POR_LIQUIDAR | LIQUIDADA | CERRADA | CANCELADA"
+        string joinCode UK
+        string accessCodeHash
         int pax
         timestamp openedAt
+        timestamp activatedAt
+        timestamp firstOrderAt
+        timestamp liquidationStartedAt
+        timestamp settledAt
         timestamp closedAt
         timestamp updatedAt
     }
@@ -40,11 +46,16 @@ erDiagram
         string diningSessionId FK
         string name
         int seatNumber
+        boolean isHost
+        boolean isActive
+        timestamp joinedAt
+        timestamp leftAt
         timestamp createdAt
     }
 
     Restaurant ||--o{ DiningTable : "tiene"
     Restaurant ||--o{ DiningSession : "tiene"
-    DiningTable ||--o{ DiningSessionTable : "en sesiones"
-    DiningSession ||--o{ DiningSessionTable : "ocupa mesas"
+    DiningTable ||--o{ DiningSessionTable : "en"
+    DiningSession ||--o{ DiningSessionTable : "ocupa"
     DiningSession ||--o{ Guest : "tiene"
+    AppUser ||--o{ DiningSession : "gestiona"

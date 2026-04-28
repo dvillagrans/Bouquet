@@ -2,99 +2,237 @@
 \subsection{Flujos de Negocio}
 % -----------------------------------------------------------
 
+Esta sección describe los principales flujos operativos del sistema Bouquet. Los
+flujos se organizan de acuerdo con los actores participantes y con las entidades
+centrales del modelo: usuarios colaboradores, mesas físicas, sesiones virtuales,
+órdenes, cocina, liquidación interna y procesamiento analítico.
+
 \subsubsection{Login de Usuario Colaborador}
 
-Roles participantes: Admin, Gerente, Mesero, Chef. El usuario ingresa su correo
-y contraseña en la pantalla de login. En el primer acceso el sistema detecta la
-contraseña temporal y redirige al flujo de cambio de contraseña. Tras la
-autenticación exitosa, el sistema redirige según el rol.
+Roles participantes: Admin Cadena, Gerente Zona, Gerente Sucursal, Mesero y
+Cocina/Chef.
+
+El usuario colaborador ingresa su correo electrónico y contraseña en la pantalla
+de inicio de sesión. El sistema valida las credenciales y consulta los roles
+contextuales asociados mediante \texttt{UserRole}. Con base en el rol y alcance
+organizacional del usuario, la aplicación redirige a la interfaz correspondiente.
+
+En caso de primer acceso, el sistema puede solicitar actualización de contraseña
+antes de permitir el uso normal de la plataforma. Una vez autenticado, el usuario
+solo podrá consultar o modificar información dentro del alcance permitido por su
+rol: cadena, zona o sucursal.
 
 \subsubsection{Alta de Zonas}
 
-Roles participantes: Admin. El usuario accede al módulo de Zonas desde la barra
-de navegación, puede visualizar zonas existentes y crear nuevas.
+Roles participantes: Admin Cadena.
+
+El Admin Cadena accede al módulo de zonas desde el panel administrativo. El sistema
+muestra las zonas existentes de la cadena y permite registrar nuevas zonas operativas.
+Cada zona queda asociada a una cadena restaurantera y sirve como agrupación geográfica
+o administrativa de sucursales.
 
 \subsubsection{Alta de Sucursales}
 
-Roles participantes: Admin, Gerente Zona. El Gerente Zona únicamente puede dar
-de alta sucursales dentro de las zonas que tiene asignadas.
+Roles participantes: Admin Cadena y Gerente Zona.
 
-\subsubsection{Alta de Categorías y Productos}
+El Admin Cadena puede crear sucursales dentro de cualquier zona perteneciente a la
+cadena. El Gerente Zona únicamente puede crear o administrar sucursales dentro de
+las zonas que tiene asignadas. Cada sucursal define su moneda de operación, parámetros
+locales, configuración de pedidos móviles y reglas básicas de operación.
 
-Roles participantes: Admin, Gerente. Las categorías agrupan los productos del
-menú. La creación está filtrada por las zonas o sucursales asignadas al usuario.
+\subsubsection{Alta de Categorías, Productos y Modificadores}
+
+Roles participantes: Admin Cadena, Gerente Zona y Gerente Sucursal.
+
+Los usuarios autorizados pueden administrar el menú de acuerdo con su alcance
+organizacional. Las categorías agrupan productos; los productos pueden tener variantes,
+modificadores, precio local, grupo fiscal y estación de preparación asignada.
+
+Cuando un producto, variante o modificador cambia, las órdenes históricas no se alteran,
+debido a que \texttt{OrderItem} y \texttt{OrderItemModifier} conservan snapshots de
+nombre, precio, tasa de impuesto, estación y ajustes aplicados al momento de ordenar.
 
 \subsubsection{Alta de Usuarios con Roles}
 
-Roles participantes: Admin, Gerente. El usuario creador ingresa el correo del
-nuevo usuario; el sistema genera una contraseña temporal.
+Roles participantes: Admin Cadena, Gerente Zona y Gerente Sucursal.
 
-\subsubsection{Creación de Mesa Física}
+El usuario creador registra el correo del nuevo colaborador, sus datos básicos y el rol
+correspondiente. El sistema valida que el creador tenga permisos suficientes y que el
+rol asignado pertenezca a su alcance operativo.
 
-Roles participantes: Mesero, Gerente. Desde la pantalla de visualización de
-mesas, el usuario puede crear una nueva mesa física.
+El Admin Cadena puede crear usuarios dentro de la cadena. El Gerente Zona puede crear
+usuarios dentro de sus sucursales asignadas. El Gerente Sucursal puede crear personal
+operativo de su sucursal, como meseros y usuarios de cocina. Toda creación de usuario
+queda registrada en \texttt{AuditLog}.
+
+\subsubsection{Creación y Gestión de Mesa Física}
+
+Roles participantes: Gerente Sucursal, Mesero.
+
+Desde el módulo de mesas, el usuario autorizado puede crear, editar o liberar mesas
+físicas. Cada \texttt{DiningTable} pertenece a una sucursal y contiene número, capacidad,
+código público para QR, versión de QR y estado físico-operativo.
+
+Los estados posibles de una mesa física son: \texttt{LIBRE}, \texttt{OCUPADA} y
+\texttt{NO\_DISPONIBLE}. Una mesa en estado \texttt{LIBRE} puede asociarse a una nueva
+sesión virtual; una mesa \texttt{OCUPADA} no puede formar parte de otra sesión activa.
 
 \subsubsection{Inicialización de Mesa Virtual}
 
-Roles participantes: Mesero, Gerente. Desde la pantalla de Mesas, el usuario
-selecciona una o más mesas físicas en estado LIBRE. El sistema crea la mesa
-virtual y genera el QR.
+Roles participantes: Mesero, Gerente Sucursal.
+
+Desde la pantalla de mesas, el usuario selecciona una o varias mesas físicas en estado
+\texttt{LIBRE}. El sistema valida que las mesas pertenezcan a la sucursal del usuario y
+que no estén asociadas a otra \texttt{DiningSession} activa.
+
+Si la validación es exitosa, el sistema crea una nueva \texttt{DiningSession} en estado
+\texttt{PENDIENTE\_ACTIVACION}, registra las asociaciones en \texttt{DiningSessionTable}
+y cambia las mesas físicas a estado \texttt{OCUPADA}. Posteriormente genera el enlace QR
+firmado con HMAC-SHA256 a partir de \texttt{DiningTable.publicCode} y
+\texttt{DiningTable.qrVersion}.
 
 \subsubsection{Acceso de Comensales a la Mesa Virtual}
 
-Roles participantes: Anfitrión, Comensal. Existen dos sub-flujos:
-(1)~\textbf{Activar Mesa} (Anfitrión) y (2)~\textbf{Unirse a Mesa} (Comensal).
+Roles participantes: Anfitrión, Comensal.
+
+El flujo de acceso se divide en dos subflujos:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Activar mesa virtual:} el Anfitrión escanea el QR, valida el enlace
+  firmado y crea una contraseña de acceso para la mesa. El sistema almacena únicamente
+  el hash de la contraseña en \texttt{DiningSession.accessCodeHash}.
+
+  \item \textbf{Unirse a mesa virtual:} los demás comensales ingresan mediante el código
+  de sesión y la contraseña compartida por el Anfitrión. Al unirse, el sistema crea un
+  registro \texttt{Guest} asociado a la \texttt{DiningSession}.
+\end{enumerate}
+
+El sistema no almacena la contraseña en texto plano ni la muestra nuevamente después
+de su creación. El acceso de comensales es temporal y se limita al ciclo de vida de la
+sesión virtual.
 
 \subsubsection{Diagrama de Secuencia --- Flujo de Activación de Mesa Virtual}
 
-La Figura~\ref{fig:seq_activacion} muestra el diagrama de secuencia del flujo de activaci\'on de mesa virtual
-por parte del Anfitr\'ion, que es el flujo m\'as cr\'itico del sistema por involucrar
-la generaci\'on del JWT, la validaci\'on del QR y la creaci\'on de la sesi\'on.
+La Figura~\ref{fig:seq_activacion} muestra el flujo de activación de una mesa virtual
+por parte del Anfitrión. Este flujo es crítico porque valida el QR firmado, crea la
+contraseña de acceso y cambia el estado de la sesión de \texttt{PENDIENTE\_ACTIVACION}
+a \texttt{ACTIVA}.
 
 \begin{figure}[ht]
 \centering
 \small
 \fbox{
-\begin{minipage}{0.90\textwidth}
+\begin{minipage}{0.92\textwidth}
 \centering
-\textbf{Diagrama de Secuencia --- Activación de Mesa Virtual (Flujo Anfitrión)}\\[8pt]
+\textbf{Diagrama de Secuencia --- Activación de Mesa Virtual}\\[8pt]
 \begin{tabular}{>{\raggedright\arraybackslash}p{13cm}}
-\textbf{Actores:} :Mesero, :Next.js API, :Supabase Auth, :Prisma, :Anfitrión \\
+\textbf{Actores:} :Mesero, :Next.js API, :Prisma, :PostgreSQL, :Supabase Realtime, :Anfitrión \\
 \end{tabular}\\[4pt]
 \begin{tabular}{>{\raggedright\arraybackslash}p{13cm}}
-\textbf{1.} Mesero $\rightarrow$ API: \texttt{POST /api/mesas-virtuales} \{mesa\_fisica\_ids[]\} \\
-\textbf{2.} API $\rightarrow$ Auth: verificar JWT del mesero (rol: MESERO) \\
-\textbf{3.} Auth $\rightarrow$ API: claims v\'alidos \\
-\textbf{4.} API $\rightarrow$ Prisma: \texttt{verificar estado LIBRE} de mesas físicas (RB-M01) \\
-\textbf{5.} Prisma $\rightarrow$ API: mesas disponibles \\
-\textbf{6.} API $\rightarrow$ Prisma: \texttt{crear MesaVirtual(estado=PENDIENTE\_ACTIVACION, jwt=sign(id, TTL=30min))} \\
-\textbf{7.} Prisma $\rightarrow$ API: mesa\_virtual.id + token\_qr \\
-\textbf{8.} API $\rightarrow$ Mesero: QR generado (imagen + token JWT) \\[6pt]
-\textit{--- El mesero entrega el QR al Anfitrión ---} \\[6pt]
-\textbf{9.} Anfitrión $\rightarrow$ API: \texttt{POST /api/mesas-virtuales/:id/activar} \{token\_qr, password\} \\
-\textbf{10.} API: verificar token\_qr (firma JWT, TTL, flag usado=false) \\
-\quad\quad \textbf{[alt: token inv\'alido o expirado]} $\rightarrow$ HTTP~401 \\
-\textbf{11.} API $\rightarrow$ Prisma: \texttt{atomic: marcar QR como usado=true + crear SesionComensal(es\_anfitri\'on=true) + actualizar MesaVirtual(estado=POR\_LIQUIDAR, pass\_hash=bcrypt(password))} \\
-\textbf{12.} Prisma $\rightarrow$ API: sesion\_id \\
-\textbf{13.} API $\rightarrow$ Supabase Realtime: broadcast evento \texttt{mesa\_actualizada} (estado=POR\_LIQUIDAR) \\
-\textbf{14.} API $\rightarrow$ Anfitrión: HTTP~200 + sesion\_id + codigo\_publico \\
-\textbf{15.} Anfitrión: redirigido al Home de la mesa (/mesa/:codigo) \\
+\textbf{1.} Mesero $\rightarrow$ API: \texttt{POST /api/dining-sessions} \{tableIds[]\} \\
+\textbf{2.} API: validar sesión del mesero y permisos de sucursal \\
+\textbf{3.} API $\rightarrow$ PostgreSQL: verificar mesas físicas en estado \texttt{LIBRE} \\
+\textbf{4.} PostgreSQL $\rightarrow$ API: mesas disponibles \\
+\textbf{5.} API $\rightarrow$ PostgreSQL: crear \texttt{DiningSession(status=PENDIENTE\_ACTIVACION)} \\
+\textbf{6.} API $\rightarrow$ PostgreSQL: crear asociaciones en \texttt{DiningSessionTable} \\
+\textbf{7.} API $\rightarrow$ PostgreSQL: actualizar \texttt{DiningTable.status = OCUPADA} \\
+\textbf{8.} API: generar enlace QR firmado con HMAC-SHA256 usando \texttt{publicCode + qrVersion} \\
+\textbf{9.} API $\rightarrow$ Mesero: QR generado para compartir con el Anfitrión \\[6pt]
+\textit{--- El Anfitrión escanea el QR ---} \\[6pt]
+\textbf{10.} Anfitrión $\rightarrow$ API: \texttt{POST /api/dining-sessions/activate} \{publicCode, signature, password\} \\
+\textbf{11.} API: verificar firma HMAC, versión QR y estado de sesión \\
+\quad\quad \textbf{[alt: firma inválida o mesa no asociada]} $\rightarrow$ HTTP~401/409 \\
+\textbf{12.} API $\rightarrow$ PostgreSQL: transacción atómica \\
+\quad\quad \texttt{hash(password)} \\
+\quad\quad \texttt{actualizar DiningSession(status=ACTIVA, activatedAt=now())} \\
+\quad\quad \texttt{crear Guest(isHost=true)} \\
+\textbf{13.} PostgreSQL $\rightarrow$ API: sesión activada \\
+\textbf{14.} API $\rightarrow$ Supabase Realtime: broadcast \texttt{dining\_session\_updated} \\
+\textbf{15.} API $\rightarrow$ Anfitrión: HTTP~200 + \texttt{joinCode} + sesión temporal \\
+\textbf{16.} Anfitrión: redirección al Home de mesa virtual \\
 \end{tabular}
 \end{minipage}
 }
-\caption{Diagrama de secuencia del flujo de activaci\'on de mesa virtual por el Anfitr\'ion.
-Los pasos 11 son at\'omicos (transacci\'on PostgreSQL) para prevenir activaciones concurrentes (RO-07).}
+\caption{Diagrama de secuencia del flujo de activación de mesa virtual. La activación
+valida un QR firmado con HMAC-SHA256 y actualiza la sesión a estado \texttt{ACTIVA}.}
 \label{fig:seq_activacion}
 \end{figure}
 
-
 \subsubsection{Creación y Solicitud de Órdenes}
 
-Roles participantes: Anfitrión, Comensal. El comensal navega el menú, selecciona
-productos y los agrega a su canasta. Elige entre ordenar individual o a la mesa.
+Roles participantes: Anfitrión, Comensal, Mesero.
 
-\subsubsection{Flujo de Liquidación}
+El comensal navega el menú, selecciona productos, variantes y modificadores, y los agrega
+a su canasta. Al confirmar, el sistema crea una \texttt{RestaurantOrder} y sus
+\texttt{OrderItem}. Cada ítem conserva snapshots de producto, precio, estación, impuesto
+y modificadores aplicados.
 
-Roles participantes: Anfitrión, Comensal, Mesero. El comensal accede a
-``Proceder al pago'' y visualiza el desglose de cuentas. Selecciona qué liquidar.
-Cuando todo está pagado, la mesa cambia a LIQUIDADA.
+Las órdenes pueden registrarse como consumo individual o compartido. Cuando se confirma
+la primera orden de la sesión, la \texttt{DiningSession} cambia de \texttt{ACTIVA} a
+\texttt{EN\_CONSUMO}, y se registra \texttt{firstOrderAt}.
+
+\subsubsection{Flujo de Cocina}
+
+Roles participantes: Cocina/Chef, Mesero.
+
+El personal de cocina visualiza los ítems pendientes en el tablero KDS. Cada ítem puede
+cambiar de estado siguiendo el flujo:
+
+\[
+\texttt{PENDIENTE} \rightarrow \texttt{EN\_PREPARACION} \rightarrow \texttt{LISTA}
+\rightarrow \texttt{ENTREGADA}
+\]
+
+El personal de cocina actualiza los estados hasta \texttt{LISTA}. El mesero confirma la
+entrega al comensal mediante el cambio de \texttt{LISTA} a \texttt{ENTREGADA}. Cada
+transición se registra en \texttt{OrderItemStatusEvent}, lo que permite reconstruir el
+flujo de cocina y calcular tiempos de preparación en la capa analítica.
+
+\subsubsection{Flujo de Liquidación Interna}
+
+Roles participantes: Anfitrión, Comensal, Mesero, Gerente Sucursal.
+
+El comensal accede a la sección de liquidación interna y visualiza el desglose de consumo
+individual y compartido. El sistema muestra el total interno de cuenta, aportaciones
+registradas y saldo pendiente.
+
+El comensal puede registrar una aportación interna asociada a su consumo, a ítems
+específicos o a la mesa compartida. El sistema crea un registro
+\texttt{SettlementContribution} y, cuando corresponde, registros
+\texttt{SettlementAllocation} para distribuir la aportación sobre ítems o comensales.
+
+Para evitar sobreliquidación, el registro de aportaciones se realiza dentro de una
+transacción ACID. El sistema bloquea la fila de \texttt{Settlement}, valida
+\texttt{remainingCents} y rechaza cualquier aportación que exceda el saldo pendiente.
+
+Cuando \texttt{Settlement.remainingCents = 0}, la liquidación cambia a
+\texttt{LIQUIDADA} y la sesión actualiza \texttt{DiningSession.status} a
+\texttt{LIQUIDADA}. El sistema genera una constancia interna de estado de cuenta y
+notifica al mesero para realizar el cierre operativo.
+
+\subsubsection{Cierre Operativo de Mesa}
+
+Roles participantes: Mesero, Gerente Sucursal.
+
+Una vez liquidada la sesión, el mesero o gerente puede cerrar operativamente la mesa.
+El sistema actualiza la \texttt{DiningSession} a estado \texttt{CERRADA}, registra
+\texttt{closedAt}, actualiza las asociaciones \texttt{DiningSessionTable.leftAt} y cambia
+las mesas físicas asociadas a estado \texttt{LIBRE}, salvo que alguna haya sido marcada
+como \texttt{NO\_DISPONIBLE}.
+
+El cierre operativo queda registrado en \texttt{AuditLog}.
+
+\subsubsection{Ejecución del Pipeline Analítico}
+
+Roles participantes: Sistema, Gerente Sucursal, Gerente Zona, Admin Cadena.
+
+El pipeline analítico se ejecuta de forma programada o bajo solicitud autorizada desde el
+dashboard. Cada ejecución genera un registro \texttt{AnalyticsJobRun}, indicando tipo de
+job, estado, ventana de datos, tiempos de inicio y fin, errores y metadatos técnicos.
+
+El proceso extrae datos operativos hacia la capa Bronze, transforma y limpia información
+en Silver mediante Apache Spark, y genera tablas Gold para consulta del dashboard. Las
+métricas históricas del dashboard no se calculan directamente sobre las tablas OLTP, sino
+sobre agregados precalculados como \texttt{AnalyticSalesDaily},
+\texttt{AnalyticItemVelocity}, \texttt{AnalyticServiceTimes} y
+\texttt{AnalyticDemandEstimate}.

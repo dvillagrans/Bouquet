@@ -71,7 +71,7 @@ RF-09 & El sistema debe mostrar en tiempo real el estatus de todas las mesas fí
 RF-10 & El sistema debe generar enlaces QR firmados con HMAC-SHA256 para la activación de mesas virtuales. &
   El enlace del QR contiene una firma válida generada en el servidor. Enlaces alterados retornan error de validación. & Seguridad \\
 RF-11 & Solo se pueden asociar mesas físicas en estado LIBRE a una mesa virtual nueva. &
-  Intento de inicializar con mesa en estado POR\_LIQUIDAR retorna error descriptivo. & Operación \\
+  Intento de inicializar con mesa en estado \texttt{OCUPADA} o \texttt{NO\_DISPONIBLE} retorna error descriptivo. & Operación \\
 \rowcolor{altrow}
 RF-12 & El anfitrión debe crear una contraseña para activar la mesa virtual; esta se almacena hasheada (bcrypt). &
   Hash verificado en base de datos. Contraseña no recuperable en texto plano. & Seguridad \\
@@ -231,7 +231,7 @@ firmado (RF-10) y ejecuta el flujo de activación de la mesa.
 \scriptsize
 \begin{tabular}{>{\raggedright\arraybackslash}p{2.6cm} >{\raggedright\arraybackslash}p{11.8cm}}
 \textbf{Actores} & Mesero (primario), Comensal / Anfitri\'on (primario), Sistema \\
-\textbf{Precondiciones} & Mesa f\'isica en estado \texttt{DISPONIBLE}.
+\textbf{Precondiciones} & Mesa f\'isica en estado \texttt{LIBRE}.
   El mesero ha iniciado sesi\'on con rol MESERO o superior. \\
 \textbf{Flujo principal} &
   \textbf{1.} Mesero selecciona mesas f\'isicas y genera mesa virtual.\newline

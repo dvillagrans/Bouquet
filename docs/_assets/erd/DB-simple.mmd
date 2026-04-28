@@ -1,6 +1,9 @@
 ---
 config:
   layout: elk
+  themeVariables:
+    fontSize: '48px'
+    fontFamily: 'arial'
   elk:
     mergeEdges: true
     nodePlacementStrategy: BRANDES_KOEPF
@@ -62,7 +65,7 @@ erDiagram
     AnalyticSalesDaily  { string id PK }
     AnalyticItemVelocity{ string id PK }
     AnalyticServiceTimes{ string id PK }
-    AnalyticForecast    { string id PK }
+    AnalyticDemandEstimate{ string id PK }
 
     %% ── RELACIONES ──
 
@@ -106,7 +109,7 @@ erDiagram
     Restaurant ||--o{ AnalyticSalesDaily   : " "
     Restaurant ||--o{ AnalyticItemVelocity  : " "
     Restaurant ||--o{ AnalyticServiceTimes  : " "
-    Restaurant ||--o{ AnalyticForecast     : " "
+    Restaurant ||--o{ AnalyticDemandEstimate : " "
 
     MenuTemplate     ||--o{ TemplateCategory     : " "
     TemplateCategory ||--o{ TemplateItem         : " "
@@ -144,3 +147,28 @@ erDiagram
     Settlement      ||--o{ SettlementAllocation : " "
     Settlement      ||--o{ SettlementContribution: " "
     Settlement      ||--o{ AppliedAdjustment    : " "
+    SettlementContribution ||--o{ SettlementAllocation: " "
+
+    AnalyticsJobRun ||--o{ AnalyticSalesDaily : " "
+    AnalyticsJobRun ||--o{ AnalyticItemVelocity : " "
+    AnalyticsJobRun ||--o{ AnalyticServiceTimes : " "
+    AnalyticsJobRun ||--o{ AnalyticDemandEstimate : " "
+
+    RestaurantMenuItem ||--o{ AnalyticItemVelocity : " "
+    RestaurantMenuItem ||--o{ AnalyticDemandEstimate : " "
+    Station ||--o{ AnalyticServiceTimes : " "
+
+    %% Color Coding by Module
+    classDef organization fill:#f9f9f9,stroke:#666,stroke-width:1px
+    classDef identity fill:#e1f5fe,stroke:#0288d1,stroke-width:1px
+    classDef catalog fill:#f1f8e9,stroke:#558b2f,stroke-width:1px
+    classDef operations fill:#fff9c4,stroke:#fbc02d,stroke-width:1px
+    classDef settlement fill:#e0f2f1,stroke:#00897b,stroke-width:1px
+    classDef analytics fill:#f3e5f5,stroke:#8e24aa,stroke-width:1px
+
+    class Currency, TaxGroup, Chain, Zone, Restaurant organization
+    class Permission, Role, RolePermission, AppUser, UserRole, AuditLog identity
+    class Station, MenuTemplate, TemplateCategory, TemplateItem, TemplateItemVariant, RestaurantCategory, RestaurantMenuItem, RestaurantMenuItemVariant, ModifierGroup, ModifierOption, MenuItemModifierGroup catalog
+    class DiningTable, DiningSession, DiningSessionTable, Guest, RestaurantOrder, OrderItem, OrderItemModifier, OrderItemStatusEvent operations
+    class Settlement, SettlementAllocation, SettlementContribution, AppliedAdjustment settlement
+    class AnalyticsJobRun, AnalyticSalesDaily, AnalyticItemVelocity, AnalyticServiceTimes, AnalyticDemandEstimate analytics

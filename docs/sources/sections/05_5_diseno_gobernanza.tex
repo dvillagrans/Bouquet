@@ -1,42 +1,72 @@
 % -----------------------------------------------------------
-\subsection{Gobernanza de Datos}
+\subsection{Gobernanza, Roles y Alcance Operativo}
 % -----------------------------------------------------------
 
 \subsubsection{Estructura Organizacional}
 
-La plataforma soporta tres niveles jerárquicos de organización para que las cadenas
-restauranteras puedan estructurarse internamente:
+La plataforma soporta una estructura organizacional jerárquica compuesta por tres
+niveles principales: cadena restaurantera, zona y sucursal. Esta organización permite
+asignar permisos y consultar información de acuerdo con el alcance operativo de cada
+usuario colaborador.
 
 \begin{itemize}[leftmargin=1.5em]
-  \item Cadena Restaurantera
-  \item Zona
-  \item Sucursal
+  \item \textbf{Cadena restaurantera:} entidad raíz que agrupa zonas y sucursales.
+  \item \textbf{Zona:} agrupación geográfica u operativa de sucursales dentro de una
+  cadena.
+  \item \textbf{Sucursal:} unidad operativa donde se gestionan mesas, órdenes, cocina,
+  liquidación interna y datos analíticos.
 \end{itemize}
+
+La asignación de permisos se realiza mediante roles contextuales. Cada usuario colaborador
+opera a nivel plataforma, cadena, zona o restaurante, según el valor de
+\texttt{UserRole.contextType} y las llaves contextuales asociadas.
 
 \subsubsection{Roles de Usuarios}
 
-Los usuarios se dividen en dos grupos principales: colaboradores del restaurante
-(pertenecientes a la operación) y consumidores (quienes consumen los productos y
-servicios). Los roles de \textbf{Empleados} son: Administrador (Admin),
-Gerente Zona, Gerente Sucursal, Mesero y Chef. Los roles de \textbf{Consumidores}
-son: Anfitrión y Comensal.
+El sistema distingue entre usuarios colaboradores y actores temporales de consumo. Los
+usuarios colaboradores pertenecen a la operación del restaurante y se autentican mediante
+cuenta. Los actores temporales, como Anfitrión y Comensal, acceden mediante la sesión de
+mesa virtual y no forman parte del RBAC administrativo.
 
-Para garantizar la seguridad del sistema, cada grupo de comensales deberá contar
-con un Anfitrión elegido entre ellos, quien activará la mesa virtual escaneando
-el código QR que el mesero proporcione y creará una contraseña de acceso compartible
-con los demás comensales.
+\begin{table}[H]
+\caption{Roles y alcance operativo}
+\label{tab:roles_alcance}
+\centering
+\small
+\begin{tabular}{p{4cm} p{10cm}}
+\hline
+\thead{Rol} & \thead{Alcance} \\
+\hline
+Admin Cadena & Administración de la cadena, zonas, sucursales, usuarios, menú global
+y dashboard consolidado. \\
+Gerente Zona & Gestión y consulta de las sucursales pertenecientes a su zona. \\
+Gerente Sucursal & Gestión operativa de una sucursal específica: menú local, mesas,
+personal, órdenes y liquidaciones internas. \\
+Mesero & Gestión de mesas, sesiones, órdenes y cierre operativo dentro de su sucursal. \\
+Cocina/Chef & Visualización y actualización de órdenes asignadas a estaciones de
+preparación. \\
+Anfitrión & Activación temporal de la mesa virtual y administración básica de acceso
+de comensales. \\
+Comensal & Consulta de menú, generación de órdenes y registro de aportaciones internas
+dentro de una mesa virtual. \\
+\hline
+\end{tabular}
+\end{table}
 
-Todo usuario colaborador debe estar ligado a alguno de los niveles de la estructura
-organizacional y, dependiendo de su rol, tendrá acceso únicamente a su nivel y a
-los niveles que este englobe.
+Además del control de permisos en la capa de aplicación, el diseño contempla políticas
+de seguridad a nivel de fila (RLS) en la base de datos para restringir el acceso según
+el alcance organizacional del usuario. De esta forma, los permisos no dependen únicamente
+de la interfaz, sino también de reglas de aislamiento en la capa de persistencia.
 
 \subsubsection{Reglas de Asignación de Roles a Niveles}
 
 \begin{itemize}[leftmargin=1.5em]
-  \item El usuario Admin únicamente existe a nivel Cadena de Restaurante.
-  \item El usuario Gerente puede asignarse a nivel Zona (Gerente Zona) o a nivel
-        Sucursal (Gerente Sucursal).
-  \item Los usuarios Mesero y Chef únicamente pueden estar asignados a nivel Sucursal.
+  \item El usuario \textbf{Admin Cadena} opera a nivel cadena.
+  \item El \textbf{Gerente Zona} opera sobre las sucursales pertenecientes a su zona.
+  \item El \textbf{Gerente Sucursal}, \textbf{Mesero} y \textbf{Cocina/Chef} operan a
+  nivel sucursal.
+  \item El \textbf{Anfitrión} y el \textbf{Comensal} existen únicamente dentro del
+  contexto temporal de una \texttt{DiningSession}.
 \end{itemize}
 
 La Tabla~\ref{tab:permisos} presenta la matriz de permisos por rol del sistema.
@@ -74,106 +104,125 @@ La Tabla~\ref{tab:permisos} presenta la matriz de permisos por rol del sistema.
 \endhead
 \hline
 \endfoot
-Dar de alta Zonas                          &   &   &   &   &   & X \\ \rowcolor{altrow}
-Dar de alta usuarios con rol Admin         &   &   &   &   &   & X \\
-Dar de alta usuarios con otros roles       &   &   &   &   & X & X \\ \rowcolor{altrow}
-Acceso al Dashboard de Analytics           &   &   &   &   & X & X \\
-Dar de alta Sucursales                     &   &   &   &   & X & X \\ \rowcolor{altrow}
-Agregar, eliminar o editar menús/productos &   &   &   &   & X &   \\
-Crear, editar y liberar mesas físicas      &   &   &   &   & X & X \\ \rowcolor{altrow}
-Visualizar mesas físicas y características &   &   &   &   & X & X \\
-Inicializar mesa virtual y su identificador&   &   &   & X & X & X \\ \rowcolor{altrow}
-Activar mesa virtual y crear contraseña    &   &   & X &   &   &   \\
-Visualizar y compartir contraseña de acceso&   & X & X &   &   &   \\ \rowcolor{altrow}
-Generar órdenes individuales               &   & X & X &   &   &   \\
-Generar órdenes compartidas                &   & X & X &   &   &   \\ \rowcolor{altrow}
-Visualizar órdenes y su estatus            & X &   &   & X & X & X \\
-Visualizar montos de cuentas por comensal  &   & X & X & X & X & X \\ \rowcolor{altrow}
-Liquidar cuentas o aportar a mesa compartida&  & X & X &   &   &   \\ \rowcolor{altrow}
-Visualizar estatus de liquidación          &   & X & X & X & X & X \\
+Dar de alta Zonas                                      &   &   &   &   &   & X \\ \rowcolor{altrow}
+Dar de alta usuarios administrativos de cadena         &   &   &   &   &   & X \\
+Dar de alta usuarios con otros roles                   &   &   &   &   & X & X \\ \rowcolor{altrow}
+Acceso al dashboard analítico                          &   &   &   &   & X & X \\
+Dar de alta Sucursales                                 &   &   &   &   & X & X \\ \rowcolor{altrow}
+Agregar, eliminar o editar menús y productos           &   &   &   &   & X &   \\
+Crear, editar y liberar mesas físicas                  &   &   &   &   & X & X \\ \rowcolor{altrow}
+Visualizar mesas físicas y características             &   &   &   & X & X & X \\
+Inicializar mesa virtual                               &   &   &   & X & X & X \\ \rowcolor{altrow}
+Activar mesa virtual y crear contraseña de acceso      &   &   & X &   &   &   \\
+Compartir acceso temporal a la mesa virtual            &   & X & X &   &   &   \\ \rowcolor{altrow}
+Generar órdenes individuales                           &   & X & X &   &   &   \\
+Generar órdenes compartidas                            &   & X & X &   &   &   \\ \rowcolor{altrow}
+Visualizar órdenes y estado de cocina                  & X &   &   & X & X & X \\
+Visualizar desglose de consumo por comensal            &   & X & X & X & X & X \\ \rowcolor{altrow}
+Registrar aportación interna o liquidar consumo        &   & X & X &   &   &   \\
+Visualizar estado de liquidación interna               &   & X & X & X & X & X \\
 \hline
 \end{longtable}
 \setstretch{1.5}
 
-\noindent\textit{Nota: El Chef únicamente puede ver órdenes hasta el estado
-EN\_REPARTO. El Mesero únicamente puede ver el cambio de EN\_REPARTO a ENTREGADA.}
+\noindent\textit{Nota 1: La columna Gerente agrupa a Gerente Zona y Gerente Sucursal.
+Los permisos se aplican respetando el alcance definido por \texttt{UserRole.contextType};
+por ejemplo, un Gerente Zona opera solo sobre las sucursales de su zona y un Gerente
+Sucursal solo sobre su sucursal.}
+
+\noindent\textit{Nota 2: La creación de nuevos usuarios administrativos de cadena debe
+quedar registrada en \texttt{AuditLog} y puede restringirse por política interna.}
+
+\noindent\textit{Nota 3: La contraseña de mesa se almacena como hash; el sistema no debe
+mostrarla nuevamente después de su creación. El personal de cocina visualiza y actualiza
+ítems hasta el estado \texttt{LISTA}. El mesero confirma la entrega al comensal mediante
+el cambio de \texttt{LISTA} a \texttt{ENTREGADA}.}
 
 \medskip
 
-La Tabla~\ref{tab:alta_usuarios} define qué roles puede dar de alta cada tipo
-de usuario del sistema.
+La Tabla~\ref{tab:alta_usuarios} define qué roles puede crear cada tipo de usuario
+colaborador del sistema.
 
-\begin{table}[ht]
-\caption{Reglas de Alta de Usuarios por Rol (RB-U)}
+\begin{table}[H]
+\caption{Reglas de creación de usuarios colaboradores}
 \label{tab:alta_usuarios}
 \centering
 \small
-\setlength{\tabcolsep}{5pt}
-\begin{tabular}{>{\raggedright\arraybackslash}p{6cm}
-                >{\centering\arraybackslash}p{2cm}
-                >{\centering\arraybackslash}p{2cm}
-                >{\centering\arraybackslash}p{2cm}
-                >{\centering\arraybackslash}p{2cm}
-                >{\centering\arraybackslash}p{2cm}}
+\begin{tabular}{p{4cm} p{10cm}}
 \hline
-\thead{¿Puede dar de alta?} &
-\thead{Admin} &
-\thead{Gerente Zona} &
-\thead{Gerente Suc.} &
-\thead{Mesero} &
-\thead{Chef} \\
+\thead{Rol creador} & \thead{Roles que puede crear} \\
 \hline
-Admin                & X & X & X & X & X \\ \rowcolor{altrow}
-Gerente Zona         &   &   & X & X & X \\
-Gerente Sucursal     &   &   &   & X & X \\ \rowcolor{altrow}
-Mesero               &   &   &   &   &   \\
-Chef                 &   &   &   &   &   \\
+Admin Cadena & Gerente Zona, Gerente Sucursal, Mesero y Cocina/Chef dentro de cualquier
+sucursal de la cadena. \\
+Gerente Zona & Gerente Sucursal, Mesero y Cocina/Chef dentro de las sucursales de
+su zona. \\
+Gerente Sucursal & Mesero y Cocina/Chef dentro de su sucursal. \\
+Mesero & No puede crear usuarios. \\
+Cocina/Chef & No puede crear usuarios. \\
 \hline
 \end{tabular}
 \end{table}
 
-\subsection{Alcance del Sistema}
+% -----------------------------------------------------------
+\subsection{Delimitación Técnica del Diseño}
+% -----------------------------------------------------------
 
 \subsubsection{Dentro del Alcance}
 
 \begin{itemize}[leftmargin=1.5em]
-  \item Alta y gestión de mesas físicas para 1 sola área (1 piso) por sucursal.
-  \item Gestión de mesas virtuales con flujo completo de activación, órdenes y liquidación.
-  \item Módulo de órdenes individuales y mesa compartida para comensales.
-  \item Tablero Kanban en tiempo real para el Chef.
-  \item Dashboard de analytics para Gerentes y Admin.
-  \item Gestión de menú (categorías, productos y variantes).
+  \item Alta y gestión de mesas físicas para una sola área o piso por sucursal.
+  \item Gestión de mesas virtuales con activación por QR firmado, contraseña de acceso,
+  órdenes y liquidación interna.
+  \item Módulo de órdenes individuales y compartidas para comensales.
+  \item Tablero KDS en tiempo real para cocina.
+  \item Dashboard analítico para gerentes y administrador de cadena.
+  \item Gestión de menú, categorías, productos, variantes y modificadores.
   \item Gestión de usuarios colaboradores con jerarquía de permisos.
-  \item M\'odulo de liquidaci\'on con control de concurrencia y comprobante digital.
+  \item Módulo de liquidación interna con control de concurrencia y constancia interna
+  de estado de cuenta.
+  \item Pipeline analítico batch con capas Bronze, Silver y Gold.
+  \item Tablas Gold para métricas de consumo, productos, tiempos de servicio y
+  estimaciones exploratorias de demanda.
 \end{itemize}
 
 \subsubsection{Fuera del Alcance}
 
 \begin{itemize}[leftmargin=1.5em]
-  \item Seccionamiento de mesas físicas por áreas o pisos múltiples.
-  \item Módulo de cambio o recuperación de contraseña de mesa virtual en caso de olvido.
+  \item Seccionamiento de mesas físicas por múltiples áreas o pisos.
+  \item Recuperación autónoma de contraseña de mesa virtual por parte del comensal sin
+  intervención del personal autorizado.
   \item Flujo de recuperación de contraseña para usuarios colaboradores.
-  \item Base de datos analítica y clustering de datos para reducción de latencia en el Dashboard.
-  \item Descarga de reportes XLSX por período de tiempo sobre transacciones.
-  \item Visualización detallada para el mesero de qué usuarios faltan por liquidar
-        y qué productos solicitó cada uno.
+  \item Integración con pasarelas de pago bancarias.
+  \item Emisión de CFDI o facturación fiscal.
+  \item Descarga avanzada de reportes XLSX o PDF de consumo, operación y métricas
+  analíticas.
+  \item Clúster distribuido dedicado para procesamiento analítico de alto volumen.
+  \item Modelos predictivos avanzados de \textit{machine learning} o recomendadores
+  personalizados.
 \end{itemize}
 
-\subsubsection{Riesgos Identificados}
+\subsubsection{Consideraciones de Diseño}
 
 \begin{itemize}[leftmargin=1.5em]
-  \item Dos comensales intentan pagar a un mismo comensal simultáneamente.
-  \item Múltiples pagos a la mesa compartida se generan al mismo tiempo.
-  \item El anfitrión pierde acceso a la mesa virtual y no recuerda la contraseña.
-  \item Se comparten credenciales de la mesa virtual con personas no autorizadas.
-  \item Dos comensales intentan activar la misma mesa virtual al mismo tiempo.
+  \item Las aportaciones internas concurrentes deben serializarse para evitar
+  sobreliquidación.
+  \item La sesión de mesa virtual debe validar QR firmado, contraseña y estado activo.
+  \item El cierre operativo de mesa debe liberar mesas físicas y cerrar la sesión lógica.
+  \item Las métricas históricas deben consultarse desde tablas Gold para evitar saturar
+  la base OLTP.
+  \item Toda acción crítica debe registrarse en \texttt{AuditLog} para fortalecer la
+  trazabilidad operativa y facilitar auditorías internas.
 \end{itemize}
 
 \subsubsection{Trabajo Futuro}
 
 \begin{itemize}[leftmargin=1.5em]
-  \item Modelo de machine learning para recomendación de platillos.
-  \item Flujo de cambio de contraseña de mesa virtual por parte del anfitrión.
-  \item Botón para llamar al mesero desde la app del comensal.
-  \item Notificaciones push al mesero para acciones requeridas por el usuario.
+  \item Integración con pasarelas de pago certificadas.
+  \item Descarga de reportes XLSX/PDF por período de tiempo.
+  \item Flujo avanzado de recuperación de acceso para anfitrión, validado por mesero
+  o gerente.
+  \item Soporte multiárea o multipiso para planos de restaurante.
+  \item Modelo de \textit{machine learning} para recomendación de platillos.
+  \item Botón para llamar al mesero desde la aplicación del comensal.
+  \item Notificaciones \textit{push} al mesero para acciones requeridas.
 \end{itemize}

@@ -3,15 +3,18 @@
 % -----------------------------------------------------------
 
 Las siguientes máquinas de estado definen formalmente los ciclos de vida de las
-entidades principales del sistema.
+entidades principales del sistema. Se distinguen cuatro entidades operativas:
+\texttt{DiningTable} para mesas físicas, \texttt{DiningSession} para sesiones virtuales,
+\texttt{OrderItem} para ítems de cocina y \texttt{Settlement} para la liquidación interna.
 
-\subsubsection{Estados de Mesa Virtual}
+\subsubsection{Estados de Mesa Física}
 
-La Tabla~\ref{tab:estados_mesa} describe los estados posibles de una mesa virtual.
+La Tabla~\ref{tab:estados_mesa_fisica} describe los estados posibles de una mesa física
+dentro del restaurante.
 
 \begin{table}[ht]
-\caption{Estados de Mesa Virtual}
-\label{tab:estados_mesa}
+\caption{Estados de Mesa Física}
+\label{tab:estados_mesa_fisica}
 \centering
 \small
 \setlength{\tabcolsep}{5pt}
@@ -21,22 +24,20 @@ La Tabla~\ref{tab:estados_mesa} describe los estados posibles de una mesa virtua
 \hline
 \thead{Estado} & \thead{Descripción} & \thead{Semántica} \\
 \hline
-\rowcolor{orange}
-PENDIENTE\_ACTIVACION &
-  Mesa inicializada por Mesero/Gerente. QR generado. Aún no activada por el Anfitrión. & En espera \\ \rowcolor{green}
-POR\_LIQUIDAR &
-  Anfitrión escaneó el QR y creó contraseña. Comensales pueden ordenar. & Activa \\ \rowcolor{lightblue}
-LIQUIDADA &
-  Todos los comensales y la cuenta compartida están en estado LIQUIDADA. & Completada \\ \rowcolor{altrow}
+\rowcolor{green}
 LIBRE &
-  Liberada manualmente por Mesero o Gerente. Las mesas físicas vuelven a estar libres. & Disponible \\
+  Mesa física disponible para asociarse a una nueva sesión virtual. & Disponible \\ \rowcolor{orange}
+OCUPADA &
+  Mesa física asociada a una \texttt{DiningSession} activa o pendiente de cierre. & En uso \\ \rowcolor{altrow}
+NO\_DISPONIBLE &
+  Mesa bloqueada por mantenimiento, configuración administrativa u otra razón operativa. & Bloqueada \\
 \hline
 \end{tabular}
 \end{table}
 
 \begin{table}[ht]
-\caption{Transiciones de Estado — Mesa Virtual}
-\label{tab:trans_mesa}
+\caption{Transiciones de Estado — Mesa Física}
+\label{tab:trans_mesa_fisica}
 \centering
 \small
 \setlength{\tabcolsep}{3pt}
@@ -49,19 +50,87 @@ LIBRE &
 \thead{Estado Origen} & \thead{Evento / Condición} & \thead{Estado Destino} &
 \thead{Actor} & \thead{Regla de Negocio} \\
 \hline
-(Inexistente) & Mesero/Gerente inicializa & PENDIENTE\_ACTIVACION & Mesero/Gerente & RB-M01 \\ \rowcolor{altrow}
-PENDIENTE\_ACTIVACION & Anfitrión activa & POR\_LIQUIDAR & Anfitrión & Primera activación \\
-POR\_LIQUIDAR & Todos liquidados & LIQUIDADA & Sistema & RB-L01 \\ \rowcolor{altrow}
-LIQUIDADA & Liberación manual & LIBRE & Mesero/Gerente & RB-M03 \\
+LIBRE & Inicializar sesión virtual & OCUPADA & Mesero/Gerente & Solo mesas libres pueden asociarse \\ \rowcolor{altrow}
+OCUPADA & Cierre operativo de sesión & LIBRE & Mesero/Gerente & Se libera al cerrar \texttt{DiningSession} \\
+LIBRE & Bloqueo administrativo & NO\_DISPONIBLE & Gerente & Mesa fuera de operación \\ \rowcolor{altrow}
+NO\_DISPONIBLE & Reactivación administrativa & LIBRE & Gerente & Mesa vuelve a operación \\
 \hline
 \end{tabular}
 \end{table}
 
-\subsubsection{Estados de Orden}
+\subsubsection{Estados de Sesión Virtual}
+
+La Tabla~\ref{tab:estados_sesion_virtual} describe los estados posibles de una
+\texttt{DiningSession}. Esta entidad representa la mesa virtual lógica asociada a uno
+o varios comensales.
 
 \begin{table}[ht]
-\caption{Estados de Orden}
-\label{tab:estados_orden}
+\caption{Estados de Sesión Virtual}
+\label{tab:estados_sesion_virtual}
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{>{\bfseries\raggedright\arraybackslash}p{4cm}
+                >{\raggedright\arraybackslash}p{9cm}
+                >{\centering\arraybackslash}p{3cm}}
+\hline
+\thead{Estado} & \thead{Descripción} & \thead{Semántica} \\
+\hline
+\rowcolor{orange}
+PENDIENTE\_ACTIVACION &
+  Sesión creada por Mesero/Gerente. QR generado, pero aún no activado por el Anfitrión. & En espera \\ \rowcolor{lightblue}
+ACTIVA &
+  Anfitrión activó la sesión, creó contraseña y el sistema permite acceso de comensales. & Habilitada \\ \rowcolor{purple}
+EN\_CONSUMO &
+  Existe al menos una orden confirmada asociada a la sesión. & En operación \\ \rowcolor{orange}
+POR\_LIQUIDAR &
+  Se inició el proceso de liquidación interna. No se aceptan nuevas órdenes ordinarias salvo reapertura autorizada. & En cierre \\ \rowcolor{green}
+LIQUIDADA &
+  El saldo interno pendiente llegó a cero. & Saldada \\ \rowcolor{altrow}
+CERRADA &
+  La sesión fue cerrada operativamente y las mesas físicas asociadas fueron liberadas. & Finalizada \\ \rowcolor{altrow}
+CANCELADA &
+  Sesión anulada por error operativo, abandono o decisión autorizada. & Anulada \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\caption{Transiciones de Estado — Sesión Virtual}
+\label{tab:trans_sesion_virtual}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{4cm}
+                >{\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{2.5cm}
+                >{\raggedright\arraybackslash}p{3.5cm}}
+\hline
+\thead{Estado Origen} & \thead{Evento / Condición} & \thead{Estado Destino} &
+\thead{Actor} & \thead{Regla de Negocio} \\
+\hline
+(Inexistente) & Mesero/Gerente inicializa sesión & PENDIENTE\_ACTIVACION & Mesero/Gerente & Mesas físicas deben estar \texttt{LIBRE} \\ \rowcolor{altrow}
+PENDIENTE\_ACTIVACION & Anfitrión activa con QR firmado y contraseña & ACTIVA & Anfitrión & Validar firma HMAC y versión QR \\
+ACTIVA & Primera orden confirmada & EN\_CONSUMO & Sistema & Registrar \texttt{firstOrderAt} \\ \rowcolor{altrow}
+ACTIVA & Cancelación sin consumo & CANCELADA & Mesero/Gerente & Liberar mesas físicas \\
+EN\_CONSUMO & Solicitud de cierre de cuenta & POR\_LIQUIDAR & Comensal/Mesero & Iniciar liquidación interna \\ \rowcolor{altrow}
+POR\_LIQUIDAR & Saldo pendiente igual a cero & LIQUIDADA & Sistema & \texttt{Settlement.remainingCents = 0} \\
+LIQUIDADA & Cierre operativo & CERRADA & Mesero/Gerente & Liberar mesas físicas \\ \rowcolor{altrow}
+PENDIENTE\_ACTIVACION & Cancelación por abandono/error & CANCELADA & Mesero/Gerente & Auditar evento \\
+EN\_CONSUMO & Cancelación autorizada & CANCELADA & Gerente & Requiere auditoría \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Estados de Ítem de Orden}
+
+La Tabla~\ref{tab:estados_order_item} describe los estados de \texttt{OrderItem}, entidad
+que se utiliza para el flujo de cocina y el cálculo posterior de tiempos de preparación.
+
+\begin{table}[ht]
+\caption{Estados de Ítem de Orden}
+\label{tab:estados_order_item}
 \centering
 \small
 \begin{tabular}{>{\bfseries\raggedright\arraybackslash}p{3.5cm}
@@ -70,16 +139,54 @@ LIQUIDADA & Liberación manual & LIBRE & Mesero/Gerente & RB-M03 \\
 \hline
 \thead{Estado} & \thead{Descripción} & \thead{Semántica} \\
 \hline
-\rowcolor{orange} PENDIENTE & Recibida por el sistema. & Esperando \\ \rowcolor{lightblue} EN\_PREPARACION & Chef confirmó la orden. & En proceso \\ \rowcolor{purple} EN\_REPARTO & Preparación finalizada. & Lista \\ \rowcolor{green} ENTREGADA & Comensal confirma recepción. & Completada \\
+\rowcolor{orange}
+PENDIENTE &
+  Ítem recibido por el sistema y visible para la estación correspondiente. & Esperando \\ \rowcolor{lightblue}
+EN\_PREPARACION &
+  Ítem aceptado por cocina o barra y en proceso de elaboración. & En proceso \\ \rowcolor{purple}
+LISTA &
+  Preparación finalizada y lista para ser entregada por el mesero. & Lista \\ \rowcolor{green}
+ENTREGADA &
+  El mesero confirmó la entrega al comensal. & Completada \\ \rowcolor{altrow}
+CANCELADA &
+  Ítem cancelado por personal autorizado antes de completarse. & Anulada \\
 \hline
 \end{tabular}
 \end{table}
 
-\subsubsection{Estados de Cuenta}
+\begin{table}[ht]
+\caption{Transiciones de Estado — Ítem de Orden}
+\label{tab:trans_order_item}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{4cm}
+                >{\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{2.5cm}
+                >{\raggedright\arraybackslash}p{3.5cm}}
+\hline
+\thead{Estado Origen} & \thead{Evento / Condición} & \thead{Estado Destino} &
+\thead{Actor} & \thead{Regla de Negocio} \\
+\hline
+(Inexistente) & Orden confirmada & PENDIENTE & Sistema & Crear \texttt{OrderItemStatusEvent} \\ \rowcolor{altrow}
+PENDIENTE & Cocina inicia preparación & EN\_PREPARACION & Cocina/Chef & Registrar evento de estado \\
+EN\_PREPARACION & Cocina marca ítem listo & LISTA & Cocina/Chef & Registrar evento de estado \\ \rowcolor{altrow}
+LISTA & Mesero entrega al comensal & ENTREGADA & Mesero & Registrar evento de estado \\
+PENDIENTE & Cancelación autorizada & CANCELADA & Mesero/Gerente & Auditar cancelación \\ \rowcolor{altrow}
+EN\_PREPARACION & Cancelación autorizada & CANCELADA & Gerente & Requiere auditoría \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Estados de Liquidación Interna}
+
+La Tabla~\ref{tab:estados_settlement} describe los estados de \texttt{Settlement}. Esta
+entidad representa el estado interno de cuenta de una sesión, sin procesar pagos bancarios.
 
 \begin{table}[ht]
-\caption{Estados de Cuenta Individual / Compartida}
-\label{tab:estados_cuenta}
+\caption{Estados de Liquidación Interna}
+\label{tab:estados_settlement}
 \centering
 \small
 \begin{tabular}{>{\bfseries\raggedright\arraybackslash}p{3.5cm}
@@ -88,7 +195,40 @@ LIQUIDADA & Liberación manual & LIBRE & Mesero/Gerente & RB-M03 \\
 \hline
 \thead{Estado} & \thead{Descripción} & \thead{Semántica} \\
 \hline
-\rowcolor{orange} POR\_LIQUIDAR & Cuenta activa con saldo pendiente. & Con deuda \\ \rowcolor{green} LIQUIDADA & Monto total cubierto completamente. & Saldada \\
+\rowcolor{orange}
+ABIERTA &
+  Liquidación creada con saldo pendiente equivalente al total interno de cuenta. & Con saldo \\ \rowcolor{lightblue}
+PARCIAL &
+  Existen aportaciones internas registradas, pero aún queda saldo pendiente. & Parcial \\ \rowcolor{green}
+LIQUIDADA &
+  El saldo pendiente llegó a cero. & Saldada \\ \rowcolor{altrow}
+CANCELADA &
+  Liquidación anulada por error operativo o cierre autorizado. & Anulada \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[ht]
+\caption{Transiciones de Estado — Liquidación Interna}
+\label{tab:trans_settlement}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{4cm}
+                >{\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{2.5cm}
+                >{\raggedright\arraybackslash}p{3.5cm}}
+\hline
+\thead{Estado Origen} & \thead{Evento / Condición} & \thead{Estado Destino} &
+\thead{Actor} & \thead{Regla de Negocio} \\
+\hline
+(Inexistente) & Inicio de sesión con consumo & ABIERTA & Sistema & Crear \texttt{Settlement} \\ \rowcolor{altrow}
+ABIERTA & Primera aportación interna menor al saldo & PARCIAL & Comensal/Sistema & Bloqueo transaccional \\
+ABIERTA & Aportación cubre el total & LIQUIDADA & Sistema & \texttt{remainingCents = 0} \\ \rowcolor{altrow}
+PARCIAL & Nueva aportación cubre el saldo restante & LIQUIDADA & Sistema & \texttt{remainingCents = 0} \\
+ABIERTA & Cancelación autorizada & CANCELADA & Gerente & Auditar evento \\ \rowcolor{altrow}
+PARCIAL & Cancelación autorizada & CANCELADA & Gerente & Requiere auditoría \\
 \hline
 \end{tabular}
 \end{table}

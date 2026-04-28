@@ -182,6 +182,7 @@ erDiagram
     RestaurantCategory {
         string id PK
         string restaurantId FK
+        string templateCategoryId FK "nullable"
         string taxGroupId FK "nullable"
         string name
         int order
@@ -253,6 +254,7 @@ erDiagram
     DiningTable {
         string id PK
         string restaurantId FK
+        string publicCode UK
         int number
         int capacity
         int qrVersion
@@ -274,6 +276,10 @@ erDiagram
         string accessCodeHash
         int pax
         timestamp openedAt
+        timestamp activatedAt "nullable"
+        timestamp firstOrderAt "nullable"
+        timestamp liquidationStartedAt "nullable"
+        timestamp settledAt "nullable"
         timestamp closedAt "nullable"
         timestamp updatedAt
     }
@@ -303,7 +309,7 @@ erDiagram
         string restaurantId FK
         string diningSessionId FK
         string createdByUserId FK "nullable"
-        string source "ENUM WAITER|QR|POS"
+        string source "ENUM WAITER|QR|INTERNAL"
         string status "ENUM ABIERTA|ENVIADA|COMPLETADA|CANCELADA"
         timestamp createdAt
         timestamp updatedAt
@@ -339,7 +345,8 @@ erDiagram
         string modifierOptionId FK "nullable"
         string nameSnapshot
         int quantity
-        int priceAdjustmentCents
+        int unitAdjustmentCents
+        int totalAdjustmentCents
         timestamp createdAt
     }
 
@@ -347,6 +354,8 @@ erDiagram
         string id PK
         string orderItemId FK
         string changedByUserId FK "nullable"
+        string fromStatus "nullable"
+        string toStatus
         timestamp createdAt
     }
 
@@ -355,8 +364,8 @@ erDiagram
         string restaurantId FK
         string diningSessionId FK
         string currency FK
-        string status "ENUM OPEN|PARTIAL|SETTLED|CANCELLED"
-        string splitMode "ENUM FULL|BY_ITEM|EQUAL|CUSTOM"
+        string status "ENUM ABIERTA|PARCIAL|LIQUIDADA|CANCELADA"
+        string splitMode "ENUM TOTAL|POR_ITEM|IGUAL|PERSONALIZADO"
         int subtotalCents
         int discountCents
         int tipAmountCents
@@ -373,6 +382,7 @@ erDiagram
     SettlementAllocation {
         string id PK
         string settlementId FK
+        string contributionId FK "nullable"
         string orderItemId FK "nullable"
         string guestId FK "nullable"
         int amountCents
@@ -384,7 +394,8 @@ erDiagram
         string settlementId FK
         string guestId FK "nullable"
         string registeredByUserId FK "nullable"
-        string method "ENUM CASH|EXTERNAL|COURTESY|OTHER"
+        string method "ENUM CASH|OUT_OF_SYSTEM|OTHER"
+        string status "ENUM REGISTERED|VOIDED"
         int amountCents
         string note "nullable"
         timestamp createdAt
@@ -398,6 +409,7 @@ erDiagram
         string approvedByUserId FK "nullable"
         string type "ENUM DISCOUNT|COURTESY"
         string calculationMode "ENUM PERCENT|FIXED"
+        string status "ENUM APPLIED|VOIDED"
         int valueBps "nullable"
         int valueCents "nullable"
         int amountCents
@@ -409,8 +421,11 @@ erDiagram
     AnalyticsJobRun {
         string id PK
         string restaurantId FK
+        string jobType "ENUM BRONZE|SILVER|GOLD|DEMAND_ESTIMATE|SERVICE_TIMES"
         string status "ENUM QUEUED|RUNNING|COMPLETED|FAILED"
         string triggeredByUserId FK "nullable"
+        timestamp dataWindowStart "nullable"
+        timestamp dataWindowEnd "nullable"
         timestamp startedAt
         timestamp finishedAt "nullable"
         string errorMessage "nullable"
@@ -420,6 +435,7 @@ erDiagram
     AnalyticSalesDaily {
         string id PK
         string restaurantId FK
+        string jobRunId FK
         date businessDate
         int orderCount
         int itemCount
@@ -433,6 +449,7 @@ erDiagram
     AnalyticItemVelocity {
         string id PK
         string restaurantId FK
+        string jobRunId FK
         string menuItemId FK "nullable"
         date businessDate
         string itemNameSnapshot
@@ -444,6 +461,7 @@ erDiagram
     AnalyticServiceTimes {
         string id PK
         string restaurantId FK
+        string jobRunId FK
         string stationId FK "nullable"
         date businessDate
         int avgPrepSeconds
@@ -453,13 +471,14 @@ erDiagram
         timestamp computedAt
     }
 
-    AnalyticForecast {
+    AnalyticDemandEstimate {
         string id PK
         string restaurantId FK
+        string jobRunId FK
         string menuItemId FK "nullable"
-        date forecastDate
+        date estimateDate
         int expectedQuantity
-        int confidenceBps
+        int confidenceBps "nullable"
         string method
         timestamp computedAt
     }
@@ -505,7 +524,16 @@ erDiagram
     Restaurant ||--o{ AnalyticSalesDaily : "tiene"
     Restaurant ||--o{ AnalyticItemVelocity : "tiene"
     Restaurant ||--o{ AnalyticServiceTimes : "tiene"
-    Restaurant ||--o{ AnalyticForecast : "tiene"
+    Restaurant ||--o{ AnalyticDemandEstimate : "tiene"
+
+    AnalyticsJobRun ||--o{ AnalyticSalesDaily : "genera"
+    AnalyticsJobRun ||--o{ AnalyticItemVelocity : "genera"
+    AnalyticsJobRun ||--o{ AnalyticServiceTimes : "genera"
+    AnalyticsJobRun ||--o{ AnalyticDemandEstimate : "genera"
+
+    RestaurantMenuItem ||--o{ AnalyticItemVelocity : "agregado en"
+    RestaurantMenuItem ||--o{ AnalyticDemandEstimate : "estimado en"
+    Station ||--o{ AnalyticServiceTimes : "agregada en"
 
     MenuTemplate ||--o{ TemplateCategory : "tiene"
     TemplateCategory ||--o{ TemplateItem : "tiene"
@@ -543,3 +571,19 @@ erDiagram
     Settlement ||--o{ SettlementAllocation : "distribuye"
     Settlement ||--o{ SettlementContribution : "recibe"
     Settlement ||--o{ AppliedAdjustment : "tiene"
+    SettlementContribution ||--o{ SettlementAllocation : "cubre"
+
+    %% Color Coding by Module
+    classDef organization fill:#f9f9f9,stroke:#666,stroke-width:1px
+    classDef identity fill:#e1f5fe,stroke:#0288d1,stroke-width:1px
+    classDef catalog fill:#f1f8e9,stroke:#558b2f,stroke-width:1px
+    classDef operations fill:#fff9c4,stroke:#fbc02d,stroke-width:1px
+    classDef settlement fill:#e0f2f1,stroke:#00897b,stroke-width:1px
+    classDef analytics fill:#f3e5f5,stroke:#8e24aa,stroke-width:1px
+
+    class Currency, TaxGroup, Chain, Zone, Restaurant organization
+    class Permission, Role, RolePermission, AppUser, UserRole, AuditLog identity
+    class Station, MenuTemplate, TemplateCategory, TemplateItem, TemplateItemVariant, RestaurantCategory, RestaurantMenuItem, RestaurantMenuItemVariant, ModifierGroup, ModifierOption, MenuItemModifierGroup catalog
+    class DiningTable, DiningSession, DiningSessionTable, Guest, RestaurantOrder, OrderItem, OrderItemModifier, OrderItemStatusEvent operations
+    class Settlement, SettlementAllocation, SettlementContribution, AppliedAdjustment settlement
+    class AnalyticsJobRun, AnalyticSalesDaily, AnalyticItemVelocity, AnalyticServiceTimes, AnalyticDemandEstimate analytics

@@ -117,10 +117,10 @@ const MobileTableChip = memo(function MobileTableChip({
   const needsAttention = (table.readyCount ?? 0) > 0;
   const pendingCount = table.pendingCount ?? 0;
 
-  const color = STATUS_COLOR[table.status];
-  const tint = STATUS_TINT[table.status];
-  const border = STATUS_BORDER[table.status];
-  const glow = STATUS_GLOW[table.status];
+  const color = STATUS_COLOR[table.status as TableStatus];
+  const tint = STATUS_TINT[table.status as TableStatus];
+  const border = STATUS_BORDER[table.status as TableStatus];
+  const glow = STATUS_GLOW[table.status as TableStatus];
 
   const isRound = table.shape === "round";
 
@@ -160,7 +160,7 @@ const MobileTableChip = memo(function MobileTableChip({
         touchAction: "manipulation",
         WebkitTapHighlightColor: "transparent",
       }}
-      aria-label={`Mesa ${table.number} — ${STATUS_LABEL[table.status]}`}
+      aria-label={`Mesa ${table.number} — ${STATUS_LABEL[table.status as TableStatus]}`}
     >
       {/* Urgency badge — platos listos (top-right overlay) */}
       {needsAttention && (
@@ -262,7 +262,7 @@ const MobileTableChip = memo(function MobileTableChip({
             opacity: 0.85,
           }}
         >
-          {STATUS_LABEL[table.status]}
+          {STATUS_LABEL[table.status as TableStatus]}
         </span>
       )}
 

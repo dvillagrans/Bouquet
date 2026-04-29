@@ -163,8 +163,8 @@ interface TableNodeProps {
 
 function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGlyphs = true }: TableNodeProps) {
   const isSelected  = selected === table.id;
-  const fill        = STATUS_FILL[table.status];
-  const stroke      = STATUS_STROKE[table.status];
+  const fill        = STATUS_FILL[table.status as TableStatus];
+  const stroke      = STATUS_STROKE[table.status as TableStatus];
   const isRound     = table.shape === "round";
 
   const { w, h }    = getTableSize(table.capacity, table.shape);
@@ -859,15 +859,15 @@ export default function FloorMap({
               <p className="text-[0.52rem] font-bold uppercase tracking-[0.38em] text-dim">Estado</p>
               <p
                 className="mt-0.5 text-[0.75rem] font-semibold"
-                style={{ color: STATUS_FILL[selectedTable.status] }}
+                style={{ color: STATUS_FILL[selectedTable.status as TableStatus] }}
               >
-                {STATUS_LABEL[selectedTable.status]}
+                {STATUS_LABEL[selectedTable.status as TableStatus]}
               </p>
             </div>
             <div className="min-w-0">
               <p className="text-[0.52rem] font-bold uppercase tracking-[0.38em] text-dim">Código QR</p>
               <p className="mt-0.5 truncate font-mono text-[0.75rem] font-semibold text-light/40">
-                {selectedTable.qrCode}
+                {selectedTable.publicCode}
               </p>
             </div>
           </div>
@@ -890,7 +890,7 @@ export default function FloorMap({
                   onClick={() =>
                     void (async () => {
                       try {
-                        const url = await getSignedGuestPreviewUrl(selectedTable.qrCode);
+                        const url = await getSignedGuestPreviewUrl(selectedTable.publicCode);
                         window.open(url, "_blank", "noopener,noreferrer");
                       } catch {
                         alert("No se pudo abrir la vista de comensal.");
@@ -920,7 +920,7 @@ export default function FloorMap({
                   onClick={() =>
                     void (async () => {
                       try {
-                        const url = await getSignedGuestPreviewUrl(selectedTable.qrCode);
+                        const url = await getSignedGuestPreviewUrl(selectedTable.publicCode);
                         window.open(url, "_blank", "noopener,noreferrer");
                       } catch {
                         alert("No se pudo abrir la vista de comensal.");

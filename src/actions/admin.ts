@@ -194,10 +194,23 @@ export async function getAdminBillingOverview(): Promise<AdminBillingOverview> {
 
 // TODO: migrar a AppUser + UserRole (chainStaff fue eliminado del schema)
 export async function createTenant(data: { name: string; adminName: string; pin: string; currency?: string }) {
+  let user = await prisma.appUser.findFirst();
+  if (!user) {
+    user = await prisma.appUser.create({
+      data: {
+        email: "admin@bouquet.com",
+        passwordHash: "temp",
+        firstName: "Admin",
+        lastName: "Bouquet",
+      }
+    });
+  }
+
   const chain = await prisma.chain.create({
     data: {
       name: data.name,
       currency: data.currency || "MXN",
+      createdBy: user.id,
     },
   });
   // TODO: crear AppUser con rol CHAIN_ADMIN aquí

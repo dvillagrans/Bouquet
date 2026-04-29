@@ -158,7 +158,7 @@ export default function TableManagerClient({
       tables.filter(
         (t) =>
           t.number.toString().includes(search) ||
-          t.qrCode.toLowerCase().includes(search.toLowerCase()),
+          t.publicCode.toLowerCase().includes(search.toLowerCase()),
       ),
     [tables, search],
   );
@@ -453,7 +453,7 @@ export default function TableManagerClient({
                 {filtered.map((table) => {
                   const isSelectedToJoin = selectedTablesToJoin.includes(table.id);
                   const isInGroup = !!table.groupId;
-                  const statusInfo = STATUS_COLORS[table.status];
+                  const statusInfo = STATUS_COLORS[table.status as TableStatus];
 
                   return (
                     <motion.div
@@ -481,13 +481,13 @@ export default function TableManagerClient({
 
                         {/* Status Label Pill */}
                         <div className={`rounded-full border px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] ${statusInfo.border} ${statusInfo.bg} ${statusInfo.text}`}>
-                          {STATUS_LABEL[table.status]}
+                          {STATUS_LABEL[table.status as TableStatus]}
                         </div>
                       </div>
 
                       <div className="mb-4">
                         <p className="text-[9px] uppercase tracking-[0.15em] text-text-faint">Identificador de Sesión</p>
-                        <p className="font-mono text-[11px] tracking-wide text-text-muted mt-0.5 truncate">{table.qrCode}</p>
+                        <p className="font-mono text-[11px] tracking-wide text-text-muted mt-0.5 truncate">{table.publicCode}</p>
                       </div>
 
                       {/* Group Indicator */}

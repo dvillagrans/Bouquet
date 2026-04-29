@@ -59,7 +59,7 @@ export default async function MesaMenuPage({ params, searchParams }: MenuPagePro
     access.status === "ok" &&
     (sp.guest !== undefined || sp.pax !== undefined || sp.from !== undefined)
   ) {
-    redirect(`/mesa/${encodeURIComponent(access.table.qrCode)}/menu`);
+    redirect(`/mesa/${encodeURIComponent(access.table.publicCode)}/menu`);
   }
 
   const { table, guestName, partySize } = access;
@@ -71,8 +71,8 @@ export default async function MesaMenuPage({ params, searchParams }: MenuPagePro
     restaurant,
   ] = await Promise.all([
     getMenuData({ restaurantId: table.restaurantId }),
-    getGuestOrders(table.qrCode),
-    getGuestTableState(table.qrCode, guestName),
+    getGuestOrders(table.publicCode),
+    getGuestTableState(table.publicCode, guestName),
     prisma.restaurant.findUnique({
       where: { id: table.restaurantId },
       select: { name: true },
@@ -94,15 +94,15 @@ export default async function MesaMenuPage({ params, searchParams }: MenuPagePro
       <MenuScreen
         guestName={guestName}
         partySize={partySize}
-        tableCode={table.qrCode}
+        tableCode={table.publicCode}
         tableNumber={table.number}
         restaurantName={restaurant?.name ?? "Restaurante"}
         initialCategories={categories}
-        initialItems={items}
+        initialItems={items as any}
         initialOrders={initialOrders}
         isHost={isHost}
         initialBillRequested={billRequested}
-        initialGuests={guests}
+        initialGuests={guests.map(g => ({ ...g, name: g.name || "Comensal" }))}
         joinCode={joinCode}
       />
     </div>

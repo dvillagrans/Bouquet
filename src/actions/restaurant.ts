@@ -28,10 +28,36 @@ export const getDefaultRestaurant = cache(async function getDefaultRestaurant() 
   }
 
   if (!restaurant) {
+    // Encontrar una cadena para asignar el restaurante demo
+    let chain = await prisma.chain.findFirst();
+    if (!chain) {
+      // Encontrar un usuario para asignar la cadena
+      let user = await prisma.appUser.findFirst();
+      if (!user) {
+         user = await prisma.appUser.create({
+           data: {
+             email: "admin@bouquet.com",
+             passwordHash: "temp",
+             firstName: "Admin",
+             lastName: "Bouquet"
+           }
+         });
+      }
+      chain = await prisma.chain.create({
+        data: {
+          name: "Cadena Principal",
+          currency: "MXN",
+          createdBy: user.id
+        }
+      });
+    }
+
     restaurant = await prisma.restaurant.create({
       data: {
         name: "Mi Restaurante",
         welcomeMessage: "¡Bienvenidos!",
+        chainId: chain.id,
+        currency: "MXN",
       }
     });
   }
@@ -64,7 +90,7 @@ export async function getRestaurantOverview() {
     select: { status: true }
   });
   const paymentsToday = await prisma.settlement.findMany({
-    where: { restaurantId: restaurant.id, status: "PAID", order: { createdAt: { gte: startOfDay } } },
+    where: { restaurantId: restaurant.id, status: "LIQUIDADA", createdAt: { gte: startOfDay } },
     select: { subtotalCents: true },
   });
 

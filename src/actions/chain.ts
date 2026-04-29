@@ -129,15 +129,15 @@ export async function getChainDashboard(tenantId: string): Promise<ChainDashboar
   const sessionCountMap = new Map<string, number>();
   if (diningTableIds.length > 0) {
     const counts = await prisma.diningSessionTable.groupBy({
-      by: ["diningTableId"],
+      by: ["tableId"],
       where: {
-        diningTableId: { in: diningTableIds },
-        createdAt: { gte: dayStart, lte: dayEnd },
+        tableId: { in: diningTableIds },
+        joinedAt: { gte: dayStart, lte: dayEnd },
       },
-      _count: { _all: true },
+      _count: true,
     });
     for (const c of counts) {
-      sessionCountMap.set(c.diningTableId, c._count._all);
+      sessionCountMap.set(c.tableId, (c._count as any)._all || 0);
     }
   }
 
@@ -241,15 +241,15 @@ export async function getZoneDashboard(zoneId: string): Promise<ZoneDashboardDat
   const sessionCountMap = new Map<string, number>();
   if (diningTableIds.length > 0) {
     const counts = await prisma.diningSessionTable.groupBy({
-      by: ["diningTableId"],
+      by: ["tableId"],
       where: {
-        diningTableId: { in: diningTableIds },
-        createdAt: { gte: dayStart, lte: dayEnd },
+        tableId: { in: diningTableIds },
+        joinedAt: { gte: dayStart, lte: dayEnd },
       },
-      _count: { _all: true },
+      _count: true,
     });
     for (const c of counts) {
-      sessionCountMap.set(c.diningTableId, c._count._all);
+      sessionCountMap.set(c.tableId, (c._count as any)._all || 0);
     }
   }
 
@@ -280,7 +280,7 @@ export async function getZoneDashboard(zoneId: string): Promise<ZoneDashboardDat
 }
 
 // TODO: migrar a AppUser + UserRole (chainStaff fue eliminado del schema)
-export async function verifyZonePin(_zoneId: string, _pin: string) {
+export async function verifyZonePin(_zoneId: string, _pin: string): Promise<{ success: boolean; error?: string; token?: string }> {
   return { success: false, error: "Autenticación de zona deshabilitada: chainStaff eliminado del schema." };
 }
 

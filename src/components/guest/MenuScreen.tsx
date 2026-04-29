@@ -393,7 +393,7 @@ export function MenuScreen({
       .on("broadcast", { event: "refresh" }, () => {
         void refreshOrders();
         void getGuestTableState(tableCode, guestName).then((s) => {
-          setGuests(s.guests);
+          setGuests(s.guests.map(g => ({ ...g, name: g.name || "Comensal" })));
           setIsHostLive(s.isHost);
         });
       })
@@ -1054,7 +1054,7 @@ export function MenuScreen({
                             startTransfer(async () => {
                               await transferHost(tableCode, guestName, g.name);
                               const state = await getGuestTableState(tableCode, guestName);
-                              setGuests(state.guests);
+                              setGuests(state.guests.map(g => ({ ...g, name: g.name || "Comensal" })));
                               setIsHostLive(state.isHost);
                             });
                           }}

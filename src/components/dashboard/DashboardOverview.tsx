@@ -7,17 +7,17 @@ import { memo } from "react";
 import {
   ArrowRight,
   Armchair,
-  CheckCircle,
+  CheckCircle2 as CheckCircle,
   ChefHat,
-  ClockCountdown,
-  CompassTool,
-  CurrencyDollar,
+  Clock,
+  Compass,
+  DollarSign as CurrencyDollar,
   MapPin,
   Receipt,
-  Storefront,
-  UsersThree,
-  WarningCircle,
-} from "@phosphor-icons/react";
+  Store,
+  Users as UsersThree,
+  AlertCircle as WarningCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { resolveNavHref, restaurantBaseFromPathname } from "@/lib/dashboard-nav";
 
@@ -204,7 +204,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
           <motion.div variants={itemVariants} className="grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr] lg:items-end">
             <header className="space-y-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-border-main/80 bg-bg-card/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-text-faint">
-                <Storefront size={13} className="text-gold" />
+                <Store size={13} className="text-gold" />
                 Visión Operativa
               </div>
               <h1 className="max-w-[18ch] text-4xl leading-none tracking-tighter text-text-primary md:text-6xl">
@@ -269,7 +269,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
                     <p className="mt-1 text-xs text-text-muted">Estado en tiempo real de los tickets de operación.</p>
                   </div>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-border-main/80 px-2.5 py-1 text-[10px] uppercase tracking-[0.15em] text-text-faint">
-                    <CompassTool size={12} />
+                    <Compass size={12} />
                     Live
                   </span>
                 </div>
@@ -292,7 +292,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
                       value={metrics.preparingOrders}
                       label="En fuego"
                       tone="text-gold"
-                      icon={ClockCountdown}
+                      icon={Clock}
                       reduceMotion={reduceMotion}
                     />
                     <MemoKitchenSignal

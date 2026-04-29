@@ -46,12 +46,12 @@ export async function resolveGuestTableAccess(rawTableCode: string): Promise<Gue
     where: { id: sessionId },
     include: {
       guests: true,
-      diningSessionTables: { where: { tableId: table.id } },
+      tables: { where: { tableId: table.id } },
     },
   });
 
   const activeStatuses = ["ACTIVA", "EN_CONSUMO"];
-  const sessionTable = session?.diningSessionTables[0];
+  const sessionTable = session?.tables[0];
 
   if (!session || !sessionTable || sessionTable.leftAt !== null) {
     return { status: "need_login", canonicalQr: table.publicCode };
@@ -72,7 +72,7 @@ export async function resolveGuestTableAccess(rawTableCode: string): Promise<Gue
   return {
     status: "ok",
     table,
-    guestName: primaryGuest.name,
+    guestName: primaryGuest.name || "Comensal",
     partySize: Math.max(1, Math.min(20, session.guests.length)),
   };
 }
@@ -119,12 +119,12 @@ export async function requireGuestSessionRow(
     where: { id: sessionId },
     include: {
       guests: true,
-      diningSessionTables: { where: { tableId: table.id } },
+      tables: { where: { tableId: table.id } },
     },
   });
 
   const activeStatuses = ["ACTIVA", "EN_CONSUMO"];
-  const sessionTable = session?.diningSessionTables[0];
+  const sessionTable = session?.tables[0];
 
   if (!session || !sessionTable || sessionTable.leftAt !== null) {
     throw new Error("Tu sesión en esta mesa ya no es válida. Vuelve a entrar desde el QR.");
@@ -135,7 +135,7 @@ export async function requireGuestSessionRow(
   }
 
   const claimed = claimedGuestName.trim();
-  const guest = session.guests.find((g) => g.name.trim() === claimed);
+  const guest = session.guests.find((g) => (g.name || "").trim() === claimed);
   if (!claimed || !guest) {
     throw new Error("La sesión no coincide con este perfil.");
   }
@@ -143,7 +143,7 @@ export async function requireGuestSessionRow(
   return {
     id: session.id,
     guestId: guest.id,
-    guestName: guest.name,
+    guestName: guest.name || "Comensal",
     sessionStatus: session.status,
     tableId: table.id,
   };

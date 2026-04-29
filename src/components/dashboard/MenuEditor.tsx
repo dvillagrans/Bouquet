@@ -13,12 +13,18 @@ type MenuItemDB = {
   id: string;
   name: string;
   description: string | null;
-  price: number;
+  priceCents?: number; // nuevo campo
+  price: number; // calculado para UI
   variants: Variant[];
   categoryName: string;
   isPopular: boolean;
   isSoldOut: boolean;
-  station: "COCINA" | "BARRA";
+  station?: string;
+  archivedAt?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+  restaurantId?: string;
+  categoryId?: string;
 };
 
 type CategoryDB = {
@@ -222,7 +228,7 @@ export default function MenuEditor({
       : parseFloat(newItem.price);
     startTransition(async () => {
       const { createMenuItem } = await import("@/actions/menu");
-      const created = await createMenuItem({
+      const created = (await createMenuItem({
         name:        newItem.name,
         description: newItem.description || undefined,
         price:       basePrice,
@@ -230,9 +236,9 @@ export default function MenuEditor({
         isPopular:   newItem.isPopular,
         station:     newItem.station,
         variants:    newVariants,
-      });
+      })) as any;
       const catName = categories.find(c => c.id === newItem.categoryId)?.name || "";
-      setItems(prev => [...prev, { ...created, categoryName: catName, variants: newVariants }]);
+      setItems(prev => [...prev, { ...created, price: (created.priceCents || 0) / 100, categoryName: catName, variants: newVariants }]);
       setIsAdding(false);
       setNewItem({ name: "", description: "", price: "", categoryId: "", isPopular: false, station: "COCINA" });
       setNewVariants([]);

@@ -37,18 +37,18 @@ export async function GET(request: NextRequest) {
   }
 
   const table = await findTableByQrCode(code);
-  if (!table || !verifyTableJoinProof(table.qrCode, k)) {
+  if (!table || !verifyTableJoinProof(table.publicCode, k)) {
     return NextResponse.redirect(new URL(`/mesa/${encodeURIComponent(code)}/`, site.origin));
   }
 
-  const normalized = normalizeMesaPath(destUrl.pathname, table.qrCode);
+  const normalized = normalizeMesaPath(destUrl.pathname, table.publicCode);
   if (!normalized) {
     return NextResponse.redirect(new URL("/", site.origin));
   }
 
   const finalUrl = new URL(normalized + destUrl.search, site.origin);
   const res = NextResponse.redirect(finalUrl);
-  res.cookies.set(`bq_gate_${table.qrCode}`, "1", {
+  res.cookies.set(`bq_gate_${table.publicCode}`, "1", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

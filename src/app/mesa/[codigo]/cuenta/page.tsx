@@ -203,11 +203,11 @@ export default async function CuentaPage({ params, searchParams }: CuentaPagePro
     access.status === "ok" &&
     (sp.guest !== undefined || sp.pax !== undefined || sp.from !== undefined)
   ) {
-    redirect(`/mesa/${encodeURIComponent(access.table.qrCode)}/cuenta`);
+    redirect(`/mesa/${encodeURIComponent(access.table.publicCode)}/cuenta`);
   }
 
   const { table, guestName, partySize } = access;
-  const bill = await getTableBill(table.qrCode);
+  const bill = await getTableBill(table.publicCode);
   const partySizeDisplay = bill.guestCount > 0 ? bill.guestCount : partySize;
 
   return (
@@ -221,7 +221,7 @@ export default async function CuentaPage({ params, searchParams }: CuentaPagePro
         }}
       />
       <SplitBillScreen
-        tableCode={table.qrCode}
+        tableCode={table.publicCode}
         guestName={guestName}
         partySize={partySizeDisplay}
         initialBill={bill}

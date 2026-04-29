@@ -37,17 +37,20 @@ export default async function TableAccessPage({ params, searchParams }: TablePag
   if (sessionId && guestNameCookie) {
     const activeSession = await prisma.diningSession.findUnique({
       where: { id: sessionId },
-      select: { isActive: true, pax: true }
+      select: { status: true, pax: true }
     });
 
-    if (activeSession?.isActive) {
+    if (activeSession?.status === "OPEN") {
       redirect(`/mesa/${encodeURIComponent(canonicalQr)}/menu`);
     }
   }
 
   const existingSessionForTable = tableResolved
     ? await prisma.diningSession.findFirst({
-        where: { tableId: tableResolved.id, isActive: true },
+        where: { 
+          tables: { some: { tableId: tableResolved.id } }, 
+          status: "OPEN" 
+        },
         select: { pax: true },
       })
     : null;
@@ -63,7 +66,7 @@ export default async function TableAccessPage({ params, searchParams }: TablePag
     );
   }
 
-  const gateOk = await hasTableJoinGate(tableResolved.qrCode, decodedCode);
+  const gateOk = await hasTableJoinGate(tableResolved.publicCode, decodedCode);
   if (!gateOk) {
     return <GuestScanQrGate tableNumber={tableResolved.number} />;
   }

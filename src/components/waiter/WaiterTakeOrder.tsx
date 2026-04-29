@@ -57,8 +57,13 @@ export default function WaiterTakeOrder({
         const data = await getMenuForOrdering();
         setCategories(data.categories || []);
         setItems(
-          (data.items || []).map((it: MenuItem) => ({
-            ...it,
+          (data.items || []).map((it: any) => ({
+            id: it.id,
+            name: it.name,
+            description: it.description,
+            price: (it.priceCents || 0) / 100,
+            imageUrl: it.imageUrl || null,
+            categoryId: it.categoryId || it.category?.id || "",
             variants: Array.isArray(it.variants) ? it.variants : [],
           }))
         );

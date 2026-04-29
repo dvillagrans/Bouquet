@@ -42,7 +42,7 @@ async function fetchPeriodData(
       include: { items: { include: { menuItem: true } } },
     }),
     prisma.diningSession.findMany({
-      where: { restaurantId: restId, createdAt: { gte: startDate, lte: endDate } },
+      where: { restaurantId: restId, openedAt: { gte: startDate, lte: endDate } },
     }),
   ]);
 
@@ -59,12 +59,12 @@ async function fetchPeriodData(
     else                        timeKey = String(Math.floor((d.getDate() - 1) / 7));
 
     for (const i of o.items) {
-      const line = i.quantity * i.priceAtTime;
+      const line = i.quantity * ((i.unitPriceCents || 0) / 100);
       totalVentas += line;
       totalPlatos += i.quantity;
       timeMap[timeKey] = (timeMap[timeKey] ?? 0) + line;
 
-      const key = i.menuItem.name;
+      const key = i.menuItem?.name || i.itemNameSnapshot || "Platillo";
       if (!itemMap[key]) itemMap[key] = { name: key, sold: 0, revenue: 0 };
       itemMap[key].sold    += i.quantity;
       itemMap[key].revenue += line;

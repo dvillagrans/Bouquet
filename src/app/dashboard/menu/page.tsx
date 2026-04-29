@@ -10,5 +10,5 @@ export const dynamic = "force-dynamic";
 export default async function DashboardMenuPage() {
   const { categories, items } = await getMenuData();
   
-  return <MenuEditor initialCategories={categories} initialItems={items} />;
+  return <MenuEditor initialCategories={categories} initialItems={items as any} />;
 }

@@ -4,7 +4,16 @@ import { useMemo, useState, useTransition } from "react";
 import { UserPlus, Trash2, Eye, EyeOff, Search } from "lucide-react";
 import { createStaffMember, deleteStaffMember, toggleStaffStatus } from "@/actions/staff";
 // TODO: migrar a AppUser + UserRole
-type Staff = { id: string; name: string; role: string; email: string | null; isActive: boolean; createdAt: Date; };
+type Staff = { 
+  id: string; 
+  name: string; 
+  role: string; 
+  email?: string | null; 
+  isActive: boolean; 
+  createdAt: Date; 
+  updatedAt: Date;
+  pin: string;
+};
 
 /* ── Role config ─────────────────────────────────────────────────── */
 type Role = "ADMIN" | "MESERO" | "COCINA" | "BARRA";
@@ -199,7 +208,7 @@ export default function StaffManager({ initialStaff }: { initialStaff: Staff[] }
 
     const fakeId = "optimistic-" + Date.now();
     const optimistic: Staff = {
-      id: fakeId, restaurantId: "",
+      id: fakeId,
       name: newName.trim(), role: newRole, pin: newPin,
       isActive: true, createdAt: new Date(), updatedAt: new Date(),
     };
@@ -210,7 +219,7 @@ export default function StaffManager({ initialStaff }: { initialStaff: Staff[] }
 
     startTransition(async () => {
       try {
-        const created = await createStaffMember({ name: optimistic.name, role: newRole, pin: newPin });
+        const created = (await createStaffMember({ name: optimistic.name, role: newRole, pin: newPin })) as unknown as Staff;
         setStaff(prev => prev.map(s => s.id === fakeId ? created : s));
       } catch {
         setStaff(prev => prev.filter(s => s.id !== fakeId));

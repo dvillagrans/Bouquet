@@ -60,7 +60,7 @@ async function fetchRestaurants(chainId?: string, zoneId?: string) {
 
   const whereClause: any = {};
   if (chainId) {
-    whereClause.zone = { chainId: chainId };
+    whereClause.chainId = chainId;
   }
   if (zoneId) {
     whereClause.zoneId = zoneId;
@@ -72,11 +72,8 @@ async function fetchRestaurants(chainId?: string, zoneId?: string) {
       zone: { select: { id: true, name: true, chainId: true } },
       diningTables: {
         select: {
+          id: true,
           status: true,
-          diningSessionTables: {
-            where: { createdAt: { gte: dayStart, lte: dayEnd } },
-            select: { id: true },
-          },
         },
       },
       orders: {
@@ -91,13 +88,16 @@ async function fetchRestaurants(chainId?: string, zoneId?: string) {
   });
 }
 
-function toSummary(r: any): RestaurantSummary {
+function toSummary(r: any, sessionCountMap: Map<string, number>): RestaurantSummary {
   const todayRevenue = r.orders.reduce((a: number, o: any) => {
     const total = o.items.reduce((sum: number, it: any) => sum + it.quantity * (it.totalCents / 100), 0);
     return a + total;
   }, 0);
 
-  const todaySessions = r.diningTables.reduce((a: number, t: any) => a + t.diningSessionTables.length, 0);
+  const todaySessions = r.diningTables.reduce(
+    (a: number, t: any) => a + (sessionCountMap.get(t.id) || 0),
+    0
+  );
 
   return {
     id: r.id,
@@ -114,6 +114,10 @@ function toSummary(r: any): RestaurantSummary {
 }
 
 export async function getChainDashboard(tenantId: string): Promise<ChainDashboardData | null> {
+  const now = new Date();
+  const dayStart = startOfDay(now);
+  const dayEnd = endOfDay(now);
+
   const [chain, rawRestaurants] = await Promise.all([
     prisma.chain.findUnique({ where: { id: tenantId }, select: { id: true, name: true } }),
     fetchRestaurants(tenantId),
@@ -121,8 +125,24 @@ export async function getChainDashboard(tenantId: string): Promise<ChainDashboar
 
   if (!chain) return null;
 
+  const diningTableIds = rawRestaurants.flatMap((r) => r.diningTables.map((t: any) => t.id));
+  const sessionCountMap = new Map<string, number>();
+  if (diningTableIds.length > 0) {
+    const counts = await prisma.diningSessionTable.groupBy({
+      by: ["diningTableId"],
+      where: {
+        diningTableId: { in: diningTableIds },
+        createdAt: { gte: dayStart, lte: dayEnd },
+      },
+      _count: { _all: true },
+    });
+    for (const c of counts) {
+      sessionCountMap.set(c.diningTableId, c._count._all);
+    }
+  }
+
   const restaurants = rawRestaurants
-    .map(toSummary)
+    .map((r) => toSummary(r, sessionCountMap))
     .sort((a, b) => b.todayRevenue - a.todayRevenue);
 
   const zones: ZoneSummary[] = [];
@@ -203,6 +223,10 @@ export async function renameChainZone(input: {
 }
 
 export async function getZoneDashboard(zoneId: string): Promise<ZoneDashboardData | null> {
+  const now = new Date();
+  const dayStart = startOfDay(now);
+  const dayEnd = endOfDay(now);
+
   const [zone, rawRestaurants] = await Promise.all([
     prisma.zone.findUnique({
       where: { id: zoneId },
@@ -213,8 +237,24 @@ export async function getZoneDashboard(zoneId: string): Promise<ZoneDashboardDat
 
   if (!zone) return null;
 
+  const diningTableIds = rawRestaurants.flatMap((r) => r.diningTables.map((t: any) => t.id));
+  const sessionCountMap = new Map<string, number>();
+  if (diningTableIds.length > 0) {
+    const counts = await prisma.diningSessionTable.groupBy({
+      by: ["diningTableId"],
+      where: {
+        diningTableId: { in: diningTableIds },
+        createdAt: { gte: dayStart, lte: dayEnd },
+      },
+      _count: { _all: true },
+    });
+    for (const c of counts) {
+      sessionCountMap.set(c.diningTableId, c._count._all);
+    }
+  }
+
   const restaurants = rawRestaurants
-    .map(toSummary)
+    .map((r) => toSummary(r, sessionCountMap))
     .sort((a, b) => b.todayRevenue - a.todayRevenue);
 
   const stats = restaurants.reduce(
@@ -280,6 +320,8 @@ export async function createRestaurantInChain(data: {
         name: data.name,
         address: data.address || null,
         zoneId: finalZoneId,
+        chainId: data.chainId,
+        currency: "MXN",
       }
     });
 
@@ -320,7 +362,6 @@ export async function getChainMenuTemplates(tenantId: string): Promise<ChainMenu
       categories: {
         select: { _count: { select: { items: true } } },
       },
-      _count: { select: { restaurants: true } },
     },
   });
 
@@ -330,7 +371,7 @@ export async function getChainMenuTemplates(tenantId: string): Promise<ChainMenu
     isDefault: t.isDefault,
     categoryCount: t.categories.length,
     itemCount: t.categories.reduce((acc, c) => acc + c._count.items, 0),
-    restaurantCount: t._count.restaurants,
+    restaurantCount: 0, // TODO: restaurar cuando se defina relación restaurants en MenuTemplate
     updatedAt: t.updatedAt.toISOString(),
   }));
 
@@ -446,7 +487,7 @@ export async function getChainAuditOverview(tenantId: string): Promise<ChainAudi
     staffActive,
   ] = await Promise.all([
     prisma.zone.count({ where: { chainId: tenantId } }),
-    prisma.restaurant.count({ where: { zone: { chainId: tenantId } } }),
+    prisma.restaurant.count({ where: { chainId: tenantId } }),
     prisma.menuTemplate.count({ where: { chainId: tenantId } }),
     prisma.templateCategory.count({ where: { template: { chainId: tenantId } } }),
     prisma.templateItem.count({ where: { category: { template: { chainId: tenantId } } } }),
@@ -561,4 +602,3 @@ export async function setRestaurantAdminActive(_input: {
 }): Promise<{ success: true } | { success: false; error: string }> {
   return { success: false, error: "staff eliminado del schema. Usa AppUser + UserRole." };
 }
-

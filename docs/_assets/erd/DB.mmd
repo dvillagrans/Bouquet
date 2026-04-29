@@ -20,6 +20,16 @@ erDiagram
         timestamp createdAt
     }
 
+    TipPreset {
+        string id PK
+        string chainId FK "nullable"
+        string restaurantId FK "nullable"
+        int rateBps
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
     Permission {
         string id PK
         string code UK "CREATE_ORDER | VIEW_SETTLEMENTS | MANAGE_ADJUSTMENTS"
@@ -55,6 +65,7 @@ erDiagram
         string secondLastName "nullable"
         string phone "nullable"
         boolean isActive
+        timestamp archivedAt "nullable"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -74,11 +85,10 @@ erDiagram
         string id PK
         string createdBy FK
         string currency FK
+        string defaultTaxGroupId FK "nullable"
         string name
         string logoUrl "nullable"
-        int defaultTaxBps "1600"
-        string defaultTipsBps "array bps"
-        boolean isArchived
+        timestamp archivedAt "nullable"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -87,7 +97,7 @@ erDiagram
         string id PK
         string chainId FK
         string name
-        boolean isArchived
+        timestamp archivedAt "nullable"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -97,15 +107,14 @@ erDiagram
         string chainId FK
         string zoneId FK "nullable"
         string currency FK
+        string defaultTaxGroupId FK "nullable"
         string name
         string logoUrl "nullable"
         string welcomeMessage "nullable"
         string address "nullable"
-        int taxBps "nullable"
-        string suggestedTipsBps "array bps"
         boolean allowMobileOrdering
         boolean allowWaiterJoinTables
-        boolean isArchived
+        timestamp archivedAt "nullable"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -163,7 +172,7 @@ erDiagram
         int basePriceCents
         string imageUrl "nullable"
         boolean isPopular
-        boolean isArchived
+        timestamp archivedAt "nullable"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -186,7 +195,7 @@ erDiagram
         string taxGroupId FK "nullable"
         string name
         int order
-        boolean isArchived
+        timestamp archivedAt "nullable"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -342,7 +351,7 @@ erDiagram
     OrderItemModifier {
         string id PK
         string orderItemId FK
-        string modifierOptionId FK "nullable"
+        string modifierOptionId FK
         string nameSnapshot
         int quantity
         int unitAdjustmentCents
@@ -487,6 +496,8 @@ erDiagram
     Currency ||--o{ Restaurant : "usada en"
     Currency ||--o{ Settlement : "usada en"
 
+    TaxGroup ||--o{ Chain : "default en"
+    TaxGroup ||--o{ Restaurant : "default en"
     TaxGroup ||--o{ RestaurantCategory : "aplicado en"
     TaxGroup ||--o{ RestaurantMenuItem : "aplicado en"
 
@@ -508,6 +519,7 @@ erDiagram
     Chain ||--o{ Zone : "tiene"
     Chain ||--o{ Restaurant : "tiene"
     Chain ||--o{ MenuTemplate : "tiene"
+    Chain ||--o{ TipPreset : "define"
 
     Zone ||--o{ Restaurant : "agrupa"
 
@@ -520,6 +532,7 @@ erDiagram
     Restaurant ||--o{ RestaurantOrder : "tiene"
     Restaurant ||--o{ Settlement : "tiene"
     Restaurant ||--o{ AppliedAdjustment : "tiene"
+    Restaurant ||--o{ TipPreset : "sobrescribe"
     Restaurant ||--o{ AnalyticsJobRun : "tiene"
     Restaurant ||--o{ AnalyticSalesDaily : "tiene"
     Restaurant ||--o{ AnalyticItemVelocity : "tiene"
@@ -581,9 +594,26 @@ erDiagram
     classDef settlement fill:#e0f2f1,stroke:#00897b,stroke-width:1px
     classDef analytics fill:#f3e5f5,stroke:#8e24aa,stroke-width:1px
 
-    class Currency, TaxGroup, Chain, Zone, Restaurant organization
+    class Currency, TaxGroup, TipPreset, Chain, Zone, Restaurant organization
     class Permission, Role, RolePermission, AppUser, UserRole, AuditLog identity
     class Station, MenuTemplate, TemplateCategory, TemplateItem, TemplateItemVariant, RestaurantCategory, RestaurantMenuItem, RestaurantMenuItemVariant, ModifierGroup, ModifierOption, MenuItemModifierGroup catalog
     class DiningTable, DiningSession, DiningSessionTable, Guest, RestaurantOrder, OrderItem, OrderItemModifier, OrderItemStatusEvent operations
     class Settlement, SettlementAllocation, SettlementContribution, AppliedAdjustment settlement
     class AnalyticsJobRun, AnalyticSalesDaily, AnalyticItemVelocity, AnalyticServiceTimes, AnalyticDemandEstimate analytics
+
+    %% ==========================================
+    %% CHECK CONSTRAINTS (Postgres)
+    %% ==========================================
+    %% UserRole: (contextType='CHAIN' AND chainId IS NOT NULL AND zoneId IS NULL AND restaurantId IS NULL)
+    %%           OR (contextType='ZONE' AND zoneId IS NOT NULL AND chainId IS NULL AND restaurantId IS NULL)
+    %%           OR (contextType='RESTAURANT' AND restaurantId IS NOT NULL AND chainId IS NULL AND zoneId IS NULL)
+    %%           OR (contextType='PLATFORM' AND chainId IS NULL AND zoneId IS NULL AND restaurantId IS NULL)
+    %%
+    %% TipPreset: (chainId IS NOT NULL AND restaurantId IS NULL)
+    %%            OR (chainId IS NULL AND restaurantId IS NOT NULL)
+
+    %% ==========================================
+    %% ÍNDICES SUGERIDOS
+    %% ==========================================
+    %% AppUser(email), DiningSession(joinCode), DiningTable(publicCode),
+    %% OrderItem(status, updatedAt), Settlement(status, restaurantId)

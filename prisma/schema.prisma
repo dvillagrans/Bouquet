@@ -10,606 +10,853 @@ datasource db {
   provider = "postgresql"
 }
 
-// ------------------------------------
-// 0. Cadena, Zonas y Permisos
-// ------------------------------------
+// ==========================================
+// ORGANIZATION
+// ==========================================
 
-// Una cadena agrupa zonas. Un restaurante independiente no tiene cadena.
-model Chain {
-  id            String  @id @default(uuid())
-  name          String
-  logoUrl       String?
-  currency      String  @default("MXN")
-  taxRate       Float   @default(16.0)
-  suggestedTips String  @default("10,15,20")
-  isArchived    Boolean @default(false) // Soft Delete para la cadena entera
-
-  zones         Zone[]
-  menuTemplates MenuTemplate[]
-  chainStaff    ChainStaff[]
-
+model Currency {
+  code      String   @id // MXN | USD | EUR
+  name      String
+  symbol    String
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  chains      Chain[]
+  restaurants Restaurant[]
+  settlements Settlement[]
 }
 
-// Una zona agrupa restaurantes dentro de una cadena.
-// Obligatoria para restaurantes de cadena.
-model Zone {
-  id      String @id @default(uuid())
-  chainId String
-  name    String // "Norte", "CDMX", "Occidente"
-  isArchived Boolean @default(false) // Soft Delete
-
-  chain              Chain              @relation(fields: [chainId], references: [id], onDelete: Cascade)
-  restaurants        Restaurant[]
-  zoneMenuOverrides  ZoneMenuOverride[]
-
+model TaxGroup {
+  id        String   @id @default(uuid())
+  name      String // IVA 16 | IEPS 8 | Exento
+  rateBps   Int // 1600 = 16 percent
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  chainDefaults       Chain[]
+  restaurantDefaults  Restaurant[]
+  restaurantCategories RestaurantCategory[]
+  restaurantMenuItems  RestaurantMenuItem[]
+}
+
+model TipPreset {
+  id           String    @id @default(uuid())
+  chainId      String?
+  restaurantId String?
+  rateBps      Int
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  chain      Chain?      @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  restaurant Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([chainId])
+  @@index([restaurantId])
+}
+
+model Chain {
+  id               String   @id @default(uuid())
+  createdBy        String
+  currency         String
+  defaultTaxGroupId String?
+  name             String
+  logoUrl          String?
+  archivedAt       DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  creator          AppUser        @relation(fields: [createdBy], references: [id])
+  defaultTaxGroup  TaxGroup?      @relation(fields: [defaultTaxGroupId], references: [id])
+  currencyEntity   Currency       @relation(fields: [currency], references: [code])
+  zones            Zone[]
+  restaurants      Restaurant[]
+  menuTemplates    MenuTemplate[]
+  roles            Role[]
+  tipPresets       TipPreset[]
+  userRoles        UserRole[]
+
+  @@index([createdBy])
+  @@index([currency])
+  @@index([defaultTaxGroupId])
+}
+
+model Zone {
+  id         String    @id @default(uuid())
+  chainId    String
+  name       String
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  chain       Chain        @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  restaurants Restaurant[]
+  userRoles   UserRole[]
 
   @@index([chainId])
 }
 
-// Personal de cadena/zona con visibilidad jerárquica
-enum ChainRole {
-  CHAIN_ADMIN  // ve y administra toda la cadena
-  ZONE_MANAGER // ve y administra su zona
-}
+model Restaurant {
+  id                  String   @id @default(uuid())
+  chainId             String
+  zoneId              String?
+  currency            String
+  defaultTaxGroupId   String?
+  name                String
+  logoUrl             String?
+  welcomeMessage      String?
+  address             String?
+  allowMobileOrdering Boolean  @default(true)
+  allowWaiterJoinTables Boolean @default(false)
+  archivedAt          DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-model ChainStaff {
-  id      String    @id @default(uuid())
-  chainId String
-  zoneId  String?   // null = acceso a toda la cadena
-  name    String
-  role    ChainRole
-  /// @deprecated Almacenamiento legacy; el login unificado usa email + passwordHash
-  pin     String?
-  email   String?   @unique
-  passwordHash String?
-  isActive Boolean  @default(true)
-
-  chain Chain  @relation(fields: [chainId], references: [id], onDelete: Cascade)
-  // zoneId sin FK explícita para no complicar migraciones; validar en app
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  chain           Chain                  @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  zone            Zone?                  @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+  currencyEntity  Currency               @relation(fields: [currency], references: [code])
+  defaultTaxGroup TaxGroup?              @relation(fields: [defaultTaxGroupId], references: [id])
+  stations        Station[]
+  categories      RestaurantCategory[]
+  userRoles       UserRole[]
+  menuItems       RestaurantMenuItem[]
+  modifierGroups  ModifierGroup[]
+  diningTables    DiningTable[]
+  diningSessions  DiningSession[]
+  orders          RestaurantOrder[]
+  settlements     Settlement[]
+  appliedAdjustments AppliedAdjustment[]
+  tipPresets      TipPreset[]
+  analyticsJobRuns AnalyticsJobRun[]
+  analyticSalesDaily AnalyticSalesDaily[]
+  analyticItemVelocity AnalyticItemVelocity[]
+  analyticServiceTimes AnalyticServiceTimes[]
+  analyticDemandEstimate AnalyticDemandEstimate[]
 
   @@index([chainId])
   @@index([zoneId])
+  @@index([currency])
+  @@index([defaultTaxGroupId])
+}
+
+// ==========================================
+// IDENTITY & RBAC
+// ==========================================
+
+model Permission {
+  id          String   @id @default(uuid())
+  code        String   @unique // CREATE_ORDER | VIEW_SETTLEMENTS | MANAGE_ADJUSTMENTS
+  description String
+  scope       String // RESTAURANT | CHAIN | PLATFORM
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+}
+
+model Role {
+  id          String    @id @default(uuid())
+  chainId     String?
+  name        String
+  scope       String // RESTAURANT | CHAIN | PLATFORM
+  description String?
+  isBase      Boolean   @default(false) // true = seed
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  chain       Chain?           @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  permissions RolePermission[]
+  userRoles   UserRole[]
+
+  @@index([chainId])
+}
+
+model RolePermission {
+  roleId      String
+  permissionId String
+  assignedAt  DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model AppUser {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  passwordHash   String
+  firstName      String
+  lastName       String
+  secondLastName String?
+  phone          String?
+  isActive       Boolean  @default(true)
+  archivedAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  userRoles            UserRole[]
+  chainsCreated        Chain[]
+  auditLogs            AuditLog[]
+  diningSessionsOpened DiningSession[] @relation("OpenedBy")
+  ordersCreated        RestaurantOrder[]
+  contributionsRegistered SettlementContribution[]
+  adjustmentsApproved  AppliedAdjustment[]
+  statusEvents         OrderItemStatusEvent[]
+  analyticsJobs        AnalyticsJobRun[]
+
   @@index([email])
 }
 
-// ------------------------------------
-// 1. Restaurante y Configuración
-// ------------------------------------
-model Restaurant {
-  id                  String  @id @default(uuid())
-  zoneId              String? // null = restaurante independiente (sin cadena)
-  name                String
-  logoUrl             String?
-  address             String?
-  welcomeMessage      String?
-  currency            String  @default("MXN")
-  taxRate             Float   @default(16.0)
-  suggestedTips       String  @default("10,15,20")
-  allowMobileOrdering Boolean @default(true)
-  allowWaiterJoinTables Boolean @default(false)
-  isArchived          Boolean @default(false) // Soft Delete (cerrado, histórico)
+model UserRole {
+  id           String   @id @default(uuid())
+  userId       String
+  roleId       String
+  contextType  String // PLATFORM | CHAIN | ZONE | RESTAURANT
+  chainId      String?
+  zoneId       String?
+  restaurantId String?
+  assignedAt   DateTime @default(now())
 
-  zone        Zone?        @relation(fields: [zoneId], references: [id], onDelete: SetNull)
-  tables      Table[]
-  menuItems   MenuItem[]
-  categories  Category[]
-  staff       Staff[]
-  orders      Order[]
-  tableGroups TableGroup[]
-  payments   Payment[]
+  user       AppUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  chain      Chain?       @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  zone       Zone?        @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  restaurant Restaurant?  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
-  // Menú de plantilla: puede usar una plantilla de cadena + sus propios overrides
-  menuTemplateId  String?
-  menuTemplate    MenuTemplate?         @relation(fields: [menuTemplateId], references: [id], onDelete: SetNull)
-  itemOverrides   RestaurantMenuOverride[] // overrides específicos de esta sucursal
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  @@index([userId])
+  @@index([roleId])
+  @@index([chainId])
   @@index([zoneId])
+  @@index([restaurantId])
 }
 
-// ------------------------------------
-// 2. Mesas
-// ------------------------------------
-enum TableStatus {
-  DISPONIBLE
-  OCUPADA
-  CERRANDO  // cuenta pedida por el anfitrión — no se permiten más órdenes
-  SUCIA
+model AuditLog {
+  id           String   @id @default(uuid())
+  actorUserId  String
+  chainId      String?
+  restaurantId String?
+  action       String // CREATE | UPDATE | DELETE | LOGIN | OPEN_SESSION | CLOSE_SESSION | APPLY_ADJUSTMENT | REGISTER_CONTRIBUTION | RUN_ANALYTICS_JOB
+  entityType   String
+  entityId     String
+  before       Json?
+  after        Json?
+  metadata     Json?
+  ipAddress    String?
+  userAgent    String?
+  requestId    String?
+  createdAt    DateTime @default(now())
+
+  actor AppUser @relation(fields: [actorUserId], references: [id])
+
+  @@index([actorUserId])
+  @@index([chainId])
+  @@index([restaurantId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }
 
-enum TableGroupStatus {
-  ACTIVE
-  CLOSED
-}
+// ==========================================
+// CATALOG
+// ==========================================
 
-model TableGroup {
-  id           String           @id @default(uuid())
+model Station {
+  id           String   @id @default(uuid())
   restaurantId String
-  createdBy    String           // staffId del mesero que creó el grupo
-  status       TableGroupStatus @default(ACTIVE)
+  name         String // COCINA | BARRA
+  color        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  tables     Table[]
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  closedAt  DateTime?
+  restaurant Restaurant         @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  menuItems  RestaurantMenuItem[]
+  analytics  AnalyticServiceTimes[]
 
   @@index([restaurantId])
-  @@index([status])
 }
 
-model Table {
-  id           String      @id @default(uuid())
-  restaurantId String
-  number       Int
-  capacity     Int
-  qrCode       String      @unique // Ej. X7B9K2
-  joinCode     String?               // código 4 chars que el anfitrión comparte; null = mesa vacía
-  hostSessionId String?  @unique     // único anfitrión por mesa (relación 1:1)
-  status       TableStatus @default(DISPONIBLE)
-  posX         Float       @default(80)
-  posY         Float       @default(80)
-  shape        String      @default("rect") // "rect" | "round"
-  groupId      String?
-  group        TableGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
-
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  hostSession Session?  @relation("TableHost", fields: [hostSessionId], references: [id])
-  sessions   Session[]  @relation("TableSessions")
-  orders     Order[]
-  payments   Payment[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([restaurantId, number])
-  @@index([restaurantId])
-  @@index([groupId])
-}
-
-// ------------------------------------
-// 3. Plantilla de Menú (Cadena)
-// ------------------------------------
-
-// La cadena define plantillas reutilizables. Una sucursal elige una plantilla
-// y puede ajustar precios o esconder platillos a nivel zona o sucursal.
 model MenuTemplate {
-  id          String  @id @default(uuid())
-  chainId     String
-  name        String  // "Menú Estándar", "Menú Verano"
-  isDefault   Boolean @default(false)
-
-  chain         Chain                  @relation(fields: [chainId], references: [id], onDelete: Cascade)
-  categories    TemplateCategory[]
-  restaurants   Restaurant[]           // sucursales que usan esta plantilla
-  zoneOverrides ZoneMenuOverride[]
-
+  id        String   @id @default(uuid())
+  chainId   String
+  name      String
+  isDefault Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  chain      Chain              @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  categories TemplateCategory[]
 
   @@index([chainId])
 }
 
 model TemplateCategory {
-  id         String @id @default(uuid())
+  id         String   @id @default(uuid())
   templateId String
-  name       String // "Entradas", "Bebidas"
-  order      Int    @default(0)
+  name       String
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   template MenuTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
   items    TemplateItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  restaurantCategories RestaurantCategory[]
 
   @@index([templateId])
 }
 
 model TemplateItem {
-  id          String  @id @default(uuid())
+  id          String    @id @default(uuid())
   categoryId  String
   name        String
   description String?
-  basePrice   Float
+  basePriceCents Int
   imageUrl    String?
-  isPopular   Boolean @default(false)
-  isArchived  Boolean @default(false) // Soft Delete
-  station     Station @default(COCINA)
-
-  category      TemplateCategory         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  zoneOverrides ZoneMenuOverride[]
-  restOverrides RestaurantMenuOverride[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([categoryId])
-}
-
-// Override a nivel Zona: aplica a todos los restaurantes de esa zona
-// salvo que el restaurante tenga su propio override más específico.
-model ZoneMenuOverride {
-  id             String  @id @default(uuid())
-  zoneId         String
-  templateId     String
-  templateItemId String
-
-  customPrice Float?   // null = precio base del template
-  isSoldOut   Boolean  @default(false)
-  isHidden    Boolean  @default(false)
-
-  zone         Zone         @relation(fields: [zoneId], references: [id], onDelete: Cascade)
-  template     MenuTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  templateItem TemplateItem @relation(fields: [templateItemId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([zoneId, templateItemId])
-  @@index([zoneId])
-}
-
-// Override a nivel Restaurante: el más específico, siempre gana sobre zona y cadena.
-model RestaurantMenuOverride {
-  id             String  @id @default(uuid())
-  restaurantId   String
-  templateItemId String
-
-  customPrice Float?   // null = usar precio de zona o base
-  isSoldOut   Boolean  @default(false)
-  isHidden    Boolean  @default(false)
-
-  restaurant   Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  templateItem TemplateItem @relation(fields: [templateItemId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([restaurantId, templateItemId])
-  @@index([restaurantId])
-}
-
-// ------------------------------------
-// 4. Menú Digital propio del Restaurante
-// ------------------------------------
-// Las categorías y platillos propios coexisten con los del template.
-// Se usan para restaurantes sin cadena o para platillos exclusivos de una sucursal.
-model Category {
-  id           String @id @default(uuid())
-  restaurantId String
-  name         String
-  order        Int    @default(0)
-  isArchived   Boolean @default(false)
-
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  items      MenuItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([restaurantId, name])
-  @@index([restaurantId])
-}
-
-model MenuItem {
-  id           String  @id @default(uuid())
-  restaurantId String
-  categoryId   String
-  name         String
-  description  String?
-  price        Float
-  variants     Json    @default("[]") // [{"name":"Chico","price":80},...]
-  imageUrl     String?
-  isPopular    Boolean @default(false)
-  isSoldOut    Boolean @default(false)
-  isArchived   Boolean @default(false) // Soft Delete para no romper histórico financiero
-  station      Station @default(COCINA)
-
-  restaurant Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  category   Category    @relation(fields: [categoryId], references: [id])
-  orderItems OrderItem[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([restaurantId])
-  @@index([categoryId])
-}
-
-// ------------------------------------
-// 5. Personal (Staff) del Restaurante
-// ------------------------------------
-enum Role {
-  ADMIN
-  MESERO
-  COCINA
-  BARRA
-}
-
-model Staff {
-  id           String  @id @default(uuid())
-  restaurantId String
-  name         String
-  role         Role
-  /// @deprecated Login unificado: usar email + passwordHash
-  pin          String?
-  email        String?  @unique
-  passwordHash String?
-  isActive     Boolean @default(true)
-
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([restaurantId])
-  @@index([email])
-}
-
-// ------------------------------------
-// 6. Flujo del Comensal & Órdenes (Operación)
-// ------------------------------------
-model Session {
-  id        String  @id @default(uuid())
-  tableId   String
-  guestName String
-  pax       Int
-  isActive  Boolean @default(true)
-
-  table       Table               @relation("TableSessions", fields: [tableId], references: [id])
-  hostedTable Table?              @relation("TableHost")
-  orderItems  OrderItem[]
-  payments    Payment[]
-  allocations PaymentAllocation[]
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  closedAt  DateTime?
-
-  @@index([tableId])
-  @@index([isActive, createdAt])
-}
-
-enum OrderStatus {
-  PENDING
-  PREPARING
-  READY
-  DELIVERED
-  CANCELLED
-}
-
-enum Station {
-  COCINA
-  BARRA
-}
-
-model Order {
-  id           String      @id @default(uuid())
-  restaurantId String
-  tableId      String
-  guestName    String?
-  status       OrderStatus @default(PENDING)
-  isShared     Boolean     @default(false)
-
-  restaurant Restaurant  @relation(fields: [restaurantId], references: [id])
-  table      Table       @relation(fields: [tableId], references: [id])
-  items      OrderItem[]
-  payments   Payment[]
-
+  isPopular   Boolean   @default(false)
+  archivedAt  DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  deliveredAt DateTime?
+
+  category       TemplateCategory         @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  variants       TemplateItemVariant[]
+  menuItems      RestaurantMenuItem[]
+
+  @@index([categoryId])
+}
+
+model TemplateItemVariant {
+  id             String   @id @default(uuid())
+  templateItemId String
+  name           String
+  priceCents     Int
+  isAvailable    Boolean  @default(true)
+  order          Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  templateItem       TemplateItem              @relation(fields: [templateItemId], references: [id], onDelete: Cascade)
+  restaurantVariants RestaurantMenuItemVariant[]
+
+  @@index([templateItemId])
+}
+
+model RestaurantCategory {
+  id                 String    @id @default(uuid())
+  restaurantId       String
+  templateCategoryId String?
+  taxGroupId         String?
+  name               String
+  order              Int       @default(0)
+  archivedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  restaurant     Restaurant         @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  templateCategory TemplateCategory? @relation(fields: [templateCategoryId], references: [id], onDelete: SetNull)
+  taxGroup       TaxGroup?          @relation(fields: [taxGroupId], references: [id])
+  menuItems      RestaurantMenuItem[]
 
   @@index([restaurantId])
-  @@index([restaurantId, createdAt])
+  @@index([templateCategoryId])
+  @@index([taxGroupId])
+}
+
+model RestaurantMenuItem {
+  id                String    @id @default(uuid())
+  restaurantId      String
+  categoryId        String
+  stationId         String?
+  taxGroupId        String?
+  templateItemId    String?
+  name              String
+  description       String?
+  priceCents        Int
+  imageUrl          String?
+  isPopular         Boolean   @default(false)
+  isSoldOut         Boolean   @default(false)
+  trackStock        Boolean   @default(false)
+  stockQuantity     Int?
+  lowStockThreshold Int?
+  archivedAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  restaurant  Restaurant                @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  category    RestaurantCategory        @relation(fields: [categoryId], references: [id])
+  station     Station?                  @relation(fields: [stationId], references: [id])
+  taxGroup    TaxGroup?                 @relation(fields: [taxGroupId], references: [id])
+  templateItem TemplateItem?            @relation(fields: [templateItemId], references: [id], onDelete: SetNull)
+  variants    RestaurantMenuItemVariant[]
+  modifierGroups MenuItemModifierGroup[]
+  orderItems  OrderItem[]
+  analytics   AnalyticItemVelocity[]
+  demandEstimates AnalyticDemandEstimate[]
+
+  @@index([restaurantId])
+  @@index([categoryId])
+  @@index([stationId])
+  @@index([taxGroupId])
+  @@index([templateItemId])
+}
+
+model RestaurantMenuItemVariant {
+  id               String   @id @default(uuid())
+  menuItemId       String
+  templateVariantId String?
+  name             String
+  priceCents       Int
+  isAvailable      Boolean  @default(true)
+  order            Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  menuItem        RestaurantMenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  templateVariant TemplateItemVariant? @relation(fields: [templateVariantId], references: [id], onDelete: SetNull)
+  orderItems      OrderItem[]
+
+  @@index([menuItemId])
+  @@index([templateVariantId])
+}
+
+model ModifierGroup {
+  id           String   @id @default(uuid())
+  restaurantId String
+  name         String
+  isRequired   Boolean  @default(false)
+  minSelect    Int      @default(0)
+  maxSelect    Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant         @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  options    ModifierOption[]
+  menuItems  MenuItemModifierGroup[]
+
+  @@index([restaurantId])
+}
+
+model ModifierOption {
+  id                  String   @id @default(uuid())
+  groupId             String
+  name                String
+  priceAdjustmentCents Int
+  isAvailable         Boolean  @default(true)
+  order               Int      @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  group       ModifierGroup      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  orderItems  OrderItemModifier[]
+
+  @@index([groupId])
+}
+
+model MenuItemModifierGroup {
+  menuItemId       String
+  modifierGroupId  String
+
+  menuItem      RestaurantMenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  modifierGroup ModifierGroup      @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+
+  @@id([menuItemId, modifierGroupId])
+  @@index([modifierGroupId])
+}
+
+// ==========================================
+// OPERATIONS
+// ==========================================
+
+model DiningTable {
+  id         String   @id @default(uuid())
+  restaurantId String
+  publicCode String   @unique
+  number     Int
+  capacity   Int
+  qrVersion  Int      @default(1)
+  status     String   @default("LIBRE") // LIBRE | OCUPADA | NO_DISPONIBLE
+  posX       Float    @default(0)
+  posY       Float    @default(0)
+  shape      String   @default("rect")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  restaurant  Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  sessions    DiningSessionTable[]
+
+  @@index([restaurantId])
+  @@index([publicCode])
+}
+
+model DiningSession {
+  id                   String    @id @default(uuid())
+  restaurantId         String
+  openedByUserId       String
+  closedByUserId       String?
+  status               String    @default("PENDIENTE_ACTIVACION") // PENDIENTE_ACTIVACION | ACTIVA | EN_CONSUMO | POR_LIQUIDAR | LIQUIDADA | CERRADA | CANCELADA
+  joinCode             String    @unique
+  accessCodeHash       String
+  pax                  Int       @default(1)
+  openedAt             DateTime  @default(now())
+  activatedAt          DateTime?
+  firstOrderAt         DateTime?
+  liquidationStartedAt DateTime?
+  settledAt            DateTime?
+  closedAt             DateTime?
+  updatedAt            DateTime  @updatedAt
+
+  restaurant  Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  openedBy    AppUser             @relation("OpenedBy", fields: [openedByUserId], references: [id])
+  tables      DiningSessionTable[]
+  guests      Guest[]
+  orders      RestaurantOrder[]
+  settlements Settlement[]
+
+  @@index([restaurantId])
+  @@index([openedByUserId])
+  @@index([joinCode])
+  @@index([status])
+}
+
+model DiningSessionTable {
+  id              String    @id @default(uuid())
+  diningSessionId String
+  tableId         String
+  joinedAt        DateTime  @default(now())
+  leftAt          DateTime?
+
+  diningSession DiningSession @relation(fields: [diningSessionId], references: [id], onDelete: Cascade)
+  table         DiningTable   @relation(fields: [tableId], references: [id], onDelete: Cascade)
+
+  @@index([diningSessionId])
   @@index([tableId])
-  @@index([status, createdAt])
+}
+
+model Guest {
+  id             String    @id @default(uuid())
+  diningSessionId String
+  name           String?
+  seatNumber     Int?
+  isHost         Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  joinedAt       DateTime  @default(now())
+  leftAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  diningSession  DiningSession          @relation(fields: [diningSessionId], references: [id], onDelete: Cascade)
+  orderItems     OrderItem[]
+  allocations    SettlementAllocation[]
+  contributions  SettlementContribution[]
+
+  @@index([diningSessionId])
+}
+
+model RestaurantOrder {
+  id             String   @id @default(uuid())
+  restaurantId   String
+  diningSessionId String
+  createdByUserId String?
+  source         String   @default("WAITER") // WAITER | QR | INTERNAL
+  status         String   @default("ABIERTA") // ABIERTA | ENVIADA | COMPLETADA | CANCELADA
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  closedAt       DateTime?
+  cancelledAt    DateTime?
+
+  restaurant    Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  diningSession DiningSession @relation(fields: [diningSessionId], references: [id], onDelete: Cascade)
+  createdBy     AppUser?    @relation(fields: [createdByUserId], references: [id])
+  items         OrderItem[]
+
+  @@index([restaurantId])
+  @@index([diningSessionId])
+  @@index([createdByUserId])
+  @@index([status])
 }
 
 model OrderItem {
-  id          String  @id @default(uuid())
-  orderId     String
-  menuItemId  String
-  sessionId   String
-  quantity    Int     @default(1)
-  notes       String?
-  variantName String? // "Chico", "Mediano", "Grande" — null si no tiene variantes
-  priceAtTime Float
+  id                    String   @id @default(uuid())
+  orderId               String
+  menuItemId            String?
+  variantId             String?
+  guestId               String?
+  stationId             String?
+  status                String   @default("PENDIENTE") // PENDIENTE | EN_PREPARACION | LISTA | ENTREGADA | CANCELADA
+  quantity              Int      @default(1)
+  notes                 String?
+  itemNameSnapshot      String
+  variantNameSnapshot   String?
+  stationNameSnapshot   String?
+  taxRateBpsSnapshot    Int
+  unitPriceCents        Int
+  subtotalCents         Int
+  taxAmountCents        Int
+  totalCents            Int
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
-  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
-  session  Session  @relation(fields: [sessionId], references: [id])
-  allocations PaymentAllocation[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  order          RestaurantOrder      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem       RestaurantMenuItem?  @relation(fields: [menuItemId], references: [id])
+  variant        RestaurantMenuItemVariant? @relation(fields: [variantId], references: [id])
+  guest          Guest?               @relation(fields: [guestId], references: [id])
+  modifiers      OrderItemModifier[]
+  statusEvents   OrderItemStatusEvent[]
+  allocations    SettlementAllocation[]
+  adjustments    AppliedAdjustment[]
 
   @@index([orderId])
-  @@index([sessionId])
   @@index([menuItemId])
+  @@index([variantId])
+  @@index([guestId])
+  @@index([status, updatedAt])
 }
 
-// ------------------------------------
-// 7. Pagos (Cuenta y Split Bill)
-// ------------------------------------
-enum PaymentStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-}
+model OrderItemModifier {
+  id                  String   @id @default(uuid())
+  orderItemId         String
+  modifierOptionId    String
+  nameSnapshot        String
+  quantity            Int      @default(1)
+  unitAdjustmentCents Int
+  totalAdjustmentCents Int
+  createdAt           DateTime @default(now())
 
-enum PaymentMethod {
-  CASH
-  CARD
-  TRANSFER
-  OTHER
-}
+  orderItem      OrderItem       @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  modifierOption ModifierOption  @relation(fields: [modifierOptionId], references: [id])
 
-enum PaymentSplitMode {
-  EQUAL
-  FULL
-}
-
-model Payment {
-  id           String           @id @default(uuid())
-  restaurantId String
-  tableId      String
-  sessionId    String
-  orderId      String?
-  status       PaymentStatus    @default(PENDING)
-  method       PaymentMethod    @default(CARD)
-  splitMode    PaymentSplitMode @default(FULL)
-  splitCount   Int              @default(1)
-  paxPaid      Int              @default(1)
-  currency     String           @default("MXN")
-  subtotal     Float
-  tipRate      Float            @default(0)
-  tipAmount    Float            @default(0)
-  totalAmount  Float
-  amountPaid   Float
-  notes        String?
-
-  restaurant  Restaurant          @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  table       Table               @relation(fields: [tableId], references: [id], onDelete: Restrict)
-  session     Session             @relation(fields: [sessionId], references: [id], onDelete: Restrict)
-  order       Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  allocations PaymentAllocation[]
-
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  paidAt    DateTime?
-
-  @@index([restaurantId, createdAt])
-  @@index([tableId, createdAt])
-  @@index([sessionId, createdAt])
-  @@index([status, createdAt])
-}
-
-model PaymentAllocation {
-  id        String  @id @default(uuid())
-  paymentId String
-  sessionId String?
-  guestName String?
-  amount    Float
-
-  orderItemId String?
-  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
-
-  payment Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-  session Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([paymentId])
-  @@index([sessionId])
   @@index([orderItemId])
+  @@index([modifierOptionId])
 }
 
-// ------------------------------------
-// Plataforma SaaS (por encima de roles de cadena/restaurante)
-// ------------------------------------
+model OrderItemStatusEvent {
+  id            String   @id @default(uuid())
+  orderItemId   String
+  changedByUserId String?
+  fromStatus    String?
+  toStatus      String
+  createdAt     DateTime @default(now())
 
-model SuperAdmin {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String
-  name         String?
-  isActive     Boolean  @default(true)
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  changedBy AppUser?  @relation(fields: [changedByUserId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@index([orderItemId])
+  @@index([changedByUserId])
 }
 
-// ------------------------------------
-// 7. Analítica y Ciencia de Datos (Data Science & Telemetry)
-// ------------------------------------
+// ==========================================
+// SETTLEMENT
+// ==========================================
 
-// 1. Comportamiento del Consumidor (Telemetría para Sistemas de Recomendación)
-model MenuInteraction {
-  id              String   @id @default(uuid())
-  sessionId       String?  // Nulo si interactuó con el código "Demo" o no abrió sesión completa
-  restaurantId    String
-  menuItemId      String   // Item que se vio/agregó
-  interactionType String   // "VIEW", "ADD_TO_CART", "REMOVE", "AI_RECOMMENDATION_CLICK"
-  durationSec     Int?     // Tiempo que se detuvo a ver el producto
-
-  createdAt       DateTime @default(now())
-
-  // Sin foreign keys estrictas (típico en OLAP/Event Logs) para evitar saturar el OLTP
-  @@index([restaurantId, createdAt])
-  @@index([menuItemId, interactionType])
-  @@index([sessionId])
-}
-
-// 2. Pronóstico de Demanda (Contraste de modelos ML vs Realidad)
-model DemandForecast {
-  id             String   @id @default(uuid())
-  restaurantId   String
-  menuItemId     String
-  targetDate     DateTime // Día para el que aplica la predicción
-  predictedQty   Int      // Estimación del modelo predictivo (ej. 45 hamburguesas)
-  actualQty      Int?     // Venta real (se actualiza al final del día)
-  modelName      String   // Ej: "XGBoost_v2", "Prophet_Weather"
-
-  createdAt      DateTime @default(now())
-
-  @@index([restaurantId, targetDate])
-}
-
-// 3. Resumen Operativo Diario (KPIs y Aggregations para Dashboards)
-model DailySummary {
-  id             String   @id @default(uuid())
-  restaurantId   String
-  date           DateTime // Día de resumen (normalizado a medianoche)
-  totalOrders    Int
-  totalRevenue   Float
-  avgTipRate     Float
-  avgTicket      Float
-  tablesServed   Int
-
-  createdAt      DateTime @default(now())
-
-  @@unique([restaurantId, date])
-}
-
-// 4. Log de Popularidad (Ranking Histórico de Items)
-model PopularItemLog {
-  id             String   @id @default(uuid())
-  restaurantId   String
-  menuItemId     String
-  date           DateTime // Día del log
-  quantitySold   Int
-  revenue        Float
-  soldOutCount   Int      // Cuántas veces el item tuvo que marcarse soldOut en el tiempo
-
-  createdAt      DateTime @default(now())
-
-  @@unique([restaurantId, date, menuItemId])
-}
-
-// 5. Ocupación de Mesas y Churn (Rotación)
-model TableOccupancy {
+model Settlement {
   id                String   @id @default(uuid())
   restaurantId      String
-  date              DateTime // Día de resumen
-  avgSessionMinutes Float    // Tiempo promedio de estadía
-  avgPax            Float    // Promedio de personas por mesa
-  peakHour          Int      // Hora del día con más flujo (0-23)
-  totalSessions     Int
+  diningSessionId   String
+  currency          String
+  status            String   @default("ABIERTA") // ABIERTA | PARCIAL | LIQUIDADA | CANCELADA
+  splitMode         String   @default("TOTAL") // TOTAL | POR_ITEM | IGUAL | PERSONALIZADO
+  subtotalCents     Int
+  discountCents     Int      @default(0)
+  tipAmountCents    Int      @default(0)
+  taxAmountCents    Int      @default(0)
+  totalCents        Int
+  amountSettledCents Int     @default(0)
+  remainingCents    Int
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  settledAt         DateTime?
 
+  restaurant    Restaurant             @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  diningSession DiningSession          @relation(fields: [diningSessionId], references: [id], onDelete: Cascade)
+  currencyEntity Currency              @relation(fields: [currency], references: [code])
+  allocations   SettlementAllocation[]
+  contributions SettlementContribution[]
+  adjustments   AppliedAdjustment[]
+
+  @@index([restaurantId])
+  @@index([diningSessionId])
+  @@index([status])
+}
+
+model SettlementAllocation {
+  id             String   @id @default(uuid())
+  settlementId   String
+  contributionId String?
+  orderItemId    String?
+  guestId        String?
+  amountCents    Int
+  createdAt      DateTime @default(now())
+
+  settlement   Settlement           @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  contribution SettlementContribution? @relation(fields: [contributionId], references: [id])
+  orderItem    OrderItem?           @relation(fields: [orderItemId], references: [id])
+  guest        Guest?               @relation(fields: [guestId], references: [id])
+
+  @@index([settlementId])
+  @@index([contributionId])
+  @@index([orderItemId])
+  @@index([guestId])
+}
+
+model SettlementContribution {
+  id                String   @id @default(uuid())
+  settlementId      String
+  guestId           String?
+  registeredByUserId String?
+  method            String   @default("CASH") // CASH | OUT_OF_SYSTEM | OTHER
+  status            String   @default("REGISTERED") // REGISTERED | VOIDED
+  amountCents       Int
+  note              String?
   createdAt         DateTime @default(now())
 
-  @@unique([restaurantId, date])
+  settlement    Settlement           @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+  guest         Guest?               @relation(fields: [guestId], references: [id])
+  registeredBy  AppUser?             @relation(fields: [registeredByUserId], references: [id])
+  allocations   SettlementAllocation[]
+
+  @@index([settlementId])
+  @@index([guestId])
+  @@index([registeredByUserId])
+}
+
+model AppliedAdjustment {
+  id                String   @id @default(uuid())
+  restaurantId      String
+  orderItemId       String?
+  settlementId      String?
+  approvedByUserId  String?
+  type              String // DISCOUNT | COURTESY
+  calculationMode   String // PERCENT | FIXED
+  status            String   @default("APPLIED") // APPLIED | VOIDED
+  valueBps          Int?
+  valueCents        Int?
+  amountCents       Int
+  reason            String
+  description       String?
+  createdAt         DateTime @default(now())
+
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orderItem    OrderItem?  @relation(fields: [orderItemId], references: [id])
+  settlement   Settlement? @relation(fields: [settlementId], references: [id])
+  approvedBy   AppUser?    @relation(fields: [approvedByUserId], references: [id])
+
+  @@index([restaurantId])
+  @@index([orderItemId])
+  @@index([settlementId])
+  @@index([approvedByUserId])
+}
+
+// ==========================================
+// ANALYTICS
+// ==========================================
+
+model AnalyticsJobRun {
+  id                String    @id @default(uuid())
+  restaurantId      String
+  jobType           String // BRONZE | SILVER | GOLD | DEMAND_ESTIMATE | SERVICE_TIMES
+  status            String    @default("QUEUED") // QUEUED | RUNNING | COMPLETED | FAILED
+  triggeredByUserId String?
+  dataWindowStart   DateTime?
+  dataWindowEnd     DateTime?
+  startedAt         DateTime  @default(now())
+  finishedAt        DateTime?
+  errorMessage      String?
+  metadata          Json?
+
+  restaurant        Restaurant             @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  triggeredBy       AppUser?               @relation(fields: [triggeredByUserId], references: [id])
+  salesDaily        AnalyticSalesDaily[]
+  itemVelocity      AnalyticItemVelocity[]
+  serviceTimes      AnalyticServiceTimes[]
+  demandEstimates   AnalyticDemandEstimate[]
+
+  @@index([restaurantId])
+  @@index([triggeredByUserId])
+  @@index([status])
+}
+
+model AnalyticSalesDaily {
+  id                   String   @id @default(uuid())
+  restaurantId         String
+  jobRunId             String
+  businessDate         DateTime @db.Date
+  orderCount           Int
+  itemCount            Int
+  grossConsumptionCents Int
+  discountCents        Int
+  netConsumptionCents  Int
+  avgServiceTimeSeconds Int
+  computedAt           DateTime @default(now())
+
+  restaurant Restaurant      @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  jobRun     AnalyticsJobRun @relation(fields: [jobRunId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId])
+  @@index([jobRunId])
+  @@index([businessDate])
+}
+
+model AnalyticItemVelocity {
+  id                   String   @id @default(uuid())
+  restaurantId         String
+  jobRunId             String
+  menuItemId           String?
+  businessDate         DateTime @db.Date
+  itemNameSnapshot     String
+  quantitySold         Int
+  grossConsumptionCents Int
+  computedAt           DateTime @default(now())
+
+  restaurant Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  jobRun     AnalyticsJobRun  @relation(fields: [jobRunId], references: [id], onDelete: Cascade)
+  menuItem   RestaurantMenuItem? @relation(fields: [menuItemId], references: [id])
+
+  @@index([restaurantId])
+  @@index([jobRunId])
+  @@index([menuItemId])
+  @@index([businessDate])
+}
+
+model AnalyticServiceTimes {
+  id                String   @id @default(uuid())
+  restaurantId      String
+  jobRunId          String
+  stationId         String?
+  businessDate      DateTime @db.Date
+  avgPrepSeconds    Int
+  p50PrepSeconds    Int
+  p90PrepSeconds    Int
+  delayedItemsCount Int
+  computedAt        DateTime @default(now())
+
+  restaurant Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  jobRun     AnalyticsJobRun  @relation(fields: [jobRunId], references: [id], onDelete: Cascade)
+  station    Station?         @relation(fields: [stationId], references: [id])
+
+  @@index([restaurantId])
+  @@index([jobRunId])
+  @@index([stationId])
+  @@index([businessDate])
+}
+
+model AnalyticDemandEstimate {
+  id                String   @id @default(uuid())
+  restaurantId      String
+  jobRunId          String
+  menuItemId        String?
+  estimateDate      DateTime @db.Date
+  expectedQuantity  Int
+  confidenceBps     Int?
+  method            String
+  computedAt        DateTime @default(now())
+
+  restaurant Restaurant       @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  jobRun     AnalyticsJobRun  @relation(fields: [jobRunId], references: [id], onDelete: Cascade)
+  menuItem   RestaurantMenuItem? @relation(fields: [menuItemId], references: [id])
+
+  @@index([restaurantId])
+  @@index([jobRunId])
+  @@index([menuItemId])
+  @@index([estimateDate])
 }

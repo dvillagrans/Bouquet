@@ -1,37 +1,144 @@
-% -----------------------------------------------------------
-\subsection{Diseño de API}
-% -----------------------------------------------------------
+\subsubsection{Módulo: Liquidación Interna}
 
-La API sigue convenciones REST con respuestas en JSON. Todos los endpoints
-requieren el header \texttt{Authorization: Bearer \{jwt\}} con el token de
-Supabase Auth.
-
-\subsubsection{Módulo: Mesas}
-
-\begin{table}[ht]
-\caption{Endpoints REST — Módulo Mesas}
-\label{tab:api_mesas}
+\begin{table}[H]
+\caption{Endpoints REST — Liquidación Interna}
+\label{tab:api_liquidacion}
 \centering
 \small
 \begin{tabular}{>{\centering\arraybackslash}p{1.5cm}
-                >{\raggedright\arraybackslash}p{5cm}
-                >{\raggedright\arraybackslash}p{3.5cm}
-                >{\raggedright\arraybackslash}p{6cm}}
+                >{\raggedright\arraybackslash}p{5.5cm}
+                >{\raggedright\arraybackslash}p{3.2cm}
+                >{\raggedright\arraybackslash}p{5.8cm}}
 \hline
 \thead{Método} & \thead{Endpoint} & \thead{Auth requerida} & \thead{Descripción} \\
 \hline
-GET & \texttt{/api/sucursales/:id/mesas} & Empleados & Lista mesas físicas. \\
-POST & \texttt{/api/mesas-virtuales} & Empleados & Inicializa mesa virtual. \\
-POST & \texttt{/api/mesas-virtuales/:id/activar} & Pública & Activa la mesa. \\
+GET &
+\texttt{/api/dining-sessions/:id/settlement} &
+Sesión temporal/Mesero &
+Consulta desglose de consumo, aportaciones registradas y saldo pendiente. \\ \rowcolor{altrow}
+
+POST &
+\texttt{/api/settlements/:id/contributions} &
+Sesión temporal &
+Registra una aportación interna sobre una liquidación. Usa transacción ACID y bloqueo de fila. \\
+
+POST &
+\texttt{/api/settlements/:id/allocations} &
+Sesión temporal &
+Distribuye una aportación sobre ítems o comensales específicos. \\ \rowcolor{altrow}
+
+POST &
+\texttt{/api/settlements/:id/adjustments} &
+Gerente/Mesero autorizado &
+Aplica descuento o cortesía autorizada y registra auditoría. \\
+
+GET &
+\texttt{/api/settlements/:id/statement} &
+Sesión temporal/Mesero &
+Genera constancia interna de estado de cuenta. \\
 \hline
 \end{tabular}
 \end{table}
 
-\subsubsection{Server Actions Implementadas (Next.js)}
+\subsubsection{Módulo: Órdenes y Cocina}
+
+\begin{table}[H]
+\caption{Endpoints REST — Órdenes y Cocina}
+\label{tab:api_ordenes}
+\centering
+\small
+\begin{tabular}{>{\centering\arraybackslash}p{1.5cm}
+                >{\raggedright\arraybackslash}p{5.5cm}
+                >{\raggedright\arraybackslash}p{3.2cm}
+                >{\raggedright\arraybackslash}p{5.8cm}}
+\hline
+\thead{Método} & \thead{Endpoint} & \thead{Auth requerida} & \thead{Descripción} \\
+\hline
+GET &
+\texttt{/api/dining-sessions/:id/menu} &
+Sesión temporal &
+Consulta menú disponible para la mesa virtual. \\ \rowcolor{altrow}
+
+POST &
+\texttt{/api/orders} &
+Comensal/Mesero &
+Crea una orden con ítems, variantes y modificadores. \\
+
+GET &
+\texttt{/api/restaurants/:id/orders/live} &
+Cocina/Mesero/Gerente &
+Consulta órdenes activas para tablero KDS y seguimiento operativo. \\ \rowcolor{altrow}
+
+PATCH &
+\texttt{/api/order-items/:id/status} &
+Cocina/Mesero &
+Actualiza estado de un ítem y registra \texttt{OrderItemStatusEvent}. \\
+
+POST &
+\texttt{/api/order-items/:id/cancel} &
+Mesero/Gerente &
+Cancela un ítem con autorización y auditoría. \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\subsubsection{Módulo: Analítica}
+
+
+\begin{table}[H]
+\caption{Endpoints REST — Analítica y Dashboard}
+\label{tab:api_analitica}
+\centering
+\small
+\begin{tabular}{>{\centering\arraybackslash}p{1.5cm}
+                >{\raggedright\arraybackslash}p{5.5cm}
+                >{\raggedright\arraybackslash}p{3.2cm}
+                >{\raggedright\arraybackslash}p{5.8cm}}
+\hline
+\thead{Método} & \thead{Endpoint} & \thead{Auth requerida} & \thead{Descripción} \\
+\hline
+GET &
+\texttt{/api/analytics/sales-daily} &
+Gerente/Admin &
+Consulta métricas Gold de consumo diario. \\ \rowcolor{altrow}
+
+GET &
+\texttt{/api/analytics/item-velocity} &
+Gerente/Admin &
+Consulta productos más solicitados y monto bruto asociado. \\
+
+GET &
+\texttt{/api/analytics/service-times} &
+Gerente/Admin &
+Consulta tiempos de preparación por estación. \\ \rowcolor{altrow}
+
+GET &
+\texttt{/api/analytics/demand-estimates} &
+Gerente/Admin &
+Consulta estimaciones exploratorias de demanda. \\
+
+POST &
+\texttt{/api/analytics/jobs} &
+Gerente/Admin &
+Solicita ejecución controlada de un job analítico. \\ \rowcolor{altrow}
+
+GET &
+\texttt{/api/analytics/jobs/:id} &
+Gerente/Admin &
+Consulta estado de ejecución de un job registrado en \texttt{AnalyticsJobRun}. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Server Actions Implementadas en Next.js}
 \label{sec:server_actions}
 
-Las siguientes son las funciones de servidor actualmente implementadas mediante
-Server Actions de Next.js.
+Las Server Actions se emplean para consultas y mutaciones internas del panel, evitando
+exponer rutas HTTP adicionales cuando la operación se consume únicamente desde componentes
+de servidor. Las operaciones críticas públicas, como activación de mesa, unión de
+comensales o registro de aportaciones, se mantienen como endpoints API debido a que
+requieren contratos HTTP explícitos y validaciones específicas.
 
 \setstretch{1.2}
 \setlength{\tabcolsep}{4pt}
@@ -50,19 +157,21 @@ Server Actions de Next.js.
 \endhead
 \hline
 \endfoot
-restaurant.ts & getDefaultRestaurant & Obtiene restaurante por defecto. \\ \rowcolor{altrow}
-menu.ts & getMenuData & Categorías e ítems del menú. \\
-orders.ts & getLiveOrders & Órdenes del día para KDS. \\ \rowcolor{altrow}
-tables.ts & getTables & Lista mesas del restaurante. \\
-waiter.ts & getTableDetail & Detalle de mesa: sesión, órdenes. \\ \rowcolor{altrow}
-comensal.ts & submitComensalOrder & Envía pedido desde flujo comensal. \\
+restaurant.ts & getDefaultRestaurant & Obtiene restaurante por defecto del contexto de usuario. \\ \rowcolor{altrow}
+menu.ts & getMenuData & Consulta categorías, productos, variantes y modificadores disponibles. \\
+orders.ts & getLiveOrders & Consulta órdenes activas para KDS y seguimiento de cocina. \\ \rowcolor{altrow}
+tables.ts & getTables & Lista mesas físicas y estado operativo por sucursal. \\
+waiter.ts & getTableDetail & Consulta detalle de mesa, sesión, comensales y órdenes asociadas. \\ \rowcolor{altrow}
+comensal.ts & submitComensalOrder & Envía pedido desde el flujo de comensal. \\
+settlement.ts & getSettlementDetail & Consulta estado de cuenta, aportaciones y saldo pendiente. \\ \rowcolor{altrow}
+analytics.ts & getDashboardMetrics & Consulta métricas Gold para dashboard administrativo. \\
 \end{longtable}
 \setstretch{1.5}
 
-\subsubsection{Servicios Externos}
+\subsubsection{Servicios e Integraciones Técnicas}
 
-\begin{table}[ht]
-\caption{Servicios Externos}
+\begin{table}[H]
+\caption{Servicios e Integraciones Técnicas}
 \label{tab:servicios}
 \centering
 \small
@@ -71,8 +180,28 @@ comensal.ts & submitComensalOrder & Envía pedido desde flujo comensal. \\
 \hline
 \thead{Servicio} & \thead{Uso} \\
 \hline
-PostgreSQL & Base de datos principal vía Prisma. \\ \rowcolor{altrow}
-Supabase & Cliente SSR y canales en tiempo real. \\
+PostgreSQL / Supabase &
+Base transaccional OLTP, autenticación, políticas RLS y canales Realtime. \\ \rowcolor{altrow}
+
+Prisma ORM &
+Acceso tipado a base de datos, migraciones y consultas parametrizadas. \\
+
+Supabase Realtime &
+Sincronización de eventos de mesas, órdenes, cocina y liquidación interna mediante WebSockets. \\ \rowcolor{altrow}
+
+VPS Analytics &
+Ejecución de jobs batch analíticos fuera del entorno transaccional principal. \\
+
+Apache Spark &
+Procesamiento batch para capas Bronze, Silver y Gold. \\ \rowcolor{altrow}
+
+Resend &
+Envío de correos transaccionales a usuarios colaboradores, cuando aplique. \\
+
+Nominatim &
+Geocodificación de direcciones de sucursales, si se habilita en el módulo de configuración. \\
 \hline
 \end{tabular}
 \end{table}
+
+\newpage

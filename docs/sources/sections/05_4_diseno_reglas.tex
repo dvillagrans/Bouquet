@@ -3,12 +3,168 @@
 \subsection{Reglas de Negocio del Modelo}
 % -----------------------------------------------------------
 
+Las siguientes reglas definen las restricciones operativas y de consistencia que debe
+respetar el modelo de datos. Su objetivo es preservar la integridad transaccional,
+la trazabilidad histórica y la correcta separación entre operación en tiempo real,
+liquidación interna y procesamiento analítico.
+
 \begin{enumerate}
-  \item \textbf{Herencia de configuración.} Si \texttt{Restaurant.taxBps} es \texttt{NULL}, se hereda \texttt{Chain.defaultTaxBps}. La l\'ogica de herencia se aplica en la capa de aplicaci\'on.
-  \item \textbf{Eliminación lógica.} Las entidades de cat\'alogo no se eliminan f\'isicamente; se marca \texttt{archivedAt}. Esto preserva la integridad de los \texttt{OrderItem} hist\'oricos.
-  \item \textbf{Snapshots en órdenes.} Al crear un \texttt{OrderItem}, se copian el nombre, precio unitario y tasa de impuesto vigentes. Los snapshots son inmutables.
-  \item \textbf{Estado de mesa como caché.} \texttt{DiningTable.status} es un campo derivado actualizado transaccionalmente al abrir o cerrar sesiones.
-  \item \textbf{Unicidad de email.} \texttt{AppUser.email} es único en toda la plataforma.
-  \item \textbf{Descuento exclusivo.} Un \texttt{AppliedDiscount} se aplica a un ítem \textbf{o} a un pago, nunca a ambos (XOR).
-  \item \textbf{Valores monetarios enteros.} Todos los cálculos se realizan en centavos para evitar errores de punto flotante.
+  \item \textbf{Herencia de configuración fiscal.}
+  Si \texttt{Restaurant.taxBps} es \texttt{NULL}, se utiliza \texttt{Chain.defaultTaxBps}
+  como tasa base. La resolución de herencia se realiza en la capa de aplicación antes
+  de calcular totales o generar snapshots de orden.
+
+  \item \textbf{Herencia de propinas sugeridas.}
+  Si \texttt{Restaurant.suggestedTipsBps} es \texttt{NULL}, se utilizan las opciones
+  definidas en \texttt{Chain.defaultTipsBps}. Estas propinas son únicamente sugerencias
+  operativas y no implican procesamiento bancario por parte del sistema.
+
+  \item \textbf{Eliminación lógica de catálogos.}
+  Las entidades de catálogo no se eliminan físicamente cuando existe relación con
+  registros históricos. En su lugar, se utiliza \texttt{archivedAt} o banderas equivalentes
+  para preservar la integridad de órdenes, modificadores y métricas analíticas.
+
+  \item \textbf{Snapshots históricos de órdenes.}
+  Al crear un \texttt{OrderItem}, se copian los datos vigentes del producto, variante,
+  estación, precio unitario, tasa de impuesto y nombre visible. Estos snapshots no deben
+  modificarse aunque el catálogo cambie posteriormente.
+
+  \item \textbf{Snapshots de modificadores.}
+  Al seleccionar un modificador, \texttt{OrderItemModifier} almacena el nombre y ajuste
+  de precio vigentes. Esto permite reconstruir el total histórico de una orden aun si el
+  modificador original se archiva o cambia de precio.
+
+  \item \textbf{Estados físicos de mesa.}
+  \texttt{DiningTable.status} representa disponibilidad física-operativa y solo puede
+  tomar los valores \texttt{LIBRE}, \texttt{OCUPADA} o \texttt{NO\_DISPONIBLE}. Una mesa
+  física en estado \texttt{LIBRE} puede asociarse a una nueva sesión; una mesa
+  \texttt{OCUPADA} no puede asociarse a otra sesión activa.
+
+  \item \textbf{Estados de sesión virtual.}
+  \texttt{DiningSession.status} representa el ciclo lógico de consumo. La transición
+  normal es: \texttt{PENDIENTE\_ACTIVACION} $\rightarrow$ \texttt{ACTIVA}
+  $\rightarrow$ \texttt{EN\_CONSUMO} $\rightarrow$ \texttt{POR\_LIQUIDAR}
+  $\rightarrow$ \texttt{LIQUIDADA} $\rightarrow$ \texttt{CERRADA}. El estado
+  \texttt{CANCELADA} se utiliza para anulaciones autorizadas.
+
+  \item \textbf{Activación de sesión.}
+  Una sesión inicia en \texttt{PENDIENTE\_ACTIVACION}. Pasa a \texttt{ACTIVA} cuando
+  el anfitrión accede mediante QR firmado y define la contraseña de acceso, almacenada
+  como \texttt{accessCodeHash}.
+
+  \item \textbf{Inicio de consumo.}
+  Una sesión pasa de \texttt{ACTIVA} a \texttt{EN\_CONSUMO} cuando se confirma la
+  primera orden asociada a la sesión. La marca temporal correspondiente se registra en
+  \texttt{firstOrderAt}.
+
+  \item \textbf{Cierre operativo de mesa.}
+  Al cerrar una \texttt{DiningSession}, las mesas físicas asociadas mediante
+  \texttt{DiningSessionTable} vuelven a estado \texttt{LIBRE}, salvo que hayan sido
+  marcadas administrativamente como \texttt{NO\_DISPONIBLE}.
+
+  \item \textbf{Unión de mesas físicas.}
+  Una sesión puede asociarse a una o varias mesas físicas mediante
+  \texttt{DiningSessionTable}. Cada asociación registra \texttt{joinedAt} y, cuando la
+  mesa deja de formar parte de la sesión, \texttt{leftAt}.
+
+  \item \textbf{QR firmado y versionado.}
+  El enlace QR se genera a partir de \texttt{DiningTable.publicCode} y
+  \texttt{DiningTable.qrVersion}, firmados mediante HMAC-SHA256 del lado servidor.
+  Incrementar \texttt{qrVersion} invalida enlaces anteriores sin modificar el identificador
+  interno de la mesa.
+
+  \item \textbf{Unicidad de identidad.}
+  \texttt{AppUser.email} debe ser único en toda la plataforma. El alcance operativo del
+  usuario se determina mediante \texttt{UserRole}, no mediante duplicación de cuentas.
+
+  \item \textbf{Asignación contextual de roles.}
+  Cada \texttt{UserRole} debe tener coherencia entre \texttt{contextType} y sus llaves
+  contextuales. Si el contexto es \texttt{CHAIN}, debe existir \texttt{chainId}; si es
+  \texttt{ZONE}, debe existir \texttt{zoneId}; si es \texttt{RESTAURANT}, debe existir
+  \texttt{restaurantId}. Los permisos efectivos se calculan con base en el rol y el
+  contexto asignado.
+
+  \item \textbf{Órdenes y estados de cocina.}
+  Los ítems de orden siguen el flujo \texttt{PENDIENTE} $\rightarrow$
+  \texttt{EN\_PREPARACION} $\rightarrow$ \texttt{LISTA} $\rightarrow$
+  \texttt{ENTREGADA}. Toda transición relevante debe registrarse en
+  \texttt{OrderItemStatusEvent} para permitir trazabilidad y cálculo de tiempos.
+
+  \item \textbf{Restricción durante liquidación.}
+  Cuando una sesión se encuentra en \texttt{POR\_LIQUIDAR}, no se permiten nuevas órdenes
+  ordinarias, salvo reapertura o autorización explícita por un usuario con permisos
+  suficientes.
+
+  \item \textbf{Liquidación interna sin pagos bancarios.}
+  \texttt{Settlement} representa el estado interno de cuenta de una sesión. No almacena,
+  transmite ni procesa datos bancarios. Las aportaciones se registran mediante
+  \texttt{SettlementContribution} como eventos operativos internos.
+
+  \item \textbf{Consistencia del saldo.}
+  En todo momento debe cumplirse:
+  \[
+    \texttt{remainingCents} =
+    \texttt{totalCents} - \texttt{amountSettledCents}
+  \]
+  considerando ajustes autorizados, impuestos y propina registrada internamente.
+
+  \item \textbf{Aportaciones concurrentes.}
+  El registro de aportaciones internas debe realizarse dentro de una transacción ACID.
+  Para evitar sobreliquidación, el saldo pendiente se valida dentro de la transacción,
+  utilizando bloqueo a nivel de fila sobre la liquidación correspondiente.
+
+  \item \textbf{Asignación de aportaciones.}
+  Una \texttt{SettlementContribution} puede cubrir una o varias asignaciones mediante
+  \texttt{SettlementAllocation}. La suma de asignaciones asociadas a una contribución no
+  debe exceder \texttt{SettlementContribution.amountCents}.
+
+  \item \textbf{Cobertura de ítems.}
+  La suma de \texttt{SettlementAllocation.amountCents} asociada a un
+  \texttt{OrderItem} no debe exceder el total pendiente de dicho ítem.
+
+  \item \textbf{Liquidación completa.}
+  Una sesión solo puede pasar a \texttt{LIQUIDADA} cuando
+  \texttt{Settlement.remainingCents = 0}. La fecha de liquidación se registra en
+  \texttt{Settlement.settledAt} y \texttt{DiningSession.settledAt}.
+
+  \item \textbf{Ajustes autorizados.}
+  Los descuentos y cortesías se registran mediante \texttt{AppliedAdjustment}. Un ajuste
+  puede aplicarse a un \texttt{OrderItem} o a un \texttt{Settlement}; cuando aplique una
+  restricción XOR, no debe afectar ambos simultáneamente.
+
+  \item \textbf{Anulación sin eliminación.}
+  Las aportaciones y ajustes no se eliminan físicamente cuando requieren corrección. Se
+  marcan como \texttt{VOIDED} y se registra el evento correspondiente en
+  \texttt{AuditLog}.
+
+  \item \textbf{Valores monetarios enteros.}
+  Todos los montos se almacenan y calculan en centavos mediante enteros. No se utilizan
+  tipos de punto flotante para dinero.
+
+  \item \textbf{Auditoría de acciones críticas.}
+  Toda acción crítica debe registrarse en \texttt{AuditLog}, incluyendo inicio de sesión,
+  apertura o cierre de sesión de mesa, aplicación de ajustes, registro o anulación de
+  aportaciones, cambios de estado relevantes y ejecución de jobs analíticos.
+
+  \item \textbf{Separación OLTP y analítica.}
+  Las consultas del dashboard histórico no deben recalcular métricas pesadas directamente
+  sobre las tablas transaccionales. Deben consultar tablas Gold previamente generadas por
+  jobs analíticos.
+
+  \item \textbf{Control de jobs analíticos.}
+  Cada ejecución del pipeline debe registrarse en \texttt{AnalyticsJobRun}, indicando
+  tipo de job, estado, ventana de datos procesada, tiempos de inicio y fin, errores y
+  metadatos técnicos.
+
+  \item \textbf{Linaje de tablas Gold.}
+  Cada registro en tablas Gold debe conservar \texttt{jobRunId}, permitiendo rastrear la
+  métrica hasta la ejecución específica del pipeline que la generó.
+
+  \item \textbf{Reprocesamiento incremental.}
+  Los jobs analíticos deben utilizar \texttt{dataWindowStart} y
+  \texttt{dataWindowEnd} para procesar ventanas específicas de datos. Esto permite
+  actualizar métricas recientes o reprocesar rangos históricos sin recalcular todo el
+  modelo.
 \end{enumerate}
+
+\newpage

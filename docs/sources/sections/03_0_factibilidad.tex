@@ -1,0 +1,686 @@
+\section{Estudio de Factibilidad y Gestión de Riesgos}
+
+El presente estudio analiza la viabilidad del proyecto desde cuatro dimensiones
+complementarias: técnica, operativa, económica y legal. El objetivo es demostrar,
+con evidencia cuantitativa y referencias documentadas, que el proyecto puede
+construirse con los recursos disponibles, ser adoptado por sus usuarios finales,
+mantenerse operativamente con costos controlados y operar dentro del marco
+normativo vigente en México.
+
+La metodología aplicada combina: (1) revisión de documentación oficial de las
+plataformas tecnológicas seleccionadas; (2) análisis de estadísticas de adopción
+digital publicadas por el INEGI y organismos de la industria; (3) modelado de
+costos basado en tarifas públicas vigentes; y (4) revisión del marco normativo
+mexicano aplicable al manejo de datos personales, registros internos de liquidación,
+servicios digitales y software \cite{nextjs, supabase_pricing, prisma_docs, state_of_js_2023, stackoverflow_2023_results}.
+
+% -----------------------------------------------------------
+\FloatBarrier
+\subsection{Factibilidad Técnica}
+% -----------------------------------------------------------
+
+La factibilidad técnica evalúa la disponibilidad y madurez de las herramientas,
+lenguajes, frameworks e infraestructura necesarios para el desarrollo e implantación
+del sistema.
+
+\subsubsection{Ecosistema de Desarrollo: Madurez y Adopción}
+
+La selección del stack tecnológico se fundamenta en el criterio de madurez
+comprobada, adopción masiva en la industria y soporte activo de la comunidad.
+El uso de tecnologías ampliamente adoptadas reduce el riesgo técnico, amplía el
+pool de desarrolladores disponibles y garantiza continuidad del soporte a largo
+plazo. La Tabla~\ref{tab:stack} resume las tecnologías principales con sus métricas
+de adopción.
+
+\begin{table}[H]
+\caption{Stack Tecnológico: Madurez y Adopción}
+\label{tab:stack}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{2.3cm}
+                >{\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{1.5cm}
+                >{\raggedright\arraybackslash}p{6cm}
+                >{\raggedright\arraybackslash}p{2.5cm}}
+\hline
+\thead{Tecnología} & \thead{Categoría} & \thead{Versión} & \thead{Adopción} & \thead{Licencia} \\
+\hline
+Next.js 16 & Framework frontend + API & 16.x & 44\% de desarrolladores lo usan activamente \cite{state_of_js_2023} & MIT \\ \rowcolor{altrow}
+React 19 & Biblioteca UI & 19.x & 84\% de los desarrolladores web la usan \cite{state_of_js_2023} & MIT \\
+TypeScript 5 & JS tipado & 5.x & 38.87\% de desarrolladores la usan \cite{stackoverflow_2023_results} & Apache 2.0 \\ \rowcolor{altrow}
+Supabase & BaaS: PostgreSQL + Auth + Realtime & GA 2023 & +65,000 estrellas en GitHub; 200,000+ proyectos activos \cite{supabase_pricing} & Apache 2.0 \\
+PostgreSQL 16 & SGBD relacional & 16.x & 45.55\% de popularidad \cite{stackoverflow_2023_results} & PostgreSQL License \\ \rowcolor{altrow}
+Prisma ORM & ORM para Node.js/TS & Versión estable vigente & Herramienta ampliamente utilizada en ecosistemas TypeScript y Next.js \cite{prisma_docs} & Apache 2.0 \\
+Tailwind CSS 4 & Framework CSS & 4.x & Framework CSS líder por su enfoque utility-first \cite{state_of_js_2023} & MIT \\ \rowcolor{altrow}
+shadcn/ui 4 & Biblioteca de componentes & 4.x & Biblioteca ampliamente utilizada para construir componentes accesibles y reutilizables & MIT \\
+Vercel & Hosting serverless & PaaS & Plataforma l\'ider para despliegue Next.js \cite{vercel_pricing, nextjs} & Propietario \\ \rowcolor{altrow}
+Node.js 20 LTS & Runtime JS servidor & 20.x LTS & framework m\'as usado (42.65\%) \cite{stackoverflow_2023_results} & MIT \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent\footnotesize{\textit{Nota:} Las métricas de adopción se usan como referencia general del ecosistema tecnológico, no como indicador específico de la versión exacta seleccionada.}
+\normalsize
+
+\subsubsection{Análisis de Componentes Críticos}
+
+\noindent\textbf{Vercel como plataforma de hosting.}
+Vercel es la plataforma de referencia para despliegue de aplicaciones Next.js,
+siendo el creador y principal mantenedor del framework. Ofrece escalado automático,
+red CDN global en más de 100 edge locations, deploy automático por rama de Git y
+ambientes de Preview y Producción nativos. El plan Pro ofrece límites superiores
+al plan gratuito y resulta adecuado para endpoints breves de la aplicación, mientras
+que los procesos largos se delegan al pipeline batch ejecutado en el VPS
+\cite{vercel_pricing, nextjs}.
+
+\noindent\textbf{Supabase como backend-as-a-service.}
+Supabase provee una instancia PostgreSQL administrada junto con servicios de
+autenticación, Realtime (basado en LISTEN/NOTIFY de PostgreSQL), almacenamiento
+de archivos y una API REST auto-generada. Su elección está fundamentada en que
+PostgreSQL es un sistema de base de datos relacional ampliamente adoptado.
+El plan Pro incluye almacenamiento administrado, respaldos automáticos y
+mecanismos de pooling de conexiones mediante PgBouncer, lo que reduce el riesgo de
+agotamiento de conexiones en entornos serverless \cite{supabase_pricing}.
+
+\noindent\textbf{Prisma ORM como capa de acceso a datos.}
+Prisma provee un cliente de base de datos tipado generado automáticamente a partir
+del schema definido en su DSL. Esto garantiza seguridad de tipos en tiempo de
+compilación, previene SQL Injection por diseño al utilizar consultas parametrizadas
+y facilita las migraciones de schema con control de versiones. En entornos
+serverless, Prisma Accelerate resuelve el problema de agotamiento de conexiones
+al actuar como proxy entre las funciones de Vercel y la instancia PostgreSQL
+de Supabase \cite{prisma_docs, prisma_accelerate}. Las versiones recientes de Prisma han mejorado el soporte para
+entornos serverless y la generación del cliente.
+
+La Tabla~\ref{tab:hw_usuarios} detalla los requerimientos mínimos de hardware
+para cada tipo de usuario final.
+
+\begin{table}[H]
+\caption{Requerimientos de Hardware por Tipo de Usuario}
+\label{tab:hw_usuarios}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{2.3cm}
+                >{\raggedright\arraybackslash}p{2.5cm}
+                >{\raggedright\arraybackslash}p{5.5cm}
+                >{\raggedright\arraybackslash}p{5cm}}
+\hline
+\thead{Tipo de usuario} & \thead{Dispositivo} & \thead{Requerimiento mínimo} & \thead{Observación} \\
+\hline
+Comensal / Anfitrión & Smartphone personal & Chrome $\geq$90, Firefox $\geq$88 o Safari $\geq$14. Cámara para QR. & El 87.3\% de mexicanos de 18--44 años usa smartphone con internet \cite{inegi_endutih_2022}. \\ \rowcolor{altrow}
+Mesero & Tablet del restaurante & Chrome $\geq$90, Firefox $\geq$88 o Safari $\geq$14. Pantalla $\geq$8 pulgadas recomendada. & Tablet de gama media ($\sim{\$4,500 MXN}$). \\
+Chef & Tablet del restaurante & Pantalla $\geq$8 pulgadas recomendada para tablero de órdenes. & Tablet o monitor con PC básica. \\ \rowcolor{altrow}
+Gerente / Admin & PC, laptop o tablet & Navegador moderno. Pantalla $\geq$11 pulgadas recomendada para Dashboard. & Equipo existente en la mayoría de negocios. \\
+Servidor analítico (VPS) & VPS en la nube & 2 vCPU, 8~GB RAM, 100~GB NVMe, 8~TB de ancho de banda. Ubuntu 22.04~LTS. & Hostinger KVM 2: Promocional \$8.99~USD/mes; renovaci\'on \$14.99~USD/mes. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Disponibilidad de Conocimientos Técnicos}
+
+El stack seleccionado (TypeScript + Next.js + PostgreSQL + React) es el más
+demandado en el mercado de desarrollo web en México y Latinoamérica. TypeScript
+ha sido el lenguaje más deseado por desarrolladores tres años consecutivos
+(2021--2023) \cite{state_of_js_2023}; Next.js ocupa el primer lugar entre frameworks full-stack
+deseados \cite{state_of_js_2023}; y PostgreSQL es la base de datos relacional más popular globalmente \cite{state_of_js_2023}.
+Plataformas como LinkedIn, OCC Mundial y Computrabajo registran cientos de
+ofertas activas con este perfil mensualmente.
+
+\subsubsection{Restricciones Técnicas y Mitigación}
+
+La Tabla~\ref{tab:restricciones_tec} resume las restricciones técnicas identificadas
+y las soluciones disponibles para cada una.
+
+\begin{table}[H]
+\caption{Restricciones Técnicas Identificadas y Mitigación}
+\label{tab:restricciones_tec}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{4cm}
+                >{\raggedright\arraybackslash}p{4cm}
+                >{\raggedright\arraybackslash}p{7.5cm}}
+\hline
+\thead{Restricción técnica} & \thead{Impacto potencial} & \thead{Solución técnica disponible} \\
+\hline
+Límite de conexiones PostgreSQL en funciones serverless &
+  Pool de conexiones agotado en horas pico &
+  Prisma Accelerate o PgBouncer (integrado en Supabase Pro). Solución probada y documentada \cite{prisma_docs, prisma_accelerate}. \\ \rowcolor{altrow}
+Límites de ejecución en funciones serverless &
+  Operaciones largas o procesos analíticos podrían exceder el tiempo permitido
+  por la plataforma &
+  Diseño de endpoints con respuesta $<$5~s. Procesamiento asíncrono y delegación a jobs batch para operaciones largas. \\
+Latencia de Supabase Realtime bajo carga alta &
+  Retrasos en actualización del tablero del Chef &
+  Supabase Realtime plan Pro soporta hasta 500 conexiones simultáneas. Escalable bajo demanda \cite{supabase_pricing}. \\ \rowcolor{altrow}
+Acceso a internet requerido en todo momento &
+  Sin conectividad, la app no funciona &
+  Restricción asumida y documentada. La operación requiere conectividad estable
+  del restaurante o datos móviles disponibles en los dispositivos de los usuarios. \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Veredicto:} El stack tecnológico seleccionado es maduro,
+ampliamente adoptado en la industria y con soporte activo. Todas las restricciones
+técnicas identificadas tienen soluciones documentadas y probadas en producción
+por proyectos de escala comparable. La plataforma puede construirse con el
+conocimiento técnico disponible en el mercado mexicano. \textbf{FACTIBLE}.
+
+% -----------------------------------------------------------
+\FloatBarrier
+\subsection{Factibilidad Operativa}
+% -----------------------------------------------------------
+
+La factibilidad operativa evalúa la capacidad de los usuarios finales para
+adoptar y operar el sistema propuesto, considerando el perfil tecnológico de
+la población objetivo en México.
+
+\subsubsection{Perfil Tecnológico de los Usuarios Finales}
+
+\noindent\textbf{Comensales: adopción de smartphones y QR en México.}
+El usuario comensal interactúa con el sistema únicamente a través del navegador
+de su dispositivo móvil. Según la Encuesta Nacional sobre Disponibilidad y Uso de
+Tecnologías de la Información en los Hogares (ENDUTIH) 2022 del INEGI, el 88.6\%
+de la población mexicana de 25 a 34 años es usuaria de internet, y el 89.3\%
+accede a internet principalmente desde un teléfono celular \cite{inegi_endutih_2022}. En el segmento de
+35 a 44 años, la penetración de internet es del 78.9\%.
+
+El uso de c\'odigos QR para acceder a men\'us digitales se consolid\'o durante
+y despu\'es de la pandemia de COVID-19. De acuerdo con la National Restaurant
+Association (2023), el 73\% de los comensales de la Generaci\'on~Z y el 46\%
+de los Baby~Boomers muestran inter\'es en usar c\'odigos QR para men\'us de
+restaurante \cite{nra_state_2023}. A nivel nacional, la alta penetraci\'on de smartphones en
+M\'exico \cite{inegi_endutih_2022} respalda la viabilidad de este canal como punto de entrada al sistema.
+Esto implica que la curva de aprendizaje para el flujo de activaci\'on de mesa
+virtual es m\'inima.
+
+\noindent\textbf{Personal operativo: capacitación requerida.}
+Las interacciones del sistema han sido diseñadas para minimizar la curva de
+aprendizaje: el mesero solo necesita inicializar mesas y entregar un QR; el chef
+solo visualiza un tablero de órdenes; el gerente administra un panel web estándar.
+La Tabla~\ref{tab:capacitacion} detalla la curva de aprendizaje estimada por rol.
+
+\begin{table}[H]
+\caption{Capacitación Requerida por Rol}
+\label{tab:capacitacion}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{2.5cm}
+                >{\raggedright\arraybackslash}p{4.5cm}
+                >{\raggedright\arraybackslash}p{2.5cm}
+                >{\raggedright\arraybackslash}p{6.5cm}}
+\hline
+\thead{Rol} & \thead{Flujos principales} & \thead{Curva de aprendizaje} & \thead{Capacitación requerida} \\
+\hline
+Mesero & Inicializar mesa, entregar QR, visualizar estatus, liberar mesa. & 2--4 horas & Sesión práctica de 1~hora + manual de 1~página. \\ \rowcolor{altrow}
+Chef & Visualizar tablero de órdenes, actualizar estatus de orden. & 1--2 horas & Sesión práctica de 30~minutos. Interfaz de una sola pantalla. \\
+Gerente de Sucursal & Todo lo anterior + gestión de menú, usuarios y dashboard. & 4--8 horas & Capacitación de 2~horas + documentación de usuario. \\ \rowcolor{altrow}
+Gerente de Zona / Admin & Gestión multi-sucursal, zonas, analytics. & 6--10 horas & Capacitación de 3~horas + acceso a modo sandbox. \\
+Comensal / Anfitrión & Escanear QR, crear contraseña, ordenar, registrar aportación / liquidación interna. & Menos de 5 minutos & Flujo guiado en pantalla y apoyo del mesero en caso necesario. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Análisis de Cambio Organizacional}
+
+La Tabla~\ref{tab:cambio_org} evalúa los factores de cambio que implica la
+implantación del sistema y los mecanismos de mitigación propuestos.
+
+\begin{table}[H]
+\caption{Análisis de Cambio Organizacional}
+\label{tab:cambio_org}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{3.5cm}
+                >{\raggedright\arraybackslash}p{5.5cm}
+                >{\raggedright\arraybackslash}p{7cm}}
+\hline
+\thead{Factor de cambio} & \thead{Impacto para el personal} & \thead{Mitigación propuesta} \\
+\hline
+El comensal genera su propia orden &
+  El mesero deja de tomar órdenes en papel. Puede percibirse como reducción de su rol. &
+  Comunicar que el mesero se libera para atención de mayor valor. No implica reducción de plantilla. \\ \rowcolor{altrow}
+Nuevo flujo de activación de mesa &
+  Paso adicional al proceso actual (inicializar mesa virtual antes de sentar comensales). &
+  El flujo toma menos de 60~segundos. Onboarding interactivo integrado en la app. \\
+Chef visualiza tablero digital &
+  Cambio de medio: papel $\rightarrow$ pantalla. Puede generar resistencia en personal de mayor edad. &
+  Interfaz con fuente grande. Notificación sonora de nuevas órdenes. Período de transición paralela recomendado. \\ \rowcolor{altrow}
+Comensales realizan liquidaciones internas / aportaciones &
+  Comensales que prefieren efectivo o pago en caja pueden optar por esa alternativa. &
+  El sistema permite registrar aportaciones manuales en caja; la versión 1.0 no procesa pagos bancarios reales. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Contexto de la Industria Restaurantera en México}
+
+Según la Cámara Nacional de la Industria de Restaurantes y Alimentos Condimentados
+(CANIRAC), el sector restaurantero en M\'exico concentra m\'as de 700{,}000 unidades
+econ\'omicas seg\'un datos del DENUE del INEGI \cite{inegi_denue_2024}. El sector ha experimentado una
+aceleración en la adopción de tecnología post-pandemia, especialmente en herramientas de
+punto de venta, pedidos digitales, menús QR y presencia en línea \cite{gonzalez_canirac_2024}.
+
+\noindent\textbf{Veredicto:} El perfil tecnológico de los usuarios finales es
+compatible con los requerimientos del sistema. El 89.3\% de los mexicanos accede
+a internet desde smartphone \cite{inegi_endutih_2022}, y el 64\% ha usado un QR para acceder a un menú
+\cite{nra_state_2023}. Los flujos del sistema están diseñados para minimizar la curva
+de aprendizaje. La resistencia al cambio en el personal operativo es manejable
+con capacitación mínima y transición gradual. \textbf{FACTIBLE}.
+
+% -----------------------------------------------------------
+\FloatBarrier
+\subsection{Factibilidad Económica}
+
+\subsubsection{Criterio de Estimaci\'on Econ\'omica}
+Para evitar mezclar gasto efectivo con valor de trabajo desarrollado, la factibilidad
+econ\'omica distingue dos conceptos:
+\begin{itemize}
+  \item \textbf{Costo operativo real:} pagos necesarios para mantener la infraestructura del sistema (Vercel, Supabase, VPS, dominio), que constituyen el gasto recurrente real.
+  \item \textbf{Valor equivalente de desarrollo:} estimaci\'on del costo que implicar\'ia contratar externamente el desarrollo; se incluye como referencia de esfuerzo y no como presupuesto efectivo de la tesis.
+\end{itemize}
+
+\subsubsection{Metodología de Estimación de Costos}
+
+El presente estudio de factibilidad econ\'omica aplica la metodolog\'ia de
+\textbf{Estimaci\'on Bottom-Up}, definida por el Project Management Institute
+como la descomposici\'on del proyecto en actividades individuales con estimaci\'on
+de costo independiente para cada una, que posteriormente se suman para obtener
+el presupuesto total \cite{stps_observatorio}. Este m\'etodo es id\'oneo para el presente proyecto
+porque los m\'odulos (OE-01 a OE-13) est\'an claramente delimitados y permiten
+estimar horas de desarrollo por objetivo espec\'ifico con alta precisi\'on.
+
+Los par\'ametros base utilizados son: tarifa de \$500~MXN/hora para un desarrollador
+\textit{full-stack senior} con el perfil TypeScript~+~Next.js~+~Supabase, consistente
+con el rango medio del mercado mexicano de desarrollo de software en 2026 seg\'un
+el Observatorio Laboral de la STPS \cite{stps_observatorio}; y un tipo de cambio referencial de
+\$17.50~MXN/USD conforme a Banxico. Ambos par\'ametros son editables en el archivo
+de gesti\'on de costos adjunto (\textit{Gesti\'on\_Costos.xlsx}).
+
+\subsubsection{Estimación de Costos de Desarrollo (Inversión Inicial)}
+
+La Tabla~\ref{tab:costos_dev} resume el valor econ\'omico equivalente de desarrollo
+por m\'odulo, derivado del desglose bottom-up de los objetivos espec\'ificos y las
+actividades de la Fase~1 (an\'alisis y dise\~no). El detalle completo, con
+horas por actividad y f\'ormulas editables, se encuentra en la hoja
+\textit{2.~Estimaci\'on Bottom-Up} del archivo Excel adjunto.
+
+\setstretch{1.2}
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{>{\raggedright\arraybackslash}p{3.5cm}
+                >{\raggedright\arraybackslash}p{5.5cm}
+                >{\centering\arraybackslash}p{1.6cm}
+                >{\centering\arraybackslash}p{2.5cm}
+                >{\centering\arraybackslash}p{2cm}}
+\caption{Estimación de Costos de Desarrollo por Módulo (Bottom-Up)} \label{tab:costos_dev} \\
+\hline
+\thead{Módulo / Fase} & \thead{Actividades principales} &
+\thead{Horas est.} & \thead{Costo RRHH\,(MXN)} & \thead{Fase} \\
+\hline
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\hline
+\thead{Módulo / Fase} & \thead{Actividades principales} &
+\thead{Horas est.} & \thead{Costo RRHH\,(MXN)} & \thead{Fase} \\
+\hline
+\endhead
+\hline
+\endfoot
+OE-01 Infraestructura & Vercel CI/CD, schema Prisma, Supabase base & 160 & \$80,000 & 2 \\ \rowcolor{altrow}
+OE-02 Estructura Org. & CRUD Cadena/Zona/Sucursal + RLS & 60 & \$30,000 & 2 \\
+OE-03 Auth \& Roles & Supabase Auth + RLS policies + control de sesiones & 100 & \$50,000 & 2 \\ \rowcolor{altrow}
+OE-04 Gestión Usuarios & Alta usuarios + contrase\~na temporal & 50 & \$25,000 & 2 \\
+OE-05 Cat\'alogo & CRUD categor\'ias + productos + variantes & 90 & \$45,000 & 2 \\ \rowcolor{altrow}
+OE-06/07 Mesas & Mesas f\'isicas + mesa virtual + QR HMAC & 150 & \$75,000 & 2 \\
+OE-08/09 \'Ordenes + Chef & Canasta, \'ordenes, tablero KDS Realtime & 170 & \$85,000 & 2 \\ \rowcolor{altrow}
+OE-10/11 Liquidaci\'on & Concurrencia \texttt{SELECT FOR UPDATE} + constancia interna & 140 & \$70,000 & 2 \\
+OE-12 Dashboard & Pipeline Spark (Medallion) + Dashboard multi-nivel & 120 & \$60,000 & 2 \\ \rowcolor{altrow}
+OE-13 Seguridad & Rate limiting + RLS audit + pruebas carga & 80 & \$40,000 & 2 \\
+Pruebas QA & Unitarias + integraci\'on + carga (k6) & 80 & \$40,000 & 2 \\ \rowcolor{altrow}
+Fase 1 --- An\'alisis y Dise\~no (Natalia) & Marco te\'orico, flujos, UML, BD, wireframes, TT & 660 & \$330,000 & 1 \\
+Gesti\'on de Proyecto (ambos) & Ceremonias Scrum, documentaci\'on, retrospectivas & 80 & \$40,000 & 1/2 \\
+\hline
+\rowcolor{green}
+\textbf{TOTAL RRHH (valor equivalente)} & & \textbf{1,940} & \textbf{\$970,000} & --- \\
+\end{longtable}
+\setstretch{1.5}
+
+\subsubsection{Costos de Infraestructura Cloud (Operación Mensual)}
+
+Los costos de infraestructura son recurrentes y se calculan con base en las tarifas
+p\'ublicas de cada servicio. La Tabla~\ref{tab:costos_infra} presenta los costos
+mensuales y anuales para el primer a\~no del proyecto (12 meses operativos).
+
+\begin{table}[H]
+\caption{Costos de Infraestructura Cloud (Año 1 — 12 Meses)}
+\label{tab:costos_infra}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{2.5cm}
+                >{\centering\arraybackslash}p{1.5cm}
+                >{\centering\arraybackslash}p{1.5cm}
+                >{\centering\arraybackslash}p{2.5cm}
+                >{\raggedright\arraybackslash}p{5cm}}
+\hline
+\thead{Servicio} & \thead{Plan} & \thead{USD/mes} &
+\thead{MXN/mes} & \thead{MXN\,(12 meses)} & \thead{Referencia} \\
+\hline
+Vercel & Pro (1 seat) & \$20 & \$350 & \$4,200 & Vercel Pricing \cite{vercel_pricing} \\ \rowcolor{altrow}
+Supabase & Pro & \$25 & \$437.50 & \$5,250 & Supabase Pricing \cite{supabase_pricing} \\
+VPS Hostinger KVM 2 & 2 vCPU, 8 GB RAM, 100 GB NVMe, 8 TB BW & \$8.99 & \$157.33 & \$1,887.96 & Hostinger KVM 2 \cite{hostinger_kvm2} \\ \rowcolor{altrow}
+Dominio .com.mx & Anual & \$0.83 & \$14.53 & \$174.36 & NIC M\'exico / GoDaddy \\
+\hline
+\rowcolor{green}
+\textbf{Total infraestructura (promocional)} & & \textbf{\$54.82} & \textbf{\$959.36} & \textbf{\$11,512.32} & \\
+\hline
+\rowcolor{altrow}
+VPS Hostinger KVM 2 (renovaci\'on) & Renovaci\'on & \$14.99 & \$262.33 & \$3,147.96 & Precio de renovaci\'on indicado en proveedor \\
+\hline
+\rowcolor{green}
+\textbf{Total infraestructura (renovaci\'on)} & & \textbf{\$60.82} & \textbf{\$1,064.36} & \textbf{\$12,772.32} & \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Valor Económico Equivalente del Proyecto}
+
+La Tabla~\ref{tab:presupuesto_total} presenta el valor econ\'omico equivalente del
+proyecto durante el primer a\~no. Esta estimaci\'on no representa un gasto efectivo
+del Trabajo Terminal, sino el costo aproximado que tendr\'ia desarrollar una soluci\'on
+similar si se contrataran recursos humanos, consultor\'ia y herramientas en condiciones
+de mercado. La reserva de contingencia del 15\% se conserva como referencia de planeaci\'on
+\cite{pmi_pmbok_7}.
+
+\begin{table}[H]
+\caption{Valor Económico Equivalente del Proyecto — Año 1}
+\label{tab:presupuesto_total}
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{7cm}
+                >{\centering\arraybackslash}p{2cm}
+                >{\centering\arraybackslash}p{3.5cm}
+                >{\centering\arraybackslash}p{3.5cm}}
+\hline
+\thead{Concepto} & \thead{Tipo} & \thead{Costo MXN} & \thead{Costo USD} \\
+\hline
+Recursos Humanos --- Desarrollo (Diego) & Directo/Fijo & \$620,000 & \$35,429 \\ \rowcolor{altrow}
+Recursos Humanos --- An\'alisis y Dise\~no (Natalia) & Directo/Fijo & \$330,000 & \$18,857 \\
+Gesti\'on de Proyecto (ambos) & Directo/Fijo & \$40,000 & \$2,286 \\ \rowcolor{altrow}
+Infraestructura cloud (12 meses) & Directo/Fijo & \$11,512 & \$658 \\
+Capacitaci\'on del personal (onboarding) & Directo/Fijo & \$12,000 & \$686 \\ \rowcolor{altrow}
+Consultor\'ia legal (LFPDPPP + T\'erminos) & Indirecto/Fijo & \$25,000 & \$1,429 \\
+Herramientas de dise\~no (Figma Pro 6 meses) & Directo/Variable & \$3,150 & \$180 \\ \rowcolor{altrow}
+Herramientas de documentaci\'on y PM & Indirecto/Variable & \$1,750 & \$100 \\
+\hline
+\rowcolor{orange}
+\textbf{Subtotal Base} & & \textbf{\$1,043,412} & \textbf{\$59,623} \\ \rowcolor{orange}
+Reserva de Contingencia (15\% --- PMI PMBOK) & Buffer & \$156,512 & \$8,944 \\
+\hline
+\rowcolor{green}
+\textbf{VALOR EQUIVALENTE TOTAL A\~NO 1} & & \textbf{\$1,199,924 MXN} & \textbf{\$68,567 USD} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Comparación Referencial frente a Alternativas SaaS}
+
+La comparaci\'on no busca demostrar sustituci\'on funcional completa frente a plataformas
+POS comerciales, ya que dichas soluciones incluyen m\'odulos fuera del alcance de la
+versi\'on 1.0, como inventario avanzado, facturaci\'on, pagos bancarios, soporte t\'ecnico
+comercial y hardware especializado. Su prop\'osito es ubicar el costo operativo recurrente
+del prototipo frente a servicios SaaS relacionados.
+
+\begin{table}[H]
+\caption{Comparación Referencial frente a Alternativas SaaS}
+\label{tab:build_buy}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{3.5cm}
+                >{\centering\arraybackslash}p{2.8cm}
+                >{\centering\arraybackslash}p{3.2cm}
+                >{\centering\arraybackslash}p{2cm}
+                >{\raggedright\arraybackslash}p{4.2cm}}
+\hline
+\thead{Solución} & \thead{Costo mensual\,(MXN)} & \thead{Costo anual\,(MXN)} &
+\thead{Propie-dad código} & \thead{Observación} \\
+\hline
+\textbf{El presente sistema} & \textbf{\$959} & \textbf{\$11,512} & \textbf{Sí} &
+  Solo infraestructura recurrente; el desarrollo es valor equivalente no recurrente. \\ \rowcolor{altrow}
+Toast POS + Mobile Order~\&~Pay & \$2,500 & \$90,000 & No &
+  Sin mesa virtual con contrase\~na. \\
+Square for Restaurants + KDS & \$2,200 & \$79,200 & No &
+  Split bill desde cajero, no desde comensal. \\ \rowcolor{altrow}
+Lightspeed Restaurant & \$3,500 & \$126,000 & No &
+  Sin jerarqu\'ia cadena/zona/sucursal. \\
+Yumminn & \$2,000 & \$72,000 & No &
+  Sin KDS propio ni cuentas individuales. \\ \rowcolor{altrow}
+Oracle MICROS POS & \$15,000 & \$540,000 & No &
+  Enterprise. Hardware adicional requerido. \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent\footnotesize{\textit{Nota:} Los costos de soluciones comerciales son aproximados
+y pueden variar según país, número de sucursales, módulos contratados, hardware,
+soporte, comisiones e integraciones. La comparación es referencial y no implica
+equivalencia funcional completa.}
+\normalsize
+
+\noindent El costo de infraestructura mensual del sistema es sensiblemente inferior al
+costo operativo típico de soluciones SaaS comerciales. Sin embargo, la estimaci\'on del
+"valor equivalente de desarrollo" (horas multiplicadas por tarifas de mercado) se presenta
+solamente como referencia para dimensionar el esfuerzo t\'ecnico y no representa gasto
+efectivo en el contexto de un Trabajo Terminal.
+
+
+\noindent\textbf{Veredicto:} El proyecto es factible para un contexto acad\'emico y de
+validaci\'on t\'ecnica. Manteniendo la exclusi\'on de procesamiento bancario real en la
+versi\'on 1.0, los costos operativos son bajos y la mayor inversi\'on corresponde al
+esfuerzo de desarrollo (valor equivalente). \textbf{FACTIBLE}.
+
+% -----------------------------------------------------------
+\FloatBarrier
+\subsection{Factibilidad Legal}
+% -----------------------------------------------------------
+
+La factibilidad legal evalúa el cumplimiento del marco normativo mexicano e
+internacional aplicable a la plataforma, incluyendo protección de datos personales,
+registro interno de liquidaciones, facturación electrónica como trabajo futuro,
+licencias de software y normativas de telecomunicaciones.
+
+\subsubsection{Ley Federal de Protección de Datos Personales en Posesión de
+Particulares (LFPDPPP)}
+
+La plataforma recolecta y procesa datos personales de los usuarios colaboradores
+(correo electrónico, nombre, historial de accesos) a través de Supabase Auth.
+Adicionalmente, se registran datos de comportamiento de comensales (órdenes
+generadas, montos registrados/aportaciones) aunque de forma no nominal si el comensal no se
+registra formalmente. Este tratamiento está sujeto a la LFPDPPP, publicada en
+el Diario Oficial de la Federación (DOF) el 5 de julio de 2010, y a su Reglamento,
+publicado el 21 de diciembre de 2011 \cite{lfpdppp}.
+
+Las sanciones por incumplimiento van desde 100 hasta 320,000 días de salario
+mínimo general vigente (SMGV), equivalentes a aproximadamente \$12,200 hasta
+\$39,040,000 MXN con el SMGV 2024 de \$248.93 MXN/día \cite{reglamento_lfpdppp}.
+
+La Tabla~\ref{tab:lfpdppp} detalla las obligaciones aplicables y su estado de
+cumplimiento en la versión 1.0 de la plataforma.
+
+\setstretch{1.2}
+\setlength{\tabcolsep}{4pt}
+\begin{longtable}{>{\raggedright\arraybackslash}p{3.5cm}
+                >{\centering\arraybackslash}p{1.5cm}
+                >{\raggedright\arraybackslash}p{6.5cm}
+                >{\raggedright\arraybackslash}p{4cm}}
+\caption{Obligaciones LFPDPPP Aplicables a la Plataforma} \label{tab:lfpdppp} \\
+\hline
+\thead{Obligación legal} & \thead{Artículo} & \thead{Acción requerida} & \thead{Estado en v1.0} \\
+\hline
+\endfirsthead
+\caption[]{TABLA \thetable{} (Continuación)} \\
+\hline
+\thead{Obligación legal} & \thead{Artículo} & \thead{Acción requerida} & \thead{Estado en v1.0} \\
+\hline
+\endhead
+\hline
+\endfoot
+Aviso de Privacidad &
+  Art.\ 15--16 &
+  Redactar y publicar el Aviso de Privacidad antes del primer tratamiento de datos. Incluir identidad del responsable, finalidades, derechos ARCO y transferencias a Supabase/Vercel. &
+  \textbf{Requerido} antes del lanzamiento. \\ \rowcolor{altrow}
+Consentimiento del titular &
+  Art.\ 8 &
+  Obtener consentimiento expreso al crear cuenta o acceder por primera vez. &
+  Implementar checkbox de aceptación en el registro. \\
+Principio de licitud &
+  Art.\ 7 &
+  Los datos solo pueden tratarse para las finalidades declaradas en el Aviso de Privacidad. &
+  Cumplido por diseño: datos usados solo para operar el servicio. \\ \rowcolor{altrow}
+Principio de minimización &
+  Art.\ 7 &
+  Solo recolectar los datos estrictamente necesarios. &
+  Cumplido: solo correo y nombre de empleados. Comensales son anónimos. \\
+Derechos ARCO &
+  Art.\ 28--37 &
+  Implementar mecanismo para acceso, rectificación, cancelación y oposición. Plazo: 20 días hábiles. &
+  Módulo de eliminación de cuenta requerido. \\ \rowcolor{altrow}
+Medidas de seguridad &
+  Art.\ 19 &
+  TLS, cifrado en tránsito y en reposo, RLS en PostgreSQL, acceso mínimo por rol. &
+  Implementado en la arquitectura del sistema. \\
+Transferencias internacionales &
+  Art.\ 36 &
+  Datos alojados en Supabase (AWS us-east) están fuera de México. Debe declararse en el Aviso. &
+  Requiere cláusula específica en el Aviso de Privacidad. \\ \rowcolor{altrow}
+Responsable de datos &
+  Art.\ 3 fracc.\ XIV &
+  Designar un responsable de datos (Data Controller) dentro de la organización. &
+  Designar antes del lanzamiento. \\
+\end{longtable}
+\setstretch{1.5}
+
+\subsubsection{PCI DSS y Exclusión de Pagos Bancarios en v1.0}
+
+La versi\'on~1.0 de la plataforma no almacena, transmite ni procesa datos de tarjeta.
+La liquidaci\'on se maneja únicamente como un registro interno del estado de cuenta dentro de la
+aplicación. Por tanto, el alcance PCI DSS queda fuera del sistema actual.
+
+La integraci\'on con agregadores de pago se documenta como trabajo futuro. En caso de
+incorporarse, deberá realizarse mediante un proveedor certificado que permita reducir el
+alcance PCI de la plataforma, evitando que el sistema vea, transmita o almacene datos de
+tarjeta.
+
+\subsubsection{Obligaciones Fiscales: CFDI}
+
+El Artículo 29 del Código Fiscal de la Federación (CFF) establece la obligación
+de expedir Comprobantes Fiscales Digitales por Internet (CFDI) por los actos o
+actividades de los contribuyentes \cite{cff_art29}. La plataforma en su versión 1.0 no emite
+CFDI directamente; la obligación recae sobre la cadena restaurantera. No obstante,
+se recomienda evaluar la integración con un Proveedor Autorizado de Certificación
+(PAC) del SAT \cite{sat_pac} para automatizar la emisión de CFDI a solicitud del comensal,
+especialmente en el segmento empresarial donde el 78\% de los comensales
+de restaurantes de servicio completo requieren factura \cite{inegi_canirac_2023}.
+
+\subsubsection{Ley Federal de Protección al Consumidor (LFPC)}
+
+La plataforma participa en el registro digital de órdenes y liquidaciones internas
+asociadas a una relación de consumo en restaurante, por lo que se consideran
+principios de transparencia, información clara, términos y condiciones, y mecanismos
+de aclaración conforme a la LFPC \cite{lfpc}.
+
+La Tabla~\ref{tab:lfpc} detalla las obligaciones aplicables y su implementación
+en la plataforma.
+
+\begin{table}[H]
+\caption{Obligaciones LFPC Aplicables a la Plataforma}
+\label{tab:lfpc}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{4cm}
+                >{\centering\arraybackslash}p{2cm}
+                >{\raggedright\arraybackslash}p{10cm}}
+\hline
+\thead{Obligación LFPC} & \thead{Artículo} & \thead{Implementación en la plataforma} \\
+\hline
+Información clara sobre consumo y liquidación &
+  Art.\ 7 &
+  La pantalla de liquidación muestra el desglose completo del consumo y el monto pendiente antes de confirmar cualquier registro interno. \\ \rowcolor{altrow}
+Confirmación explícita del pedido &
+  Art.\ 76 BIS fracc.\ II &
+  Diálogo de confirmación antes de enviar cada orden. Confirmación final antes de registrar la liquidación interna. \\
+Derecho a cancelar antes de confirmar &
+  Art.\ 76 BIS fracc.\ III &
+  El comensal puede vaciar su canasta o cancelar el registro interno antes de confirmarlo. \\ \rowcolor{altrow}
+Términos y condiciones accesibles &
+  Art.\ 76 BIS fracc.\ I &
+  Términos de Uso publicados y aceptados al acceder por primera vez a la plataforma. \\
+Mecanismo de quejas &
+  Art.\ 24 &
+  Publicar correo o formulario de atención al cliente. PROFECO puede recibir quejas sobre el servicio. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Licencias de Software del Stack}
+
+El análisis de licencias garantiza que el uso comercial de cada componente del
+stack sea legal. La Tabla~\ref{tab:licencias} muestra que ningún componente impone
+restricciones incompatibles con el modelo de negocio SaaS de la plataforma \cite{osi_licenses}.
+
+\begin{table}[H]
+\caption{Análisis de Licencias del Stack Tecnológico}
+\label{tab:licencias}
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{>{\raggedright\arraybackslash}p{3cm}
+                >{\raggedright\arraybackslash}p{3cm}
+                >{\centering\arraybackslash}p{2.5cm}
+                >{\centering\arraybackslash}p{2.5cm}
+                >{\raggedright\arraybackslash}p{5cm}}
+\hline
+\thead{Componente} & \thead{Licencia} & \thead{¿Uso comercial?} &
+\thead{¿Publicar código?} & \thead{Restricciones relevantes} \\
+\hline
+Next.js & MIT License & Sí & No & Mantener aviso de copyright. \\ \rowcolor{altrow}
+React & MIT License & Sí & No & Mantener aviso de copyright. \\
+TypeScript & Apache 2.0 & Sí & No & Incluir copia de la licencia en distribuciones. \\ \rowcolor{altrow}
+Prisma ORM & Apache 2.0 & Sí & No & Incluir copia de la licencia en distribuciones. \\
+Supabase (cliente JS) & MIT License & Sí & No & Mantener aviso de copyright. \\ \rowcolor{altrow}
+PostgreSQL & PostgreSQL License & Sí & No & Sin restricciones comerciales. \\
+Node.js & MIT License & Sí & No & Mantener aviso de copyright. \\ \rowcolor{altrow}
+Vercel (plataforma) & Propietario (SaaS) & Sí (Plan Pro) & N/A & Sujeto a Términos de Servicio de Vercel. \\
+Supabase (plataforma) & Propietario + AGPLv3 & Sí (Plan Pro cloud) & Solo en self-hosting & En modo BaaS cloud, el código cliente no está sujeto a AGPL \cite{supabase_license}. \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Normativas de Telecomunicaciones}
+
+La plataforma es un servicio de software entregado a través de internet (SaaS/PWA)
+y está regulada por la Ley Federal de Telecomunicaciones y Radiodifusión (LFTR) \cite{lftr}.
+La plataforma no opera como concesionaria de red pública ni como proveedor de
+servicios de telecomunicaciones (voz, SMS), por lo que la LFTR no impone
+obligaciones de registro o concesión. No obstante, si en versiones futuras se
+implementan notificaciones push vía SMS, se deberá revisar el Art. 191 de la
+LFTR relativo a la identidad del remitente en comunicaciones comerciales.
+
+\noindent\textbf{Veredicto:} El proyecto es legalmente viable. Las acciones legales
+no negociables antes del lanzamiento son: (1) redacci\'on y publicaci\'on del Aviso de
+Privacidad (Arts.~15--16 LFPDPPP); (2) implementaci\'on de consentimiento expreso y
+mecanismo ARCO; y (3) T\'erminos y Condiciones conforme al Art.~76~BIS de la LFPC.
+La decisi\'on de no integrar un agregador de pago v\'ia tarjeta en v1.0 evita el riesgo
+RL-02 (PCI~DSS) dentro del alcance de la versión 1.0. El stack utiliza exclusivamente
+licencias permisivas (MIT, Apache~2.0, BSD) sin restricciones sobre el uso comercial.
+\textbf{FACTIBLE CON ACCIONES REQUERIDAS}.
+

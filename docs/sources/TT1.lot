@@ -1,67 +1,83 @@
 \babel@toc {nil}{}\relax 
-\contentsline {table}{\numberline {I}{\ignorespaces Alcances Funcionales del Sistema v1.0}}{29}{table.1}%
-\contentsline {table}{\numberline {II}{\ignorespaces Límites del Sistema v1.0 — Funcionalidades Excluidas}}{32}{table.2}%
-\contentsline {table}{\numberline {III}{\ignorespaces Restricciones Técnicas Asumidas en la Versión 1.0}}{34}{table.3}%
-\contentsline {table}{\numberline {IV}{\ignorespaces Comparaci\'on de Soluciones Comerciales Relacionadas}}{39}{table.4}%
-\contentsline {table}{\numberline {V}{\ignorespaces Stack Tecnológico: Madurez y Adopción}}{49}{table.caption.1}%
-\contentsline {table}{\numberline {VI}{\ignorespaces Requerimientos de Hardware por Tipo de Usuario}}{50}{table.caption.2}%
-\contentsline {table}{\numberline {VII}{\ignorespaces Restricciones Técnicas Identificadas y Mitigación}}{51}{table.caption.3}%
-\contentsline {table}{\numberline {VIII}{\ignorespaces Capacitación Requerida por Rol}}{52}{table.caption.4}%
-\contentsline {table}{\numberline {IX}{\ignorespaces Análisis de Cambio Organizacional}}{53}{table.caption.5}%
-\contentsline {table}{\numberline {X}{\ignorespaces Estimación de Costos de Desarrollo por Módulo (Bottom-Up)}}{54}{table.10}%
-\contentsline {table}{\numberline {XI}{\ignorespaces Costos de Infraestructura Cloud (Año 1 — 11 Meses)}}{55}{table.caption.6}%
-\contentsline {table}{\numberline {XII}{\ignorespaces Presupuesto Total del Proyecto — Año 1}}{56}{table.caption.7}%
-\contentsline {table}{\numberline {XIII}{\ignorespaces Comparativo Build vs. Buy --- 3 Sucursales (Costos Anuales MXN)}}{57}{table.caption.8}%
-\contentsline {table}{\numberline {XIV}{\ignorespaces Obligaciones LFPDPPP Aplicables a la Plataforma}}{58}{table.14}%
-\contentsline {table}{\numberline {XV}{\ignorespaces Gateways de Pago Certificados PCI DSS Level 1 en México}}{60}{table.caption.9}%
-\contentsline {table}{\numberline {XVI}{\ignorespaces Obligaciones LFPC Aplicables a la Plataforma}}{61}{table.caption.10}%
-\contentsline {table}{\numberline {XVII}{\ignorespaces Análisis de Licencias del Stack Tecnológico}}{62}{table.caption.11}%
-\contentsline {table}{\numberline {XVIII}{\ignorespaces Matriz de Calificación Compuesta Probabilidad $\times $ Impacto}}{63}{table.caption.12}%
-\contentsline {table}{\numberline {XIX}{\ignorespaces Distribución de Riesgos por Nivel}}{64}{table.caption.13}%
-\contentsline {table}{\numberline {XX}{\ignorespaces Matriz de Riesgos Técnicos}}{65}{table.20}%
-\contentsline {table}{\numberline {XXI}{\ignorespaces Matriz de Riesgos Operativos}}{67}{table.21}%
-\contentsline {table}{\numberline {XXII}{\ignorespaces Matriz de Riesgos Legales y Regulatorios}}{69}{table.22}%
-\contentsline {table}{\numberline {XXIII}{\ignorespaces Hoja de Ruta de Mitigación de Riesgos}}{70}{table.23}%
-\contentsline {table}{\numberline {XXIV}{\ignorespaces Adaptación de Roles Scrum al Equipo del Proyecto}}{73}{table.caption.14}%
-\contentsline {table}{\numberline {XXV}{\ignorespaces Cronograma del Proyecto --- Diagrama de Gantt (Enero--Noviembre 2026)}}{75}{table.caption.15}%
-\contentsline {table}{\numberline {XXVI}{\ignorespaces Requerimientos Funcionales del Sistema}}{76}{table.26}%
-\contentsline {table}{\numberline {XXVII}{\ignorespaces Requerimientos No Funcionales del Sistema}}{79}{table.27}%
-\contentsline {table}{\numberline {XXVIII}{\ignorespaces Matriz Tecnológica y Responsabilidades por Capa}}{98}{table.caption.31}%
-\contentsline {table}{\numberline {XXIX}{\ignorespaces Diccionario de datos: tabla Currency}}{103}{table.29}%
-\contentsline {table}{\numberline {XXX}{\ignorespaces Diccionario de datos: tabla TaxGroup}}{104}{table.30}%
-\contentsline {table}{\numberline {XXXI}{\ignorespaces Diccionario de datos: tabla Permission}}{105}{table.31}%
-\contentsline {table}{\numberline {XXXII}{\ignorespaces Diccionario de datos: tabla Role}}{105}{table.32}%
-\contentsline {table}{\numberline {XXXIII}{\ignorespaces Diccionario de datos: tabla RolePermission}}{106}{table.33}%
-\contentsline {table}{\numberline {XXXIV}{\ignorespaces Diccionario de datos: tabla AppUser}}{106}{table.34}%
-\contentsline {table}{\numberline {XXXV}{\ignorespaces Diccionario de datos: tabla UserRole}}{107}{table.35}%
-\contentsline {table}{\numberline {XXXVI}{\ignorespaces Diccionario de datos: tabla Chain}}{108}{table.36}%
-\contentsline {table}{\numberline {XXXVII}{\ignorespaces Diccionario de datos: tabla Zone}}{109}{table.37}%
-\contentsline {table}{\numberline {XXXVIII}{\ignorespaces Diccionario de datos: tabla Restaurant}}{109}{table.38}%
-\contentsline {table}{\numberline {XXXIX}{\ignorespaces Diccionario de datos: tabla AuditLog}}{110}{table.39}%
-\contentsline {table}{\numberline {XL}{\ignorespaces Diccionario de datos: tabla MenuTemplate}}{111}{table.40}%
-\contentsline {table}{\numberline {XLI}{\ignorespaces Diccionario de datos: tabla TemplateItem}}{112}{table.41}%
-\contentsline {table}{\numberline {XLII}{\ignorespaces Diccionario de datos: tabla Station}}{112}{table.42}%
-\contentsline {table}{\numberline {XLIII}{\ignorespaces Diccionario de datos: tabla RestaurantMenuItem}}{112}{table.43}%
-\contentsline {table}{\numberline {XLIV}{\ignorespaces Diccionario de datos: tabla ModifierGroup}}{113}{table.44}%
-\contentsline {table}{\numberline {XLV}{\ignorespaces Diccionario de datos: tabla ModifierOption}}{113}{table.45}%
-\contentsline {table}{\numberline {XLVI}{\ignorespaces Diccionario de datos: tabla DiningTable}}{114}{table.46}%
-\contentsline {table}{\numberline {XLVII}{\ignorespaces Diccionario de datos: tabla DiningSession}}{115}{table.47}%
-\contentsline {table}{\numberline {XLVIII}{\ignorespaces Diccionario de datos: tabla Guest}}{115}{table.48}%
-\contentsline {table}{\numberline {XLIX}{\ignorespaces Diccionario de datos: tabla RestaurantOrder}}{116}{table.49}%
-\contentsline {table}{\numberline {L}{\ignorespaces Diccionario de datos: tabla OrderItem}}{117}{table.50}%
-\contentsline {table}{\numberline {LI}{\ignorespaces Diccionario de datos: tabla Payment}}{117}{table.51}%
-\contentsline {table}{\numberline {LII}{\ignorespaces Diccionario de datos: tabla AppliedDiscount}}{117}{table.52}%
-\contentsline {table}{\numberline {LIII}{\ignorespaces Matriz de Permisos por Rol}}{120}{table.53}%
-\contentsline {table}{\numberline {LIV}{\ignorespaces Reglas de Alta de Usuarios por Rol (RB-U)}}{121}{table.caption.34}%
-\contentsline {table}{\numberline {LX}{\ignorespaces Inventario de Server Actions por Archivo}}{124}{table.60}%
-\contentsline {table}{\numberline {LXII}{\ignorespaces Inventario de Pantallas y Características Técnicas}}{125}{table.62}%
-\contentsline {table}{\numberline {LV}{\ignorespaces Estados de Mesa Virtual}}{126}{table.caption.36}%
-\contentsline {table}{\numberline {LVI}{\ignorespaces Transiciones de Estado — Mesa Virtual}}{126}{table.caption.37}%
-\contentsline {table}{\numberline {LVII}{\ignorespaces Estados de Orden}}{127}{table.caption.38}%
-\contentsline {table}{\numberline {LVIII}{\ignorespaces Estados de Cuenta Individual / Compartida}}{127}{table.caption.39}%
-\contentsline {table}{\numberline {LIX}{\ignorespaces Endpoints REST — Módulo Mesas}}{128}{table.caption.40}%
-\contentsline {table}{\numberline {LXI}{\ignorespaces Servicios Externos}}{128}{table.caption.41}%
-\contentsline {table}{\numberline {LXIV}{\ignorespaces Diccionario de Métricas — Sales Daily}}{134}{table.caption.45}%
-\contentsline {table}{\numberline {LXV}{\ignorespaces Diccionario de Métricas — Item Velocity}}{135}{table.caption.47}%
-\contentsline {table}{\numberline {LXVI}{\ignorespaces Diccionario de Métricas — Process Mining}}{136}{table.caption.49}%
-\contentsline {table}{\numberline {LXVII}{\ignorespaces Diccionario de Métricas — Forecast}}{137}{table.caption.51}%
+\contentsline {table}{\numberline {I}{\ignorespaces Alcances Funcionales del Sistema v1.0}}{30}{table.1}%
+\contentsline {table}{\numberline {II}{\ignorespaces Límites del Sistema v1.0 — Funcionalidades Excluidas}}{33}{table.2}%
+\contentsline {table}{\numberline {III}{\ignorespaces Restricciones Técnicas Asumidas en la Versión 1.0}}{35}{table.3}%
+\contentsline {table}{\numberline {IV}{\ignorespaces Comparaci\'on de Soluciones Comerciales Relacionadas}}{40}{table.4}%
+\contentsline {table}{\numberline {V}{\ignorespaces Stack Tecnológico: Madurez y Adopción}}{51}{table.caption.1}%
+\contentsline {table}{\numberline {VI}{\ignorespaces Requerimientos de Hardware por Tipo de Usuario}}{53}{table.caption.2}%
+\contentsline {table}{\numberline {VII}{\ignorespaces Restricciones Técnicas Identificadas y Mitigación}}{54}{table.caption.3}%
+\contentsline {table}{\numberline {VIII}{\ignorespaces Capacitación Requerida por Rol}}{55}{table.caption.4}%
+\contentsline {table}{\numberline {IX}{\ignorespaces Análisis de Cambio Organizacional}}{56}{table.caption.5}%
+\contentsline {table}{\numberline {X}{\ignorespaces Estimación de Costos de Desarrollo por Módulo (Bottom-Up)}}{57}{table.10}%
+\contentsline {table}{\numberline {XI}{\ignorespaces Costos de Infraestructura Cloud (Año 1 — 12 Meses)}}{59}{table.caption.6}%
+\contentsline {table}{\numberline {XII}{\ignorespaces Valor Económico Equivalente del Proyecto — Año 1}}{60}{table.caption.7}%
+\contentsline {table}{\numberline {XIII}{\ignorespaces Comparación Referencial frente a Alternativas SaaS}}{61}{table.caption.8}%
+\contentsline {table}{\numberline {XIV}{\ignorespaces Obligaciones LFPDPPP Aplicables a la Plataforma}}{62}{table.14}%
+\contentsline {table}{\numberline {XV}{\ignorespaces Obligaciones LFPC Aplicables a la Plataforma}}{64}{table.caption.9}%
+\contentsline {table}{\numberline {XVI}{\ignorespaces Análisis de Licencias del Stack Tecnológico}}{65}{table.caption.10}%
+\contentsline {table}{\numberline {XVII}{\ignorespaces Matriz de Calificación Compuesta Probabilidad $\times $ Impacto}}{66}{table.caption.11}%
+\contentsline {table}{\numberline {XVIII}{\ignorespaces Distribución de Riesgos por Nivel}}{67}{table.caption.12}%
+\contentsline {table}{\numberline {XIX}{\ignorespaces Matriz de Riesgos Técnicos}}{68}{table.19}%
+\contentsline {table}{\numberline {XX}{\ignorespaces Matriz de Riesgos Operativos}}{70}{table.20}%
+\contentsline {table}{\numberline {XXI}{\ignorespaces Matriz de Riesgos Legales y Regulatorios}}{72}{table.21}%
+\contentsline {table}{\numberline {XXII}{\ignorespaces Hoja de Ruta de Mitigación de Riesgos}}{74}{table.22}%
+\contentsline {table}{\numberline {XXIII}{\ignorespaces Distribución colaborativa de responsabilidades}}{79}{table.caption.13}%
+\contentsline {table}{\numberline {XXIV}{\ignorespaces Cronograma del Proyecto --- Diagrama de Gantt (Enero--Noviembre 2026)}}{83}{table.caption.14}%
+\contentsline {table}{\numberline {XXV}{\ignorespaces Requerimientos Funcionales del Sistema}}{84}{table.25}%
+\contentsline {table}{\numberline {XXVI}{\ignorespaces Requerimientos No Funcionales del Sistema}}{88}{table.26}%
+\contentsline {table}{\numberline {XXVII}{\ignorespaces Matriz Tecnológica y Responsabilidades por Capa}}{107}{table.caption.30}%
+\contentsline {table}{\numberline {XXVIII}{\ignorespaces Diccionario de datos: tabla Currency}}{119}{table.28}%
+\contentsline {table}{\numberline {XXIX}{\ignorespaces Diccionario de datos: tabla TaxGroup}}{120}{table.29}%
+\contentsline {table}{\numberline {XXX}{\ignorespaces Diccionario de datos: tabla Permission}}{120}{table.30}%
+\contentsline {table}{\numberline {XXXI}{\ignorespaces Diccionario de datos: tabla Role}}{121}{table.31}%
+\contentsline {table}{\numberline {XXXII}{\ignorespaces Diccionario de datos: tabla RolePermission}}{121}{table.32}%
+\contentsline {table}{\numberline {XXXIII}{\ignorespaces Diccionario de datos: tabla AppUser}}{122}{table.33}%
+\contentsline {table}{\numberline {XXXIV}{\ignorespaces Diccionario de datos: tabla UserRole}}{122}{table.34}%
+\contentsline {table}{\numberline {XXXV}{\ignorespaces Diccionario de datos: tabla Chain}}{123}{table.35}%
+\contentsline {table}{\numberline {XXXVI}{\ignorespaces Diccionario de datos: tabla Zone}}{124}{table.36}%
+\contentsline {table}{\numberline {XXXVII}{\ignorespaces Diccionario de datos: tabla Restaurant}}{124}{table.37}%
+\contentsline {table}{\numberline {XXXVIII}{\ignorespaces Diccionario de datos: tabla AuditLog}}{125}{table.38}%
+\contentsline {table}{\numberline {XXXIX}{\ignorespaces Diccionario de datos: tabla Station}}{126}{table.39}%
+\contentsline {table}{\numberline {XL}{\ignorespaces Diccionario de datos: tabla RestaurantMenuItem}}{127}{table.40}%
+\contentsline {table}{\numberline {XLI}{\ignorespaces Diccionario de datos: tabla ModifierGroup}}{127}{table.41}%
+\contentsline {table}{\numberline {XLII}{\ignorespaces Diccionario de datos: tabla ModifierOption}}{128}{table.42}%
+\contentsline {table}{\numberline {XLIII}{\ignorespaces Diccionario de datos: tabla DiningTable}}{128}{table.43}%
+\contentsline {table}{\numberline {XLIV}{\ignorespaces Diccionario de datos: tabla DiningSession}}{129}{table.44}%
+\contentsline {table}{\numberline {XLV}{\ignorespaces Diccionario de datos: tabla DiningSessionTable}}{130}{table.45}%
+\contentsline {table}{\numberline {XLVI}{\ignorespaces Diccionario de datos: tabla Guest}}{130}{table.46}%
+\contentsline {table}{\numberline {XLVII}{\ignorespaces Diccionario de datos: tabla RestaurantOrder}}{132}{table.47}%
+\contentsline {table}{\numberline {XLVIII}{\ignorespaces Diccionario de datos: tabla OrderItem}}{132}{table.48}%
+\contentsline {table}{\numberline {XLIX}{\ignorespaces Diccionario de datos: tabla OrderItemModifier}}{133}{table.49}%
+\contentsline {table}{\numberline {L}{\ignorespaces Diccionario de datos: tabla OrderItemStatusEvent}}{133}{table.50}%
+\contentsline {table}{\numberline {LI}{\ignorespaces Diccionario de datos: tabla Settlement}}{135}{table.51}%
+\contentsline {table}{\numberline {LII}{\ignorespaces Diccionario de datos: tabla SettlementContribution}}{135}{table.52}%
+\contentsline {table}{\numberline {LIII}{\ignorespaces Diccionario de datos: tabla SettlementAllocation}}{136}{table.53}%
+\contentsline {table}{\numberline {LIV}{\ignorespaces Diccionario de datos: tabla AppliedAdjustment}}{136}{table.54}%
+\contentsline {table}{\numberline {LV}{\ignorespaces Diccionario de datos: tabla AnalyticsJobRun}}{138}{table.55}%
+\contentsline {table}{\numberline {LVI}{\ignorespaces Diccionario de datos: tabla AnalyticSalesDaily}}{139}{table.56}%
+\contentsline {table}{\numberline {LVII}{\ignorespaces Diccionario de datos: tabla AnalyticItemVelocity}}{140}{table.57}%
+\contentsline {table}{\numberline {LVIII}{\ignorespaces Diccionario de datos: tabla AnalyticServiceTimes}}{140}{table.58}%
+\contentsline {table}{\numberline {LIX}{\ignorespaces Diccionario de datos: tabla AnalyticDemandEstimate}}{141}{table.59}%
+\contentsline {table}{\numberline {LX}{\ignorespaces Roles y alcance operativo}}{147}{table.caption.32}%
+\contentsline {table}{\numberline {LXI}{\ignorespaces Matriz de Permisos por Rol}}{148}{table.61}%
+\contentsline {table}{\numberline {LXII}{\ignorespaces Reglas de creación de usuarios colaboradores}}{149}{table.caption.33}%
+\contentsline {table}{\numberline {LXIII}{\ignorespaces Estados de Mesa Física}}{156}{table.caption.35}%
+\contentsline {table}{\numberline {LXIV}{\ignorespaces Transiciones de Estado — Mesa Física}}{156}{table.caption.36}%
+\contentsline {table}{\numberline {LXV}{\ignorespaces Estados de Sesión Virtual}}{157}{table.caption.37}%
+\contentsline {table}{\numberline {LXXI}{\ignorespaces Endpoints REST — Liquidación Interna}}{157}{table.caption.43}%
+\contentsline {table}{\numberline {LXVI}{\ignorespaces Transiciones de Estado — Sesión Virtual}}{158}{table.caption.38}%
+\contentsline {table}{\numberline {LXVII}{\ignorespaces Estados de Ítem de Orden}}{158}{table.caption.39}%
+\contentsline {table}{\numberline {LXVIII}{\ignorespaces Transiciones de Estado — Ítem de Orden}}{159}{table.caption.40}%
+\contentsline {table}{\numberline {LXIX}{\ignorespaces Estados de Liquidación Interna}}{159}{table.caption.41}%
+\contentsline {table}{\numberline {LXXII}{\ignorespaces Endpoints REST — Órdenes y Cocina}}{159}{table.caption.44}%
+\contentsline {table}{\numberline {LXX}{\ignorespaces Transiciones de Estado — Liquidación Interna}}{160}{table.caption.42}%
+\contentsline {table}{\numberline {LXXIII}{\ignorespaces Endpoints REST — Analítica y Dashboard}}{160}{table.caption.45}%
+\contentsline {table}{\numberline {LXXIV}{\ignorespaces Inventario de Server Actions por Archivo}}{161}{table.74}%
+\contentsline {table}{\numberline {LXXV}{\ignorespaces Servicios e Integraciones Técnicas}}{161}{table.caption.46}%
+\contentsline {table}{\numberline {LXXVI}{\ignorespaces Inventario de Pantallas y Características Técnicas}}{163}{table.76}%
+\contentsline {table}{\numberline {LXXVII}{\ignorespaces Fuentes de datos para la capa Bronze}}{166}{table.77}%
+\contentsline {table}{\numberline {LXXVIII}{\ignorespaces Diccionario de Métricas --- Sales Daily}}{175}{table.caption.50}%
+\contentsline {table}{\numberline {LXXIX}{\ignorespaces Diccionario de Métricas --- Item Velocity}}{176}{table.caption.52}%
+\contentsline {table}{\numberline {LXXX}{\ignorespaces Diccionario de Métricas --- Service Times}}{178}{table.caption.54}%
+\contentsline {table}{\numberline {LXXXI}{\ignorespaces Diccionario de Métricas --- Demand Estimate}}{179}{table.caption.56}%
+\contentsline {table}{\numberline {LXXXII}{\ignorespaces Tablas analíticas Gold}}{180}{table.82}%

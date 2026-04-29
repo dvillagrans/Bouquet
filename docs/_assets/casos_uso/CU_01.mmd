@@ -14,22 +14,22 @@ sequenceDiagram
     rect rgb(235, 243, 250)
         Note over M,DB: Fase 1: Inicialización (Mesero)
         M->>S: Selecciona mesas físicas
-        S->>DB: INSERT MesaVirtual (PENDIENTE)
+        S->>DB: INSERT MesaVirtual (PENDIENTE_ACTIVACION)
         S->>DB: UPDATE MesaFisica (status=DISPONIBLE)
-        S->>S: Genera JWT (TTL 30 min, one-time)
-        S-->>M: Entrega QR con JWT embebido
+        S->>S: Genera firma HMAC-SHA256 (TTL 30 min)
+        S-->>M: Entrega QR con firma HMAC embebida
     end
 
     rect rgb(235, 243, 250)
         Note over A,DB: Fase 2: Activación de Mesa (Anfitrión)
-        A->>S: Escanea QR (GET /api/mesa/:token)
+        A->>S: Escanea QR (GET /api/mesa/:signature)
         S->>DB: SELECT status FROM MesaVirtual
-        DB-->>S: status: PENDIENTE
-        S->>S: Valida Firma JWT + Expiración
+        DB-->>S: status: PENDIENTE_ACTIVACION
+        S->>S: Valida Firma HMAC + Expiración
         S->>A: Solicita Credenciales de Mesa
         A->>S: POST /activar { guestName, password }
         Note right of S: Cifrado bcrypt de la contraseña
-        S->>DB: UPDATE MesaVirtual (status=OCUPADA, pass_hash)
+        S->>DB: UPDATE MesaVirtual (status=ACTIVA, pass_hash)
         S->>DB: UPDATE MesaFisica (status=OCUPADA)
         S->>DB: INSERT SesionComensal (isHost=true)
         DB-->>S: Transacción Completada
@@ -40,7 +40,7 @@ sequenceDiagram
         Note over C,DB: Fase 3: Incorporación de Comensales
         C->>S: POST /join { joinCode, guestName }
         S->>DB: SELECT id FROM MesaVirtual
-        DB-->>S: Mesa encontrada (OCUPADA)
+        DB-->>S: Mesa encontrada (ACTIVA)
         S->>DB: INSERT SesionComensal (isHost=false)
         DB-->>S: Sesión Creada
         S-->>C: Acceso al Menú Compartido
@@ -48,8 +48,8 @@ sequenceDiagram
 
     rect rgb(248, 215, 218)
         Note over A,S: Flujos Alternativos y Errores
-        A--xS: Token expirado o reutilizado
+        A--xS: Firma expirada o alterada
         S-->>A: HTTP 401 — Código inválido
-        A--xS: Mesa ya ocupada o cerrada
+        A--xS: Mesa ya activa o cerrada
         S-->>A: HTTP 409 — Conflicto de estado
     end

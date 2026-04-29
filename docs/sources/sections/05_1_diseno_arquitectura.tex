@@ -1,43 +1,63 @@
 % -----------------------------------------------------------
 \subsection{Arquitectura del Sistema}
-% -----------------------------------------------------------
 
-La arquitectura de Bouquet se fundamenta en un modelo de capas desacopladas
-bajo un paradigma serverless first, diseñado para garantizar alta disponibilidad,
-baja latencia y una experiencia de usuario fluida en entornos de alta concurrencia como lo es la
-operación restaurantera en tiempo real. 
+La arquitectura de Bouquet se fundamenta en un modelo híbrido orientado a la
+captura transaccional y al procesamiento analítico de datos. El sistema combina
+una aplicación web progresiva (PWA) desplegada en Vercel, una capa transaccional
+basada en PostgreSQL/Supabase y un entorno analítico batch ejecutado en un servidor
+VPS mediante Apache Spark.
 
-Esta estructura permite separar las preocupaciones de presentación, lógica de negocio y persistencia, 
-utilizando un enfoque de Backend-for-Frontend (BFF) integrado en Next.js para optimizar 
-la entrega de datos hacia las diferentes interfaces (Comensal, Mesero, Cocina y Admin).
+Esta arquitectura permite separar las responsabilidades operativas y analíticas
+del sistema. La plataforma transaccional gestiona la interacción en tiempo real
+entre comensales, meseros, cocina y administración, registrando eventos como
+apertura de mesas virtuales, órdenes, cambios de estado y liquidaciones internas.
+Posteriormente, dichos datos son extraídos y procesados en un pipeline Medallion
+(Bronze, Silver y Gold) para generar indicadores de negocio y métricas de operación.
+
+El diseño adopta un enfoque tipo Backend-for-Frontend (BFF) integrado en Next.js,
+lo que permite centralizar reglas de negocio, validaciones de acceso y contratos
+de comunicación hacia las distintas interfaces del sistema. De esta forma, las
+vistas del comensal, mesero, cocina y administración consumen datos consistentes
+desde una misma base transaccional, mientras que las consultas analíticas se
+resuelven mediante tablas Gold generadas por el pipeline batch.
 
 \subsubsection{Descripción de las Capas Arquitectónicas}
 
-La plataforma se organiza en cuatro capas principales, cada una con responsabilidades técnicas
-definidas y contratos de comunicación estrictos:
+La plataforma se organiza en cinco capas principales, cada una con responsabilidades
+técnicas definidas:
 
 \begin{enumerate}[leftmargin=1.5em]
-    \item Capa de Presentación (Frontend PWA): Construida con Next.js 16 y React 19. 
-    Se prioriza el renderizado híbrido: SSR para SEO y carga inicial rápida en menús, 
-    y CSR con Zustand para la gestión de estados complejos como la canasta de 
-    compras y la división de cuentas. Su naturaleza de Progressive Web App 
-    permite una experiencia cuasi-nativa en dispositivos móviles sin la fricción 
-    de descarga en tiendas.
+    \item \textbf{Capa de Presentación (Frontend PWA).}
+    Construida con Next.js y React, permite el acceso desde navegador móvil y
+    escritorio. Provee interfaces diferenciadas para comensal, mesero, cocina y
+    administración. La PWA facilita una experiencia instalable sin requerir
+    distribución mediante tiendas de aplicaciones.
 
-    \item Capa de Aplicación y API (BFF): Implementada mediante Next.js API Routes. 
-    Actúa como orquestador de seguridad mediante Middleware que valida la identidad del usuario 
-    vía JWT (Supabase Auth). Esta capa encapsula las reglas de negocio críticas, gestiona la idempotencia en pagos 
-    y coordina la comunicación con servicios externos.
+    \item \textbf{Capa de Aplicación y API (BFF).}
+    Implementada mediante rutas API, Server Actions y Middleware de Next.js. Esta
+    capa valida sesiones, aplica reglas de negocio, controla permisos por rol,
+    gestiona la activación de mesas virtuales, registra órdenes y coordina la
+    liquidación interna. También expone los puntos de integración necesarios para
+    consultar resultados analíticos desde el dashboard.
 
-    \item Capa de Dominio (ORM): Utiliza Prisma ORM 7 como puente entre la lógica de negocio 
-    y la base de datos. El uso de un ORM tipado garantiza la integridad de los datos en tiempo de compilación 
-    y facilita la construcción de consultas complejas de manera eficiente y segura contra inyecciones SQL.
+    \item \textbf{Capa de Dominio y Acceso a Datos.}
+    Utiliza Prisma ORM como capa tipada de acceso a PostgreSQL. Esta capa modela
+    entidades transaccionales, aplica restricciones de integridad, facilita la
+    construcción de consultas seguras y permite manejar migraciones controladas
+    del esquema de base de datos.
 
-    \item Capa de Persistencia y Realtime: Basada en el ecosistema de Supabase. 
-    La persistencia relacional reside en PostgreSQL 16, protegida por políticas de Row Level Security 
-    (RLS) que aseguran que cada restaurante solo acceda a sus datos. La reactividad del sistema se logra 
-    mediante el motor de Realtime de Supabase, que permite sincronizar estados de órdenes y pagos 
-    a través de WebSockets sin necesidad de polling constante.
+    \item \textbf{Capa de Persistencia Transaccional y Realtime.}
+    Basada en Supabase/PostgreSQL. Almacena la operación OLTP del sistema: cadenas,
+    zonas, sucursales, usuarios, mesas, sesiones, comensales, órdenes, estados de
+    cocina, aportaciones internas y auditoría. Las políticas RLS permiten aislar datos
+    por nivel organizacional. Supabase Realtime sincroniza eventos operativos como
+    cambios de estado de mesa, órdenes y cocina.
+
+    \item \textbf{Capa de Procesamiento Analítico.}
+    Ejecutada en un VPS mediante Apache Spark. Extrae datos transaccionales desde
+    PostgreSQL, genera datasets Bronze, aplica limpieza y enriquecimiento en Silver,
+    y produce agregados Gold para el dashboard administrativo. Esta capa permite
+    separar la carga analítica de la operación transaccional en tiempo real.
 \end{enumerate}
 
 \begin{table}[H]
@@ -52,14 +72,30 @@ definidas y contratos de comunicación estrictos:
 \hline
 \thead{Capa} & \thead{Stack Tecnológico} & \thead{Responsabilidad Primaria} \\
 \hline
-Presentaci\'on & Next.js 16 · React 19 · Tailwind 4 & 
-  Entrega de UI adaptativa, gestión de estado global y experiencia PWA. \\ \rowcolor{altrow}
-API / Orquestación & Edge Functions · JWT · Middleware & 
-  Validación de seguridad, orquestación de pagos y contratos REST/Actions. \\
-Lógica de Datos & Prisma ORM 7 · TypeScript & 
-  Modelado de entidades, integridad referencial y abstracción de persistencia. \\ \rowcolor{altrow}
-Infraestructura & Supabase · PostgreSQL 16 · Realtime & 
-  Persistencia atómica, aislamiento multitenant vía RLS y eventos WebSocket. \\
+Presentación &
+Next.js · React · Tailwind CSS &
+Entrega de interfaces PWA para comensal, mesero, cocina y administración; experiencia
+mobile-first y gestión de estado de interacción. \\ \rowcolor{altrow}
+
+Aplicación / BFF &
+Next.js API Routes · Server Actions · Middleware &
+Validación de sesión, reglas de negocio, control de acceso, activación de mesas,
+registro de órdenes y liquidación interna. \\
+
+Dominio y Acceso a Datos &
+Prisma ORM · TypeScript &
+Modelado de entidades, migraciones, consultas tipadas, integridad referencial y
+abstracción de persistencia. \\ \rowcolor{altrow}
+
+Persistencia Transaccional &
+Supabase · PostgreSQL · RLS · Realtime &
+Almacenamiento OLTP, aislamiento multitenant vía RLS, auditoría y sincronización en tiempo
+real de mesas, órdenes y cocina. \\
+
+Procesamiento Analítico &
+VPS · Apache Spark · Medallion &
+Extracción batch, generación de capas Bronze/Silver/Gold, cálculo de métricas y
+preparación de datos para dashboard. \\
 \hline
 \end{tabular}
 \end{table}
@@ -76,3 +112,4 @@ de servicios que sostienen la operación de la plataforma.
     \label{fig:deployment}
 \end{sidewaysfigure}
 \clearpage
+

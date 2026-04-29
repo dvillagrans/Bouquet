@@ -18,7 +18,7 @@ sequenceDiagram
     end
 
     rect rgb(214, 239, 216)
-        Note over O,S: Fase 2: Ejecución del Pipeline
+        Note over O,S: Fase 2: Ejecución del Pipeline Medallion
         O->>S: spark-submit medallion_pipeline.py
         O->>DB: UPDATE JobRun (status: RUNNING)
         S->>S: Bronze -> Silver -> Gold

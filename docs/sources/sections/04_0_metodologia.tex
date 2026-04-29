@@ -1,111 +1,223 @@
 \section{Metodología de Desarrollo}
 
-\subsubsection{Justificación de la Metodología}
+\subsection{Enfoque metodológico}
 
-El desarrollo del presente sistema se rige por la metodología \textbf{Scrum},
-marco ágil definido por Schwaber y Sutherland (2020) como un conjunto liviano de
-reglas que ayuda a las personas, equipos y organizaciones a generar valor a través
-de soluciones adaptativas para problemas complejos \cite{scrum_guide_2020}. La elecci\'on de Scrum se
-fundamenta en tres criterios principales:
+El desarrollo del presente proyecto se plantea mediante un enfoque híbrido que combina
+Kanban iterativo para la gestión visual e incremental del trabajo y una metodología de
+ingeniería de datos basada en arquitectura Medallion para el diseño, procesamiento
+y validación del componente analítico.
+
+La elección de este enfoque responde a la naturaleza dual del sistema. Por un lado, se
+requiere construir una plataforma web progresiva con múltiples roles, mesas virtuales,
+órdenes, cocina y liquidación interna. Por otro lado, el núcleo técnico del Trabajo
+Terminal se centra en el diseño de la base de datos transaccional, la trazabilidad de
+eventos operativos, el procesamiento batch con Apache Spark y la generación de
+indicadores para inteligencia de negocio.
+
+Kanban resulta adecuado para un equipo académico reducido, ya que permite visualizar el
+flujo de trabajo, limitar tareas en progreso, priorizar entregables y dar seguimiento
+continuo sin requerir roles formales de Scrum. La metodología Medallion, por su parte,
+estructura el flujo analítico en capas Bronze, Silver y Gold, garantizando trazabilidad
+entre los datos transaccionales originales y las métricas presentadas en el dashboard
+administrativo.
+
+\subsection{Kanban iterativo para la gestión del proyecto}
+
+El proyecto utilizará Kanban como enfoque ágil ligero para organizar, priorizar y dar
+seguimiento a las actividades del Trabajo Terminal. Kanban se basa en la visualización
+del flujo de trabajo, la limitación del trabajo en progreso y la mejora continua del
+proceso \cite{anderson_kanban_2010}. Esta metodología resulta adecuada para equipos reducidos, ya que no requiere
+la asignación estricta de roles como Product Owner, Scrum Master o Development Team.
+
+Para el presente proyecto, el tablero Kanban se organizará en las siguientes columnas:
+\textit{Backlog}, \textit{Por hacer}, \textit{En progreso}, \textit{En revisión},
+\textit{Validado} y \textit{Terminado}. Cada tarjeta representará una actividad funcional,
+técnica, documental o analítica, asociada a un entregable verificable.
+
+Aunque no se aplicarán ceremonias Scrum formales, el equipo realizará revisiones
+periódicas quincenales para evaluar avances, validar entregables, ajustar prioridades
+y registrar observaciones de la directora del Trabajo Terminal. De esta forma, el
+proyecto conserva ciclos de retroalimentación frecuentes sin generar sobrecarga
+metodológica innecesaria para un equipo de dos integrantes.
+
+La gestión mediante Kanban se justifica por tres razones principales:
 
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{Complejidad e incertidumbre del dominio.} Un sistema restaurantero
-        omnicanal con sincronizaci\'on en tiempo real, m\'ultiples roles, flujos
-        concurrentes de liquidaci\'on e integraci\'on con un motor anal\'itico distribuido
-        (\textit{Apache Spark}) requiere ciclos cortos de retroalimentaci\'on para detectar
-        inconsistencias en los requisitos antes de que se propaguen al c\'odigo. Scrum
-        formaliza este ciclo a trav\'es de Sprints de duraci\'on fija (dos semanas en este
-        proyecto).
-  \item \textbf{Equipo reducido y multidisciplinario.} El equipo est\'a formado por
-        dos integrantes con perfiles complementarios: uno orientado al an\'alisis,
-        dise\~no y documentaci\'on (Natalia Anaya Ram\'irez), y otro al desarrollo e
-        infraestructura tecnol\'ogica (Diego Villagr\'an Salazar). Scrum est\'a
-        optimizado para equipos de tres a nueve personas y promueve la
-        colaboraci\'on directa sin capas burocr\'aticas intermedias \cite{scrum_guide_2020}.
-  \item \textbf{Entregables incrementales verificables.} Los m\'odulos del sistema
-        (OE-01 a OE-13) son independientes en su mayor parte y pueden demostrarse
-        en ambiente de staging al final de cada sprint, facilitando la validaci\'on
-        temprana con el director del trabajo terminal.
+  \item Equipo reducido. Al estar conformado por dos integrantes, el proyecto
+  requiere una metodología flexible que permita coordinación directa sin roles
+  ceremoniales rígidos.
+
+  \item Naturaleza mixta del trabajo. El proyecto incluye actividades de
+  investigación, documentación, diseño, desarrollo de software, modelado de datos,
+  procesamiento analítico y pruebas, por lo que resulta conveniente gestionar tareas
+  de distinto tipo dentro de un mismo flujo visual.
+
+  \item Entregables verificables. Cada tarjeta del tablero deberá producir
+evidencia concreta, como diagramas, migraciones, interfaces, endpoints, datasets,
+  jobs Spark, tablas analíticas, pruebas o documentación.
 \end{itemize}
 
-\subsubsection{Adaptación del Marco Scrum al Proyecto}
+Aunque no se adopta XP como metodología principal, se incorporan prácticas compatibles
+como revisión cruzada, integración continua, pruebas funcionales y refactorización
+controlada cuando sea necesario.
 
-La Tabla~\ref{tab:scrum_roles} describe la adaptaci\'on de los roles de Scrum al
-contexto del presente trabajo terminal, considerando que el equipo de dos personas
-asume responsabilidades compartidas en varios roles.
+En la Tabla~\ref{tab:roles_metodologia} se detalla la distribución de responsabilidades.
+El primer nombre indicado representa el liderazgo principal del frente, mientras que
+el segundo representa revisión, validación y apoyo directo.
 
-\begin{table}[ht]
-\caption{Adaptación de Roles Scrum al Equipo del Proyecto}
-\label{tab:scrum_roles}
+\begin{table}[H]
+\caption{Distribución colaborativa de responsabilidades}
+\label{tab:roles_metodologia}
 \centering
 \small
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{>{\bfseries\raggedright\arraybackslash}p{3cm}
+\begin{tabular}{>{\raggedright\arraybackslash}p{4cm}
                 >{\raggedright\arraybackslash}p{4cm}
-                >{\raggedright\arraybackslash}p{9cm}}
+                >{\raggedright\arraybackslash}p{8cm}}
 \hline
-\thead{Rol Scrum} & \thead{Responsable} & \thead{Responsabilidades en el proyecto} \\
+\thead{Frente de trabajo} & \thead{Participación principal} & \thead{Responsabilidades} \\
 \hline
-Product Owner &
-  Natalia Anaya Ram\'irez &
-  Define y prioriza el Product Backlog. Valida que los criterios de aceptaci\'on
-  (evidencias de los OE) se cumplan al cierre de cada Sprint. \\ \rowcolor{altrow}
-Scrum Master &
-  Diego Villagr\'an Salazar &
-  Facilita las ceremonias (Daily, Sprint Review, Retrospectiva). Elimina
-  impedimentos t\'ecnicos (configuraci\'on de entornos, integraciones). \\ \rowcolor{altrow}
-Development Team &
-  Ambos integrantes &
-  Natalia lidera an\'alisis, diagramas, documentaci\'on y dise\~no UX.
-  Diego lidera arquitectura, desarrollo del stack y despliegue en Vercel/Supabase. \\ \rowcolor{altrow}
-Director / Stakeholder &
-  Guzm\'an Flores Jessie Paulina &
-  Revisa avances en Sprint Reviews quincenales. Valida alineaci\'on con los
-  objetivos del trabajo terminal. \\
+Análisis y requisitos &
+Natalia / Diego &
+Levantamiento de reglas de negocio, definición de flujos, casos de uso, requisitos
+funcionales y no funcionales. Natalia lidera la redacción y Diego valida la viabilidad
+técnica de los requisitos. \\ \rowcolor{altrow}
+
+Diseño de datos y arquitectura &
+Diego / Natalia &
+Diseño del modelo transaccional, arquitectura del sistema, estructura del pipeline
+analítico y trazabilidad de datos. Diego lidera la implementación técnica y Natalia
+valida consistencia documental y alineación con objetivos. \\
+
+Diseño de interfaces y experiencia de usuario &
+Natalia / Diego &
+Diseño de wireframes, flujos por rol, validación de pantallas y revisión de usabilidad.
+Ambos revisan que las interfaces reflejen correctamente las reglas de negocio. \\ \rowcolor{altrow}
+
+Implementación y pruebas &
+Diego / Natalia &
+Desarrollo de módulos, configuración de infraestructura, implementación de base de datos,
+pipeline Spark, pruebas funcionales y validación de entregables. Diego lidera la
+implementación técnica y Natalia participa en la validación funcional, pruebas de
+aceptación, revisión de evidencias y documentación técnica asociada. \\
+
+Documentación y validación académica &
+Natalia / Diego &
+Integración del documento de Trabajo Terminal, bitácora de avances, validación de
+entregables, revisión cruzada y preparación de evidencias para TT1 y TT2. \\ \rowcolor{altrow}
+
+Stakeholder académico &
+Directora del Trabajo Terminal &
+Revisión de avances, retroalimentación metodológica y validación de alineación con los
+objetivos del proyecto. \\
 \hline
 \end{tabular}
 \end{table}
 
-Los \textbf{artefactos} principales son: (1)~\textit{Product Backlog}, formado
-por los 13 objetivos espec\'ificos (OE-01 a OE-13) descompuestos en historias de
-usuario; (2)~\textit{Sprint Backlog}, subconjunto de \'items seleccionados para
-cada Sprint de dos semanas; y (3)~\textit{Incremento}, un entregable funcional
-al final de cada Sprint desplegado en el ambiente de Preview de Vercel.
+\subsection{Metodología de ingeniería de datos}
 
-\subsubsection{Planificación por Sprints}
+El componente analítico del sistema se desarrollará siguiendo una metodología de ingeniería
+de datos basada en arquitectura Medallion. Este enfoque organiza el procesamiento en capas
+progresivas de refinamiento, permitiendo transformar registros transaccionales en datos
+analíticos confiables.
 
-El desarrollo se estructura en \textbf{12 sprints} de duración fija (2--3 semanas cada uno), siguiendo la lógica incremental de Scrum. Cada sprint tiene un objetivo claro y entregables verificables:
+\begin{enumerate}[leftmargin=1.5em]
+  \item Identificación de eventos fuente.
+  Se definirán las entidades y eventos operativos que alimentarán el análisis, tales como
+  apertura de mesas virtuales, registro de órdenes, productos consumidos, cambios de estado
+  en cocina, comensales asociados y registros de liquidación interna.
 
-\begin{enumerate}[leftmargin=*, itemsep=1pt, topsep=2pt]
-  \item \textbf{Sprint 1:} Analítica de negocio y Arquitectura.
-  \item \textbf{Sprint 2:} Diseño de la base de datos (MER y Modelo Lógico).
-  \item \textbf{Sprint 3:} Desarrollo de la base de datos y migraciones iniciales.
-  \item \textbf{Sprint 4:} Diseño de vistas, mockups y prototipado UX.
-  \item \textbf{Sprint 5:} Diseño y arquitectura de backend (Server Actions y API).
-  \item \textbf{Sprint 6:} Definición de KPI y vistas de Dashboard administrativo.
-  \item \textbf{Sprint 7:} Implementaci\'on del pipeline de datos con Apache Spark (Arquitectura Medallion).
-  \item \textbf{Sprint 8:} Desarrollo del m\'odulo para el personal operativo (Mesero).
-  \item \textbf{Sprint 9:} Desarrollo del m\'odulo para el consumidor (Comensal).
-  \item \textbf{Sprint 10:} Desarrollo del módulo para cocina (Tablero Chef).
-  \item \textbf{Sprint 11:} Integración de la lógica de liquidación y control de pagos.
-  \item \textbf{Sprint 12:} Pruebas integrales, ajustes de seguridad y cierre.
+  \item Captura transaccional.
+  Los eventos se almacenarán en PostgreSQL mediante un modelo relacional diseñado para
+  preservar integridad referencial, consistencia y trazabilidad histórica. Se considerarán
+  snapshots de productos y precios para evitar que cambios futuros en el catálogo alteren
+  órdenes pasadas.
+
+  \item Extracción hacia capa Bronze.
+  Se generarán datasets crudos a partir de la base transaccional, conservando los registros
+  originales, sus identificadores y marcas temporales.
+
+  \item Transformación hacia capa Silver.
+  Mediante Apache Spark se realizará limpieza, normalización y enriquecimiento de datos,
+  incluyendo validación de fechas, montos, relaciones entre entidades y estados operativos.
+
+  \item Agregación hacia capa Gold.
+  Se construirán tablas analíticas orientadas a indicadores de negocio, tales como ventas
+  por sucursal, productos más consumidos, actividad por franja horaria, tiempos de preparación
+  y comportamiento de liquidación interna.
+
+  \item Visualización y validación.
+  Las métricas generadas se visualizarán en el dashboard administrativo y se validarán
+  comparando los resultados agregados contra los datos transaccionales de origen.
 \end{enumerate}
 
-Se utiliza un tablero Kanban en GitHub para la gestión visual de tareas, permitiendo el seguimiento en tiempo real del estado de cada funcionalidad (\textit{To Do}, \textit{In Progress}, \textit{Review}, \textit{Done}).
+\subsection{Planificación por iteraciones}
 
-\subsubsection{Cronograma General (Diagrama de Gantt)}
+El desarrollo se organizará en 12 iteraciones de aproximadamente dos semanas,
+considerando ajustes puntuales por revisiones académicas, entregas parciales y
+validación con la directora del Trabajo Terminal. Cada iteración agrupa actividades
+funcionales, técnicas o analíticas que serán gestionadas mediante el tablero Kanban.
 
-El proyecto abarca del 1 de enero de 2026 al 30 de noviembre de 2026 y se divide
-en dos grandes fases: (1)~\textbf{Fase Te\'orica y de Dise\~no} (enero--mayo), a
-cargo de Natalia Anaya Ram\'irez, que cubre la documentaci\'on, el an\'alisis de
-reglas de negocio, el dise\~no de la base de datos, los flujos, los diagramas UML,
-la factibilidad y la arquitectura; y (2)~\textbf{Fase de Implementaci\'on y Pruebas}
-(mayo--noviembre), a cargo de Diego Villagr\'an Salazar, que comprende la
-configuraci\'on de infraestructura, el desarrollo de m\'odulos, la integraci\'on
-y las pruebas.
+\begin{enumerate}[leftmargin=*, itemsep=1pt, topsep=2pt]
+  \item Iteración 1: Análisis de reglas de negocio, eventos transaccionales y métricas analíticas.
+  \item Iteración 2: Diseño de base de datos transaccional, MER y modelo lógico.
+  \item Iteración 3: Implementación de schema Prisma, migraciones y datos semilla.
+  \item Iteración 4: Diseño UX, wireframes y flujos por rol.
+  \item Iteración 5: Autenticación, roles, RLS y estructura organizacional.
+  \item Iteración 6: Catálogo, mesas físicas, mesa virtual y acceso QR.
+  \item Iteración 7: Órdenes, canasta, snapshots históricos y tablero de cocina.
+  \item Iteración 8: Liquidación interna, aportaciones y control de concurrencia.
+  \item Iteración 9: Extracción batch y capa Bronze del pipeline analítico.
+  \item Iteración 10: Transformaciones Spark, capa Silver y reglas de calidad de datos.
+  \item Iteración 11: Capa Gold, KPIs y dashboard administrativo.
+  \item Iteración 12: Pruebas integrales, validación de métricas, seguridad y cierre documental.
+\end{enumerate}
 
-La Tabla~\ref{tab:gantt} presenta el cronograma detallado con las actividades,
-los responsables y la distribuci\'on temporal.
+\subsection{Criterios de terminado}
+
+Para considerar terminado un incremento de trabajo, deberá cumplir con los siguientes
+criterios:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Código integrado en la rama correspondiente y sin errores críticos de compilación.
+  \item Migraciones de base de datos aplicadas y documentadas cuando corresponda.
+  \item Pruebas funcionales básicas ejecutadas sobre el módulo desarrollado.
+  \item Validación de permisos y restricciones de acceso si el módulo involucra usuarios o roles.
+  \item Evidencia visual o técnica del incremento: capturas, endpoint funcional, tabla generada,
+  dataset procesado o dashboard actualizado.
+  \item Actualización de documentación técnica y bitácora de avance.
+\end{itemize}
+
+En los incrementos analíticos, además se deberá comprobar la correspondencia entre los
+registros transaccionales de origen y las capas Bronze, Silver o Gold generadas.
+
+\subsection{Validación de entregables}
+
+La validación del proyecto se realizará mediante evidencia funcional, técnica y analítica.
+Los módulos operativos se validarán mediante pruebas de flujo por rol, considerando
+comensal, mesero, cocina y administración. El modelo de datos se validará mediante
+integridad referencial, migraciones exitosas y registros de prueba.
+
+El pipeline analítico se validará mediante la comparación entre datos transaccionales de
+origen y datasets Bronze, Silver y Gold generados por Apache Spark. Finalmente, el dashboard
+se validará comprobando que sus métricas correspondan con las tablas analíticas construidas
+y con los datos registrados en la operación.
+
+
+\subsection{Cronograma general}
+
+El proyecto abarca del 1 de enero de 2026 al 30 de noviembre de 2026 y se organiza
+en frentes de trabajo iterativos, no en fases aisladas por integrante. Aunque cada
+frente cuenta con un liderazgo principal según la experiencia de los autores, ambos
+participan en la revisión, validación y documentación de los entregables.
+
+Durante los primeros meses se concentra el análisis del dominio, la revisión de
+literatura, la definición de requisitos y el diseño inicial del modelo de datos.
+Posteriormente, el trabajo avanza hacia la implementación de la plataforma, el pipeline
+analítico, la validación de métricas y las pruebas integrales. La documentación se
+mantiene como una actividad transversal durante todo el proyecto.
+
+La Tabla~\ref{tab:gantt} presenta el cronograma detallado con actividades, responsables
+principales y distribución temporal.
 
 \begin{table}[H]
 \caption{Cronograma del Proyecto --- Diagrama de Gantt (Enero--Noviembre 2026)}
@@ -127,109 +239,118 @@ los responsables y la distribuci\'on temporal.
                 >{\centering\arraybackslash}p{0.5cm}
                 >{\raggedright\arraybackslash}p{2cm}}
 \hline
-\textbf{Actividad} &
-\rotatebox{90}{\textbf{Ene}} &
-\rotatebox{90}{\textbf{Feb}} &
-\rotatebox{90}{\textbf{Mar}} &
-\rotatebox{90}{\textbf{Abr}} &
-\rotatebox{90}{\textbf{May}} &
-\rotatebox{90}{\textbf{Jun}} &
-\rotatebox{90}{\textbf{Jul}} &
-\rotatebox{90}{\textbf{Ago}} &
-\rotatebox{90}{\textbf{Sep}} &
-\rotatebox{90}{\textbf{Oct}} &
-\rotatebox{90}{\textbf{Nov}} &
-\textbf{Resp.} \\
+Actividad &
+\rotatebox{90}{Ene} &
+\rotatebox{90}{Feb} &
+\rotatebox{90}{Mar} &
+\rotatebox{90}{Abr} &
+\rotatebox{90}{May} &
+\rotatebox{90}{Jun} &
+\rotatebox{90}{Jul} &
+\rotatebox{90}{Ago} &
+\rotatebox{90}{Sep} &
+\rotatebox{90}{Oct} &
+\rotatebox{90}{Nov} &
+Resp. \\
 \hline
-\multicolumn{13}{l}{\textit{\textbf{Fase 1 — Teórica y de Diseño (Natalia Anaya Ramírez)}}} \\
+\multicolumn{13}{l}{\textit{Frente 1 — Análisis, documentación y diseño}} \\
 \hline
 \rowcolor{lightblue}
 Planteamiento del problema y justificaci\'on &
-  \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&&&& Natalia \\
+  \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&&&& Natalia/Diego \\
 Revisi\'on de literatura y estado del arte &
-  \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&&&& Natalia \\
+  \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&&&& Natalia/Diego \\
 \rowcolor{lightblue}
 Definici\'on de objetivos, alcances y l\'imites &
-  \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&&&& Natalia \\
+  \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&&&& Ambos \\
 Estudio de factibilidad t\'ecnica y operativa &
-  & \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&&& Natalia \\
+  & \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&&& Natalia/Diego \\
 \rowcolor{lightblue}
 Estudio de factibilidad legal y econ\'omica &
-  & \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&&& Natalia \\
+  & \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&&& Natalia/Diego \\
 Matriz de riesgos y mitigaci\'on &
-  && \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&& Natalia \\
+  && \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&& Ambos \\
 \rowcolor{lightblue}
 Definici\'on de reglas de negocio &
-  && \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&& Natalia \\
+  && \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&&& Natalia/Diego \\
 Modelado de flujos de usuario y casos de uso &
-  &&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&& Natalia \\
+  &&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&& Natalia/Diego \\
 \rowcolor{lightblue}
 Dise\~no de m\'aquinas de estado &
-  &&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&& Natalia \\
+  &&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&& Natalia/Diego \\
 Definici\'on de requerimientos (RF y RNF) &
-  &&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&& Natalia \\
+  &&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&&& Natalia/Diego \\
+\hline
+\multicolumn{13}{l}{\textit{Frente 2 — Modelo de datos y arquitectura}} \\
+\hline
 \rowcolor{lightblue}
 Dise\~no de base de datos (MER y modelo l\'ogico) &
-  &&&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&& Natalia \\
+  &&&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&& Diego/Natalia \\
 Dise\~no de arquitectura del sistema &
-  &&&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&& Natalia/Diego \\
+  &&&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&& Diego/Natalia \\
 \rowcolor{lightblue}
 Diagramas UML (clases, secuencia, despliegue, casos de uso) &
-  &&&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&& Natalia \\
+  &&&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&& Natalia/Diego \\
 Dise\~no de interfaces (wireframes / prototipos) &
-  &&&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&& Natalia \\
+  &&&& \cellcolor{accent}\textcolor{white}{\textbf{--}} & \cellcolor{accent}\textcolor{white}{\textbf{--}} &&&&&& Natalia/Diego \\
 \rowcolor{lightblue}
-\textbf{HITO 1: Entrega y presentaci\'on TT1} &
-  &&&& \cellcolor{red}\textcolor{white}{\textbf{$\star$}} &&&&&&& \textbf{Ambos} \\
+HITO 1: Entrega y presentaci\'on TT1 &
+  &&&& \cellcolor{red}\textcolor{white}{\textbf{$\star$}} &&&&&&& Ambos \\
 \hline
-\multicolumn{13}{l}{\textit{\textbf{Fase 2 — Implementación y Pruebas (Diego Villagrán Salazar)}}} \\
+\multicolumn{13}{l}{\textit{Frente 3 — Implementación funcional}} \\
 \hline
 \rowcolor{lightblue}
 Configuraci\'on de infraestructura (Vercel, Supabase, CI/CD) &
-  &&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} &&&&& Diego \\
+  &&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} &&&&& Diego/Natalia \\
 Implementaci\'on schema Prisma y migraciones &
-  &&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} &&&&& Diego \\
+  &&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} &&&&& Diego/Natalia \\
 \rowcolor{lightblue}
-Desarrollo m\'odulo autenticaci\'on y roles (OE-03) &
-  &&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} &&&& Diego \\
-Desarrollo m\'odulo estructura org. y usuarios (OE-02, OE-04) &
-  &&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} &&&& Diego \\
+Desarrollo m\'odulo autenticaci\'on y roles &
+  &&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} &&&& Diego/Natalia \\
+Desarrollo m\'odulo estructura org. y usuarios &
+  &&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} &&&& Diego/Natalia \\
 \rowcolor{lightblue}
-Desarrollo m\'odulo cat\'alogo y men\'u (OE-05) &
-  &&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} &&& Diego \\
-Desarrollo m\'odulo mesas f\'isicas y virtuales (OE-06, OE-07) &
-  &&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} &&& Diego \\
+Desarrollo m\'odulo cat\'alogo y men\'u &
+  &&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} &&& Diego/Natalia \\
+Desarrollo m\'odulo mesas f\'isicas y virtuales &
+  &&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} &&& Diego/Natalia \\
 \rowcolor{lightblue}
-Desarrollo m\'odulo \'ordenes y canasta (OE-08) &
-  &&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} && Diego \\
-Desarrollo tablero Chef en tiempo real (OE-09) &
-  &&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} && Diego \\
+Desarrollo m\'odulo \'ordenes y canasta &
+  &&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} && Diego/Natalia \\
+Desarrollo tablero Chef en tiempo real &
+  &&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} && Diego/Natalia \\
 \rowcolor{lightblue}
-Desarrollo m\'odulo liquidaci\'on y control concurrencia (OE-10) &
-  &&&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} & Diego \\
+Desarrollo m\'odulo liquidaci\'on y control concurrencia &
+  &&&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} & Diego/Natalia \\
+\hline
+\multicolumn{13}{l}{\textit{Frente 4 — Pipeline analítico y dashboard}} \\
+\hline
 \rowcolor{lightblue}
 Desarrollo del pipeline anal\'itico en Spark (Medallion) &
-  &&&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} & Diego \\
-Desarrollo dashboard analytics (OE-12) &
-  &&&&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & Diego \\
+  &&&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} & Diego/Natalia \\
+Desarrollo dashboard analytics &
+  &&&&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & Diego/Natalia \\
+\hline
+\multicolumn{13}{l}{\textit{Frente 5 — Pruebas, validación y cierre}} \\
+\hline
 \rowcolor{lightblue}
-Implementaci\'on medidas de seguridad y RLS (OE-13) &
-  &&&&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & Diego \\
+Implementaci\'on medidas de seguridad y RLS &
+  &&&&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & Diego/Natalia \\
 Pruebas unitarias e integraci\'on &
-  &&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} && Diego \\
+  &&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} && Diego/Natalia \\
 \rowcolor{lightblue}
 Pruebas de carga y rendimiento (k6) &
-  &&&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} & Diego \\
+  &&&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} & Diego/Natalia \\
 Correcciones y ajustes post-pruebas &
-  &&&&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & Diego \\
+  &&&&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & Diego/Natalia \\
 \rowcolor{lightblue}
 Documentaci\'on t\'ecnica final (TT2) &
   &&&&&&&&& \cellcolor{primary}\textcolor{white}{\textbf{--}} & \cellcolor{primary}\textcolor{white}{\textbf{--}} & Ambos \\
-\textbf{HITO 2: Entrega y presentaci\'on TT2} &
-  &&&&&&&&&& \cellcolor{red}\textcolor{white}{\textbf{$\star$}} & \textbf{Ambos} \\
+HITO 2: Entrega y presentaci\'on TT2 &
+  &&&&&&&&&& \cellcolor{red}\textcolor{white}{\textbf{$\star$}} & Ambos \\
 \hline
-\multicolumn{13}{p{15.5cm}}{\footnotesize\textit{$\star$ = Hito de entrega/presentaci\'on. Azul oscuro = Diego Villagr\'an (Fase~2). Azul claro = Natalia Anaya (Fase~1). TT1: mayo 2026. TT2: noviembre 2026.}} \\
+\multicolumn{13}{p{15.5cm}}{\footnotesize\textit{$\star$ = Hito de entrega/presentaci\'on. 
+Las responsabilidades indican liderazgo principal; todos los entregables tienen revisión
+cruzada por ambos integrantes. TT1: mayo 2026. TT2: noviembre 2026.}} \\
 \end{tabular}
 \end{table}
-
-% -----------------------------------------------------------

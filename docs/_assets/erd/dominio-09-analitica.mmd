@@ -1,0 +1,69 @@
+erDiagram
+
+    AnalyticsJobRun {
+        string id PK
+        string restaurantId FK
+        string jobType "BRONZE | SILVER | GOLD | DEMAND_ESTIMATE"
+        string status "QUEUED | RUNNING | COMPLETED | FAILED"
+        string triggeredByUserId FK
+        timestamp dataWindowStart
+        timestamp dataWindowEnd
+        timestamp startedAt
+        timestamp finishedAt
+        string errorMessage
+    }
+
+    AnalyticSalesDaily {
+        string id PK
+        string restaurantId FK
+        string jobRunId FK
+        date businessDate
+        int orderCount
+        int itemCount
+        int netConsumptionCents
+        int avgServiceTimeSeconds
+        timestamp computedAt
+    }
+
+    AnalyticItemVelocity {
+        string id PK
+        string restaurantId FK
+        string jobRunId FK
+        string menuItemId FK
+        date businessDate
+        string itemNameSnapshot
+        int quantitySold
+        int grossConsumptionCents
+        timestamp computedAt
+    }
+
+    AnalyticServiceTimes {
+        string id PK
+        string restaurantId FK
+        string jobRunId FK
+        string stationId FK
+        date businessDate
+        int avgPrepSeconds
+        int p90PrepSeconds
+        timestamp computedAt
+    }
+
+    AnalyticDemandEstimate {
+        string id PK
+        string restaurantId FK
+        string jobRunId FK
+        string menuItemId FK
+        date estimateDate
+        int expectedQuantity
+        int confidenceBps
+        string method
+        timestamp computedAt
+    }
+
+    Restaurant ||--o{ AnalyticsJobRun : "tiene"
+    AnalyticsJobRun ||--o{ AnalyticSalesDaily : "genera"
+    AnalyticsJobRun ||--o{ AnalyticItemVelocity : "genera"
+    AnalyticsJobRun ||--o{ AnalyticServiceTimes : "genera"
+    AnalyticsJobRun ||--o{ AnalyticDemandEstimate : "genera"
+    RestaurantMenuItem ||--o{ AnalyticItemVelocity : "analizado"
+    Station ||--o{ AnalyticServiceTimes : "analizada"

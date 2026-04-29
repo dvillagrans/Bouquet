@@ -1,25 +1,32 @@
 \subsection{Diccionario de Datos}
 
+Este diccionario describe las entidades principales, atributos y dominios lógicos que conforman
+el modelo de datos de Bouquet. Por legibilidad y extensión, se documentan los campos
+operativos y analíticos críticos de cada entidad. El esquema completo de relaciones se
+encuentra detallado en el diagrama de Entidad-Relación global. Las restricciones específicas,
+índices y reglas de integridad se documentan en las reglas de negocio y en el esquema
+físico de implementación.
+
 \subsubsection*{\textit{Dominio 1 — Catálogos Globales}}
 
 \begin{center}
-  \includegraphics[width=0.8\textwidth,height=0.4\textheight,keepaspectratio]{erd/rendered/dominio-01-catalogos.pdf}
+  \includegraphics[width=0.8\textwidth,height=0.3\textheight,keepaspectratio]{erd/rendered/dominio-01-catalogos.pdf}
 \end{center}
 
 \dictable{Currency}{%
-Catálogo de monedas soportadas por la plataforma. Permite que cadenas y restaurantes operen en diferentes divisas sin duplicar lógica de conversión.}
-\campo{code}{text}{No}{PK}{Código ISO 4217 de la moneda (ej. \texttt{MXN}, \texttt{USD}).}
+Catálogo de monedas soportadas por la plataforma.}
+\campo{code}{text}{No}{PK}{Código ISO 4217 (ej. \texttt{MXN}, \texttt{USD}).}
 \campo{name}{text}{No}{—}{Nombre completo de la moneda.}
-\campo{symbol}{text}{No}{—}{Símbolo de representación visual (ej. \texttt{\$}, \texttt{€}).}
+\campo{symbol}{text}{No}{—}{Símbolo visual (ej. \texttt{\$}, \texttt{€}).}
 \campo{isActive}{boolean}{No}{—}{Indica si la moneda está disponible.}
 \campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
 \dictableend
 
 \dictable{TaxGroup}{%
-Catálogo de grupos de impuestos aplicables a categorías y productos. Permite modelar distintos regímenes fiscales sin acoplar la tasa directamente a cada producto.}
+Catálogo de grupos fiscales aplicables a categorías y productos.}
 \campo{id}{text}{No}{PK}{Identificador único UUID.}
-\campo{name}{text}{No}{—}{Nombre descriptivo del grupo (ej. \textit{IVA 16\%}).}
-\campo{rateBps}{int}{No}{—}{Tasa expresada en basis points. $1\,600 = 16\%$.}
+\campo{name}{text}{No}{—}{Nombre del grupo (ej. \textit{IVA 16\%}).}
+\campo{rateBps}{int}{No}{—}{Tasa en basis points ($1\,600 = 16\%$).}
 \campo{isActive}{boolean}{No}{—}{Indica si el grupo está disponible.}
 \campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
 \dictableend
@@ -27,255 +34,426 @@ Catálogo de grupos de impuestos aplicables a categorías y productos. Permite m
 \subsubsection*{\textit{Dominio 2 — Control de Acceso (RBAC)}}
 
 \begin{center}
-  \includegraphics[width=0.8\textwidth,height=0.4\textheight,keepaspectratio]{erd/rendered/dominio-02-rbac.pdf}
+  \includegraphics[width=0.8\textwidth,height=0.3\textheight,keepaspectratio]{erd/rendered/dominio-02-rbac.pdf}
 \end{center}
 
 \dictable{Permission}{%
-Catálogo de permisos atómicos del sistema. Cada permiso representa una acción específica que puede realizarse en la plataforma.}
+Catálogo de permisos atómicos del sistema.}
 \campo{id}{text}{No}{PK}{Identificador único UUID.}
-\campo{code}{text}{No}{UK}{Código único del permiso (ej. \texttt{MANAGE\_MENU}).}
+\campo{code}{text}{No}{UK}{Código único (ej. \texttt{MANAGE\_MENU}).}
 \campo{description}{text}{No}{—}{Descripción legible del permiso.}
-\campo{scope}{enum}{No}{—}{Nivel de aplicación: \texttt{PLATFORM}, \texttt{CHAIN} o \texttt{RESTAURANT}.}
-\campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
+\campo{scope}{enum}{No}{—}{Nivel: \texttt{PLATFORM}, \texttt{CHAIN} o \texttt{RESTAURANT}.}
 \dictableend
 
 \dictable{Role}{%
-Roles del sistema (RBAC). Un rol agrupa permisos y puede ser de plataforma (base) o propio de una cadena.}
+Roles del sistema. Agrupa permisos y define el alcance de operación.}
 \campo{id}{text}{No}{PK}{Identificador único UUID.}
-\campo{chainId}{text}{Sí}{FK}{Referencia a \texttt{Chain}. \texttt{NULL} indica rol base de plataforma.}
+\campo{chainId}{text}{Sí}{FK}{Cadena propietaria; \texttt{NULL} indica rol base de plataforma.}
 \campo{name}{text}{No}{—}{Nombre del rol (ej. \textit{ADMIN}, \textit{MESERO}).}
-\campo{scope}{enum}{No}{—}{Nivel de operación del rol.}
-\campo{description}{text}{Sí}{—}{Propósito del rol.}
-\campo{isBase}{boolean}{No}{—}{Si es \texttt{true}, no puede eliminarse.}
+\campo{scope}{enum}{No}{—}{Alcance: \texttt{PLATFORM}, \texttt{CHAIN} o \texttt{RESTAURANT}.}
+\campo{isBase}{boolean}{No}{—}{Indica si es rol predefinido de la plataforma.}
 \campo{isActive}{boolean}{No}{—}{Indica disponibilidad para asignación.}
-\campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
-\campo{updatedAt}{timestamp}{No}{—}{Fecha y hora de modificación.}
 \dictableend
 
 \dictable{RolePermission}{%
-Tabla pivote que asocia roles con permisos.}
-\campo{roleId}{text}{No}{FK}{Referencia a \texttt{Role}.}
-\campo{permissionId}{text}{No}{FK}{Referencia a \texttt{Permission}.}
-\campo{assignedAt}{timestamp}{No}{—}{Fecha y hora de asignación.}
+Tabla pivote que asocia roles con sus permisos.}
+\campo{roleId}{text}{No}{PK/FK}{Referencia a \texttt{Role}.}
+\campo{permissionId}{text}{No}{PK/FK}{Referencia a \texttt{Permission}.}
 \dictableend
 
 \subsubsection*{\textit{Dominio 3 — Identidad}}
 
 \begin{center}
-  \includegraphics[width=0.8\textwidth,height=0.4\textheight,keepaspectratio]{erd/rendered/dominio-03-identidad.pdf}
+  \includegraphics[width=0.8\textwidth,height=0.3\textheight,keepaspectratio]{erd/rendered/dominio-03-identidad.pdf}
 \end{center}
 
 \dictable{AppUser}{%
-Tabla central de identidad. Unifica superadministradores, personal de cadena y personal de restaurante.}
+Tabla central de identidad de usuarios colaboradores y administradores.}
 \campo{id}{text}{No}{PK}{Identificador único UUID.}
-\campo{email}{text}{No}{UK}{Correo electrónico único utilizado para autenticación.}
-\campo{passwordHash}{text}{No}{—}{Hash de la contraseña generado con \textit{bcrypt}.}
+\campo{email}{text}{No}{UK}{Correo electrónico para autenticación.}
+\campo{passwordHash}{text}{No}{—}{Hash de la contraseña (bcrypt).}
 \campo{firstName}{text}{No}{—}{Nombre(s) del usuario.}
-\campo{lastName}{text}{No}{—}{Apellido paterno.}
-\campo{secondLastName}{text}{Sí}{—}{Apellido materno.}
-\campo{phone}{text}{Sí}{—}{Teléfono de contacto.}
-\campo{isActive}{boolean}{No}{—}{Estado de habilitación de la cuenta.}
-\campo{isFirstLogin}{boolean}{No}{—}{Flag para forzar cambio de contraseña.}
-\campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
+\campo{lastName}{text}{No}{—}{Primer apellido.}
+\campo{isActive}{boolean}{No}{—}{Indica si la cuenta está habilitada.}
+\campo{createdAt}{timestamp}{No}{—}{Fecha de creación de la cuenta.}
+\campo{updatedAt}{timestamp}{No}{—}{Fecha y hora de última modificación.}
 \dictableend
 
 \dictable{UserRole}{%
-Asignación contextual de roles. Define en qué contexto opera cada usuario y con qué rol.}
+Asignación contextual de roles según el alcance organizacional.}
 \campo{id}{text}{No}{PK}{Identificador único UUID.}
-\campo{userId}{text}{No}{FK}{Referencia a \texttt{AppUser}.}
-\campo{roleId}{text}{No}{FK}{Referencia a \texttt{Role}.}
-\campo{contextType}{enum}{No}{—}{Tipo de contexto: \texttt{PLATFORM}, \texttt{CHAIN}, \texttt{ZONE} o \texttt{RESTAURANT}.}
-\campo{chainId}{text}{Sí}{FK}{Relacionado según \texttt{contextType}.}
-\campo{zoneId}{text}{Sí}{FK}{Relacionado según \texttt{contextType}.}
-\campo{restaurantId}{text}{Sí}{FK}{Relacionado según \texttt{contextType}.}
+\campo{userId}{text}{No}{FK}{Usuario al que se asigna el rol.}
+\campo{roleId}{text}{No}{FK}{Rol asignado.}
+\campo{contextType}{enum}{No}{—}{\texttt{PLATFORM}, \texttt{CHAIN}, \texttt{ZONE} o \texttt{RESTAURANT}.}
+\campo{chainId}{text}{Sí}{FK}{Cadena asociada cuando el contexto aplica.}
+\campo{zoneId}{text}{Sí}{FK}{Zona asociada cuando el contexto aplica.}
+\campo{restaurantId}{text}{Sí}{FK}{Restaurante asociado cuando el contexto aplica.}
 \campo{assignedAt}{timestamp}{No}{—}{Fecha y hora de asignación.}
 \dictableend
 
-\subsubsection*{\textit{Dominio 4 — Organización}}
+\subsubsection*{\textit{Dominio 4 — Organización y Auditoría}}
 
 \begin{center}
-  \includegraphics[width=0.9\textwidth,height=0.85\textheight,keepaspectratio]{erd/rendered/dominio-04-organizacion.pdf}
+  \includegraphics[width=0.9\textwidth,height=0.4\textheight,keepaspectratio]{erd/rendered/dominio-04-organizacion.pdf}
 \end{center}
 
 \dictable{Chain}{%
 Cadena de restaurantes. Entidad raíz de la jerarquía organizacional.}
-\campo{id}{text}{No}{PK}{UUID.}
-\campo{createdBy}{text}{No}{FK}{Referencia al superadministrador creador.}
-\campo{currency}{text}{No}{FK}{Moneda predeterminada.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{createdBy}{text}{No}{FK}{Usuario que creó la cadena.}
 \campo{name}{text}{No}{—}{Nombre comercial.}
-\campo{logoUrl}{text}{Sí}{—}{URL del logotipo.}
-\campo{defaultTaxBps}{int}{No}{—}{Tasa de impuesto base (basis points).}
-\campo{defaultTipsBps}{int[]}{Sí}{—}{Opciones de propina sugeridas.}
-\campo{isArchived}{boolean}{No}{—}{Eliminación lógica.}
+\campo{currency}{text}{No}{FK}{Moneda predeterminada.}
+\campo{defaultTaxBps}{int}{No}{—}{Tasa base de impuesto en basis points.}
 \dictableend
 
 \dictable{Zone}{%
-Agrupación geográfica de restaurantes dentro de una cadena.}
-\campo{id}{text}{No}{PK}{UUID.}
-\campo{chainId}{text}{No}{FK}{Cadena propietaria.}
+Agrupación geográfica u operativa de restaurantes dentro de una cadena.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{chainId}{text}{No}{FK}{Cadena propietaria de la zona.}
 \campo{name}{text}{No}{—}{Nombre de la zona.}
+\campo{isArchived}{boolean}{No}{—}{Indica eliminación lógica.}
+\campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
+\campo{updatedAt}{timestamp}{No}{—}{Fecha y hora de última modificación.}
 \dictableend
 
 \dictable{Restaurant}{%
-Sucursal operacional. Entidad central del dominio operativo.}
-\campo{id}{text}{No}{PK}{UUID.}
+Sucursal operacional. Entidad central para la gestión de mesas y órdenes.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
 \campo{chainId}{text}{No}{FK}{Cadena propietaria.}
-\campo{zoneId}{text}{Sí}{FK}{Zona de pertenencia (opcional).}
-\campo{currency}{text}{No}{FK}{Moneda de operación.}
+\campo{zoneId}{text}{Sí}{FK}{Zona a la que pertenece, si aplica.}
+\campo{currency}{text}{No}{FK}{Moneda de operación de la sucursal.}
 \campo{name}{text}{No}{—}{Nombre de la sucursal.}
-\campo{welcomeMessage}{text}{Sí}{—}{Mensaje en interfaz comensal.}
-\campo{taxBps}{int}{Sí}{—}{Tasa local. Si es \texttt{NULL}, hereda de la cadena.}
-\campo{suggestedTipsBps}{int[]}{Sí}{—}{Propinas locales. Si es \texttt{NULL}, hereda de cadena.}
-\campo{allowMobileOrdering}{boolean}{No}{—}{Habilitación de pedidos vía QR.}
+\campo{taxBps}{int}{Sí}{—}{Tasa local; si es \texttt{NULL}, hereda de la cadena.}
+\campo{suggestedTipsBps}{int[]}{Sí}{—}{Propinas sugeridas; si es \texttt{NULL}, hereda de la cadena.}
+\campo{allowMobileOrdering}{boolean}{No}{—}{Habilita pedidos vía QR.}
+\campo{allowWaiterJoinTables}{boolean}{No}{—}{Permite unir varias mesas físicas en una sesión.}
+\campo{isArchived}{boolean}{No}{—}{Indica eliminación lógica.}
 \dictableend
 
 \dictable{AuditLog}{%
-Registro inmutable de auditoría de acciones administrativas.}
-\campo{id}{text}{No}{PK}{UUID.}
+Registro de auditoría de acciones críticas operativas y administrativas.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
 \campo{actorUserId}{text}{No}{FK}{Usuario que realizó la acción.}
-\campo{action}{enum}{No}{—}{\texttt{CREATE}, \texttt{UPDATE}, \texttt{ARCHIVE}, \texttt{DELETE}.}
-\campo{entityType}{text}{No}{—}{Entidad afectada.}
-\campo{before}{jsonb}{Sí}{—}{Estado previo al cambio.}
-\campo{after}{jsonb}{Sí}{—}{Estado posterior al cambio.}
-\campo{ipAddress}{text}{Sí}{—}{Origen de la solicitud.}
+\campo{chainId}{text}{Sí}{FK}{Cadena asociada al evento, si aplica.}
+\campo{restaurantId}{text}{Sí}{FK}{Restaurante asociado al evento, si aplica.}
+\campo{action}{enum}{No}{—}{\texttt{CREATE}, \texttt{UPDATE}, \texttt{DELETE}, \texttt{ARCHIVE}, \texttt{LOGIN}, \texttt{OPEN\_SESSION}, \texttt{CLOSE\_SESSION}, \texttt{APPLY\_ADJUSTMENT}, \texttt{REGISTER\_CONTRIBUTION} o \texttt{RUN\_ANALYTICS\_JOB}.}
+\campo{entityType}{text}{No}{—}{Entidad afectada por la acción.}
+\campo{entityId}{text}{No}{—}{Identificador del registro afectado.}
+\campo{before}{jsonb}{Sí}{—}{Estado del registro antes del cambio.}
+\campo{after}{jsonb}{Sí}{—}{Estado del registro después del cambio.}
+\campo{metadata}{jsonb}{Sí}{—}{Metadatos adicionales de la acción.}
+\campo{createdAt}{timestamp}{No}{—}{Fecha y hora del evento.}
 \dictableend
 
-\subsubsection*{\textit{Dominio 5 — Menú}}
+\subsubsection*{\textit{Dominio 5 — Menú y Catálogo}}
 
 \begin{center}
-  \includegraphics[width=\textwidth,height=0.85\textheight,keepaspectratio]{erd/rendered/dominio-05-menu.pdf}
+  \includegraphics[width=0.9\textwidth,height=0.4\textheight,keepaspectratio]{erd/rendered/dominio-05-menu.pdf}
 \end{center}
 
-\dictable{MenuTemplate}{%
-Plantilla centralizada de menú definida a nivel de cadena.}
-\campo{id}{text}{No}{PK}{UUID.}
-\campo{chainId}{text}{No}{FK}{Cadena propietaria.}
-\campo{name}{text}{No}{—}{Nombre de la plantilla.}
-\campo{isDefault}{boolean}{No}{—}{Template predeterminado.}
-\dictableend
-
-\dictable{TemplateItem}{%
-Producto base definido en una plantilla de menú.}
-\campo{id}{text}{No}{PK}{UUID.}
-\campo{categoryId}{text}{No}{FK}{Categoría del template.}
-\campo{name}{text}{No}{—}{Nombre del producto.}
-\campo{basePriceCents}{int}{No}{—}{Precio de referencia en centavos.}
-\dictableend
-
 \dictable{Station}{%
-Estación de preparación en restaurante (ej. Cocina, Barra).}
-\campo{id}{text}{No}{PK}{UUID.}
+Estación de preparación dentro del restaurante, usada para enrutar ítems al KDS.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
 \campo{restaurantId}{text}{No}{FK}{Restaurante propietario.}
-\campo{name}{text}{No}{—}{Nombre de la estación.}
-\campo{color}{text}{Sí}{—}{Identificador visual para KDS.}
+\campo{name}{text}{No}{—}{Nombre de la estación (ej. \textit{Cocina}, \textit{Barra}).}
+\campo{color}{text}{Sí}{—}{Identificador visual para el tablero KDS.}
+\campo{isActive}{boolean}{No}{—}{Indica si la estación está activa.}
 \dictableend
 
 \dictable{RestaurantMenuItem}{%
-Producto vendible en un restaurante. Única entidad para generar ítems de orden.}
-\campo{id}{text}{No}{PK}{UUID.}
+Producto vendible configurado para un restaurante específico.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
 \campo{restaurantId}{text}{No}{FK}{Restaurante propietario.}
-\campo{categoryId}{text}{No}{FK}{Categoría local.}
-\campo{stationId}{text}{Sí}{FK}{Estación de enrutamiento KDS.}
-\campo{name}{text}{No}{—}{Nombre comercial local.}
-\campo{priceCents}{int}{No}{—}{Precio de venta local en centavos.}
-\campo{isSoldOut}{boolean}{No}{—}{Estado de disponibilidad manual.}
-\campo{trackStock}{boolean}{No}{—}{Habilitación de control de inventario.}
-\campo{stockQuantity}{int}{Sí}{—}{Existencias disponibles.}
+\campo{categoryId}{text}{No}{FK}{Categoría local del producto.}
+\campo{stationId}{text}{Sí}{FK}{Estación de cocina asignada.}
+\campo{taxGroupId}{text}{Sí}{FK}{Grupo fiscal aplicable al producto.}
+\campo{name}{text}{No}{—}{Nombre comercial.}
+\campo{priceCents}{int}{No}{—}{Precio de venta en centavos.}
+\campo{isSoldOut}{boolean}{No}{—}{Indica agotamiento manual.}
+\campo{trackStock}{boolean}{No}{—}{Habilita control automático de inventario.}
+\campo{stockQuantity}{int}{Sí}{—}{Existencias cuando el control de inventario está habilitado.}
+\campo{archivedAt}{timestamp}{Sí}{—}{Fecha de archivado lógico, si el producto fue retirado.}
 \dictableend
 
 \dictable{ModifierGroup}{%
-Grupo de modificadores aplicables a productos (ej. Extras, Término).}
-\campo{id}{text}{No}{PK}{UUID.}
-\campo{restaurantId}{text}{No}{FK}{Restaurante.}
-\campo{isRequired}{boolean}{No}{—}{Selección obligatoria.}
-\campo{minSelect}{int}{No}{—}{Mínimo de opciones.}
-\campo{maxSelect}{int}{No}{—}{Máximo de opciones.}
+Grupo de opciones adicionales aplicables a un producto.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante propietario del grupo.}
+\campo{name}{text}{No}{—}{Nombre del grupo de modificadores.}
+\campo{isRequired}{boolean}{No}{—}{Define si la selección es obligatoria.}
+\campo{minSelect}{int}{No}{—}{Mínimo de opciones a elegir.}
+\campo{maxSelect}{int}{No}{—}{Máximo de opciones permitidas.}
 \dictableend
 
 \dictable{ModifierOption}{%
-Opción individual dentro de un grupo de modificadores.}
-\campo{id}{text}{No}{PK}{UUID.}
+Opción seleccionable dentro de un grupo de modificadores.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
 \campo{groupId}{text}{No}{FK}{Grupo al que pertenece.}
 \campo{name}{text}{No}{—}{Nombre de la opción.}
-\campo{priceAdjustmentCents}{int}{No}{—}{Costo adicional en centavos.}
+\campo{priceAdjustmentCents}{int}{No}{—}{Ajuste de precio en centavos.}
+\campo{isAvailable}{boolean}{No}{—}{Indica si la opción está disponible.}
 \dictableend
 
 \subsubsection*{\textit{Dominio 6 — Operación de Mesa}}
 
 \begin{center}
-  \includegraphics[width=0.8\textwidth,height=0.5\textheight,keepaspectratio]{erd/rendered/dominio-06-mesa.pdf}
+  \includegraphics[width=0.9\textwidth,height=0.4\textheight,keepaspectratio]{erd/rendered/dominio-06-mesa.pdf}
 \end{center}
 
 \dictable{DiningTable}{%
-Representa una mesa física. Incluye posición y estado operacional (caché).}
-\campo{id}{text}{No}{PK}{UUID.}
-\campo{restaurantId}{text}{No}{FK}{Restaurante.}
-\campo{number}{int}{No}{—}{Número identificador.}
-\campo{capacity}{int}{No}{—}{Capacidad (pax).}
-\campo{status}{enum}{No}{—}{\texttt{DISPONIBLE}, \texttt{OCUPADA} o \texttt{RESERVADA}.}
-\campo{posX}{float}{No}{—}{Coordenada X en el plano.}
-\campo{posY}{float}{No}{—}{Coordenada Y en el plano.}
+Mesa física dentro de un restaurante. Su estado refleja disponibilidad operativa,
+independiente del estado lógico de la sesión virtual.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante al que pertenece.}
+\campo{publicCode}{text}{No}{UK}{Código público para generar enlaces QR firmados.}
+\campo{qrVersion}{int}{No}{—}{Versión del QR para invalidación lógica de enlaces antiguos.}
+\campo{number}{int}{No}{—}{Número identificador de la mesa física.}
+\campo{capacity}{int}{No}{—}{Capacidad estimada de comensales.}
+\campo{status}{enum}{No}{—}{Estado físico-operativo: \texttt{LIBRE}, \texttt{OCUPADA} o \texttt{NO\_DISPONIBLE}.}
 \dictableend
 
 \dictable{DiningSession}{%
-Sesión activa de comensales. Contenedora de órdenes y pagos.}
-\campo{id}{text}{No}{PK}{UUID.}
-\campo{restaurantId}{text}{No}{FK}{Restaurante.}
-\campo{openedByUserId}{text}{No}{FK}{Personal que abrió la sesión.}
-\campo{status}{enum}{No}{—}{\texttt{OPEN}, \texttt{CLOSED}, \texttt{CANCELLED}.}
-\campo{openedAt}{timestamp}{No}{—}{Fecha y hora de inicio.}
+Sesión lógica de consumo asociada a una o varias mesas físicas. Contiene comensales,
+órdenes, estado operativo de la mesa virtual y liquidación interna.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante donde ocurre la sesión.}
+\campo{openedByUserId}{text}{No}{FK}{Usuario colaborador que abrió la sesión.}
+\campo{status}{enum}{No}{—}{\texttt{PENDIENTE\_ACTIVACION}, \texttt{ACTIVA}, \texttt{EN\_CONSUMO}, \texttt{POR\_LIQUIDAR}, \texttt{LIQUIDADA}, \texttt{CERRADA} o \texttt{CANCELADA}.}
+\campo{joinCode}{text}{No}{UK}{Código de unión utilizado por comensales para ingresar.}
+\campo{accessCodeHash}{text}{No}{—}{Hash de la contraseña de acceso creada por el anfitrión.}
+\campo{pax}{int}{No}{—}{Número estimado o registrado de comensales.}
+\campo{openedAt}{timestamp}{No}{—}{Fecha y hora de creación (apertura por mesero).}
+\campo{activatedAt}{timestamp}{Sí}{—}{Fecha y hora de activación por el anfitrión.}
+\campo{liquidationStartedAt}{timestamp}{Sí}{—}{Fecha y hora en que inició la liquidación interna.}
+\campo{settledAt}{timestamp}{Sí}{—}{Fecha y hora en que el saldo pendiente llegó a cero.}
+\campo{closedAt}{timestamp}{Sí}{—}{Fecha y hora de cierre operativo.}
+\dictableend
+
+\dictable{DiningSessionTable}{%
+Tabla pivote que asocia una sesión con una o varias mesas físicas. Soporta la unión de mesas
+para grupos grandes.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{diningSessionId}{text}{No}{FK}{Sesión lógica asociada.}
+\campo{tableId}{text}{No}{FK}{Mesa física asociada.}
+\campo{joinedAt}{timestamp}{No}{—}{Fecha y hora en que la mesa se asoció a la sesión.}
+\campo{leftAt}{timestamp}{Sí}{—}{Fecha y hora en que la mesa dejó de estar asociada.}
 \dictableend
 
 \dictable{Guest}{%
-Comensal individual en una sesión. Soporta división de cuenta personal.}
-\campo{id}{text}{No}{PK}{UUID.}
-\campo{diningSessionId}{text}{No}{FK}{Sesión de pertenencia.}
+Comensal individual dentro de una sesión. Permite asociar órdenes, aportaciones y
+asignaciones de liquidación a una persona o asiento.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{diningSessionId}{text}{No}{FK}{Sesión a la que pertenece el comensal.}
 \campo{name}{text}{Sí}{—}{Nombre opcional.}
+\campo{seatNumber}{int}{Sí}{—}{Número de asiento.}
+\campo{isHost}{boolean}{No}{—}{Indica si es el anfitrión de la mesa virtual.}
+\campo{isActive}{boolean}{No}{—}{Indica si el comensal sigue activo en la sesión.}
+\campo{joinedAt}{timestamp}{No}{—}{Fecha y hora de ingreso.}
+\campo{leftAt}{timestamp}{Sí}{—}{Fecha y hora de salida, si aplica.}
 \dictableend
 
-\subsubsection*{\textit{Dominio 7 — Transacciones}}
+\subsubsection*{\textit{Dominio 7 — Órdenes y Cocina}}
 
 \begin{center}
-  \includegraphics[width=\textwidth,height=0.6\textheight,keepaspectratio]{erd/rendered/dominio-07-transacciones.pdf}
+  \includegraphics[width=0.9\textwidth,height=0.4\textheight,keepaspectratio]{erd/rendered/dominio-07-ordenes.pdf}
 \end{center}
 
 \dictable{RestaurantOrder}{%
-Comanda enviada a cocina o barra dentro de una sesión.}
-\campo{id}{text}{No}{PK}{UUID.}
-\campo{diningSessionId}{text}{No}{FK}{Sesión asociada.}
-\campo{source}{enum}{No}{—}{\texttt{WAITER}, \texttt{QR} o \texttt{POS}.}
-\campo{status}{enum}{No}{—}{Estado: \texttt{OPEN}, \texttt{READY}, \texttt{CLOSED}, etc.}
+Comanda enviada por personal o comensal. Agrupa ítems solicitados en un momento.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante donde se registra la orden.}
+\campo{diningSessionId}{text}{No}{FK}{Sesión de comedor asociada.}
+\campo{createdByUserId}{text}{Sí}{FK}{Usuario colaborador que creó la orden, si aplica.}
+\campo{source}{enum}{No}{—}{Origen: \texttt{WAITER}, \texttt{QR} o \texttt{INTERNAL}.}
+\campo{status}{enum}{No}{—}{\texttt{ABIERTA}, \texttt{ENVIADA}, \texttt{COMPLETADA} o \texttt{CANCELADA}.}
+\campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
 \dictableend
 
 \dictable{OrderItem}{%
-Ítem individual en una orden con snapshot histórico de atributos.}
-\campo{id}{text}{No}{PK}{UUID.}
-\campo{orderId}{text}{No}{FK}{Orden asociada.}
-\campo{guestId}{text}{Sí}{FK}{Comensal asociado (división de cuenta).}
-\campo{status}{enum}{No}{—}{Estado en KDS.}
+Ítem individual de una orden. Conserva snapshots históricos de producto, variante,
+estación, precio e impuesto al momento de ordenar.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{orderId}{text}{No}{FK}{Orden a la que pertenece el ítem.}
+\campo{menuItemId}{text}{Sí}{FK}{Producto referenciado, si sigue disponible.}
+\campo{guestId}{text}{Sí}{FK}{Comensal asociado para división de cuenta.}
+\campo{stationId}{text}{Sí}{FK}{Estación asignada al ítem.}
 \campo{quantity}{int}{No}{—}{Cantidad solicitada.}
-\campo{itemNameSnapshot}{text}{No}{—}{Nombre al momento de ordenar.}
-\campo{unitPriceCents}{int}{No}{—}{Precio al momento de ordenar.}
-\campo{totalCents}{int}{No}{—}{Monto total (\texttt{subtotal + impuesto}).}
+\campo{status}{enum}{No}{—}{\texttt{PENDIENTE}, \texttt{EN\_PREPARACION}, \texttt{LISTA}, \texttt{ENTREGADA} o \texttt{CANCELADA}.}
+\campo{itemNameSnapshot}{text}{No}{—}{Nombre del producto al momento de ordenar.}
+\campo{stationNameSnapshot}{text}{Sí}{—}{Nombre de estación al momento de ordenar.}
+\campo{taxRateBpsSnapshot}{int}{No}{—}{Tasa de impuesto vigente al momento de ordenar.}
+\campo{unitPriceCents}{int}{No}{—}{Precio unitario en centavos.}
+\campo{subtotalCents}{int}{No}{—}{Subtotal antes de impuestos.}
+\campo{taxAmountCents}{int}{No}{—}{Monto de impuesto calculado.}
+\campo{totalCents}{int}{No}{—}{Total del ítem (\texttt{subtotal + impuesto}).}
 \dictableend
 
-\dictable{Payment}{%
-Registro de transacción financiera asociada a una sesión.}
-\campo{id}{text}{No}{PK}{UUID.}
-\campo{diningSessionId}{text}{No}{FK}{Sesión liquidada.}
-\campo{status}{enum}{No}{—}{\texttt{PENDING}, \texttt{COMPLETED}, \texttt{FAILED}, etc.}
-\campo{method}{enum}{No}{—}{\texttt{CARD}, \texttt{CASH} o \texttt{TRANSFER}.}
-\campo{splitMode}{enum}{No}{—}{\texttt{FULL}, \texttt{BY\_ITEM} o \texttt{EQUAL}.}
-\campo{amountPaidCents}{int}{No}{—}{Monto recibido en centavos.}
-\campo{paidAt}{timestamp}{Sí}{—}{Confirmación de pago.}
+\dictable{OrderItemModifier}{%
+Modificador seleccionado dentro de un ítem. Conserva snapshot del nombre y ajuste de
+precio aplicado al momento de ordenar.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{orderItemId}{text}{No}{FK}{Ítem al que pertenece el modificador.}
+\campo{modifierOptionId}{text}{Sí}{FK}{Option original, si sigue disponible.}
+\campo{nameSnapshot}{text}{No}{—}{Nombre al momento de ordenar.}
+\campo{quantity}{int}{No}{—}{Cantidad aplicada.}
+\campo{unitAdjustmentCents}{int}{No}{—}{Ajuste unitario en centavos.}
+\campo{totalAdjustmentCents}{int}{No}{—}{Ajuste total en centavos.}
 \dictableend
 
-\dictable{AppliedDiscount}{%
-Cortesía o descuento aplicado a un ítem o a la cuenta total.}
-\campo{id}{text}{No}{PK}{UUID.}
-\campo{orderItemId}{text}{Sí}{FK}{Asociación a producto (XOR).}
-\campo{paymentId}{text}{Sí}{FK}{Asociación a pago total (XOR).}
-\campo{type}{enum}{No}{—}{\texttt{PERCENT} o \texttt{FIXED}.}
-\campo{amountCents}{int}{No}{—}{Monto final descontado.}
-\campo{reason}{text}{No}{—}{Justificación obligatoria.}
+\dictable{OrderItemStatusEvent}{%
+Evento de cambio de estado de un ítem. Permite reconstruir el flujo de cocina y calcular
+tiempos de preparación para analítica.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{orderItemId}{text}{No}{FK}{Ítem cuyo estado cambió.}
+\campo{changedByUserId}{text}{Sí}{FK}{Usuario que registró el cambio, si aplica.}
+\campo{fromStatus}{enum}{Sí}{—}{Estado anterior del ítem.}
+\campo{toStatus}{enum}{No}{—}{Nuevo estado del ítem.}
+\campo{createdAt}{timestamp}{No}{—}{Fecha y hora del cambio de estado.}
 \dictableend
+
+\subsubsection*{\textit{Dominio 8 — Liquidación Interna y Ajustes}}
+
+\begin{center}
+  \includegraphics[width=\textwidth,height=0.6\textheight,keepaspectratio]{erd/rendered/dominio-08-liquidacion.pdf}
+\end{center}
+
+\dictable{Settlement}{%
+Estado interno de cuenta de una sesión. No representa transacción bancaria, sino el
+acumulado operativo de consumo, ajustes, aportaciones y saldo pendiente.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante donde ocurre la liquidación.}
+\campo{diningSessionId}{text}{No}{FK}{Sesión asociada.}
+\campo{currency}{text}{No}{FK}{Moneda utilizada para los montos.}
+\campo{status}{enum}{No}{—}{\texttt{ABIERTA}, \texttt{PARCIAL}, \texttt{LIQUIDADA} o \texttt{CANCELADA}.}
+\campo{splitMode}{enum}{No}{—}{\texttt{TOTAL}, \texttt{POR\_ITEM}, \texttt{IGUAL} o \texttt{PERSONALIZADO}.}
+\campo{subtotalCents}{int}{No}{—}{Subtotal del consumo antes de ajustes e impuestos.}
+\campo{discountCents}{int}{No}{—}{Monto total reducido por descuentos o cortesías autorizadas.}
+\campo{taxAmountCents}{int}{No}{—}{Monto total de impuestos.}
+\campo{totalCents}{int}{No}{—}{Total interno de cuenta.}
+\campo{amountSettledCents}{int}{No}{—}{Monto acumulado de aportaciones registradas.}
+\campo{remainingCents}{int}{No}{—}{Saldo pendiente por liquidar.}
+\campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
+\campo{updatedAt}{timestamp}{No}{—}{Fecha y hora de última actualización.}
+\campo{settledAt}{timestamp}{Sí}{—}{Fecha y hora en que el saldo llegó a cero.}
+\dictableend
+
+\dictable{SettlementContribution}{%
+Aportación interna registrada sobre una liquidación. Representa un abono operativo
+al saldo de la sesión sin procesamiento bancario real.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{settlementId}{text}{No}{FK}{Liquidación interna asociada.}
+\campo{guestId}{text}{Sí}{FK}{Comensal que realiza o representa la aportación.}
+\campo{registeredByUserId}{text}{Sí}{FK}{Usuario colaborador que registra la aportación, si aplica.}
+\campo{method}{enum}{No}{—}{\texttt{CASH}, \texttt{OUT\_OF\_SYSTEM} u \texttt{OTHER}.}
+\campo{status}{enum}{No}{—}{\texttt{REGISTERED} o \texttt{VOIDED}.}
+\campo{amountCents}{int}{No}{—}{Monto de la aportación en centavos.}
+\campo{createdAt}{timestamp}{No}{—}{Fecha y hora del registro.}
+\dictableend
+
+\dictable{SettlementAllocation}{%
+Distribución de una aportación sobre ítems o comensales. Permite modelar división de
+cuenta por producto, por persona o de forma personalizada.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{settlementId}{text}{No}{FK}{Liquidación interna asociada.}
+\campo{contributionId}{text}{Sí}{FK}{Aportación que cubre esta asignación.}
+\campo{orderItemId}{text}{Sí}{FK}{Ítem cubierto, si aplica.}
+\campo{guestId}{text}{Sí}{FK}{Comensal cubierto, si aplica.}
+\campo{amountCents}{int}{No}{—}{Monto asignado en centavos.}
+\campo{createdAt}{timestamp}{No}{—}{Fecha y hora de creación.}
+\dictableend
+
+\dictable{AppliedAdjustment}{%
+Ajuste autorizado aplicado sobre un ítem o liquidación. Cubre descuentos y cortesías sin
+eliminar registros históricos de consumo.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{orderItemId}{text}{Sí}{FK}{Ítem afectado, si el ajuste aplica a producto.}
+\campo{settlementId}{text}{Sí}{FK}{Liquidación afectada, si aplica a la cuenta.}
+\campo{approvedByUserId}{text}{Sí}{FK}{Usuario que autorizó el ajuste.}
+\campo{type}{enum}{No}{—}{\texttt{DISCOUNT} o \texttt{COURTESY}.}
+\campo{calculationMode}{enum}{No}{—}{\texttt{PERCENT} o \texttt{FIXED}.}
+\campo{valueBps}{int}{Sí}{—}{Valor porcentual en basis points, si aplica.}
+\campo{valueCents}{int}{Sí}{—}{Valor fijo en centavos, si aplica.}
+\campo{status}{enum}{No}{—}{\texttt{APPLIED} o \texttt{VOIDED}.}
+\campo{amountCents}{int}{No}{—}{Monto del ajuste aplicado al estado de cuenta.}
+\campo{reason}{text}{No}{—}{Motivo obligatorio del ajuste.}
+\dictableend
+
+\subsubsection*{\textit{Dominio 9 — Analítica y Linaje de Datos}}
+
+\begin{center}
+  \includegraphics[width=\textwidth,height=0.6\textheight,keepaspectratio]{erd/rendered/dominio-09-analitica.pdf}
+\end{center}
+
+\dictable{AnalyticsJobRun}{%
+Registro de ejecución de jobs analíticos. Controla estado, ventana de datos procesada
+y linaje entre datos transaccionales y tablas Gold.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante procesado por el job.}
+\campo{triggeredByUserId}{text}{Sí}{FK}{Usuario que solicitó la ejecución, si aplica.}
+\campo{jobType}{enum}{No}{—}{\texttt{BRONZE}, \texttt{SILVER}, \texttt{GOLD}, \texttt{DEMAND\_ESTIMATE} o \texttt{SERVICE\_TIMES}.}
+\campo{status}{enum}{No}{—}{\texttt{QUEUED}, \texttt{RUNNING}, \texttt{COMPLETED} o \texttt{FAILED}.}
+\campo{dataWindowStart}{timestamp}{Sí}{—}{Inicio de la ventana de datos procesada.}
+\campo{dataWindowEnd}{timestamp}{Sí}{—}{Fin de la ventana de datos procesada.}
+\campo{startedAt}{timestamp}{No}{—}{Fecha y hora de inicio del job.}
+\campo{finishedAt}{timestamp}{Sí}{—}{Fecha y hora de finalización.}
+\campo{errorMessage}{text}{Sí}{—}{Mensaje de error si la ejecución falla.}
+\campo{metadata}{jsonb}{Sí}{—}{Metadatos técnicos de la ejecución.}
+\dictableend
+
+\dictable{AnalyticSalesDaily}{%
+Tabla Gold de métricas diarias de consumo. Se consulta desde el dashboard para evitar
+agregaciones sobre la base transaccional.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante asociado.}
+\campo{jobRunId}{text}{No}{FK}{Job analítico que generó el registro.}
+\campo{businessDate}{date}{No}{—}{Fecha operativa agregada.}
+\campo{orderCount}{int}{No}{—}{Número de órdenes registradas.}
+\campo{itemCount}{int}{No}{—}{Número total de ítems registrados.}
+\campo{grossConsumptionCents}{int}{No}{—}{Monto bruto de consumo registrado.}
+\campo{discountCents}{int}{No}{—}{Monto total de ajustes aplicados.}
+\campo{netConsumptionCents}{int}{No}{—}{Monto neto de consumo registrado después de ajustes.}
+\campo{avgServiceTimeSeconds}{int}{Sí}{—}{Tiempo promedio operativo calculado para la jornada.}
+\campo{computedAt}{timestamp}{No}{—}{Fecha y hora de cálculo.}
+\dictableend
+
+\dictable{AnalyticItemVelocity}{%
+Tabla Gold de velocidad de consumo por producto y día.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante asociado.}
+\campo{jobRunId}{text}{No}{FK}{Job analítico que generó el registro.}
+\campo{menuItemId}{text}{Sí}{FK}{Producto asociado, si sigue disponible.}
+\campo{businessDate}{date}{No}{—}{Fecha operativa agregada.}
+\campo{itemNameSnapshot}{text}{No}{—}{Nombre histórico usado para análisis.}
+\campo{quantitySold}{int}{No}{—}{Cantidad solicitada en el período.}
+\campo{grossConsumptionCents}{int}{No}{—}{Monto bruto asociado al producto.}
+\campo{computedAt}{timestamp}{No}{—}{Fecha y hora de cálculo.}
+\dictableend
+
+\dictable{AnalyticServiceTimes}{%
+Tabla Gold de métricas de tiempos de preparación por estación.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante asociado.}
+\campo{jobRunId}{text}{No}{FK}{Job analítico que generó el registro.}
+\campo{stationId}{text}{Sí}{FK}{Estación asociada, si aplica.}
+\campo{businessDate}{date}{No}{—}{Fecha operativa agregada.}
+\campo{avgPrepSeconds}{int}{Sí}{—}{Tiempo promedio de preparación.}
+\campo{p50PrepSeconds}{int}{Sí}{—}{Percentil 50 del tiempo de preparación.}
+\campo{p90PrepSeconds}{int}{Sí}{—}{Percentil 90 del tiempo de preparación.}
+\campo{delayedItemsCount}{int}{No}{—}{Ítems retrasados según umbral operativo.}
+\campo{computedAt}{timestamp}{No}{—}{Fecha y hora de cálculo.}
+\dictableend
+
+\dictable{AnalyticDemandEstimate}{%
+Tabla Gold de estimaciones exploratorias de demanda por producto y fecha.}
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante asociado.}
+\campo{jobRunId}{text}{No}{FK}{Job analítico que generó el registro.}
+\campo{menuItemId}{text}{Sí}{FK}{Producto asociado, si aplica.}
+\campo{estimateDate}{date}{No}{—}{Fecha para la cual se genera la estimación.}
+\campo{expectedQuantity}{int}{No}{—}{Cantidad esperada estimada a partir de históricos.}
+\campo{confidenceBps}{int}{Sí}{—}{Indicador opcional de confiabilidad de la estimación ($10\,000 = 100\%$).}
+\campo{method}{text}{No}{—}{Método utilizado para la estimación.}
+\campo{computedAt}{timestamp}{No}{—}{Fecha y hora de cálculo.}
+\dictableend
+
+\clearpage

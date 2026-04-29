@@ -3,32 +3,32 @@ sequenceDiagram
     
     %% Color Palette
     actor A as Administrador de Cadena
-    participant S as Sistema (Tax Settings)
+    participant S as Sistema (Parameters)
     participant DB as Base de Datos (PostgreSQL)
 
     rect rgb(235, 243, 250)
-        Note over A,DB: Fase 1: Configuración Fiscal
-        A->>S: Crear TaxGroup (ej. "IEPS 8%")
-        S->>DB: INSERT TaxGroup { rateBps: 800 }
+        Note over A,DB: Fase 1: Configuración Operativa Informativa
+        A->>S: Crear TaxGroup (ej. "IVA 16%")
+        S->>DB: INSERT TaxGroup { rateBps: 1600 }
         Note right of DB: Almacenado en Basis Points (100 = 1%)
     end
 
     rect rgb(214, 239, 216)
         Note over A,DB: Fase 2: Aplicación en Cascada
-        A->>S: Asignar TaxGroup a Categoría "Alcohol"
+        A->>S: Asignar TaxGroup a Categoría "Alimentos"
         S->>DB: UPDATE RestaurantCategory SET taxGroupId = ?
-        Note right of DB: Los productos heredan el impuesto de su categoría
+        Note right of DB: Los productos heredan el cálculo informativo
     end
 
     rect rgb(255, 240, 214)
-        Note over S,A: Fase 3: Cálculo Transaccional
-        S->>S: Al ordenar item de "Alcohol"
+        Note over S,A: Fase 3: Cálculo Transaccional Informativo
+        S->>S: Al ordenar item de "Alimentos"
         S->>S: Calcular: item.price * tax.rateBps / 10000
-        S-->>A: Visualización de desglose en Ticket
+        S-->>A: Visualización de desglose informativo en Constancia
     end
 
     rect rgb(253, 220, 220)
         Note over A,S: Validaciones
-        A--xS: Intento de borrar TaxGroup en uso
-        S-->>A: Error 409 — Existen categorías vinculadas a este impuesto
+        A--xS: Intento de borrar parámetro en uso
+        S-->>A: Error 409 — Existen categorías vinculadas a este parámetro
     end

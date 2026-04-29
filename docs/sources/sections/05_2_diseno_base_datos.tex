@@ -3,41 +3,265 @@
 \subsection{Diseño de Base de Datos}
 % -----------------------------------------------------------
 
-El sistema emplea una base de datos relacional implementada en PostgreSQL~16 gestionada a través de la plataforma Supabase. La arquitectura de datos se fundamenta en un modelo normalizado que asegura la integridad referencial y aplica políticas de seguridad a nivel de fila (Row Level Security, RLS) para garantizar el aislamiento de la información.
+El sistema emplea una base de datos relacional implementada en PostgreSQL y gestionada
+mediante Supabase. Esta base representa la capa OLTP (\textit{Online Transaction
+Processing}) del proyecto, encargada de registrar la operación diaria del restaurante:
+estructura organizacional, usuarios, mesas físicas, sesiones de mesa virtual, comensales,
+órdenes, estados de cocina, liquidaciones internas, aportaciones, ajustes autorizados y
+eventos de auditoría.
+
+El modelo se diseñó bajo criterios de normalización, integridad referencial, consistencia
+transaccional y trazabilidad histórica. Su propósito no es únicamente almacenar información
+operativa, sino construir una fuente confiable de datos para el pipeline analítico
+Medallion. Por ello, cada entidad relevante conserva identificadores, marcas temporales,
+relaciones explícitas y, cuando aplica, snapshots históricos que permiten reconstruir el
+estado de la operación al momento en que ocurrió cada evento.
+
+Asimismo, se aplican políticas de seguridad a nivel de fila (\textit{Row Level Security},
+RLS) para restringir el acceso a la información según el rol y alcance organizacional de
+cada usuario. Esta decisión permite mantener aislamiento entre cadenas, zonas y sucursales,
+reduciendo la dependencia exclusiva de validaciones en la capa de aplicación.
 
 \subsubsection{Convenciones del Modelo}
 
-La definición del esquema de datos en Bouquet OPS se rige por un conjunto de convenciones técnicas orientadas a la consistencia y escalabilidad:
+La definición del esquema de datos en Bouquet se rige por un conjunto de convenciones
+técnicas orientadas a la consistencia operativa, la trazabilidad y el análisis posterior:
 
 \begin{itemize}
-  \item Los identificadores primarios se definen consistentemente como tipos \texttt{text} (UUID v4).
-  \item El almacenamiento de valores monetarios se realiza en centavos (tipo \texttt{int}), eliminando la posibilidad de errores de redondeo asociados al uso de tipos de punto flotante.
-  \item Las tasas porcentuales se registran en puntos base o \textit{basis points} (\texttt{int}), estableciendo una relación de $100\,\text{bps} = 1\%$.
-  \item Se incorpora un mecanismo de eliminación lógica (\textit{soft delete}) mediante el atributo \texttt{archivedAt}.
-  \item La gestión de los campos de auditoría \texttt{createdAt} y \texttt{updatedAt} se delega al mapeo objeto-relacional (ORM).
+  \item Los identificadores primarios se representan como cadenas con formato UUID v4,
+  mapeadas en Prisma como \texttt{text}/\texttt{String} para asegurar portabilidad,
+  unicidad global y compatibilidad entre servicios.
+
+  \item El almacenamiento de valores monetarios se realiza en centavos mediante campos
+  enteros (\texttt{int}), evitando errores de redondeo asociados a tipos de punto flotante.
+
+  \item Las tasas porcentuales se registran en puntos base o \textit{basis points}
+  (\texttt{int}), donde $100\,\text{bps} = 1\%$. Esta convención se utiliza para tasas de
+  impuestos, descuentos porcentuales, propinas sugeridas y estimaciones analíticas.
+
+  \item En las entidades donde se requiere preservar historial operativo, se incorpora
+  eliminación lógica (\textit{soft delete}) mediante campos como \texttt{archivedAt} o
+  banderas equivalentes. Esto permite ocultar registros sin perder trazabilidad histórica.
+
+  \item Las órdenes almacenan snapshots históricos de producto, variante, estación,
+  precio, tasa de impuesto y modificadores aplicados al momento de la transacción. Con
+  ello se evita que cambios futuros en el catálogo alteren el significado de órdenes
+  pasadas.
+
+  \item Las liquidaciones internas se modelan mediante entidades separadas para estado de
+  cuenta, aportaciones y asignaciones. Esta separación permite representar liquidaciones
+  parciales, división de cuenta y aportaciones fuera del sistema sin procesar pagos
+  bancarios reales.
+
+  \item Las tablas analíticas Gold conservan una referencia al job que las generó mediante
+  \texttt{jobRunId}. Esto permite rastrear una métrica del dashboard hasta la ejecución
+  específica del pipeline que la produjo.
+
+  \item La gestión de \texttt{createdAt} y \texttt{updatedAt} se delega al ORM para
+  estandarizar marcas temporales de auditoría básica. En eventos críticos, como cambios
+  de estado de orden, activación de mesa o ejecución de jobs analíticos, se utilizan
+  marcas temporales específicas.
 \end{itemize}
 
 \subsubsection{Dominios del Modelo}
 
-El esquema se distribuye funcionalmente en siete dominios lógicos que agrupan las entidades del sistema:
+El esquema se distribuye funcionalmente en nueve dominios lógicos que agrupan las entidades
+del sistema:
 
 \begin{enumerate}
-  \item Catálogos globales: Entidades de referencia compartidas que estandarizan datos maestros.
-  \item Control de acceso (RBAC): Gestión de roles, permisos y la jerarquía de privilegios del sistema.
-  \item Identidad: Administración de perfiles de usuario y contextos operativos.
-  \item Organización: Representación de la estructura corporativa desde la cadena hasta el restaurante individual.
-  \item Menú: Definición de la oferta gastronómica, incluyendo plantillas centrales y configuraciones locales.
-  \item Operación de mesa: Control de sesiones de servicio, asignación de mesas y gestión de comensales.
-  \item Transacciones: Registro de comandas, flujo de pagos y aplicación de reglas de negocio para descuentos.
+  \item \textbf{Catálogos globales:} Entidades de referencia que estandarizan datos maestros,
+  como monedas, grupos de impuestos y permisos base.
+
+  \item \textbf{Control de acceso (RBAC):} Gestión de roles, permisos y jerarquía de
+  privilegios. Este dominio permite asignar capacidades según el alcance del usuario:
+  plataforma, cadena, zona o restaurante.
+
+  \item \textbf{Identidad:} Administración de usuarios colaboradores, perfiles operativos,
+  asignaciones de rol y contexto de acceso.
+
+  \item \textbf{Organización:} Representación de la estructura jerárquica de cadena,
+  zonas y restaurantes. Este dominio permite que las consultas operativas y analíticas
+  respeten el nivel organizacional del usuario.
+
+  \item \textbf{Menú y catálogo:} Definición de productos, categorías, variantes,
+  modificadores, plantillas globales y configuraciones locales por restaurante.
+
+  \item \textbf{Operación de mesa:} Control de mesas físicas, sesiones virtuales,
+  comensales, anfitrión, códigos de acceso, estado de sesión y asociación entre varias
+  mesas físicas y una misma sesión.
+
+  \item \textbf{Órdenes y cocina:} Registro de órdenes, ítems solicitados, modificadores,
+  estados de preparación y eventos de cambio de estado. Este dominio es la fuente principal
+  para calcular tiempos de servicio y eficiencia operativa.
+
+  \item \textbf{Liquidación interna y ajustes:} Registro del estado de cuenta de la sesión,
+  aportaciones internas, distribución de aportaciones sobre ítems o comensales, descuentos
+  y cortesías autorizadas. Este dominio no procesa pagos bancarios reales; únicamente
+  registra el estado interno de liquidación.
+
+  \item \textbf{Analítica y linaje de datos:} Registro de ejecuciones del pipeline,
+  ventanas de procesamiento, tablas Gold y métricas derivadas para el dashboard
+  administrativo.
 \end{enumerate}
 
+\subsubsection{Estados Operativos Principales}
+
+El modelo distingue entre el estado de la mesa física y el estado de la sesión virtual.
+Esta separación evita ambigüedades entre disponibilidad física y actividad lógica de los
+comensales.
+
+\noindent\textbf{Estados de mesa física.}
+La entidad \texttt{DiningTable} representa una mesa física dentro de un restaurante. Sus
+estados principales son:
+
+\begin{itemize}
+  \item \texttt{LIBRE}: la mesa está vacía, disponible para asociarse a una nueva sesión.
+  \item \texttt{OCUPADA}: la mesa está asociada a una sesión activa.
+  \item \texttt{NO\_DISPONIBLE}: la mesa está bloqueada por mantenimiento, configuración
+  administrativa u otra razón operativa.
+\end{itemize}
+
+\noindent\textbf{Estados de sesión virtual.}
+La entidad \texttt{DiningSession} representa la sesión lógica de consumo. Su ciclo de vida
+se define de la siguiente forma:
+
+\begin{itemize}
+  \item \texttt{PENDIENTE\_ACTIVACION}: el mesero creó la sesión y generó el QR, pero el
+  anfitrión todavía no ha activado la mesa virtual.
+
+  \item \texttt{ACTIVA}: el anfitrión escaneó el QR, creó la contraseña de acceso y la
+  sesión acepta comensales. Todavía puede no existir consumo.
+
+  \item \texttt{EN\_CONSUMO}: existe al menos una orden confirmada asociada a la sesión.
+
+  \item \texttt{POR\_LIQUIDAR}: inició el proceso de liquidación interna y la sesión se
+  encuentra en etapa de cierre de cuenta.
+
+  \item \texttt{LIQUIDADA}: el saldo pendiente llegó a cero mediante aportaciones internas
+  y ajustes autorizados.
+
+  \item \texttt{CERRADA}: el mesero o gerente liberó operativamente la sesión y las mesas
+  físicas asociadas vuelven a estar disponibles.
+
+  \item \texttt{CANCELADA}: la sesión fue anulada por error operativo, abandono o decisión
+  autorizada antes de completarse.
+\end{itemize}
+
+La separación entre \texttt{ACTIVA} y \texttt{EN\_CONSUMO} permite medir sesiones activadas
+sin consumo, tiempo hasta primera orden y posibles abandonos. Esta información es relevante
+para el análisis operativo posterior.
+
+\subsubsection{Reglas de Consistencia Transaccional}
+
+Para preservar la integridad del modelo, se definen reglas de negocio que deberán ser
+respetadas por la capa de aplicación y la base de datos:
+
+\begin{itemize}
+  \item Solo mesas físicas en estado \texttt{LIBRE} pueden asociarse a una nueva
+  \texttt{DiningSession}.
+
+  \item Al crear una sesión, las mesas físicas asociadas cambian a estado
+  \texttt{OCUPADA}.
+
+  \item Una \texttt{DiningSession} inicia en estado \texttt{PENDIENTE\_ACTIVACION} y pasa
+  a \texttt{ACTIVA} cuando el anfitrión define la contraseña de acceso.
+
+  \item La sesión cambia a \texttt{EN\_CONSUMO} al registrarse la primera orden confirmada.
+
+  \item La sesión cambia a \texttt{POR\_LIQUIDAR} cuando inicia el proceso de liquidación
+  interna.
+
+  \item Durante \texttt{POR\_LIQUIDAR} no se permiten nuevas órdenes ordinarias, salvo
+  reapertura autorizada por personal con permisos suficientes.
+
+  \item La sesión cambia a \texttt{LIQUIDADA} cuando \texttt{Settlement.remainingCents = 0}.
+
+  \item La sesión cambia a \texttt{CERRADA} cuando el mesero o gerente libera la mesa.
+  En ese momento, las mesas físicas asociadas regresan a estado \texttt{LIBRE}.
+
+  \item Toda transición crítica de sesión, orden, liquidación o ajuste autorizado debe
+  registrarse en \texttt{AuditLog}.
+
+  \item La suma de \texttt{SettlementContribution.amountCents} no puede generar un monto
+  liquidado mayor al total pendiente de la sesión.
+
+  \item La suma de \texttt{SettlementAllocation.amountCents} por \texttt{contributionId}
+  no debe exceder el monto de la aportación correspondiente.
+
+  \item La suma de \texttt{SettlementAllocation.amountCents} por \texttt{orderItemId}
+  no debe exceder el total pendiente de dicho ítem.
+
+  \item Los descuentos y cortesías se registran como \texttt{AppliedAdjustment}, nunca como
+  eliminación directa de ítems históricos.
+\end{itemize}
+
+\subsubsection{Diseño de Liquidación Interna}
+
+La liquidación interna se modela mediante tres entidades principales: \texttt{Settlement},
+\texttt{SettlementContribution} y \texttt{SettlementAllocation}. Esta separación permite
+representar el estado general de cuenta, las aportaciones registradas y la forma en que
+dichas aportaciones cubren ítems o comensales.
+
+\begin{itemize}
+  \item \texttt{Settlement} representa el estado interno de cuenta asociado a una sesión
+  de comedor. Contiene subtotal, descuentos, impuestos, propina, total, monto liquidado
+  y saldo pendiente.
+
+  \item \texttt{SettlementContribution} representa una aportación interna registrada por
+  un comensal o por personal autorizado. El campo \texttt{method} no implica procesamiento
+  bancario, sino una clasificación operativa de cómo se registró la aportación: efectivo,
+  fuera del sistema u otro.
+
+  \item \texttt{SettlementAllocation} representa la distribución de una aportación sobre
+  ítems o comensales específicos. Una misma aportación puede cubrir varios ítems, y un ítem
+  compartido puede ser cubierto por varias aportaciones.
+\end{itemize}
+
+Este diseño permite soportar división de cuenta flexible sin integrar pasarelas de pago.
+La consistencia se garantiza mediante transacciones atómicas y bloqueo a nivel de fila
+cuando se registran aportaciones concurrentes.
+
+\subsubsection{Diseño de Auditoría y Trazabilidad}
+
+La entidad \texttt{AuditLog} registra acciones críticas realizadas por usuarios
+colaboradores o procesos del sistema. Cada evento conserva el usuario actor, entidad
+afectada, acción, identificador de la entidad, valores previos y posteriores cuando
+aplique, dirección IP, agente de usuario, metadatos y fecha de creación.
+
+Las acciones auditables incluyen altas, modificaciones, eliminación lógica, inicio de
+sesión, apertura y cierre de sesiones de mesa, aplicación de ajustes, registro de
+aportaciones y ejecución de jobs analíticos. Esta información permite reconstruir eventos
+operativos y justificar cambios relevantes durante pruebas o revisiones administrativas.
+
+\subsubsection{Relación entre Modelo Transaccional y Modelo Analítico}
+
+El modelo transaccional descrito funciona como fuente primaria para el pipeline analítico.
+Las tablas relacionadas con órdenes, mesas, comensales, estados de cocina y liquidaciones
+internas son extraídas periódicamente hacia la capa Bronze. Posteriormente, Apache Spark
+transforma estos datos hacia capas Silver y Gold para generar indicadores de negocio.
+
+La ejecución del pipeline se controla mediante la entidad \texttt{AnalyticsJobRun}, que
+registra el tipo de job, estado de ejecución, usuario que lo inició, ventana de datos
+procesada, tiempos de inicio y fin, errores y metadatos asociados. Esta entidad permite
+reprocesar rangos históricos sin recalcular la totalidad del modelo y facilita el linaje
+entre los datos transaccionales y las métricas finales.
+
+Las tablas Gold, como \texttt{AnalyticSalesDaily}, \texttt{AnalyticItemVelocity},
+\texttt{AnalyticServiceTimes} y \texttt{AnalyticDemandEstimate}, almacenan agregados
+precalculados para consulta desde el dashboard administrativo. Cada registro mantiene
+una referencia al job que lo generó mediante \texttt{jobRunId}, permitiendo rastrear la
+métrica hasta la ejecución específica del pipeline.
+
+Esta separación permite mantener la base OLTP optimizada para la operación diaria, mientras
+que las consultas analíticas se ejecutan sobre estructuras derivadas, reduciendo el impacto
+sobre el rendimiento percibido por los usuarios en tiempo real.
 \begin{landscape}
-\begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth,height=0.9\textheight,keepaspectratio]{erd/rendered/DB-simple.pdf}
-  \caption{Modelo de Entidad-Relación Global (Simplificado) --- Bouquet OPS}
+  \begin{adjustbox}{width=25cm, center}
+    \includegraphics{erd/rendered/DB-simple.pdf}
+  \end{adjustbox}
+  \captionof{figure}{Modelo de Entidad-Relación Global (Simplificado) --- Bouquet}
   \label{fig:erd-global}
-\end{figure}
 \end{landscape}
 
 \clearpage

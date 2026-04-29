@@ -1,0 +1,70 @@
+erDiagram
+
+    Settlement {
+        string id PK
+        string restaurantId FK
+        string diningSessionId FK
+        string currency FK
+        string status "ABIERTA | PARCIAL | LIQUIDADA | CANCELADA"
+        string splitMode "TOTAL | POR_ITEM | IGUAL | PERSONALIZADO"
+        int subtotalCents
+        int discountCents
+        int tipAmountCents
+        int taxAmountCents
+        int totalCents
+        int amountSettledCents
+        int remainingCents
+        string notes
+        timestamp createdAt
+        timestamp updatedAt
+        timestamp settledAt
+    }
+
+    SettlementContribution {
+        string id PK
+        string settlementId FK
+        string guestId FK
+        string registeredByUserId FK
+        string method "CASH | OUT_OF_SYSTEM | OTHER"
+        string status "REGISTERED | VOIDED"
+        int amountCents
+        string note
+        timestamp createdAt
+    }
+
+    SettlementAllocation {
+        string id PK
+        string settlementId FK
+        string contributionId FK
+        string orderItemId FK
+        string guestId FK
+        int amountCents
+        timestamp createdAt
+    }
+
+    AppliedAdjustment {
+        string id PK
+        string restaurantId FK
+        string orderItemId FK
+        string settlementId FK
+        string approvedByUserId FK
+        string type "DISCOUNT | COURTESY"
+        string calculationMode "PERCENT | FIXED"
+        string status "APPLIED | VOIDED"
+        int valueBps
+        int valueCents
+        int amountCents
+        string reason
+        string description
+        timestamp createdAt
+    }
+
+    DiningSession ||--o{ Settlement : "tiene"
+    Settlement ||--o{ SettlementContribution : "recibe"
+    Settlement ||--o{ SettlementAllocation : "distribuye"
+    Settlement ||--o{ AppliedAdjustment : "tiene"
+    SettlementContribution ||--o{ SettlementAllocation : "cubre"
+    Guest ||--o{ SettlementAllocation : "asignada a"
+    Guest ||--o{ SettlementContribution : "realiza"
+    OrderItem ||--o{ SettlementAllocation : "cubierto"
+    OrderItem ||--o{ AppliedAdjustment : "tiene"

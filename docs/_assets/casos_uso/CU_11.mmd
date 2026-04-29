@@ -4,29 +4,26 @@ sequenceDiagram
     %% Color Palette
     actor G as Gerente
     participant S as Sistema (Bouquet API)
-    participant P as Pasarela de Pagos (Stripe)
     participant DB as Base de Datos (PostgreSQL)
 
     rect rgb(235, 243, 250)
-        Note over G,DB: Fase 1: Aplicación de Descuento
-        G->>S: Selecciona Item o Pago -> Aplicar Descuento
-        S->>DB: INSERT AppliedDiscount { type: PERCENT, value: 50, reason: "Cortesia" }
-        S->>DB: UPDATE Account (Recalcular Total)
-        S-->>G: Descuento aplicado (Snapshot registrado)
+        Note over G,DB: Fase 1: Aplicación de Ajuste Autorizado
+        G->>S: Selecciona Item o Cuenta -> Aplicar Ajuste
+        S->>DB: INSERT AppliedDiscount { type: PERCENT, value: 50, reason: "Cortesía" }
+        S->>DB: UPDATE Account (Recalcular Total Interno)
+        S-->>G: Ajuste aplicado (Snapshot registrado en auditoría)
     end
 
     rect rgb(214, 239, 216)
-        Note over G,P: Fase 2: Reembolso Financiero
-        G->>S: Iniciar Reembolso de Pago #123
-        S->>P: POST /v1/refunds { chargeId, amount }
-        P-->>S: Refund Success (provider_id)
-        S->>DB: INSERT Refund { status: COMPLETED, providerId }
-        S->>DB: UPDATE Payment (status: REFUNDED)
-        S-->>G: Reembolso procesado exitosamente
+        Note over G,DB: Fase 2: Registro de Motivo y Auditoría
+        G->>S: POST /api/adjustments { accountId, reason: "Error de cocina" }
+        S->>DB: INSERT AuditLog { action: "MANUAL_ADJUSTMENT", userId, reason }
+        DB-->>S: Registro Guardado
+        S-->>G: Acción documentada para trazabilidad analítica
     end
 
     rect rgb(253, 220, 220)
         Note over G,S: Validaciones de Seguridad
-        G--xS: Intento de reembolso mayor al monto pagado
-        S-->>G: Error 422 — El monto excede el pago original
+        G--xS: Intento de ajuste sin motivo obligatorio
+        S-->>G: Error 422 — Justificación requerida para auditoría
     end

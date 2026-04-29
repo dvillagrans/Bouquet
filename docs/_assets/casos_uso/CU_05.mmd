@@ -10,7 +10,7 @@ sequenceDiagram
     rect rgb(235, 243, 250)
         Note over G,S: Fase 1: Autenticación y Perfilamiento
         G->>S: Accede a /admin/dashboard
-        S->>S: Valida JWT y Rol (GERENTE | ADMIN)
+        S->>S: Valida Sesión y Rol (GERENTE | ADMIN)
         S->>S: Identifica nivel organizacional (Sucursal | Zona | Cadena)
     end
 
@@ -18,14 +18,14 @@ sequenceDiagram
         Note over S,DB: Fase 2: Consulta de Métricas Gold
         S->>B: GET /api/analytics/metrics { orgId, filters }
         B->>B: Aplica filtros RLS según jerarquía
-        B->>DB: Query Sales + Velocity + Service_Time (Gold Layer)
-        DB-->>B: Datos agregados y pronósticos (ML)
+        B->>DB: Query Consumption + Velocity + Service_Time (Gold Layer)
+        DB-->>B: Datos agregados y estimaciones exploratorias
         B-->>S: Payload JSON con métricas calculadas
     end
 
     rect rgb(255, 240, 214)
         Note over G,S: Fase 3: Visualización de Negocio
-        S->>S: Renderiza Gráficas Recharts (Ventas, Mapas de Calor)
+        S->>S: Renderiza Gráficas Recharts (Consumo, Tiempos, Top Productos)
         S-->>G: Dashboard interactivo en tiempo real
         G->>S: Exportar reporte ejecutivo
         S-->>G: Descarga CSV / PDF

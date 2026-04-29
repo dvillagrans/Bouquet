@@ -4,7 +4,6 @@ sequenceDiagram
     %% Color Palette
     actor C as Comensal
     participant S as Sistema (Bouquet API)
-    participant P as Pasarela de Pagos (Stripe)
     participant DB as Base de Datos (PostgreSQL)
 
     rect rgb(235, 243, 250)
@@ -12,18 +11,16 @@ sequenceDiagram
         C->>S: GET /api/session/checkout
         S->>DB: SELECT items, total FROM Cuenta WHERE session_id = ?
         DB-->>S: Resumen de consumo (Individual vs Mesa)
-        S-->>C: Despliegue de opciones de pago y propina
-        C->>S: Selecciona modalidad (Completa / Dividida)
+        S-->>C: Despliegue de resumen de liquidación interna
+        C->>S: Selecciona monto a aportar
     end
 
     rect rgb(214, 239, 216)
-        Note over C,DB: Fase 2: Procesamiento y Bloqueo
-        C->>S: POST /api/payment { amount, method: CARD }
+        Note over C,DB: Fase 2: Registro y Bloqueo Transaccional
+        C->>S: POST /api/contribution { amount }
         S->>DB: BEGIN TRANSACTION + SELECT FOR UPDATE (Account)
-        Note right of DB: Bloqueo de concurrencia (Prevención de doble pago)
-        S->>P: Procesa cargo con tarjeta
-        P-->>S: Confirmación de Pago Exitoso
-        S->>DB: INSERT Payment + UPDATE Account (saldo_pendiente -= amount)
+        Note right of DB: Bloqueo de concurrencia (Prevención de sobreliquidación)
+        S->>DB: INSERT Contribution + UPDATE Account (saldo_pendiente -= amount)
         S->>DB: COMMIT TRANSACTION
     end
 
@@ -32,16 +29,15 @@ sequenceDiagram
         S->>DB: SELECT balance FROM Account WHERE table_id = ?
         alt Saldo es Cero
             S->>DB: UPDATE MesaVirtual (status = LIQUIDADA)
-            S->>DB: UPDATE MesaFisica (status = SUCIA)
-            S-->>C: Genera Comprobante Digital (PDF)
+            S-->>C: Genera Constancia Interna de Estado de Cuenta
         else Saldo Pendiente
-            S-->>C: Pago parcial registrado. Esperando demás comensales.
+            S-->>C: Aportación parcial registrada. Esperando demás comensales.
         end
     end
 
     rect rgb(253, 220, 220)
         Note over C,S: Escenarios de Error
-        P--xS: Pago rechazado / Fondos insuficientes
-        S-->>C: Error 402 — Transacción declinada
+        C--xS: El monto excede el saldo pendiente
+        S-->>C: Error 422 — Operación no permitida
         S->>DB: ROLLBACK (Libera bloqueo de cuenta)
     end

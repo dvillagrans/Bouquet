@@ -3,7 +3,8 @@
 import { useMemo, useState, useTransition } from "react";
 import { UserPlus, Trash2, Eye, EyeOff, Search } from "lucide-react";
 import { createStaffMember, deleteStaffMember, toggleStaffStatus } from "@/actions/staff";
-import { Staff } from "@/generated/prisma";
+// TODO: migrar a AppUser + UserRole
+type Staff = { id: string; name: string; role: string; email: string | null; isActive: boolean; createdAt: Date; };
 
 /* ── Role config ─────────────────────────────────────────────────── */
 type Role = "ADMIN" | "MESERO" | "COCINA" | "BARRA";

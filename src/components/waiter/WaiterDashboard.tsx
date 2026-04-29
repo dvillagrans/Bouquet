@@ -13,7 +13,7 @@ import FloorMapClient from "@/components/dashboard/FloorMapClient";
 import WaiterMobileFloorMap from "./WaiterMobileFloorMap";
 import { createClient } from "@/lib/supabase/client";
 import type { FloorMapTable } from "@/components/dashboard/FloorMap";
-import type { TableStatus } from "@/generated/prisma";
+import type { TableStatus } from "@/lib/prisma-legacy-types";
 import type { WaiterTableSummary } from "./types";
 import { WaiterMesaCard } from "./WaiterMesaCard";
 import { DynamicIsland } from "./ui/dynamic-island";

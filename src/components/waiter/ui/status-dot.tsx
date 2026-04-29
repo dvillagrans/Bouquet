@@ -1,6 +1,6 @@
 "use client";
 
-import type { TableStatus } from "@/generated/prisma";
+import type { TableStatus } from "@/lib/prisma-legacy-types";
 
 const STATUS_DOT_CLASS: Record<TableStatus, string> = {
   DISPONIBLE: "bg-dash-green",

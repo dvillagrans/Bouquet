@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Users, Unlink, QrCode } from "lucide-react";
-import type { TableStatus } from "@/generated/prisma";
+import type { TableStatus } from "@/lib/prisma-legacy-types";
 import { StatusDot } from "./ui/status-dot";
 import { GuestAvatar } from "./ui/guest-avatar";
 import { SessionTimeRing } from "./ui/session-time-ring";

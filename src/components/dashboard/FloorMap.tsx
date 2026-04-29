@@ -5,7 +5,8 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Stage, Layer, Rect, Circle, Text, Group, Path } from "react-konva";
 import Konva from "konva";
 import { Save, Edit3, Eye, Move, Circle as CircleIcon, Square } from "lucide-react";
-import type { Table, TableStatus } from "@/generated/prisma";
+import type { DiningTable as Table } from "@/generated/prisma";
+import type { TableStatus } from "@/lib/prisma-legacy-types";
 import { getSignedGuestPreviewUrl } from "@/actions/tables";
 import MesaCapacityPreview from "./MesaCapacityPreview";
 

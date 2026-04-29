@@ -19,14 +19,14 @@ import {
 } from "lucide-react";
 import { createTable, deleteTable } from "@/actions/tables";
 import { createTableGroup, removeFromGroup } from "@/actions/table-groups";
-import { TableStatus } from "@/generated/prisma";
+import { TableStatus } from "@/lib/prisma-legacy-types";
 import { motion, AnimatePresence, LayoutGroup, useReducedMotion } from "framer-motion";
 import FloorMapClient from "./FloorMapClient";
 import MesaCapacityPreview from "./MesaCapacityPreview";
 import { createClient } from "@/lib/supabase/client";
 
 // Mantenemos la estructura requerida del backend
-type Table = import("@/generated/prisma").Table & { groupId?: string | null };
+type Table = import("@/generated/prisma").DiningTable & { groupId?: string | null };
 type Tab = "mapa" | "lista";
 
 // Colors actualizados usando tokens existentes de color (text-gold, text-dash-red, text-dash-green, text-dash-blue)

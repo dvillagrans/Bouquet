@@ -1,5 +1,5 @@
 
-import { Table } from "@/generated/prisma";
+import { DiningTable as Table } from "@/generated/prisma";
 import TableManagerClient from "./TableManagerClient";
 
 export default function TableManager({

@@ -1,4 +1,4 @@
-import type { TableStatus } from "@/generated/prisma";
+import type { TableStatus } from "@/lib/prisma-legacy-types";
 
 export interface WaiterTableSummary {
   id: string;

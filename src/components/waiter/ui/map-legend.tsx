@@ -1,6 +1,6 @@
 "use client";
 
-import type { TableStatus } from "@/generated/prisma";
+import type { TableStatus } from "@/lib/prisma-legacy-types";
 import { StatusDot } from "./status-dot";
 
 const ROWS: { status: TableStatus; label: string }[] = [

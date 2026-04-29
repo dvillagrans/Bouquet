@@ -3,7 +3,7 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { FloorMapTable } from "@/components/dashboard/FloorMap";
-import type { TableStatus } from "@/generated/prisma";
+import type { TableStatus } from "@/lib/prisma-legacy-types";
 
 /* ── Design tokens (matches Konva map + dashboard theme) ────────── */
 

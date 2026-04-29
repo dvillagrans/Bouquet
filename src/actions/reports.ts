@@ -33,7 +33,7 @@ async function fetchPeriodData(
   mode:      "hoy" | "semana" | "mes",
 ): Promise<PeriodRaw> {
   const [orders, sessions] = await Promise.all([
-    prisma.order.findMany({
+    prisma.restaurantOrder.findMany({
       where: {
         restaurantId: restId,
         createdAt:    { gte: startDate, lte: endDate },
@@ -41,8 +41,8 @@ async function fetchPeriodData(
       },
       include: { items: { include: { menuItem: true } } },
     }),
-    prisma.session.findMany({
-      where: { table: { restaurantId: restId }, createdAt: { gte: startDate, lte: endDate } },
+    prisma.diningSession.findMany({
+      where: { restaurantId: restId, createdAt: { gte: startDate, lte: endDate } },
     }),
   ]);
 

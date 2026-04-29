@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { getDefaultRestaurant } from "./restaurant";
-import { OrderStatus } from "@/generated/prisma";
+import { OrderStatus } from "@/lib/prisma-legacy-types";
 import { revalidatePath } from "next/cache";
 import {
   broadcastGuestOrdersRefresh,
@@ -10,11 +10,11 @@ import {
 } from "@/lib/supabase/broadcast-guest-orders";
 
 async function notifyGuestMenuOrderUpdated(orderId: string) {
-  const order = await prisma.order.findUnique({
+  const order = await prisma.restaurantOrder.findUnique({
     where: { id: orderId },
-    include: { table: { select: { qrCode: true } } },
+    include: { diningSession: { select: { publicCode: true } } },
   });
-  if (order?.table) await broadcastGuestOrdersRefresh(order.table.qrCode);
+  if (order?.diningSession?.publicCode) await broadcastGuestOrdersRefresh(order.diningSession.publicCode);
   if (order) await broadcastKdsOrdersRefresh(order.restaurantId);
 }
 
@@ -23,10 +23,10 @@ export async function getLiveOrders() {
 
   const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
 
-  const activeSessions = await prisma.session.findMany({
+  const activeSessions = await prisma.diningSession.findMany({
     where: {
       isActive: true,
-      table: { restaurantId: restaurant.id },
+      restaurantId: restaurant.id,
     },
     select: { id: true },
   });
@@ -36,18 +36,12 @@ export async function getLiveOrders() {
     return [];
   }
 
-  const orders = await prisma.order.findMany({
+  const orders = await prisma.restaurantOrder.findMany({
     where: {
-      /** El alcance del restaurante ya viene de `activeSessionIds` (mesas de esta sucursal). No filtrar por `order.restaurantId`: órdenes antiguas o mal asignadas seguirían ocultas en cocina. */
       createdAt: { gte: startOfDay },
-      items: {
-        some: {
-          sessionId: { in: activeSessionIds },
-        },
-      },
+      diningSessionId: { in: activeSessionIds },
     },
     include: {
-      table: true,
       items: {
         include: {
           menuItem: true
@@ -60,7 +54,7 @@ export async function getLiveOrders() {
   // Transformar al tipo esperado por el KDS UI
   return orders.map(order => ({
     id: order.id,
-    tableCode: `Mesa ${order.table.number}`, // Mapeo para el frontend
+    tableCode: `Sesión ${order.diningSessionId.slice(-4)}`, // Mapeo para el frontend (sin table directo)
     status: order.status.toLowerCase() as
       | "pending"
       | "preparing"
@@ -69,16 +63,16 @@ export async function getLiveOrders() {
       | "cancelled",
     createdAt: order.createdAt,
     deliveredAt: order.deliveredAt || undefined,
-    guestName: order.guestName,
+    guestName: undefined as string | undefined,
     items: order.items.map((item) => {
-      const raw = String(item.menuItem.station ?? "COCINA").toLowerCase();
+      const raw = String(item.menuItem?.stationId ?? "COCINA").toLowerCase();
       const station: "cocina" | "barra" = raw === "barra" ? "barra" : "cocina";
       return {
         id: item.id,
-        name: item.menuItem.name,
+        name: item.itemNameSnapshot ?? item.menuItem?.name ?? "Platillo",
         quantity: item.quantity,
         notes: item.notes || undefined,
-        variantName: item.variantName ?? undefined,
+        variantName: item.variantNameSnapshot ?? undefined,
         station,
       };
     }),
@@ -95,7 +89,7 @@ export async function advanceOrderStatus(orderId: string, currentStatus: string)
   const nextStatus = statusFlow[currentStatus as keyof typeof statusFlow];
   if (!nextStatus) return;
 
-  await prisma.order.update({
+  await prisma.restaurantOrder.update({
     where: { id: orderId },
     data: { 
       status: nextStatus as OrderStatus,
@@ -120,7 +114,7 @@ export async function undoOrderStatus(orderId: string, currentStatus: string) {
   const prevStatus = undoFlow[currentStatus as keyof typeof undoFlow];
   if (!prevStatus) return;
 
-  await prisma.order.update({
+  await prisma.restaurantOrder.update({
     where: { id: orderId },
     data: { status: prevStatus as OrderStatus }
   });
@@ -143,7 +137,7 @@ export async function moveOrderToStatus(
     ready:     "READY",
   } as const;
 
-  await prisma.order.update({
+  await prisma.restaurantOrder.update({
     where: { id: orderId },
     data:  { status: STATUS_MAP[targetStatus] as OrderStatus },
   });

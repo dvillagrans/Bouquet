@@ -20,14 +20,13 @@ function startOfToday(): Date {
 }
 
 /** Solo pedidos del día cuyos ítems pertenecen a sesiones activas en esa mesa (no arrastra turnos ya cerrados). */
-function ordersWhereActiveSessionsForTable(tableId: string): Prisma.OrderWhereInput {
+function ordersWhereActiveSessionsForTable(tableId: string): Prisma.RestaurantOrderWhereInput {
   return {
     createdAt: { gte: startOfToday() },
     items: {
       some: {
-        session: {
+        guest: {
           isActive: true,
-          tableId,
         },
       },
     },
@@ -40,14 +39,9 @@ function ordersWhereActiveSessionsForTable(tableId: string): Prisma.OrderWhereIn
  * QR rotation is an explicit waiter action via regenerateTableQr.
  */
 export async function updateTableStatus(tableId: string, status: "DISPONIBLE" | "OCUPADA" | "SUCIA") {
-  const data: Prisma.TableUpdateInput = { status };
+  const data: Prisma.DiningTableUpdateInput = { status };
 
-  if (status === "DISPONIBLE") {
-    // Clear join code so the next host gets a fresh one
-    data.joinCode = null;
-  }
-
-  const updated = await prisma.table.update({ where: { id: tableId }, data });
+  const updated = await prisma.diningTable.update({ where: { id: tableId }, data });
 
   revalidatePath("/mesero");
   revalidatePath("/dashboard/mesas");
@@ -59,7 +53,7 @@ export async function updateTableStatus(tableId: string, status: "DISPONIBLE" | 
  * Allowed only for available tables to avoid invalidating an active session.
  */
 export async function regenerateTableQr(tableId: string) {
-  const table = await prisma.table.findUnique({
+  const table = await prisma.diningTable.findUnique({
     where: { id: tableId },
     select: { id: true, status: true },
   });
@@ -72,7 +66,7 @@ export async function regenerateTableQr(tableId: string) {
   let newCode: string | undefined;
   for (let attempt = 0; attempt < 24; attempt++) {
     const candidate = generateSecureTableCode(10);
-    const clash = await prisma.table.findUnique({ where: { qrCode: candidate } });
+    const clash = await prisma.diningTable.findUnique({ where: { qrCode: candidate } });
     if (!clash) {
       newCode = candidate;
       break;
@@ -80,7 +74,7 @@ export async function regenerateTableQr(tableId: string) {
   }
   if (!newCode) throw new Error("No se pudo regenerar el código QR.");
 
-  const rotated = await prisma.table.update({
+  const rotated = await prisma.diningTable.update({
     where: { id: tableId },
     data: { qrCode: newCode, joinCode: null },
   });
@@ -97,7 +91,7 @@ export async function regenerateTableQr(tableId: string) {
  */
 export async function closeTable(tableId: string) {
   // Check if table belongs to a group — use removeFromGroup for partial separation
-  const tableCheck = await prisma.table.findUnique({
+  const tableCheck = await prisma.diningTable.findUnique({
     where: { id: tableId },
     select: { groupId: true },
   });
@@ -109,20 +103,20 @@ export async function closeTable(tableId: string) {
   }
 
   // 1. Find all active sessions for this table
-  const sessions = await prisma.session.findMany({
+  const sessions = await prisma.diningSession.findMany({
     where: { tableId, isActive: true }
   });
 
   // 2. Mark them as closed
   for (const session of sessions) {
-    await prisma.session.update({
+    await prisma.diningSession.update({
       where: { id: session.id },
       data: { isActive: false, closedAt: new Date() }
     });
   }
 
   // 3. Update table status to SUCIA
-  const closed = await prisma.table.update({
+  const closed = await prisma.diningTable.update({
     where: { id: tableId },
     data: { status: "SUCIA" }
   });
@@ -138,7 +132,7 @@ export async function closeTable(tableId: string) {
 export async function getWaiterTablesSummary() {
   const restaurant = await getDefaultRestaurant();
 
-  const tables = await prisma.table.findMany({
+  const tables = await prisma.diningTable.findMany({
     where: { restaurantId: restaurant.id },
     orderBy: { number: "asc" },
     include: {
@@ -207,7 +201,7 @@ export async function getWaiterTablesSummary() {
  * Get detailed info for a specific table
  */
 export async function getTableDetail(tableId: string) {
-  const table = await prisma.table.findUnique({
+  const table = await prisma.diningTable.findUnique({
     where: { id: tableId },
     include: {
       sessions: {
@@ -303,7 +297,7 @@ export async function waiterCreateOrder(
   }>
 ) {
   // 1. Validate table exists and is occupied
-  const table = await prisma.table.findUnique({
+  const table = await prisma.diningTable.findUnique({
     where: { id: tableId },
   });
 
@@ -311,7 +305,7 @@ export async function waiterCreateOrder(
   if (table.status !== "OCUPADA") throw new Error("La mesa no está ocupada");
 
   // 2. Get active session for table
-  let session = await prisma.session.findFirst({
+  let session = await prisma.diningSession.findFirst({
     where: { tableId, isActive: true },
     orderBy: { createdAt: "desc" },
   });
@@ -319,7 +313,7 @@ export async function waiterCreateOrder(
   if (!session) throw new Error("No hay sesión activa en esta mesa");
 
   // 3. Get menu item prices
-  const dbItems = await prisma.menuItem.findMany({
+  const dbItems = await prisma.restaurantMenuItem.findMany({
     where: { id: { in: items.map((i) => i.menuItemId) } },
   });
 
@@ -343,7 +337,7 @@ export async function waiterCreateOrder(
   }
 
   // 4. Create order
-  const newOrder = await prisma.order.create({
+  const newOrder = await prisma.restaurantOrder.create({
     data: {
       restaurantId: table.restaurantId,
       tableId,
@@ -365,7 +359,7 @@ export async function waiterCreateOrder(
     },
   });
 
-  const tableRow = await prisma.table.findUnique({
+  const tableRow = await prisma.diningTable.findUnique({
     where: { id: tableId },
     select: { qrCode: true },
   });
@@ -386,11 +380,11 @@ export async function getMenuForOrdering() {
   const restaurant = await getDefaultRestaurant();
 
   const [categories, items] = await Promise.all([
-    prisma.category.findMany({
+    prisma.restaurantCategory.findMany({
       where: { restaurantId: restaurant.id },
       orderBy: { order: "asc" },
     }),
-    prisma.menuItem.findMany({
+    prisma.restaurantMenuItem.findMany({
       where: { restaurantId: restaurant.id, isSoldOut: false },
       include: { category: true },
     }),

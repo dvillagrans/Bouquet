@@ -53,18 +53,19 @@ export async function getRestaurantOverview() {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
-  const tables = await prisma.table.findMany({
+  const tables = await prisma.diningTable.findMany({
     where: { restaurantId: restaurant.id },
     select: { status: true },
   });
-  const staffCount = await prisma.staff.count({ where: { restaurantId: restaurant.id, isActive: true } });
-  const ordersToday = await prisma.order.findMany({ 
+  // TODO: migrar staff a AppUser + UserRole
+  const staffCount = 0;
+  const ordersToday = await prisma.restaurantOrder.findMany({ 
     where: { restaurantId: restaurant.id, createdAt: { gte: startOfDay } },
     select: { status: true }
   });
-  const paymentsToday = await prisma.payment.findMany({
+  const paymentsToday = await prisma.settlement.findMany({
     where: { restaurantId: restaurant.id, status: "PAID", order: { createdAt: { gte: startOfDay } } },
-    select: { subtotal: true },
+    select: { subtotalCents: true },
   });
 
   const activeTables = tables.filter((t) => t.status !== "DISPONIBLE").length;
@@ -72,7 +73,7 @@ export async function getRestaurantOverview() {
   const deliveredOrders = ordersToday.filter((o) => o.status === "DELIVERED").length;
   const pendingOrders = ordersToday.filter((o) => o.status === "PENDING").length;
   
-  const todayRevenue = paymentsToday.reduce((a, p) => a + (p.subtotal || 0), 0);
+  const todayRevenue = paymentsToday.reduce((a, p) => a + ((p.subtotalCents || 0) / 100), 0);
   
   return {
     restaurant,

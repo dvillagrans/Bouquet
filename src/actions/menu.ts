@@ -23,17 +23,17 @@ export async function getMenuData(options?: { restaurantId?: string }) {
   }
   
   // Buscar categorías
-  let categories = await prisma.category.findMany({
+  let categories = await prisma.restaurantCategory.findMany({
     where: { restaurantId: restaurant.id },
     orderBy: { order: 'asc' },
-    include: { items: true } // Traemos los items de una vez
+    include: { items: true }
   });
 
-  // Crearlas si el usuario recién inicia (upsert secuencial: evita duplicados por requests paralelas)
+  // Crearlas si el usuario recién inicia
   if (categories.length === 0) {
     for (let i = 0; i < DEFAULT_CATEGORIES.length; i++) {
       const name = DEFAULT_CATEGORIES[i];
-      await prisma.category.upsert({
+      await prisma.restaurantCategory.upsert({
         where: {
           restaurantId_name: {
             restaurantId: restaurant.id,
@@ -45,19 +45,20 @@ export async function getMenuData(options?: { restaurantId?: string }) {
       });
     }
 
-    categories = await prisma.category.findMany({
+    categories = await prisma.restaurantCategory.findMany({
       where: { restaurantId: restaurant.id },
       orderBy: { order: "asc" },
       include: { items: true },
     });
   }
 
-  // Devolvemos las categorias puras y una lista plana de todos los items concatenados (para que sea mas facil en el state actual del UI)
+  // Devolvemos las categorias puras y una lista plana de todos los items concatenados
   const allItems = categories.flatMap(cat =>
     cat.items.map(item => ({
       ...item,
       categoryName: cat.name,
-      variants: parseVariantsJson(item.variants),
+      // TODO: adaptar variants a relación RestaurantMenuItemVariant en vez de JSON
+      variants: parseVariantsJson(item.variants as any),
     }))
   );
 
@@ -72,13 +73,13 @@ export async function createCategory(name: string) {
     return { id: "", name: "" };
   }
 
-  const last = await prisma.category.findFirst({
+  const last = await prisma.restaurantCategory.findFirst({
     where: { restaurantId: restaurant.id },
     orderBy: { order: "desc" },
   });
   const nextOrder = (last?.order ?? -1) + 1;
 
-  const cat = await prisma.category.upsert({
+  const cat = await prisma.restaurantCategory.upsert({
     where: {
       restaurantId_name: {
         restaurantId: restaurant.id,
@@ -97,7 +98,7 @@ export async function createCategory(name: string) {
 }
 
 export async function toggleItemSoldOut(id: string, currentStatus: boolean) {
-  await prisma.menuItem.update({
+  await prisma.restaurantMenuItem.update({
     where: { id },
     data: { isSoldOut: !currentStatus }
   });
@@ -105,7 +106,7 @@ export async function toggleItemSoldOut(id: string, currentStatus: boolean) {
 }
 
 export async function deleteMenuItem(id: string) {
-  await prisma.menuItem.delete({
+  await prisma.restaurantMenuItem.delete({
     where: { id }
   });
   revalidatePath("/dashboard/menu");
@@ -119,15 +120,15 @@ export async function updateMenuItem(id: string, data: {
   isPopular: boolean;
   variants?: Array<{ name: string; price: number }>;
 }) {
-  await prisma.menuItem.update({
+  // TODO: adaptar a priceCents y relación de variants
+  await prisma.restaurantMenuItem.update({
     where: { id },
     data: {
       name: data.name,
       description: data.description,
-      price: data.price,
+      priceCents: Math.round(data.price * 100),
       categoryId: data.categoryId,
       isPopular: data.isPopular,
-      variants: data.variants ?? [],
     },
   });
   revalidatePath("/dashboard/menu");
@@ -144,10 +145,14 @@ export async function createMenuItem(data: {
 }) {
   const restaurant = await getDefaultRestaurant();
 
-  const newItem = await prisma.menuItem.create({
+  // TODO: adaptar station a stationId (tabla Station) y variants a relación
+  const newItem = await prisma.restaurantMenuItem.create({
     data: {
-      ...data,
-      variants: data.variants ?? [],
+      name: data.name,
+      description: data.description,
+      priceCents: Math.round(data.price * 100),
+      categoryId: data.categoryId,
+      isPopular: data.isPopular,
       restaurantId: restaurant.id,
     }
   });

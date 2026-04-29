@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import type { Table } from "@/generated/prisma";
+import type { DiningTable } from "@/generated/prisma";
 
 import { findTableByQrCode } from "@/lib/find-table-by-qr";
 import { prisma } from "@/lib/prisma";
@@ -20,7 +20,7 @@ export type GuestTableResolution =
   | { status: "session_ended"; canonicalQr: string }
   | {
       status: "ok";
-      table: Table;
+      table: DiningTable;
       guestName: string;
       partySize: number;
     };
@@ -42,7 +42,7 @@ export async function resolveGuestTableAccess(rawTableCode: string): Promise<Gue
     return { status: "need_login", canonicalQr: table.qrCode };
   }
 
-  const session = await prisma.session.findUnique({
+  const session = await prisma.diningSession.findUnique({
     where: { id: sessionId },
     select: {
       guestName: true,
@@ -77,7 +77,7 @@ export async function hasTableJoinGate(canonicalQr: string, decodedHint: string)
 }
 
 export async function requireTableJoinGate(
-  table: { qrCode: string },
+  table: { publicCode: string },
   cookieTableCodeHint: string,
 ): Promise<void> {
   const ok = await hasTableJoinGate(table.qrCode, cookieTableCodeHint);
@@ -105,7 +105,7 @@ export async function requireGuestSessionRow(
     throw new Error("Entra a la mesa desde el código QR antes de continuar.");
   }
 
-  const session = await prisma.session.findUnique({
+  const session = await prisma.diningSession.findUnique({
     where: { id: sessionId },
     select: {
       id: true,

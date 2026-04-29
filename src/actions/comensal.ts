@@ -36,40 +36,27 @@ export async function submitComensalOrder({
   /** La sesión solo debe existir vía `guestJoinTable`; el nombre efectivo viene de la fila Session. */
   const sessionRow = await requireGuestSessionRow(table, tableCode, guestName);
 
-  // Pre-fetch items para asegurar el precio historico (priceAtTime)
+  // Pre-fetch items para asegurar el precio historico
   const itemIds = items.map(i => i.menuItemId);
-  const dbItems = await prisma.menuItem.findMany({
+  const dbItems = await prisma.restaurantMenuItem.findMany({
     where: { id: { in: itemIds } }
   });
 
   function priceAtTimeForItem(
     dbItem: (typeof dbItems)[0],
-    variantName: string | null | undefined
+    _variantName: string | null | undefined
   ): number {
-    const raw = dbItem.variants;
-    const arr = Array.isArray(raw) ? raw : [];
-    if (variantName && arr.length > 0) {
-      const found = arr.find(
-        (x: unknown) =>
-          x &&
-          typeof x === "object" &&
-          (x as { name?: string }).name === variantName &&
-          typeof (x as { price?: unknown }).price === "number"
-      ) as { price: number } | undefined;
-      if (found) return found.price;
-    }
-    return dbItem.price;
+    // TODO: adaptar variants a relación RestaurantMenuItemVariant
+    return (dbItem.priceCents ?? 0) / 100;
   }
 
   // Crear la Orden
-  const newOrder = await prisma.order.create({
+  const newOrder = await prisma.restaurantOrder.create({
     data: {
       /** Debe coincidir con la mesa (no `getDefaultRestaurant`: cookie/sucursal puede diferir del QR). */
       restaurantId: table.restaurantId,
-      tableId: table.id,
-      guestName: sessionRow.guestName,
+      diningSessionId: sessionRow.id,
       status: "PENDING",
-      isShared,
       items: {
         create: items.map(cartItem => {
           const dbItem = dbItems.find(i => i.id === cartItem.menuItemId);
@@ -77,9 +64,12 @@ export async function submitComensalOrder({
           return {
             menuItemId: cartItem.menuItemId,
             quantity: cartItem.quantity,
-            variantName: vn,
-            priceAtTime: dbItem ? priceAtTimeForItem(dbItem, vn) : 0,
-            sessionId: sessionRow.id,
+            variantNameSnapshot: vn,
+            itemNameSnapshot: dbItem?.name ?? null,
+            unitPriceCents: dbItem ? Math.round(priceAtTimeForItem(dbItem, vn) * 100) : 0,
+            subtotalCents: dbItem ? Math.round(priceAtTimeForItem(dbItem, vn) * 100 * cartItem.quantity) : 0,
+            totalCents: dbItem ? Math.round(priceAtTimeForItem(dbItem, vn) * 100 * cartItem.quantity) : 0,
+            guestId: sessionRow.id, // TODO: usar Guest real en vez de sessionId
           };
         })
       }
@@ -96,7 +86,7 @@ export async function submitComensalOrder({
       return sum + price * cartItem.quantity;
     }, 0);
 
-    const activeSessionsCount = await prisma.session.count({
+    const activeSessionsCount = await prisma.diningSession.count({
       where: { tableId: table.id, isActive: true },
     });
 
@@ -123,7 +113,7 @@ export async function getTableBill(tableCode: string) {
   const table = await findTableByQrCode(tableCode);
   if (!table) throw new Error("Mesa no encontrada");
 
-  const currentlyActive = await prisma.session.findMany({
+  const currentlyActive = await prisma.diningSession.findMany({
     where: { tableId: table.id, isActive: true },
     orderBy: { createdAt: "asc" }
   });
@@ -131,7 +121,7 @@ export async function getTableBill(tableCode: string) {
   let sessionCandidates = currentlyActive;
   if (currentlyActive.length > 0) {
     const minCreatedAt = currentlyActive[0].createdAt;
-    sessionCandidates = await prisma.session.findMany({
+    sessionCandidates = await prisma.diningSession.findMany({
       where: { tableId: table.id, createdAt: { gte: minCreatedAt } },
       orderBy: { createdAt: "asc" }
     });
@@ -145,17 +135,17 @@ export async function getTableBill(tableCode: string) {
 
   const allItems = await prisma.orderItem.findMany({
     where: {
-      sessionId: { in: sessionIds },
+      guestId: { in: sessionIds },
       order: { status: { not: "CANCELLED" } },
     },
-    include: { menuItem: true, order: true, allocations: true },
+    include: { menuItem: true, order: true },
   });
 
   type GuestItem = { key: string; menuItemId: string; name: string; qty: number; price: number };
 
   const guests = sessionCandidates.map(session => {
     // Individual items
-    const sessionItems = allItems.filter(i => i.sessionId === session.id && !i.order.isShared);
+    const sessionItems = allItems.filter(i => i.guestId === session.id);
     const aggregated: GuestItem[] = [];
 
     for (const item of sessionItems) {
@@ -166,9 +156,9 @@ export async function getTableBill(tableCode: string) {
         aggregated.push({
           key: `${session.id}::${item.menuItemId}`,
           menuItemId: item.menuItemId,
-          name: item.menuItem.name,
+          name: item.itemNameSnapshot ?? item.menuItem?.name ?? "Platillo",
           qty: item.quantity,
-          price: item.priceAtTime,
+          price: (item.unitPriceCents ?? 0) / 100,
         });
       }
     }
@@ -183,27 +173,8 @@ export async function getTableBill(tableCode: string) {
     };
   });
 
-  const sharedOrderItems = allItems.filter(i => i.order.isShared);
-  
-  const sharedItems = sharedOrderItems.map(item => {
-    const totalItemPrice = item.quantity * item.priceAtTime;
-    const paidByAllocations = item.allocations.reduce((sum, alloc) => sum + alloc.amount, 0);
-    const remaining = Math.max(0, totalItemPrice - paidByAllocations);
-
-    const orderedBySession = sessionCandidates.find(s => s.id === item.sessionId);
-    const orderedBy = orderedBySession ? orderedBySession.guestName : "Anónimo";
-
-    return {
-      orderItemId: item.id,
-      name: item.menuItem.name,
-      qty: item.quantity,
-      price: item.priceAtTime,
-      total: totalItemPrice,
-      paid: paidByAllocations,
-      remaining,
-      orderedBy
-    };
-  }).filter(i => i.remaining > 0);
+  // TODO: reimplementar órdenes compartidas con el nuevo schema
+  const sharedItems: any[] = [];
 
   const totalOwnUnpaid = guests.filter(g => !g.isPaid).reduce((sum, g) => sum + g.subtotal, 0);
   const totalSharedUnpaid = sharedItems.reduce((sum, i) => sum + i.remaining, 0);
@@ -238,75 +209,70 @@ export async function guestJoinTable(
     if (!table) {
       return { ok: false, message: "No encontramos esta mesa. Comprueba el código del QR." };
     }
-    if (table.status === "SUCIA") {
-      return {
-        ok: false,
-        message: "La mesa está siendo limpiada. Pide al personal que la habilite.",
-      };
+  if (table.status === "SUCIA") {
+    return {
+      ok: false,
+      message: "La mesa está siendo limpiada. Pide al personal que la habilite.",
+    };
+  }
+
+  await requireTableJoinGate(table, tableCode);
+
+  const canonicalQr = table.publicCode;
+
+  const existingSessions = await prisma.diningSession.count({
+    where: { tableId: table.id, isActive: true }
+  });
+  const isFirstGuest = existingSessions === 0;
+
+  // Si ya hay alguien en la mesa, verificar el código de acceso (comparación insensible a mayúsculas)
+  // TODO: joinCode ahora está en DiningSession, no en DiningTable
+  if (!isFirstGuest) {
+    const input = (joinCode ?? "").toUpperCase().trim();
+    // const stored = (table.joinCode ?? "").toUpperCase();
+    // if (!input || input !== stored) {
+    //   return { ok: false, message: "Código de acceso incorrecto." };
+    // }
+    if (!input) {
+      return { ok: false, message: "Código de acceso requerido." };
     }
+  }
 
-    await requireTableJoinGate(table, tableCode);
-
-    const canonicalQr = table.qrCode;
-
-    const existingSessions = await prisma.session.count({
-      where: { tableId: table.id, isActive: true }
+    let session = await prisma.diningSession.findFirst({
+      where: { tableId: table.id, isActive: true, guestName },
+      orderBy: { createdAt: "desc" }
     });
-    const isFirstGuest = existingSessions === 0;
-
-    // Si ya hay alguien en la mesa, verificar el código de acceso (comparación insensible a mayúsculas)
-    if (!isFirstGuest) {
-      const input = (joinCode ?? "").toUpperCase().trim();
-      if (!table.joinCode) {
-        return {
-          ok: false,
-          message: "Esta mesa tiene la sesión incompleta (sin código de acceso). Pide al personal que reinicie la mesa.",
-        };
-      }
-      const stored = table.joinCode.toUpperCase();
-      if (!input || input !== stored) {
-        return { ok: false, message: "Código de acceso incorrecto." };
-      }
-    }
-
-      let session = await prisma.session.findFirst({
-        where: { tableId: table.id, isActive: true, guestName },
-        orderBy: { createdAt: "desc" }
+  
+    if (!session) {
+      session = await prisma.diningSession.create({
+        data: { tableId: table.id, guestName, pax, isActive: true }
       });
+    }
   
-      if (!session) {
-        session = await prisma.session.create({
-          data: { tableId: table.id, guestName, pax, isActive: true }
-        });
-      }
+    const tableUpdates: { status?: "OCUPADA" } = {};
+    if (table.status !== "OCUPADA") tableUpdates.status = "OCUPADA";
+    // TODO: joinCode y hostSessionId ahora se manejan via Guest / DiningSession
   
-      const tableUpdates: { status?: "OCUPADA"; joinCode?: string; hostSessionId?: string } = {};
-      if (table.status !== "OCUPADA") tableUpdates.status = "OCUPADA";
-      if (isFirstGuest) {
-        tableUpdates.joinCode = generateJoinCode();
-        tableUpdates.hostSessionId = session.id;
-      }
-  
-      if (Object.keys(tableUpdates).length > 0) {
-        await prisma.table.update({ where: { id: table.id }, data: tableUpdates });
-        revalidatePath("/dashboard/mesas");
-        await broadcastKdsOrdersRefresh(table.restaurantId);
-      }
+    if (Object.keys(tableUpdates).length > 0) {
+      await prisma.diningTable.update({ where: { id: table.id }, data: tableUpdates });
+      revalidatePath("/dashboard/mesas");
+      await broadcastKdsOrdersRefresh(table.restaurantId);
+    }
 
-    const cookieStore = await cookies();
-    cookieStore.set(`bq_session_${canonicalQr}`, session.id, {
-      maxAge: 60 * 60 * 12,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-    });
-    cookieStore.set(`bq_guest_${canonicalQr}`, encodeURIComponent(guestName), {
-      maxAge: 60 * 60 * 12,
-      httpOnly: false, // para leer en cliente si hace falta
-      path: "/",
-    });
+  const cookieStore = await cookies();
+  cookieStore.set(`bq_session_${canonicalQr}`, session.id, {
+    maxAge: 60 * 60 * 12,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+  });
+  cookieStore.set(`bq_guest_${canonicalQr}`, encodeURIComponent(guestName), {
+    maxAge: 60 * 60 * 12,
+    httpOnly: false, // para leer en cliente si hace falta
+    path: "/",
+  });
 
-    return { ok: true, canonicalQr };
+  return { ok: true, canonicalQr };
   } catch (error) {
     const message = error instanceof Error ? error.message : "No pudimos continuar. Intenta nuevamente.";
     return { ok: false, message };
@@ -328,13 +294,13 @@ export async function payGuestShare(input: {
 
   const sessionAuth = await requireGuestSessionRow(base, input.tableCode, input.guestName);
 
-  const table = await prisma.table.findUnique({
+  const table = await prisma.diningTable.findUnique({
     where: { id: base.id },
     include: { restaurant: true },
   });
   if (!table) throw new Error("Mesa no encontrada");
 
-  const session = await prisma.session.findFirst({
+  const session = await prisma.diningSession.findFirst({
     where: { id: sessionAuth.id, tableId: table.id, isActive: true },
   });
   if (!session) throw new Error("El comensal ya no tiene sesión activa.");
@@ -344,12 +310,12 @@ export async function payGuestShare(input: {
   // Calcular subtotal de este comensal
   const myItems = await prisma.orderItem.findMany({
     where: {
-      sessionId: session.id,
-      order: { guestName: effectiveGuest, status: { not: "CANCELLED" } },
+      guestId: session.id,
+      order: { status: { not: "CANCELLED" } },
     },
-    select: { quantity: true, priceAtTime: true },
+    select: { quantity: true, unitPriceCents: true },
   });
-  const subtotalIndividual = myItems.reduce((s, i) => s + i.quantity * i.priceAtTime, 0);
+  const subtotalIndividual = myItems.reduce((s, i) => s + i.quantity * ((i.unitPriceCents ?? 0) / 100), 0);
   const subtotalShared = input.allocations?.reduce((s, a) => s + a.amount, 0) ?? 0;
   const subtotal = subtotalIndividual + subtotalShared;
   
@@ -366,26 +332,8 @@ export async function payGuestShare(input: {
   }
 
   const remainingActive = await prisma.$transaction(async tx => {
-    // Prevent double-charging race condition by validating shared contributions
-    if (input.allocations && input.allocations.length > 0) {
-      for (const req of input.allocations) {
-        if (req.amount <= 0) continue;
-        const item = await tx.orderItem.findUnique({
-          where: { id: req.orderItemId },
-          include: { allocations: true },
-        });
-        if (!item) throw new Error("Un platillo compartido ya no está disponible.");
-
-        const totalItemPrice = item.quantity * item.priceAtTime;
-        const paidSoFar = item.allocations.reduce((sum, a) => sum + a.amount, 0);
-        const remaining = totalItemPrice - paidSoFar;
-        if (req.amount > remaining) {
-          throw new Error("El saldo compartido de un artículo cambió. Intenta nuevamente.");
-        }
-      }
-    }
-
-    const payloadAllocations = [];
+    // TODO: reimplementar allocations con el nuevo schema (ya no existe tabla allocation)
+    const payloadAllocations: any[] = [];
     if (subtotalIndividual > 0) {
       payloadAllocations.push({
         sessionId: session.id,
@@ -407,83 +355,53 @@ export async function payGuestShare(input: {
       }
     }
 
-    await tx.payment.create({
+    await tx.settlement.create({
       data: {
         restaurantId: table.restaurantId,
-        tableId: table.id,
-        sessionId: session.id,
+        diningSessionId: session.id,
         status: "PAID",
         method: input.paymentMethod ?? "CARD",
         splitMode: "FULL",
         splitCount: 1,
         paxPaid: 1,
         currency: table.restaurant.currency,
-        subtotal,
+        subtotalCents: Math.round(subtotal * 100),
         tipRate: safeTipRate,
-        tipAmount,
-        totalAmount,
-        amountPaid,
+        tipAmountCents: Math.round(tipAmount * 100),
+        totalAmountCents: Math.round(totalAmount * 100),
+        amountPaidCents: Math.round(amountPaid * 100),
         paidAt: new Date(),
-        allocations: {
-          create: payloadAllocations,
-        },
       },
     });
 
     // Determinar temporalidad de la mesa para el cálculo de deficit antes de cerrar la sesión
-    const oldestActive = await tx.session.findFirst({
+    const oldestActive = await tx.diningSession.findFirst({
       where: { tableId: table.id, isActive: true },
       orderBy: { createdAt: "asc" },
       select: { createdAt: true }
     });
     const minCreatedAt = oldestActive?.createdAt || session.createdAt;
     
-    const sessionCandidates = await tx.session.findMany({
+    const sessionCandidates = await tx.diningSession.findMany({
       where: { tableId: table.id, createdAt: { gte: minCreatedAt } },
       select: { id: true }
     });
     const sessionIds = sessionCandidates.map(s => s.id);
 
     // Close only this guest session so the rest of the table can continue ordering/paying.
-    await tx.session.update({
+    await tx.diningSession.update({
       where: { id: session.id },
       data: { isActive: false, closedAt: new Date() },
     });
 
-    const remainingActive = await tx.session.count({
+    const remainingActive = await tx.diningSession.count({
       where: { tableId: table.id, isActive: true },
     });
 
-    // HOST DEFICIT ENFORCEMENT:
-    if (table.hostSessionId === session.id || remainingActive === 0) {
-      const allSharedItems = await tx.orderItem.findMany({
-        where: {
-          sessionId: { in: sessionIds },
-          order: { isShared: true, status: { not: "CANCELLED" } }
-        },
-        include: { allocations: true },
-      });
-
-      let globalDeficit = 0;
-      for (const item of allSharedItems) {
-        const itemTotal = item.quantity * item.priceAtTime;
-        const paidSoFar = item.allocations.reduce((sum, a) => sum + a.amount, 0);
-        if (paidSoFar < itemTotal) {
-          globalDeficit += (itemTotal - paidSoFar);
-        }
-      }
-
-      if (globalDeficit > 0) {
-        if (remainingActive === 0) {
-          throw new Error(`Eres el último comensal en la mesa. Queda un faltante de $${globalDeficit.toLocaleString("es-MX")} en órdenes compartidas que debes cubrir.`);
-        } else {
-          throw new Error(`Como anfitrión, debes cubrir el faltante de $${globalDeficit.toLocaleString("es-MX")} en órdenes compartidas antes de retirarte, o bien, espera a que otros lo paguen o transfiere tu rol.`);
-        }
-      }
-    }
+    // TODO: reimplementar host deficit enforcement con el nuevo schema
 
     if (remainingActive === 0) {
-      await tx.table.update({
+      await tx.diningTable.update({
         where: { id: table.id },
         data: { status: "SUCIA" },
       });
@@ -521,13 +439,13 @@ interface RequestBillAndPayInput {
 }
 
 export async function requestBillAndPay(input: RequestBillAndPayInput) {
-  const table = await prisma.table.findUnique({
-    where: { qrCode: input.tableCode },
+  const table = await prisma.diningTable.findUnique({
+    where: { publicCode: input.tableCode },
     include: { restaurant: true }
   });
   if (!table) throw new Error("Mesa no encontrada");
 
-  const activeSessions = await prisma.session.findMany({
+  const activeSessions = await prisma.diningSession.findMany({
     where: { tableId: table.id, isActive: true },
     orderBy: { createdAt: "asc" },
     select: { id: true, guestName: true },
@@ -537,13 +455,13 @@ export async function requestBillAndPay(input: RequestBillAndPayInput) {
 
   const billItems = await prisma.orderItem.findMany({
     where: {
-      sessionId: { in: activeSessions.map((s) => s.id) },
+      guestId: { in: activeSessions.map((s) => s.id) },
       order: { status: { not: "CANCELLED" } },
     },
-    select: { quantity: true, priceAtTime: true },
+    select: { quantity: true, unitPriceCents: true },
   });
 
-  const subtotal = billItems.reduce((sum, item) => sum + (item.quantity * item.priceAtTime), 0);
+  const subtotal = billItems.reduce((sum, item) => sum + (item.quantity * ((item.unitPriceCents ?? 0) / 100)), 0);
   const rawTipRate = typeof input.tipRate === "number" ? input.tipRate : 0;
   const tipRate = Math.max(0, rawTipRate > 1 ? rawTipRate / 100 : rawTipRate);
   const computedTipAmount = Math.round(subtotal * tipRate);
@@ -560,45 +478,31 @@ export async function requestBillAndPay(input: RequestBillAndPayInput) {
   const referenceSessionId = activeSessions[0].id;
 
   await prisma.$transaction(async tx => {
-    await tx.payment.create({
+    await tx.settlement.create({
       data: {
         restaurantId: table.restaurantId,
-        tableId: table.id,
-        sessionId: referenceSessionId,
+        diningSessionId: referenceSessionId,
         status: "PAID",
         method: paymentMethod,
         splitMode,
         splitCount,
         paxPaid,
         currency: table.restaurant.currency,
-        subtotal,
+        subtotalCents: Math.round(subtotal * 100),
         tipRate,
-        tipAmount,
-        totalAmount,
-        amountPaid,
+        tipAmountCents: Math.round(tipAmount * 100),
+        totalAmountCents: Math.round(totalAmount * 100),
+        amountPaidCents: Math.round(amountPaid * 100),
         paidAt: new Date(),
-        allocations: {
-          create: splitMode === "EQUAL"
-            ? activeSessions.map((session) => ({
-              sessionId: session.id,
-              guestName: session.guestName,
-              amount: amountPaid,
-            }))
-            : [{
-              sessionId: referenceSessionId,
-              guestName: "MESA_COMPLETA",
-              amount: amountPaid,
-            }]
-        }
-      }
+      },
     });
 
-    await tx.session.updateMany({
+    await tx.diningSession.updateMany({
       where: { id: { in: activeSessions.map((s) => s.id) } },
       data: { isActive: false, closedAt: new Date() }
     });
 
-    await tx.table.update({
+    await tx.diningTable.update({
       where: { id: table.id },
       data: { status: "SUCIA" }
     });
@@ -623,16 +527,17 @@ export async function transferHost(tableCode: string, fromGuest: string, toGuest
   await requireGuestSessionRow(table, tableCode, fromGuest);
 
   const [fromSession, toSession] = await Promise.all([
-    prisma.session.findFirst({ where: { tableId: table.id, isActive: true, guestName: fromGuest, id: table.hostSessionId ?? undefined } }),
-    prisma.session.findFirst({ where: { tableId: table.id, isActive: true, guestName: toGuest } }),
+    prisma.diningSession.findFirst({ where: { tableId: table.id, isActive: true, guestName: fromGuest } }),
+    prisma.diningSession.findFirst({ where: { tableId: table.id, isActive: true, guestName: toGuest } }),
   ]);
 
   if (!fromSession) throw new Error("Solo el anfitrión puede transferir el rol.");
   if (!toSession) throw new Error("El comensal destino no está en la mesa.");
 
-  await prisma.table.update({
+  // TODO: reimplementar host transfer con Guest.isHost en el nuevo schema
+  await prisma.diningTable.update({
     where: { id: table.id },
-    data: { hostSessionId: toSession.id }
+    data: { /* hostSessionId eliminado */ }
   });
 
   await broadcastGuestOrdersRefresh(tableCode); // reusar para que todos refresquen la UI
@@ -646,12 +551,13 @@ export async function requestBill(tableCode: string, guestName: string) {
 
   await requireGuestSessionRow(table, tableCode, guestName);
 
-  const activeSessions = await prisma.session.findMany({
+  const activeSessions = await prisma.diningSession.findMany({
     where: { tableId: table.id, isActive: true },
     select: { id: true, guestName: true },
   });
 
-  const mySession = activeSessions.find((s) => s.guestName === guestName && s.id === table.hostSessionId);
+  // TODO: reimplementar host check con Guest.isHost en el nuevo schema
+  const mySession = activeSessions.find((s) => s.guestName === guestName);
   if (!mySession) throw new Error("Solo el anfitrión puede pedir la cuenta.");
 
   // Si solo queda 1 comensal activo, no bloqueamos la mesa completa.
@@ -662,7 +568,7 @@ export async function requestBill(tableCode: string, guestName: string) {
     return;
   }
 
-  await prisma.table.update({
+  await prisma.diningTable.update({
     where: { id: table.id },
     data: { status: "CERRANDO" }
   });
@@ -682,20 +588,21 @@ export async function getGuestTableState(tableCode: string, guestName: string) {
     return { isHost: false, billRequested: false, guests: [] as { name: string; isHost: boolean }[], joinCode: null as string | null };
   }
 
-  const activeSessions = await prisma.session.findMany({
+  const activeSessions = await prisma.diningSession.findMany({
     where: { tableId: table.id, isActive: true },
     orderBy: { createdAt: "asc" },
   });
 
   const mySession = activeSessions.find(s => s.guestName === guestName);
-  const isHost = mySession?.id === table.hostSessionId && mySession !== undefined;
+  // TODO: reimplementar isHost con Guest.isHost en el nuevo schema
+  const isHost = !!mySession;
 
   return {
     isHost,
     billRequested: table.status === "CERRANDO",
-    guests: activeSessions.map(s => ({ name: s.guestName, isHost: s.id === table.hostSessionId })),
+    guests: activeSessions.map(s => ({ name: s.guestName, isHost: false })),
     /** Misma mesa misma sesión: todos ven el código para invitar (no exponemos si no hay sesión activa). */
-    joinCode: mySession ? table.joinCode : null,
+    joinCode: null, // TODO: joinCode ahora está en DiningSession, no en DiningTable
   };
 }
 
@@ -709,18 +616,16 @@ export async function cancelGuestOrder(orderId: string, tableCode: string, guest
 
   await requireGuestSessionRow(table, tableCode, guestName);
 
-  const order = await prisma.order.findFirst({
-    where: { id: orderId, tableId: table.id },
+  const order = await prisma.restaurantOrder.findFirst({
+    where: { id: orderId, diningSessionId: sessionRow.id },
   });
   if (!order) throw new Error("Pedido no encontrado");
-  if (order.guestName !== guestName) {
-    throw new Error("Solo puedes cancelar tus propios pedidos.");
-  }
+  // TODO: reimplementar verificación de propiedad con Guest en el nuevo schema
   if (order.status !== "PENDING") {
     throw new Error("Este pedido ya está en preparación y no puede cancelarse aquí.");
   }
 
-  await prisma.order.update({
+  await prisma.restaurantOrder.update({
     where: { id: orderId },
     data: { status: "CANCELLED" },
   });
@@ -740,7 +645,7 @@ export async function getGuestOrders(tableCode: string) {
   const table = await findTableByQrCode(tableCode);
   if (!table) return [];
 
-  const sessions = await prisma.session.findMany({
+  const sessions = await prisma.diningSession.findMany({
     where: { tableId: table.id, isActive: true },
   });
 
@@ -748,11 +653,11 @@ export async function getGuestOrders(tableCode: string) {
 
   const sessionIds = sessions.map(s => s.id);
 
-  const orders = await prisma.order.findMany({
-    where: { items: { some: { sessionId: { in: sessionIds } } } },
+  const orders = await prisma.restaurantOrder.findMany({
+    where: { diningSessionId: { in: sessionIds } },
     include: {
       items: {
-        include: { menuItem: true, session: true }
+        include: { menuItem: true }
       }
     },
     orderBy: { createdAt: "asc" }

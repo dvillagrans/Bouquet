@@ -23,7 +23,7 @@ export default async function TableAccessPage({ params, searchParams }: TablePag
   consumeTableJoinProofQuery(decodedCode, sp, `/mesa/${encodeURIComponent(decodedCode)}/`);
 
   const tableResolved = await findTableByQrCode(decodedCode);
-  const canonicalQr = tableResolved?.qrCode ?? decodedCode;
+  const canonicalQr = tableResolved?.publicCode ?? decodedCode;
 
   // Cookies se guardan con el código QR canónico de BD; también probamos la variante de la URL)
   const cookieStore = await cookies();
@@ -35,7 +35,7 @@ export default async function TableAccessPage({ params, searchParams }: TablePag
     cookieStore.get(`bq_guest_${decodedCode}`)?.value;
 
   if (sessionId && guestNameCookie) {
-    const activeSession = await prisma.session.findUnique({
+    const activeSession = await prisma.diningSession.findUnique({
       where: { id: sessionId },
       select: { isActive: true, pax: true }
     });
@@ -46,7 +46,7 @@ export default async function TableAccessPage({ params, searchParams }: TablePag
   }
 
   const existingSessionForTable = tableResolved
-    ? await prisma.session.findFirst({
+    ? await prisma.diningSession.findFirst({
         where: { tableId: tableResolved.id, isActive: true },
         select: { pax: true },
       })

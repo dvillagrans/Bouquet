@@ -48,19 +48,9 @@ export interface ZoneDashboardData {
   restaurants: RestaurantSummary[];
 }
 
-// 1. Verificación del PIN Maestro
-export async function verifyChainPin(tenantId: string, pin: string) {
-  if (!tenantId || !pin) return false;
-  
-  const staff = await prisma.chainStaff.findFirst({
-    where: {
-      chainId: tenantId,
-      role: "CHAIN_ADMIN",
-      pin: pin
-    }
-  });
-
-  return !!staff; // true si existe el admin con ese PIN
+// TODO: migrar a AppUser + UserRole (chainStaff fue eliminado del schema)
+export async function verifyChainPin(_tenantId: string, _pin: string) {
+  return false;
 }
 
 async function fetchRestaurants(chainId?: string, zoneId?: string) {
@@ -80,22 +70,21 @@ async function fetchRestaurants(chainId?: string, zoneId?: string) {
     where: whereClause,
     include: {
       zone: { select: { id: true, name: true, chainId: true } },
-      tables: {
+      diningTables: {
         select: {
           status: true,
-          sessions: {
+          diningSessionTables: {
             where: { createdAt: { gte: dayStart, lte: dayEnd } },
             select: { id: true },
           },
         },
       },
-      staff: { where: { isActive: true }, select: { id: true } },
       orders: {
         where: {
           createdAt: { gte: dayStart, lte: dayEnd },
           status: { in: ["READY", "DELIVERED"] },
         },
-        include: { items: { select: { quantity: true, priceAtTime: true } } },
+        include: { items: { select: { quantity: true, totalCents: true } } },
       },
     },
     orderBy: { name: "asc" },
@@ -104,11 +93,11 @@ async function fetchRestaurants(chainId?: string, zoneId?: string) {
 
 function toSummary(r: any): RestaurantSummary {
   const todayRevenue = r.orders.reduce((a: number, o: any) => {
-    const total = o.items.reduce((sum: number, it: any) => sum + it.quantity * Number(it.priceAtTime), 0);
+    const total = o.items.reduce((sum: number, it: any) => sum + it.quantity * (it.totalCents / 100), 0);
     return a + total;
   }, 0);
 
-  const todaySessions = r.tables.reduce((a: number, t: any) => a + t.sessions.length, 0);
+  const todaySessions = r.diningTables.reduce((a: number, t: any) => a + t.diningSessionTables.length, 0);
 
   return {
     id: r.id,
@@ -116,9 +105,9 @@ function toSummary(r: any): RestaurantSummary {
     address: r.address,
     zoneName: r.zone?.name || null,
     zoneId: r.zoneId,
-    totalTables: r.tables.length,
-    activeTables: r.tables.filter((t: any) => t.status === "OCCUPIED").length,
-    activeStaff: r.staff.length,
+    totalTables: r.diningTables.length,
+    activeTables: r.diningTables.filter((t: any) => t.status === "OCUPADA").length,
+    activeStaff: 0, // TODO: migrar a AppUser + UserRole
     todayRevenue,
     todaySessions,
   };
@@ -250,21 +239,9 @@ export async function getZoneDashboard(zoneId: string): Promise<ZoneDashboardDat
   };
 }
 
-export async function verifyZonePin(zoneId: string, pin: string) {
-  try {
-    const st = await prisma.chainStaff.findFirst({
-      where: { 
-        zoneId: zoneId, 
-        pin: pin, 
-        role: "ZONE_MANAGER", 
-        isActive: true 
-      }
-    });
-    if (!st) return { success: false, error: "Credenciales de zona inválidas" };
-    return { success: true, token: st.id };
-  } catch (e: any) {
-    return { success: false, error: e.message };
-  }
+// TODO: migrar a AppUser + UserRole (chainStaff fue eliminado del schema)
+export async function verifyZonePin(_zoneId: string, _pin: string) {
+  return { success: false, error: "Autenticación de zona deshabilitada: chainStaff eliminado del schema." };
 }
 
 export async function createRestaurantInChain(data: {
@@ -389,6 +366,7 @@ export async function createChainMenuTemplate(input: {
 }
 
 // ── Personal corporativo (ChainStaff) ───────────────────────
+// TODO: migrar a AppUser + UserRole (chainStaff fue eliminado del schema)
 
 export type ChainStaffRole = "CHAIN_ADMIN" | "ZONE_MANAGER";
 
@@ -408,102 +386,29 @@ export interface ChainStaffListData {
   zones: { id: string; name: string }[];
 }
 
-export async function getChainStaffList(tenantId: string): Promise<ChainStaffListData | null> {
-  const chain = await prisma.chain.findUnique({
-    where: { id: tenantId },
-    select: { id: true, name: true },
-  });
-  if (!chain) return null;
-
-  const [staff, zones] = await Promise.all([
-    prisma.chainStaff.findMany({
-      where: { chainId: tenantId },
-      orderBy: [{ role: "asc" }, { name: "asc" }],
-    }),
-    prisma.zone.findMany({
-      where: { chainId: tenantId },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    }),
-  ]);
-
-  const zoneMap = Object.fromEntries(zones.map((z) => [z.id, z.name]));
-
-  const rows: ChainStaffRow[] = staff.map((s) => ({
-    id: s.id,
-    name: s.name,
-    role: s.role as ChainStaffRole,
-    isActive: s.isActive,
-    zoneId: s.zoneId,
-    zoneName: s.zoneId ? (zoneMap[s.zoneId] ?? null) : null,
-    createdAt: s.createdAt.toISOString(),
-  }));
-
-  return { chain, staff: rows, zones };
+export async function getChainStaffList(_tenantId: string): Promise<ChainStaffListData | null> {
+  // TODO: migrar a AppUser + UserRole
+  return null;
 }
 
-export async function createChainStaffMember(input: {
+export async function createChainStaffMember(_input: {
   chainId: string;
   name: string;
   role: ChainStaffRole;
   pin: string;
   zoneId?: string | null;
 }): Promise<{ success: true } | { success: false; error: string }> {
-  const name = input.name?.trim();
-  if (!name) return { success: false, error: "El nombre es obligatorio." };
-  const pin = input.pin?.trim() ?? "";
-  if (pin.length < 4) return { success: false, error: "El PIN debe tener al menos 4 caracteres." };
-
-  if (input.role === "ZONE_MANAGER") {
-    if (!input.zoneId) {
-      return { success: false, error: "Selecciona una zona para el gerente de zona." };
-    }
-    const zone = await prisma.zone.findFirst({
-      where: { id: input.zoneId, chainId: input.chainId },
-      select: { id: true },
-    });
-    if (!zone) return { success: false, error: "La zona no pertenece a esta cadena." };
-  }
-
-  try {
-    const chain = await prisma.chain.findUnique({
-      where: { id: input.chainId },
-      select: { id: true },
-    });
-    if (!chain) return { success: false, error: "Cadena no encontrada." };
-
-    await prisma.chainStaff.create({
-      data: {
-        chainId: input.chainId,
-        name,
-        role: input.role,
-        pin,
-        zoneId: input.role === "ZONE_MANAGER" ? input.zoneId! : null,
-      },
-    });
-    return { success: true };
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "No se pudo registrar al miembro.";
-    return { success: false, error: msg };
-  }
+  // TODO: migrar a AppUser + UserRole
+  return { success: false, error: "chainStaff eliminado del schema." };
 }
 
-export async function setChainStaffActive(input: {
+export async function setChainStaffActive(_input: {
   chainId: string;
   staffId: string;
   isActive: boolean;
 }): Promise<{ success: true } | { success: false; error: string }> {
-  try {
-    const res = await prisma.chainStaff.updateMany({
-      where: { id: input.staffId, chainId: input.chainId },
-      data: { isActive: input.isActive },
-    });
-    if (res.count === 0) return { success: false, error: "Miembro no encontrado." };
-    return { success: true };
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : "No se pudo actualizar el estado.";
-    return { success: false, error: msg };
-  }
+  // TODO: migrar a AppUser + UserRole
+  return { success: false, error: "chainStaff eliminado del schema." };
 }
 
 // ── Auditoría (cadena) ──────────────────────────────────────
@@ -539,18 +444,14 @@ export async function getChainAuditOverview(tenantId: string): Promise<ChainAudi
     templateItems,
     staffTotal,
     staffActive,
-    zoneOverrides,
-    restaurantOverrides,
   ] = await Promise.all([
     prisma.zone.count({ where: { chainId: tenantId } }),
     prisma.restaurant.count({ where: { zone: { chainId: tenantId } } }),
     prisma.menuTemplate.count({ where: { chainId: tenantId } }),
     prisma.templateCategory.count({ where: { template: { chainId: tenantId } } }),
     prisma.templateItem.count({ where: { category: { template: { chainId: tenantId } } } }),
-    prisma.chainStaff.count({ where: { chainId: tenantId } }),
-    prisma.chainStaff.count({ where: { chainId: tenantId, isActive: true } }),
-    prisma.zoneMenuOverride.count({ where: { template: { chainId: tenantId } } }),
-    prisma.restaurantMenuOverride.count({ where: { restaurant: { zone: { chainId: tenantId } } } }),
+    0, // prisma.chainStaff.count({ where: { chainId: tenantId } }), // TODO: AppUser + UserRole
+    0, // prisma.chainStaff.count({ where: { chainId: tenantId, isActive: true } }), // TODO
   ]);
 
   return {
@@ -563,8 +464,8 @@ export async function getChainAuditOverview(tenantId: string): Promise<ChainAudi
       templateItems,
       staffTotal,
       staffActive,
-      zoneOverrides,
-      restaurantOverrides,
+      zoneOverrides: 0,
+      restaurantOverrides: 0,
     },
     updatedAt: new Date().toISOString(),
   };
@@ -592,18 +493,9 @@ export async function getZoneSettings(zoneId: string): Promise<ZoneSettingsData 
 
   const restaurants = await prisma.restaurant.count({ where: { zoneId } });
   
-  const staffCounts = await prisma.staff.groupBy({
-    by: ['isActive'],
-    where: { restaurant: { zoneId }, role: 'ADMIN' },
-    _count: true
-  });
-  
-  let staffTotal = 0;
-  let staffActive = 0;
-  staffCounts.forEach(g => {
-    staffTotal += g._count;
-    if (g.isActive) staffActive += g._count;
-  });
+  // TODO: migrar staff a AppUser + UserRole
+  const staffTotal = 0;
+  const staffActive = 0;
 
   return {
     zone: { id: zone.id, name: zone.name, chainId: zone.chainId, chainName: zone.chain.name },
@@ -611,16 +503,9 @@ export async function getZoneSettings(zoneId: string): Promise<ZoneSettingsData 
   };
 }
 
-export async function rotateZonePin(input: { zoneId: string; actorStaffId: string; newPin: string }): Promise<{ success: boolean; error?: string }> {
-  try {
-     const count = await prisma.chainStaff.updateMany({
-         where: { zoneId: input.zoneId, role: "ZONE_MANAGER" },
-         data: { pin: input.newPin }
-     });
-     return { success: true };
-  } catch (e: any) {
-     return { success: false, error: e.message };
-  }
+// TODO: migrar a AppUser + UserRole
+export async function rotateZonePin(_input: { zoneId: string; actorStaffId: string; newPin: string }): Promise<{ success: boolean; error?: string }> {
+  return { success: false, error: "chainStaff eliminado del schema." };
 }
 
 export interface RestaurantManagerRow {
@@ -649,24 +534,8 @@ export async function getZoneStaff(zoneId: string): Promise<ZoneStaffData | null
   });
   if (!zone) return null;
 
-  const staff = await prisma.staff.findMany({
-    where: { 
-      restaurant: { zoneId },
-      role: 'ADMIN'
-    },
-    include: { restaurant: { select: { name: true } } },
-    orderBy: [{ isActive: "desc" }, { name: "asc" }],
-  });
-
-  const rows: RestaurantManagerRow[] = staff.map((s) => ({
-    id: s.id,
-    name: s.name,
-    role: s.role,
-    isActive: s.isActive,
-    restaurantId: s.restaurantId,
-    restaurantName: s.restaurant.name,
-    createdAt: s.createdAt.toISOString(),
-  }));
+  // TODO: migrar staff a AppUser + UserRole
+  const rows: RestaurantManagerRow[] = [];
 
   return {
     zone: { id: zone.id, name: zone.name, chainId: zone.chainId, chainName: zone.chain.name },
@@ -675,55 +544,21 @@ export async function getZoneStaff(zoneId: string): Promise<ZoneStaffData | null
   };
 }
 
-export async function createZoneStaffMember(input: {
+// TODO: migrar a AppUser + UserRole
+export async function createZoneStaffMember(_input: {
   zoneId: string;
   name: string;
   pin: string;
   restaurantId: string;
 }): Promise<{ success: true } | { success: false; error: string }> {
-  const name = input.name?.trim();
-  if (!name) return { success: false, error: "El nombre es obligatorio." };
-  const pin = input.pin?.trim() ?? "";
-  if (pin.length < 4) return { success: false, error: "El PIN debe tener al menos 4 caracteres." };
-  if (!input.restaurantId) return { success: false, error: "Debes seleccionar una sucursal." };
-
-  const restaurant = await prisma.restaurant.findUnique({
-    where: { id: input.restaurantId },
-  });
-  
-  if (!restaurant || restaurant.zoneId !== input.zoneId) {
-    return { success: false, error: "Sucursal inválida." };
-  }
-
-  try {
-    await prisma.staff.create({
-      data: {
-        restaurantId: input.restaurantId,
-        name,
-        role: "ADMIN",
-        pin,
-        isActive: true,
-      },
-    });
-    return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
-  }
+  return { success: false, error: "staff eliminado del schema. Usa AppUser + UserRole." };
 }
 
-export async function setRestaurantAdminActive(input: {
+// TODO: migrar a AppUser + UserRole
+export async function setRestaurantAdminActive(_input: {
   staffId: string;
   isActive: boolean;
 }): Promise<{ success: true } | { success: false; error: string }> {
-  try {
-    const res = await prisma.staff.updateMany({
-      where: { id: input.staffId, role: 'ADMIN' },
-      data: { isActive: input.isActive },
-    });
-    if (res.count === 0) return { success: false, error: "Gerente no encontrado." };
-    return { success: true };
-  } catch (e: unknown) {
-    return { success: false, error: "No se pudo actualizar el estado." };
-  }
+  return { success: false, error: "staff eliminado del schema. Usa AppUser + UserRole." };
 }
 

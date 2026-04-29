@@ -9,13 +9,13 @@ export async function findTableByQrCode(raw: string) {
   const q = raw.trim();
   if (!q) return null;
 
-  const exact = await prisma.table.findUnique({ where: { qrCode: q } });
+  const exact = await prisma.diningTable.findUnique({ where: { publicCode: q } });
   if (exact) return exact;
 
   try {
-    const ci = await prisma.table.findFirst({
+    const ci = await prisma.diningTable.findFirst({
       where: {
-        qrCode: { equals: q, mode: "insensitive" },
+        publicCode: { equals: q, mode: "insensitive" },
       },
     });
     if (ci) return ci;
@@ -24,11 +24,11 @@ export async function findTableByQrCode(raw: string) {
   }
 
   const rows = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`
-    SELECT id FROM "Table"
-    WHERE LOWER(TRIM("qrCode")) = LOWER(TRIM(${q}))
+    SELECT id FROM "DiningTable"
+    WHERE LOWER(TRIM("publicCode")) = LOWER(TRIM(${q}))
     LIMIT 1
   `);
   const id = rows[0]?.id;
   if (!id) return null;
-  return prisma.table.findUnique({ where: { id } });
+  return prisma.diningTable.findUnique({ where: { id } });
 }

@@ -8,7 +8,7 @@ export interface SuperAdminDashboardData {
     chains: number;
     zones: number;
     restaurants: number;
-    mrr: number; // Mock o calculado
+    mrr: number;
   };
   chains: {
     id: string;
@@ -31,11 +31,6 @@ export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData>
           restaurants: { select: { id: true } }
         }
       },
-      chainStaff: {
-        where: { role: "CHAIN_ADMIN" },
-        select: { name: true, pin: true },
-        take: 1
-      }
     },
   });
 
@@ -50,15 +45,13 @@ export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData>
       restCount += z.restaurants.length;
     });
 
-    const admin = c.chainStaff?.[0];
-
     return {
       id: c.id,
       name: c.name,
       zonesCount: c.zones.length,
       restaurantsCount: restCount,
-      adminName: admin?.name || "Sin admin",
-      pin: admin?.pin || "—",
+      adminName: "Sin admin", // TODO: migrar a AppUser + UserRole
+      pin: "—",
     };
   });
 
@@ -101,11 +94,6 @@ export async function getAdminClientesList(): Promise<AdminClienteRow[]> {
           restaurants: { select: { id: true } },
         },
       },
-      chainStaff: {
-        where: { role: "CHAIN_ADMIN" },
-        select: { name: true, pin: true },
-        take: 1,
-      },
     },
   });
 
@@ -114,7 +102,6 @@ export async function getAdminClientesList(): Promise<AdminClienteRow[]> {
     for (const z of c.zones) {
       restaurantsCount += z.restaurants.length;
     }
-    const admin = c.chainStaff?.[0];
     return {
       id: c.id,
       name: c.name,
@@ -122,8 +109,8 @@ export async function getAdminClientesList(): Promise<AdminClienteRow[]> {
       createdAt: c.createdAt.toISOString(),
       zonesCount: c.zones.length,
       restaurantsCount,
-      adminName: admin?.name ?? "Sin admin",
-      pin: admin?.pin ?? "—",
+      adminName: "Sin admin", // TODO: AppUser + UserRole
+      pin: "—",
     };
   });
 }
@@ -205,19 +192,14 @@ export async function getAdminBillingOverview(): Promise<AdminBillingOverview> {
   };
 }
 
+// TODO: migrar a AppUser + UserRole (chainStaff fue eliminado del schema)
 export async function createTenant(data: { name: string; adminName: string; pin: string; currency?: string }) {
   const chain = await prisma.chain.create({
     data: {
       name: data.name,
       currency: data.currency || "MXN",
-      chainStaff: {
-        create: {
-          name: data.adminName,
-          pin: data.pin,
-          role: "CHAIN_ADMIN"
-        }
-      }
     },
   });
+  // TODO: crear AppUser con rol CHAIN_ADMIN aquí
   return { success: true, chainId: chain.id };
 }

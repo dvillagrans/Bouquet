@@ -12,9 +12,15 @@ import {
 async function notifyGuestMenuOrderUpdated(orderId: string) {
   const order = await prisma.restaurantOrder.findUnique({
     where: { id: orderId },
-    include: { diningSession: { select: { publicCode: true } } },
+    select: { restaurantId: true, diningSessionId: true },
   });
-  if (order?.diningSession?.publicCode) await broadcastGuestOrdersRefresh(order.diningSession.publicCode);
+  if (order?.diningSessionId) {
+    const session = await prisma.diningSession.findUnique({
+      where: { id: order.diningSessionId },
+      select: { joinCode: true },
+    });
+    if (session?.joinCode) await broadcastGuestOrdersRefresh(session.joinCode);
+  }
   if (order) await broadcastKdsOrdersRefresh(order.restaurantId);
 }
 
@@ -25,7 +31,7 @@ export async function getLiveOrders() {
 
   const activeSessions = await prisma.diningSession.findMany({
     where: {
-      isActive: true,
+      status: { in: ["ACTIVA", "EN_CONSUMO"] },
       restaurantId: restaurant.id,
     },
     select: { id: true },
@@ -62,7 +68,7 @@ export async function getLiveOrders() {
       | "delivered"
       | "cancelled",
     createdAt: order.createdAt,
-    deliveredAt: order.deliveredAt || undefined,
+    deliveredAt: undefined,
     guestName: undefined as string | undefined,
     items: order.items.map((item) => {
       const raw = String(item.menuItem?.stationId ?? "COCINA").toLowerCase();
@@ -91,10 +97,7 @@ export async function advanceOrderStatus(orderId: string, currentStatus: string)
 
   await prisma.restaurantOrder.update({
     where: { id: orderId },
-    data: { 
-      status: nextStatus as OrderStatus,
-      ...(nextStatus === "DELIVERED" ? { deliveredAt: new Date() } : {})
-    }
+    data: { status: nextStatus as OrderStatus }
   });
 
   await notifyGuestMenuOrderUpdated(orderId);

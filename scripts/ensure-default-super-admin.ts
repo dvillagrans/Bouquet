@@ -1,6 +1,8 @@
 /**
  * Crea o actualiza el super admin por defecto (email + hash de contraseña).
  * Uso: npx tsx scripts/ensure-default-super-admin.ts
+ * 
+ * TODO: migrar a AppUser + UserRole. SuperAdmin fue eliminado del schema.
  */
 import { loadEnvConfig } from "@next/env";
 
@@ -14,19 +16,9 @@ const PASSWORD = "temporal123";
 
 async function main() {
   const passwordHash = await hashSuperAdminPassword(PASSWORD);
-  await prisma.superAdmin.upsert({
-    where: { email: EMAIL },
-    create: {
-      email: EMAIL,
-      passwordHash,
-      name: "Super Admin",
-    },
-    update: {
-      passwordHash,
-      isActive: true,
-    },
-  });
-  console.log(`Super admin listo: ${EMAIL}`);
+  // TODO: crear AppUser con role de PLATFORM admin
+  console.log("TODO: migrar a AppUser + UserRole. SuperAdmin eliminado del schema.");
+  console.log(`Email pretendido: ${EMAIL}`);
 }
 
 main()

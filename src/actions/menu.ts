@@ -1,7 +1,6 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { parseVariantsJson } from "@/lib/menu-variants";
 import { getDefaultRestaurant } from "./restaurant";
 import { revalidatePath } from "next/cache";
 
@@ -26,39 +25,37 @@ export async function getMenuData(options?: { restaurantId?: string }) {
   let categories = await prisma.restaurantCategory.findMany({
     where: { restaurantId: restaurant.id },
     orderBy: { order: 'asc' },
-    include: { items: true }
+    include: { menuItems: true }
   });
 
   // Crearlas si el usuario recién inicia
   if (categories.length === 0) {
     for (let i = 0; i < DEFAULT_CATEGORIES.length; i++) {
       const name = DEFAULT_CATEGORIES[i];
-      await prisma.restaurantCategory.upsert({
-        where: {
-          restaurantId_name: {
-            restaurantId: restaurant.id,
-            name,
-          },
-        },
-        create: { name, order: i, restaurantId: restaurant.id },
-        update: {},
+      const existing = await prisma.restaurantCategory.findFirst({
+        where: { restaurantId: restaurant.id, name },
       });
+      if (!existing) {
+        await prisma.restaurantCategory.create({
+          data: { name, order: i, restaurantId: restaurant.id },
+        });
+      }
     }
 
     categories = await prisma.restaurantCategory.findMany({
       where: { restaurantId: restaurant.id },
       orderBy: { order: "asc" },
-      include: { items: true },
+      include: { menuItems: true },
     });
   }
 
   // Devolvemos las categorias puras y una lista plana de todos los items concatenados
   const allItems = categories.flatMap(cat =>
-    cat.items.map(item => ({
+    cat.menuItems.map(item => ({
       ...item,
       categoryName: cat.name,
       // TODO: adaptar variants a relación RestaurantMenuItemVariant en vez de JSON
-      variants: parseVariantsJson(item.variants as any),
+      variants: [],
     }))
   );
 
@@ -79,20 +76,18 @@ export async function createCategory(name: string) {
   });
   const nextOrder = (last?.order ?? -1) + 1;
 
-  const cat = await prisma.restaurantCategory.upsert({
-    where: {
-      restaurantId_name: {
-        restaurantId: restaurant.id,
-        name: normalizedName,
-      },
-    },
-    create: {
-      name: normalizedName,
-      order: nextOrder,
-      restaurantId: restaurant.id,
-    },
-    update: {},
+  let cat = await prisma.restaurantCategory.findFirst({
+    where: { restaurantId: restaurant.id, name: normalizedName },
   });
+  if (!cat) {
+    cat = await prisma.restaurantCategory.create({
+      data: {
+        name: normalizedName,
+        order: nextOrder,
+        restaurantId: restaurant.id,
+      },
+    });
+  }
   revalidatePath("/dashboard/menu");
   return { id: cat.id, name: cat.name };
 }

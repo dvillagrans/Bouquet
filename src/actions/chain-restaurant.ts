@@ -29,22 +29,22 @@ export async function getChainRestaurantDossier(restaurantId: string): Promise<C
     where: { id: restaurantId },
     include: {
       zone: { select: { id: true, name: true, chain: { select: { id: true, name: true } } } },
-      tables: {
+      diningTables: {
         select: {
           status: true,
           sessions: {
-            where: { createdAt: { gte: dayStart, lte: dayEnd } },
+            where: { joinedAt: { gte: dayStart, lte: dayEnd } },
             select: { id: true },
           },
         },
       },
-      staff: { where: { isActive: true }, select: { id: true } },
+      userRoles: { where: { user: { isActive: true } }, select: { id: true } },
       orders: {
         where: {
           createdAt: { gte: dayStart, lte: dayEnd },
           status: { in: ["READY", "DELIVERED"] },
         },
-        include: { items: { select: { quantity: true, priceAtTime: true } } },
+        include: { items: { select: { quantity: true, unitPriceCents: true } } },
       },
     },
   });
@@ -52,13 +52,13 @@ export async function getChainRestaurantDossier(restaurantId: string): Promise<C
   if (!r) return null;
 
   const revenue = r.orders.reduce((a, o) => {
-    const total = o.items.reduce((sum, it) => sum + it.quantity * Number(it.priceAtTime), 0);
+    const total = o.items.reduce((sum, it) => sum + it.quantity * Number(it.unitPriceCents), 0);
     return a + total;
   }, 0);
-  const sessions = r.tables.reduce((a, t) => a + t.sessions.length, 0);
-  const totalTables = r.tables.length;
-  const activeTables = r.tables.filter((t) => t.status === "OCUPADA").length;
-  const activeStaff = r.staff.length;
+  const sessions = r.diningTables.reduce((a, t) => a + t.sessions.length, 0);
+  const totalTables = r.diningTables.length;
+  const activeTables = r.diningTables.filter((t) => t.status === "OCUPADA").length;
+  const activeStaff = r.userRoles.length;
 
   return {
     restaurant: {

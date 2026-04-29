@@ -7,10 +7,10 @@ import { prisma } from "@/lib/prisma";
 
 /** Campos necesarios para acciones firmadas por sesión */
 export type GuestSessionRow = {
-  id: string;
+  id: string; // diningSession id
+  guestId: string;
   guestName: string;
-  pax: number | null;
-  isActive: boolean;
+  sessionStatus: string;
   tableId: string;
 };
 
@@ -35,35 +35,45 @@ export async function resolveGuestTableAccess(rawTableCode: string): Promise<Gue
 
   const store = await cookies();
   const sessionId =
-    store.get(`bq_session_${table.qrCode}`)?.value ??
+    store.get(`bq_session_${table.publicCode}`)?.value ??
     store.get(`bq_session_${rawTableCode.trim()}`)?.value;
 
   if (!sessionId) {
-    return { status: "need_login", canonicalQr: table.qrCode };
+    return { status: "need_login", canonicalQr: table.publicCode };
   }
 
   const session = await prisma.diningSession.findUnique({
     where: { id: sessionId },
-    select: {
-      guestName: true,
-      pax: true,
-      isActive: true,
-      tableId: true,
+    include: {
+      guests: true,
+      diningSessionTables: { where: { tableId: table.id } },
     },
   });
 
-  if (!session?.isActive || session.tableId !== table.id) {
-    if (session && !session.isActive && session.tableId === table.id) {
-      return { status: "session_ended", canonicalQr: table.qrCode };
+  const activeStatuses = ["ACTIVA", "EN_CONSUMO"];
+  const sessionTable = session?.diningSessionTables[0];
+
+  if (!session || !sessionTable || sessionTable.leftAt !== null) {
+    return { status: "need_login", canonicalQr: table.publicCode };
+  }
+
+  if (!activeStatuses.includes(session.status)) {
+    if (sessionTable.leftAt !== null) {
+      return { status: "session_ended", canonicalQr: table.publicCode };
     }
-    return { status: "need_login", canonicalQr: table.qrCode };
+    return { status: "need_login", canonicalQr: table.publicCode };
+  }
+
+  const primaryGuest = session.guests.find((g) => g.isActive) ?? session.guests[0];
+  if (!primaryGuest) {
+    return { status: "need_login", canonicalQr: table.publicCode };
   }
 
   return {
     status: "ok",
     table,
-    guestName: session.guestName,
-    partySize: Math.max(1, Math.min(20, session.pax || 1)),
+    guestName: primaryGuest.name,
+    partySize: Math.max(1, Math.min(20, session.guests.length)),
   };
 }
 
@@ -80,7 +90,7 @@ export async function requireTableJoinGate(
   table: { publicCode: string },
   cookieTableCodeHint: string,
 ): Promise<void> {
-  const ok = await hasTableJoinGate(table.qrCode, cookieTableCodeHint);
+  const ok = await hasTableJoinGate(table.publicCode, cookieTableCodeHint);
   if (!ok) {
     throw new Error(
       "Debes escanear el código QR físico de la mesa para unirte. Un enlace sin la firma del QR no es válido.",
@@ -92,13 +102,13 @@ export async function requireTableJoinGate(
  * Para server actions: solo el titular del cookie httpOnly puede actuar como ese nombre.
  */
 export async function requireGuestSessionRow(
-  table: { id: string; qrCode: string },
+  table: { id: string; publicCode: string },
   cookieTableCodeHint: string,
   claimedGuestName: string,
 ): Promise<GuestSessionRow> {
   const store = await cookies();
   const sessionId =
-    store.get(`bq_session_${table.qrCode}`)?.value ??
+    store.get(`bq_session_${table.publicCode}`)?.value ??
     store.get(`bq_session_${cookieTableCodeHint.trim()}`)?.value;
 
   if (!sessionId) {
@@ -107,23 +117,34 @@ export async function requireGuestSessionRow(
 
   const session = await prisma.diningSession.findUnique({
     where: { id: sessionId },
-    select: {
-      id: true,
-      guestName: true,
-      pax: true,
-      isActive: true,
-      tableId: true,
+    include: {
+      guests: true,
+      diningSessionTables: { where: { tableId: table.id } },
     },
   });
 
-  if (!session?.isActive || session.tableId !== table.id) {
+  const activeStatuses = ["ACTIVA", "EN_CONSUMO"];
+  const sessionTable = session?.diningSessionTables[0];
+
+  if (!session || !sessionTable || sessionTable.leftAt !== null) {
+    throw new Error("Tu sesión en esta mesa ya no es válida. Vuelve a entrar desde el QR.");
+  }
+
+  if (!activeStatuses.includes(session.status)) {
     throw new Error("Tu sesión en esta mesa ya no es válida. Vuelve a entrar desde el QR.");
   }
 
   const claimed = claimedGuestName.trim();
-  if (!claimed || session.guestName.trim() !== claimed) {
+  const guest = session.guests.find((g) => g.name.trim() === claimed);
+  if (!claimed || !guest) {
     throw new Error("La sesión no coincide con este perfil.");
   }
 
-  return session;
+  return {
+    id: session.id,
+    guestId: guest.id,
+    guestName: guest.name,
+    sessionStatus: session.status,
+    tableId: table.id,
+  };
 }

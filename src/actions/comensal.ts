@@ -238,20 +238,29 @@ export async function guestJoinTable(
         status: { in: ["ACTIVA", "EN_CONSUMO"] },
       },
     });
-    const isFirstGuest = existingSessions === 0;
+    const activeStatuses = ["ACTIVA", "EN_CONSUMO", "POR_LIQUIDAR"];
+    const existingSession = await prisma.diningSession.findFirst({
+      where: {
+        tables: { some: { tableId: table.id, leftAt: null } },
+        status: { in: activeStatuses },
+      },
+      orderBy: { openedAt: "desc" },
+    });
 
-    // joinCode ya no existe en el schema; se ignora la validación hasta reimplementar
-    if (!isFirstGuest) {
+    if (existingSession && !isFirstGuest) {
       const input = (joinCode ?? "").toUpperCase().trim();
       if (!input) {
-        return { ok: false, message: "Código de acceso requerido." };
+        return { ok: false, message: "Código de acceso requerido para unirse a la mesa." };
+      }
+      if (input !== existingSession.joinCode) {
+        return { ok: false, message: "El código de acceso es incorrecto. Pídeselo a alguien de la mesa." };
       }
     }
 
     let session = await prisma.diningSession.findFirst({
       where: {
         tables: { some: { tableId: table.id, leftAt: null } },
-        status: { in: ["ACTIVA", "EN_CONSUMO"] },
+        status: { in: activeStatuses },
         guests: { some: { name: guestName } },
       },
       orderBy: { openedAt: "desc" },

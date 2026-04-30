@@ -34,13 +34,15 @@ export default async function TableAccessPage({ params, searchParams }: TablePag
     cookieStore.get(`bq_guest_${canonicalQr}`)?.value ??
     cookieStore.get(`bq_guest_${decodedCode}`)?.value;
 
+  const activeStatuses = ["ACTIVA", "EN_CONSUMO", "POR_LIQUIDAR"];
+
   if (sessionId && guestNameCookie) {
     const activeSession = await prisma.diningSession.findUnique({
       where: { id: sessionId },
       select: { status: true, pax: true }
     });
 
-    if (activeSession?.status === "OPEN") {
+    if (activeSession && activeStatuses.includes(activeSession.status)) {
       redirect(`/mesa/${encodeURIComponent(canonicalQr)}/menu`);
     }
   }
@@ -49,7 +51,7 @@ export default async function TableAccessPage({ params, searchParams }: TablePag
     ? await prisma.diningSession.findFirst({
         where: { 
           tables: { some: { tableId: tableResolved.id } }, 
-          status: "OPEN" 
+          status: { in: activeStatuses }
         },
         select: { pax: true },
       })

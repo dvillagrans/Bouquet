@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, RefreshCw, Layers, ShieldCheck, Zap, ArrowUpRight } from "lucide-react";
+import { Plus, RefreshCw, Layers, ShieldCheck, Zap, ArrowUpRight, Pencil, UserCog, Archive } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getSuperAdminDashboard, type SuperAdminDashboardData } from "@/actions/admin";
+import { getSuperAdminDashboard, archiveTenant, type SuperAdminDashboardData } from "@/actions/admin";
 import { CreateTenantDialog } from "@/components/admin/CreateTenantDialog";
+import { EditTenantDialog } from "@/components/admin/EditTenantDialog";
+import { ChangeAdminDialog } from "@/components/admin/ChangeAdminDialog";
 
 type KpiCardProps = {
   label: string;
@@ -78,6 +80,12 @@ export default function SuperAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [isCreatingTenant, setIsCreatingTenant] = useState(false);
 
+  const [editChain, setEditChain] = useState<{ id: string; name: string; currency: string } | null>(null);
+  const [changeAdminChainId, setChangeAdminChainId] = useState<string | null>(null);
+  const [changeAdminChainName, setChangeAdminChainName] = useState("");
+  const [archiveConfirm, setArchiveConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [archiving, setArchiving] = useState(false);
+
   const load = async () => {
     try {
       const res = await getSuperAdminDashboard();
@@ -96,6 +104,20 @@ export default function SuperAdminDashboard() {
   }, []);
 
   const fmtCurrency = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 0 });
+
+  const handleArchive = async () => {
+    if (!archiveConfirm) return;
+    setArchiving(true);
+    try {
+      await archiveTenant(archiveConfirm.id);
+      setArchiveConfirm(null);
+      await load();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setArchiving(false);
+    }
+  };
 
   return (
     <div className="relative flex min-h-screen flex-col bg-bg-solid text-base text-text-primary antialiased selection:bg-gold/30 lg:text-[14px]">
@@ -286,6 +308,36 @@ export default function SuperAdminDashboard() {
                         >
                           Acceder a consola
                         </a>
+
+                        <div className="mt-3 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditChain({ id: chain.id, name: chain.name, currency: chain.currency || "MXN" })}
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] py-2 text-[12px] font-medium text-text-dim transition-colors hover:bg-white/10 hover:text-white"
+                          >
+                            <Pencil className="size-3.5" />
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setChangeAdminChainId(chain.id);
+                              setChangeAdminChainName(chain.name);
+                            }}
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] py-2 text-[12px] font-medium text-text-dim transition-colors hover:bg-white/10 hover:text-white"
+                          >
+                            <UserCog className="size-3.5" />
+                            Cambiar Admin
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setArchiveConfirm({ id: chain.id, name: chain.name })}
+                            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-red-500/10 bg-red-500/[0.03] py-2 text-[12px] font-medium text-red-400 transition-colors hover:bg-red-500/10"
+                          >
+                            <Archive className="size-3.5" />
+                            Baja
+                          </button>
+                        </div>
                       </article>
                     );
                   })
@@ -300,7 +352,7 @@ export default function SuperAdminDashboard() {
                       <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Entidad B2B</th>
                       <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Token / ID</th>
                       <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Administrador</th>
-                      <th className="px-8 py-4 text-right text-[11px] font-bold uppercase tracking-widest text-text-dim">Flujo</th>
+                      <th className="px-8 py-4 text-right text-[11px] font-bold uppercase tracking-widest text-text-dim">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="align-middle">
@@ -344,14 +396,44 @@ export default function SuperAdminDashboard() {
                               </span>
                             </td>
                             <td className="px-8 py-5 text-right">
-                              <a
-                                href={`/cadena?tenantId=${chain.id}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-block rounded-lg px-4 py-2 text-[12px] font-medium text-text-dim transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95"
-                              >
-                                Entrar &rarr;
-                              </a>
+                              <div className="flex items-center justify-end gap-1">
+                                <a
+                                  href={`/cadena?tenantId=${chain.id}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-[12px] font-medium text-text-dim transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95"
+                                  title="Entrar a consola"
+                                >
+                                  Entrar &rarr;
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditChain({ id: chain.id, name: chain.name, currency: chain.currency || "MXN" })}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-text-dim transition-colors hover:bg-white/10 hover:text-white"
+                                  title="Editar cadena"
+                                >
+                                  <Pencil className="size-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setChangeAdminChainId(chain.id);
+                                    setChangeAdminChainName(chain.name);
+                                  }}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-text-dim transition-colors hover:bg-white/10 hover:text-white"
+                                  title="Cambiar administrador"
+                                >
+                                  <UserCog className="size-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setArchiveConfirm({ id: chain.id, name: chain.name })}
+                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-text-dim transition-colors hover:bg-red-500/10 hover:text-red-400"
+                                  title="Dar de baja"
+                                >
+                                  <Archive className="size-3.5" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -370,6 +452,56 @@ export default function SuperAdminDashboard() {
         onOpenChange={setIsCreatingTenant}
         onCreated={load}
       />
+
+      <EditTenantDialog
+        open={!!editChain}
+        onOpenChange={(next) => !next && setEditChain(null)}
+        chain={editChain}
+        onUpdated={load}
+      />
+
+      <ChangeAdminDialog
+        open={!!changeAdminChainId}
+        onOpenChange={(next) => {
+          if (!next) {
+            setChangeAdminChainId(null);
+            setChangeAdminChainName("");
+          }
+        }}
+        chainId={changeAdminChainId}
+        chainName={changeAdminChainName}
+        onChanged={load}
+      />
+
+      {/* Confirmación de baja */}
+      {archiveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-border-main bg-bg-card p-6 shadow-2xl">
+            <h3 className="font-serif text-lg font-bold text-white">Dar de baja cadena</h3>
+            <p className="mt-2 text-[13px] text-text-dim">
+              Estás por dar de baja <strong className="text-white">{archiveConfirm.name}</strong>. Esta acción la archiva y puede revertirse.
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                disabled={archiving}
+                onClick={() => setArchiveConfirm(null)}
+                className="flex-1 rounded-xl border border-border-mid px-4 py-2.5 text-[13px] font-medium text-text-muted transition-colors hover:text-text-secondary"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={archiving}
+                onClick={handleArchive}
+                className="flex-1 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-2.5 text-[13px] font-medium text-red-400 transition-colors hover:bg-red-500/20"
+              >
+                {archiving ? "Archivando..." : "Confirmar Baja"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

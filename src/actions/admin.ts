@@ -44,6 +44,7 @@ export interface SuperAdminDashboardData {
   chains: {
     id: string;
     name: string;
+    currency: string;
     zonesCount: number;
     restaurantsCount: number;
     adminName?: string;
@@ -55,6 +56,7 @@ export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData>
     select: {
       id: true,
       name: true,
+      currency: true,
       createdBy: true,
       zones: {
         select: {
@@ -86,6 +88,7 @@ export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData>
       return {
         id: c.id,
         name: c.name,
+        currency: c.currency,
         zonesCount: c.zones.length,
         restaurantsCount: restCount,
         adminName,
@@ -308,6 +311,97 @@ export async function createTenant(data: {
   return {
     success: true,
     chainId: chain.id,
+    credentials: {
+      email,
+      tempPassword,
+      name: `${firstName} ${lastName}`.trim(),
+    },
+  };
+}
+
+export async function updateTenant(chainId: string, data: { name?: string; currency?: string }) {
+  const updateData: { name?: string; currency?: string } = {};
+  if (data.name?.trim()) updateData.name = data.name.trim();
+  if (data.currency?.trim()) updateData.currency = data.currency.trim();
+
+  const chain = await prisma.chain.update({
+    where: { id: chainId },
+    data: updateData,
+    select: { id: true, name: true },
+  });
+
+  return { success: true, chain };
+}
+
+export async function archiveTenant(chainId: string) {
+  await prisma.chain.update({
+    where: { id: chainId },
+    data: { archivedAt: new Date() },
+  });
+  return { success: true };
+}
+
+export async function changeChainAdmin(
+  chainId: string,
+  data: {
+    adminName: string;
+    adminEmail?: string;
+    adminPassword?: string;
+  }
+) {
+  const { hashPassword } = await import("@/lib/auth-password");
+
+  const role = await prisma.role.upsert({
+    where: { id: "role-chain-admin" },
+    update: {},
+    create: {
+      id: "role-chain-admin",
+      name: "CHAIN_ADMIN",
+      scope: "CHAIN",
+      isBase: true,
+      isActive: true,
+    },
+  });
+
+  // Eliminar roles anteriores de CHAIN_ADMIN en esta cadena
+  await prisma.userRole.deleteMany({
+    where: { contextType: "CHAIN", chainId, roleId: role.id },
+  });
+
+  const names = data.adminName.trim().split(/\s+/);
+  const firstName = names[0] ?? "Admin";
+  const lastName = names.slice(1).join(" ") ?? "Cadena";
+  const email = data.adminEmail?.trim() || `admin-${Date.now()}@bouquet.internal`;
+  const tempPassword = data.adminPassword?.trim() || Math.random().toString(36).slice(-8);
+  const passwordHash = await hashPassword(tempPassword);
+
+  const adminUser = await prisma.appUser.create({
+    data: {
+      email,
+      passwordHash,
+      firstName,
+      lastName,
+      isActive: true,
+    },
+  });
+
+  await prisma.userRole.create({
+    data: {
+      userId: adminUser.id,
+      roleId: role.id,
+      contextType: "CHAIN",
+      chainId,
+    },
+  });
+
+  // Actualizar createdBy para reflejar el nuevo admin principal
+  await prisma.chain.update({
+    where: { id: chainId },
+    data: { createdBy: adminUser.id },
+  });
+
+  return {
+    success: true,
     credentials: {
       email,
       tempPassword,

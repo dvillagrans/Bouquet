@@ -84,6 +84,7 @@ export default function SuperAdminDashboard() {
   const [changeAdminChainId, setChangeAdminChainId] = useState<string | null>(null);
   const [changeAdminChainName, setChangeAdminChainName] = useState("");
   const [archiveConfirm, setArchiveConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [archiveConfirmText, setArchiveConfirmText] = useState("");
   const [archiving, setArchiving] = useState(false);
 
   const load = async () => {
@@ -107,10 +108,12 @@ export default function SuperAdminDashboard() {
 
   const handleArchive = async () => {
     if (!archiveConfirm) return;
+    if (archiveConfirmText.trim() !== archiveConfirm.name) return;
     setArchiving(true);
     try {
       await archiveTenant(archiveConfirm.id);
       setArchiveConfirm(null);
+      setArchiveConfirmText("");
       await load();
     } catch (err) {
       console.error(err);
@@ -475,28 +478,74 @@ export default function SuperAdminDashboard() {
 
       {/* Confirmación de baja */}
       {archiveConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-          <div className="w-full max-w-sm rounded-2xl border border-border-main bg-bg-card p-6 shadow-2xl">
-            <h3 className="font-serif text-lg font-bold text-white">Dar de baja cadena</h3>
-            <p className="mt-2 text-[13px] text-text-dim">
-              Estás por dar de baja <strong className="text-white">{archiveConfirm.name}</strong>. Esta acción la archiva y puede revertirse.
-            </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="w-full max-w-md rounded-2xl border border-red-500/20 bg-bg-card p-7 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
+                <svg className="size-5 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-serif text-lg font-bold text-white">Eliminar cadena permanentemente</h3>
+                <p className="text-[12px] text-text-dim">Esta acción no se puede deshacer.</p>
+              </div>
+            </div>
+
+            <div className="mt-5 space-y-3 rounded-xl border border-red-500/10 bg-red-500/[0.03] p-4">
+              <p className="text-[13px] text-text-dim leading-relaxed">
+                Estás por eliminar <strong className="text-white">{archiveConfirm.name}</strong>. Esto desactivará:
+              </p>
+              <ul className="space-y-1.5 text-[12px] text-text-dim">
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 size-1 rounded-full bg-red-400 shrink-0" />
+                  Todas las sucursales y zonas asociadas
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 size-1 rounded-full bg-red-400 shrink-0" />
+                  El acceso de todos los administradores y staff
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="mt-1.5 size-1 rounded-full bg-red-400 shrink-0" />
+                  Menús, plantillas y configuraciones de la cadena
+                </li>
+              </ul>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-1.5">
+              <label htmlFor="confirm-name" className="text-[10px] font-medium tracking-[0.16em] uppercase text-red-400/80">
+                Escribe el nombre de la cadena para confirmar
+              </label>
+              <input
+                id="confirm-name"
+                type="text"
+                autoFocus
+                value={archiveConfirmText}
+                onChange={(e) => setArchiveConfirmText(e.target.value)}
+                placeholder={archiveConfirm.name}
+                className="h-10 rounded-md border border-border-bright bg-bg-solid px-3 text-[12px] text-text-primary outline-none placeholder:text-text-faint focus:border-red-400 focus:ring-1 focus:ring-red-400/30"
+              />
+            </div>
+
             <div className="mt-6 flex gap-3">
               <button
                 type="button"
                 disabled={archiving}
-                onClick={() => setArchiveConfirm(null)}
+                onClick={() => {
+                  setArchiveConfirm(null);
+                  setArchiveConfirmText("");
+                }}
                 className="flex-1 rounded-xl border border-border-mid px-4 py-2.5 text-[13px] font-medium text-text-muted transition-colors hover:text-text-secondary"
               >
                 Cancelar
               </button>
               <button
                 type="button"
-                disabled={archiving}
+                disabled={archiving || archiveConfirmText.trim() !== archiveConfirm.name}
                 onClick={handleArchive}
-                className="flex-1 rounded-xl bg-red-500/10 border border-red-500/20 px-4 py-2.5 text-[13px] font-medium text-red-400 transition-colors hover:bg-red-500/20"
+                className="flex-1 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-2.5 text-[13px] font-medium text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {archiving ? "Archivando..." : "Confirmar Baja"}
+                {archiving ? "Eliminando..." : "Eliminar permanentemente"}
               </button>
             </div>
           </div>

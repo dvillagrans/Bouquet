@@ -687,7 +687,8 @@ export async function getGuestTableState(tableCode: string, guestName: string) {
     include: { guests: true },
   });
 
-  const myGuest = activeSessions.flatMap(s => s.guests).find(g => g.name === guestName);
+  const mySession = activeSessions.find(s => s.guests.some(g => g.name === guestName));
+  const myGuest = mySession?.guests.find(g => g.name === guestName);
   const isHost = myGuest?.isHost ?? false;
 
   return {
@@ -695,7 +696,7 @@ export async function getGuestTableState(tableCode: string, guestName: string) {
     billRequested: activeSessions.some(s => s.status === "POR_LIQUIDAR"),
     guests: activeSessions.flatMap(s => s.guests).map(g => ({ name: g.name, isHost: g.isHost })),
     /** Misma mesa misma sesión: todos ven el código para invitar (no exponemos si no hay sesión activa). */
-    joinCode: null, // TODO: joinCode eliminado del schema
+    joinCode: mySession?.joinCode ?? null,
   };
 }
 

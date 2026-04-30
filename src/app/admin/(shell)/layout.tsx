@@ -15,8 +15,8 @@ export default async function AdminShellLayout({ children }: { children: React.R
 
   const cookieStore = await cookies();
   const token = cookieStore.get(adminSessionCookieName())?.value;
-  const ok = await verifyAdminSessionToken(token, secret);
-  if (!ok) {
+  const session = await verifyAdminSessionToken(token, secret);
+  if (!session.ok) {
     const h = await headers();
     const from = h.get("x-bouquet-admin-pathname") ?? "/admin";
     redirect(`/admin/login?from=${encodeURIComponent(from)}`);

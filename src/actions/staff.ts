@@ -1,21 +1,141 @@
 "use server";
 
+import { prisma } from "@/lib/prisma";
+import { hashPassword } from "@/lib/auth-password";
 import { getDefaultRestaurant } from "./restaurant";
 
-// TODO: migrar a AppUser + UserRole (staff fue eliminado del schema)
-export async function getStaffData() {
-  await getDefaultRestaurant();
-  return [] as any[];
+async function ensureRestaurantRole(name: string) {
+  return prisma.role.upsert({
+    where: { id: `role-restaurant-${name.toLowerCase()}` },
+    update: {},
+    create: {
+      id: `role-restaurant-${name.toLowerCase()}`,
+      name,
+      scope: "RESTAURANT",
+      isBase: true,
+      isActive: true,
+    },
+  });
 }
 
-export async function deleteStaffMember(_id: string) {
-  throw new Error("staff eliminado del schema. Usa AppUser + UserRole.");
+export type Staff = {
+  id: string;
+  name: string;
+  role: string;
+  email: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  pin: string;
+};
+
+function toStaff(user: {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  userRoles: { role: { name: string } }[];
+}): Staff {
+  const name = `${user.firstName} ${user.lastName}`.trim();
+  const role = user.userRoles[0]?.role.name ?? "MESERO";
+  return {
+    id: user.id,
+    name,
+    role,
+    email: user.email,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+    pin: "****",
+  };
 }
 
-export async function createStaffMember(_data: { name: string; role: "ADMIN" | "MESERO" | "COCINA" | "BARRA"; pin: string }) {
-  throw new Error("staff eliminado del schema. Usa AppUser + UserRole.");
+export async function getStaffData(): Promise<Staff[]> {
+  const restaurant = await getDefaultRestaurant();
+  const users = await prisma.appUser.findMany({
+    where: {
+      isActive: true,
+      userRoles: {
+        some: {
+          restaurantId: restaurant.id,
+          contextType: "RESTAURANT",
+        },
+      },
+    },
+    include: {
+      userRoles: {
+        where: { restaurantId: restaurant.id },
+        include: { role: { select: { name: true } } },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return users.map(toStaff);
 }
 
-export async function toggleStaffStatus(_id: string, _currentStatus: boolean) {
-  throw new Error("staff eliminado del schema. Usa AppUser + UserRole.");
+export async function createStaffMember(data: {
+  name: string;
+  role: "ADMIN" | "MESERO" | "COCINA" | "BARRA";
+  pin: string;
+}) {
+  const restaurant = await getDefaultRestaurant();
+  const roleName = data.role === "ADMIN" ? "ADMIN" : data.role;
+  const role = await ensureRestaurantRole(roleName);
+
+  const names = data.name.trim().split(/\s+/);
+  const firstName = names[0] ?? "Sin";
+  const lastName = names.slice(1).join(" ") ?? "Nombre";
+  const email = `staff-${Date.now()}@bouquet.internal`;
+  const passwordHash = await hashPassword(data.pin);
+
+  const user = await prisma.appUser.create({
+    data: {
+      email,
+      passwordHash,
+      firstName,
+      lastName,
+      isActive: true,
+      userRoles: {
+        create: {
+          roleId: role.id,
+          contextType: "RESTAURANT",
+          restaurantId: restaurant.id,
+        },
+      },
+    },
+    include: {
+      userRoles: {
+        where: { restaurantId: restaurant.id },
+        include: { role: { select: { name: true } } },
+      },
+    },
+  });
+
+  return toStaff(user);
+}
+
+export async function deleteStaffMember(id: string) {
+  const restaurant = await getDefaultRestaurant();
+  // Soft-delete: archivar el AppUser y desactivar
+  await prisma.appUser.update({
+    where: { id },
+    data: { isActive: false, archivedAt: new Date() },
+  });
+  // Eliminar UserRole del restaurante
+  await prisma.userRole.deleteMany({
+    where: { userId: id, restaurantId: restaurant.id },
+  });
+}
+
+export async function toggleStaffStatus(id: string, _currentStatus: boolean) {
+  const user = await prisma.appUser.findUnique({ where: { id } });
+  if (!user) throw new Error("Usuario no encontrado");
+  await prisma.appUser.update({
+    where: { id },
+    data: { isActive: !user.isActive },
+  });
 }

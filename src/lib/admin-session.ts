@@ -1,6 +1,7 @@
 /**
  * Sesión admin firmada con Web Crypto (HMAC-SHA256).
  * Sirve en proxy (Edge) y en route handlers (Node).
+ * Soporta login centralizado AppUser + UserRole.
  */
 
 const COOKIE_NAME = "bq_admin_session";
@@ -71,13 +72,14 @@ export function adminSessionCookieName() {
 export async function createAdminSessionToken(
   secret: string,
   ttlMs: number,
-  claims: { superAdminId: string }
+  claims: { appUserId: string; roles: string[] }
 ): Promise<string> {
   const exp = Date.now() + ttlMs;
   const payload = JSON.stringify({
     exp,
-    role: "super_admin" as const,
-    sid: claims.superAdminId,
+    aud: "bouquet_admin",
+    sub: claims.appUserId,
+    roles: claims.roles,
   });
   const raw = encoder().encode(payload);
   const payloadSlice = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength);
@@ -88,30 +90,41 @@ export async function createAdminSessionToken(
   return `${payloadB64}.${sigB64}`;
 }
 
-export async function verifyAdminSessionToken(token: string | undefined, secret: string): Promise<boolean> {
-  if (!token || !secret) return false;
+export async function verifyAdminSessionToken(
+  token: string | undefined,
+  secret: string
+): Promise<{ ok: false } | { ok: true; appUserId: string; roles: string[] }> {
+  if (!token || !secret) return { ok: false };
   const parts = token.split(".");
-  if (parts.length !== 2) return false;
+  if (parts.length !== 2) return { ok: false };
   const [payloadB64, sigB64] = parts;
-  if (!payloadB64 || !sigB64) return false;
+  if (!payloadB64 || !sigB64) return { ok: false };
 
   const key = await importHmacKey(secret);
   const expected = new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder().encode(payloadB64)));
   const actual = base64UrlToBuffer(sigB64);
-  if (!actual) return false;
-  if (!timingSafeEqual(expected, actual)) return false;
+  if (!actual) return { ok: false };
+  if (!timingSafeEqual(expected, actual)) return { ok: false };
 
   const payloadBytes = base64UrlToBuffer(payloadB64);
-  if (!payloadBytes) return false;
-  let parsed: { exp?: number; role?: string; sid?: string };
+  if (!payloadBytes) return { ok: false };
+  let parsed: { exp?: number; aud?: string; sub?: string; roles?: string[] };
   try {
-    parsed = JSON.parse(new TextDecoder().decode(payloadBytes)) as { exp?: number; role?: string; sid?: string };
+    parsed = JSON.parse(new TextDecoder().decode(payloadBytes)) as {
+      exp?: number;
+      aud?: string;
+      sub?: string;
+      roles?: string[];
+    };
   } catch {
-    return false;
+    return { ok: false };
   }
-  if (typeof parsed.exp !== "number" || parsed.exp < Date.now()) return false;
-  if (parsed.role !== "super_admin" || typeof parsed.sid !== "string" || parsed.sid.length < 1) return false;
-  return true;
+  if (typeof parsed.exp !== "number" || parsed.exp < Date.now()) return { ok: false };
+  if (parsed.aud !== "bouquet_admin") return { ok: false };
+  if (typeof parsed.sub !== "string" || parsed.sub.length < 1) return { ok: false };
+  if (!Array.isArray(parsed.roles)) return { ok: false };
+
+  return { ok: true, appUserId: parsed.sub, roles: parsed.roles };
 }
 
 const ADMIN_AUTH_SECRET_KEYS = ["AUTH_SECRET", "NEXTAUTH_SECRET", "BOUQUET_ADMIN_AUTH_SECRET"] as const;

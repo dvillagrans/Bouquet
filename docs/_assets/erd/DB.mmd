@@ -4,6 +4,9 @@ config:
 ---
 erDiagram
 
+    %% Login Centralizado: AppUser (email + passwordHash) es el único punto de auth.
+    %% No existen tablas de credenciales por rol ni por restaurante.
+
     Currency {
         string code PK "MXN | USD | EUR"
         string name
@@ -58,8 +61,8 @@ erDiagram
 
     AppUser {
         string id PK
-        string email UK
-        string passwordHash
+        string email UK "credencial login única"
+        string passwordHash "hash bcrypt — login centralizado"
         string firstName
         string lastName
         string secondLastName "nullable"

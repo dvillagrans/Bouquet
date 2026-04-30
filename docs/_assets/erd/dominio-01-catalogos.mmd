@@ -16,9 +16,21 @@ erDiagram
         timestamp createdAt
     }
 
+    TipPreset {
+        string id PK
+        string chainId FK "nullable"
+        string restaurantId FK "nullable"
+        int rateBps
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+
     Currency ||--o{ Chain : "usada en"
     Currency ||--o{ Restaurant : "usada en"
-    Currency ||--o{ Payment : "usada en"
+    Currency ||--o{ Settlement : "usada en"
 
+    TaxGroup ||--o{ Chain : "default en"
+    TaxGroup ||--o{ Restaurant : "default en"
     TaxGroup ||--o{ RestaurantCategory : "aplicado en"
     TaxGroup ||--o{ RestaurantMenuItem : "aplicado en"

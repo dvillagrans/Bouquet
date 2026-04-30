@@ -22,11 +22,11 @@ erDiagram
         string id PK
         string categoryId FK
         string name
-        string description
+        string description "nullable"
         int basePriceCents
-        string imageUrl
+        string imageUrl "nullable"
         boolean isPopular
-        boolean isArchived
+        timestamp archivedAt "nullable"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -45,10 +45,11 @@ erDiagram
     RestaurantCategory {
         string id PK
         string restaurantId FK
-        string taxGroupId FK
+        string templateCategoryId FK "nullable"
+        string taxGroupId FK "nullable"
         string name
         int order
-        boolean isArchived
+        timestamp archivedAt "nullable"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -136,7 +137,7 @@ erDiagram
 
     ModifierGroup ||--o{ ModifierOption : "tiene"
     ModifierGroup ||--o{ MenuItemModifierGroup : "asignado a"
-    Restaurant ||--o{ MenuTemplate : "tiene"
+    Chain ||--o{ MenuTemplate : "tiene"
     Restaurant ||--o{ RestaurantCategory : "tiene"
     Restaurant ||--o{ Station : "tiene"
     Restaurant ||--o{ ModifierGroup : "tiene"

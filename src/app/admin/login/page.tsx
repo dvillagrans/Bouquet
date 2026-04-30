@@ -23,7 +23,8 @@ export default async function AdminLoginPage({
   const secret = resolveAdminAuthSecret();
   if (secret) {
     const token = (await cookies()).get(adminSessionCookieName())?.value;
-    if (await verifyAdminSessionToken(token, secret)) {
+    const session = await verifyAdminSessionToken(token, secret);
+    if (session.ok) {
       redirect("/admin");
     }
   }

@@ -76,6 +76,10 @@ async function fetchRestaurants(chainId?: string, zoneId?: string) {
           status: true,
         },
       },
+      userRoles: {
+        where: { user: { isActive: true } },
+        select: { id: true },
+      },
       orders: {
         where: {
           createdAt: { gte: dayStart, lte: dayEnd },
@@ -107,7 +111,7 @@ function toSummary(r: any, sessionCountMap: Map<string, number>): RestaurantSumm
     zoneId: r.zoneId,
     totalTables: r.diningTables.length,
     activeTables: r.diningTables.filter((t: any) => t.status === "OCUPADA").length,
-    activeStaff: 0, // TODO: migrar a AppUser + UserRole
+    activeStaff: r.userRoles?.length ?? 0,
     todayRevenue,
     todaySessions,
   };
@@ -491,8 +495,8 @@ export async function getChainAuditOverview(tenantId: string): Promise<ChainAudi
     prisma.menuTemplate.count({ where: { chainId: tenantId } }),
     prisma.templateCategory.count({ where: { template: { chainId: tenantId } } }),
     prisma.templateItem.count({ where: { category: { template: { chainId: tenantId } } } }),
-    0, // prisma.chainStaff.count({ where: { chainId: tenantId } }), // TODO: AppUser + UserRole
-    0, // prisma.chainStaff.count({ where: { chainId: tenantId, isActive: true } }), // TODO
+    prisma.userRole.count({ where: { chainId: tenantId } }),
+    prisma.userRole.count({ where: { chainId: tenantId, user: { isActive: true } } }),
   ]);
 
   return {
@@ -534,9 +538,8 @@ export async function getZoneSettings(zoneId: string): Promise<ZoneSettingsData 
 
   const restaurants = await prisma.restaurant.count({ where: { zoneId } });
   
-  // TODO: migrar staff a AppUser + UserRole
-  const staffTotal = 0;
-  const staffActive = 0;
+  const staffTotal = await prisma.userRole.count({ where: { zoneId } });
+  const staffActive = await prisma.userRole.count({ where: { zoneId, user: { isActive: true } } });
 
   return {
     zone: { id: zone.id, name: zone.name, chainId: zone.chainId, chainName: zone.chain.name },

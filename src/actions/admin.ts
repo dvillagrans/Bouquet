@@ -25,6 +25,7 @@ export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData>
     select: {
       id: true,
       name: true,
+      createdBy: true,
       zones: {
         select: {
           id: true,
@@ -39,21 +40,29 @@ export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData>
   const totalRestaurants = await prisma.restaurant.count();
 
   // Mapeamos los datos de las cadenas
-  const chainsList = chains.map((c) => {
-    let restCount = 0;
-    c.zones.forEach((z) => {
-      restCount += z.restaurants.length;
-    });
+  const chainsList = await Promise.all(
+    chains.map(async (c) => {
+      let restCount = 0;
+      c.zones.forEach((z) => {
+        restCount += z.restaurants.length;
+      });
 
-    return {
-      id: c.id,
-      name: c.name,
-      zonesCount: c.zones.length,
-      restaurantsCount: restCount,
-      adminName: "Sin admin", // TODO: migrar a AppUser + UserRole
-      pin: "—",
-    };
-  });
+      const creator = await prisma.appUser.findUnique({
+        where: { id: c.createdBy },
+        select: { firstName: true, lastName: true },
+      });
+      const adminName = creator ? `${creator.firstName} ${creator.lastName}`.trim() : "Sin admin";
+
+      return {
+        id: c.id,
+        name: c.name,
+        zonesCount: c.zones.length,
+        restaurantsCount: restCount,
+        adminName,
+        pin: "—",
+      };
+    })
+  );
 
   const mrr = totalRestaurants * SAAS_USD_PER_SEAT_MONTH;
 
@@ -88,6 +97,7 @@ export async function getAdminClientesList(): Promise<AdminClienteRow[]> {
       name: true,
       currency: true,
       createdAt: true,
+      createdBy: true,
       zones: {
         select: {
           id: true,
@@ -97,22 +107,29 @@ export async function getAdminClientesList(): Promise<AdminClienteRow[]> {
     },
   });
 
-  return chains.map((c) => {
-    let restaurantsCount = 0;
-    for (const z of c.zones) {
-      restaurantsCount += z.restaurants.length;
-    }
-    return {
-      id: c.id,
-      name: c.name,
-      currency: c.currency,
-      createdAt: c.createdAt.toISOString(),
-      zonesCount: c.zones.length,
-      restaurantsCount,
-      adminName: "Sin admin", // TODO: AppUser + UserRole
-      pin: "—",
-    };
-  });
+  return await Promise.all(
+    chains.map(async (c) => {
+      let restaurantsCount = 0;
+      for (const z of c.zones) {
+        restaurantsCount += z.restaurants.length;
+      }
+      const creator = await prisma.appUser.findUnique({
+        where: { id: c.createdBy },
+        select: { firstName: true, lastName: true },
+      });
+      const adminName = creator ? `${creator.firstName} ${creator.lastName}`.trim() : "Sin admin";
+      return {
+        id: c.id,
+        name: c.name,
+        currency: c.currency,
+        createdAt: c.createdAt.toISOString(),
+        zonesCount: c.zones.length,
+        restaurantsCount,
+        adminName,
+        pin: "—",
+      };
+    })
+  );
 }
 
 export interface AdminBillingChainRow {
@@ -192,27 +209,55 @@ export async function getAdminBillingOverview(): Promise<AdminBillingOverview> {
   };
 }
 
-// TODO: migrar a AppUser + UserRole (chainStaff fue eliminado del schema)
 export async function createTenant(data: { name: string; adminName: string; pin: string; currency?: string }) {
-  let user = await prisma.appUser.findFirst();
-  if (!user) {
-    user = await prisma.appUser.create({
-      data: {
-        email: "admin@bouquet.com",
-        passwordHash: "temp",
-        firstName: "Admin",
-        lastName: "Bouquet",
-      }
-    });
-  }
+  const { hashPassword } = await import("@/lib/auth-password");
+
+  // Crear rol base CHAIN_ADMIN si no existe
+  const role = await prisma.role.upsert({
+    where: { id: "role-chain-admin" },
+    update: {},
+    create: {
+      id: "role-chain-admin",
+      name: "CHAIN_ADMIN",
+      scope: "CHAIN",
+      isBase: true,
+      isActive: true,
+    },
+  });
+
+  const names = data.adminName.trim().split(/\s+/);
+  const firstName = names[0] ?? "Admin";
+  const lastName = names.slice(1).join(" ") ?? "Cadena";
+  const email = `admin-${Date.now()}@bouquet.internal`;
+  const passwordHash = await hashPassword(data.pin);
+
+  const adminUser = await prisma.appUser.create({
+    data: {
+      email,
+      passwordHash,
+      firstName,
+      lastName,
+      isActive: true,
+    },
+  });
 
   const chain = await prisma.chain.create({
     data: {
       name: data.name,
       currency: data.currency || "MXN",
-      createdBy: user.id,
+      createdBy: adminUser.id,
     },
   });
-  // TODO: crear AppUser con rol CHAIN_ADMIN aquí
+
+  // Asignar rol CHAIN_ADMIN al usuario creador
+  await prisma.userRole.create({
+    data: {
+      userId: adminUser.id,
+      roleId: role.id,
+      contextType: "CHAIN",
+      chainId: chain.id,
+    },
+  });
+
   return { success: true, chainId: chain.id };
 }

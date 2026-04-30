@@ -8,9 +8,9 @@ erDiagram
         string triggeredByUserId FK
         timestamp dataWindowStart
         timestamp dataWindowEnd
-        timestamp startedAt
-        timestamp finishedAt
-        string errorMessage
+        timestamp finishedAt "nullable"
+        string errorMessage "nullable"
+        jsonb metadata "nullable"
     }
 
     AnalyticSalesDaily {
@@ -20,6 +20,8 @@ erDiagram
         date businessDate
         int orderCount
         int itemCount
+        int grossConsumptionCents
+        int discountCents
         int netConsumptionCents
         int avgServiceTimeSeconds
         timestamp computedAt
@@ -41,10 +43,12 @@ erDiagram
         string id PK
         string restaurantId FK
         string jobRunId FK
-        string stationId FK
+        string stationId FK "nullable"
         date businessDate
         int avgPrepSeconds
+        int p50PrepSeconds
         int p90PrepSeconds
+        int delayedItemsCount
         timestamp computedAt
     }
 

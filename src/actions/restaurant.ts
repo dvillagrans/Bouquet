@@ -83,8 +83,9 @@ export async function getRestaurantOverview() {
     where: { restaurantId: restaurant.id },
     select: { status: true },
   });
-  // TODO: migrar staff a AppUser + UserRole
-  const staffCount = 0;
+  const staffCount = await prisma.userRole.count({
+    where: { restaurantId: restaurant.id, user: { isActive: true } },
+  });
   const ordersToday = await prisma.restaurantOrder.findMany({ 
     where: { restaurantId: restaurant.id, createdAt: { gte: startOfDay } },
     select: { status: true }

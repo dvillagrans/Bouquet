@@ -18,7 +18,7 @@ erDiagram
     Permission      { string id PK }
     Role            { string id PK }
     RolePermission  { string roleId FK }
-    AppUser         { string id PK }
+    AppUser         { string id PK "login centralizado" }
     UserRole        { string id PK }
 
     %% ── ORGANIZACIÓN ──
@@ -67,6 +67,7 @@ erDiagram
     AnalyticServiceTimes{ string id PK }
     AnalyticDemandEstimate{ string id PK }
 
+    %% Login Centralizado: AppUser (email + passwordHash) es el único punto de auth.
     %% ── RELACIONES ──
 
     Currency ||--o{ Chain              : " "

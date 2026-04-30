@@ -2,13 +2,14 @@ erDiagram
 
     AppUser {
         string id PK
-        string email UK
-        string passwordHash
+        string email UK "credencial login única"
+        string passwordHash "hash bcrypt — login centralizado"
         string firstName
         string lastName
         string secondLastName
         string phone
         boolean isActive
+        timestamp archivedAt
         timestamp createdAt
         timestamp updatedAt
     }
@@ -17,15 +18,44 @@ erDiagram
         string id PK
         string userId FK
         string roleId FK
-        string contextType
+        string contextType "PLATFORM | CHAIN | ZONE | RESTAURANT"
         string chainId FK
         string zoneId FK
         string restaurantId FK
         timestamp assignedAt
     }
 
-    AppUser ||--o{ UserRole : "tiene"
+    AuditLog {
+        string id PK
+        string actorUserId FK
+        string chainId "nullable"
+        string restaurantId "nullable"
+        string action "LOGIN | CREATE | UPDATE | DELETE | ..."
+        string entityType
+        string entityId
+        jsonb before
+        jsonb after
+        jsonb metadata "nullable"
+        string ipAddress "nullable"
+        string userAgent "nullable"
+        string requestId "nullable"
+        timestamp createdAt
+    }
+
+    AppUser ||--o{ UserRole : "tiene roles"
+    AppUser ||--o{ AuditLog : "genera"
     Role ||--o{ UserRole : "asignado en"
     Chain ||--o{ UserRole : "contexto"
     Zone ||--o{ UserRole : "contexto"
     Restaurant ||--o{ UserRole : "contexto"
+
+    %% Login Centralizado: AppUser es el único punto de autenticación del sistema.
+    %% No existen tablas de credenciales por rol ni por restaurante.
+    %% RBAC contextual: UserRole asigna permisos por organización sin duplicar identidad.
+    classDef loginCentral fill:#01579b,stroke:#002f6c,stroke-width:3px,color:#fff
+    classDef rbac fill:#e1f5fe,stroke:#0288d1,stroke-width:1px
+    classDef audit fill:#fff3e0,stroke:#e65100,stroke-width:1px
+
+    class AppUser loginCentral
+    class UserRole rbac
+    class AuditLog audit

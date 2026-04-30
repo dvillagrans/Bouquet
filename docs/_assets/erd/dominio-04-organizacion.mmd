@@ -4,11 +4,10 @@ erDiagram
         string id PK
         string createdBy FK
         string currency FK
+        string defaultTaxGroupId FK "nullable"
         string name
-        string logoUrl
-        int defaultTaxBps
-        string defaultTipsBps
-        boolean isArchived
+        string logoUrl "nullable"
+        timestamp archivedAt "nullable"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -17,7 +16,7 @@ erDiagram
         string id PK
         string chainId FK
         string name
-        boolean isArchived
+        timestamp archivedAt "nullable"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -25,17 +24,16 @@ erDiagram
     Restaurant {
         string id PK
         string chainId FK
-        string zoneId FK
+        string zoneId FK "nullable"
         string currency FK
+        string defaultTaxGroupId FK "nullable"
         string name
-        string logoUrl
-        string welcomeMessage
-        string address
-        int taxBps
-        string suggestedTipsBps
+        string logoUrl "nullable"
+        string welcomeMessage "nullable"
+        string address "nullable"
         boolean allowMobileOrdering
         boolean allowWaiterJoinTables
-        boolean isArchived
+        timestamp archivedAt "nullable"
         timestamp createdAt
         timestamp updatedAt
     }
@@ -43,16 +41,17 @@ erDiagram
     AuditLog {
         string id PK
         string actorUserId FK
-        string chainId
-        string restaurantId
+        string chainId "nullable"
+        string restaurantId "nullable"
         string action "CREATE|UPDATE|DELETE|LOGIN|OPEN_SESSION|CLOSE_SESSION|APPLY_ADJUSTMENT|REGISTER_CONTRIBUTION|RUN_ANALYTICS_JOB"
         string entityType
         string entityId
         jsonb before
         jsonb after
-        jsonb metadata
-        string ipAddress
-        string userAgent
+        jsonb metadata "nullable"
+        string ipAddress "nullable"
+        string userAgent "nullable"
+        string requestId "nullable"
         timestamp createdAt
     }
 

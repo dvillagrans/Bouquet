@@ -264,7 +264,7 @@ export async function guestJoinTable(
           status: "ACTIVA",
           joinCode: generateJoinCode(), // joinCode is required and must be unique
           accessCodeHash: "temp", // required field
-          openedByUserId: "admin", // Temporary, should ideally be from session or a default
+          // openedByUserId is nil for guest self-service joins
           guests: { create: { name: guestName, isHost: isFirstGuest, isActive: true } },
           tables: { create: { tableId: table.id } },
         },

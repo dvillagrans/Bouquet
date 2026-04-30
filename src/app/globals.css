@@ -55,8 +55,8 @@
   --color-ivory: #F6EFE4;
   --color-ivory-warm: #F0E8D9;
   --color-champagne: #E7D5B7;
-  --color-gold: #B7925D;
-  --color-gold-light: #C9A876;
+  --color-gold: #c2a172;
+  --color-gold-light: #d4b88e;
   --color-coffee: #7A5C3E;
   --color-sage: #A8B9A5;
   --color-sage-deep: #6E8B6A;
@@ -623,7 +623,7 @@ body {
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground selection:bg-gold/20 selection:text-gold;
   }
   html {
     @apply font-sans;
@@ -636,8 +636,8 @@ body {
 @theme {
   --font-serif: "Playfair Display", "Cormorant Garamond", serif;
   --font-mono: var(--font-geist-mono), "DM Mono", ui-monospace, monospace;
-  --color-gold: #c9a054;
-  --color-gold-dim: #8a6c34;
+  --color-gold: #c2a172;
+  --color-gold-dim: #947a54;
   --color-gold-faint: #3a2e18;
   --color-bg-solid: #090907;
   --color-bg-card: #0f0f0c;

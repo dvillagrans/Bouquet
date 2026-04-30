@@ -69,7 +69,7 @@ function DashboardShellContent({
         className={
           hideDashboardChrome
             ? "flex min-h-svh min-w-0 flex-1 flex-col pb-0"
-            : "flex h-svh min-w-0 flex-1 flex-col overflow-y-auto pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-0"
+            : "flex h-svh min-w-0 flex-1 flex-col overflow-y-auto pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-0 scroll-smooth scrollbar-none"
         }
       >
         {children}

@@ -55,7 +55,7 @@ export function AppSidebar({
 
   return (
     <aside
-      className="hidden lg:flex lg:flex-col lg:sticky inset-y-0 left-0 top-0 z-40 h-svh w-[240px] shrink-0 overflow-hidden border-r border-border-main bg-bg-bar/85 text-[13px] text-text-primary antialiased backdrop-blur-2xl backdrop-saturate-125 [-webkit-backdrop-filter:blur(28px)_saturate(1.12)] supports-[backdrop-filter]:bg-bg-bar/72"
+      className="hidden lg:flex lg:flex-col lg:sticky inset-y-0 left-0 top-0 z-40 h-svh w-[240px] shrink-0 overflow-hidden border-r border-border-main bg-bg-bar/60 text-[13px] text-text-primary antialiased backdrop-blur-3xl backdrop-saturate-[1.8] [-webkit-backdrop-filter:blur(40px)_saturate(1.8)] shadow-[1px_0_0_rgba(255,255,255,0.03)]"
     >
       <div className="px-6 py-5 border-b border-border-main shrink-0 flex items-center justify-between">
         <Link

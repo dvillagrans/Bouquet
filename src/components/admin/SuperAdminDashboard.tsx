@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, RefreshCw, Layers, ShieldCheck, Zap } from "lucide-react";
+import { Plus, RefreshCw, Layers, ShieldCheck, Zap, ArrowUpRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { getSuperAdminDashboard, type SuperAdminDashboardData } from "@/actions/admin";
 import { CreateTenantDialog } from "@/components/admin/CreateTenantDialog";
 
@@ -16,31 +17,45 @@ type KpiCardProps = {
 
 function KpiCard({ label, value, helper, footnote, className, featured }: KpiCardProps) {
   return (
-    <article
-      className={`group relative overflow-hidden rounded-2xl border transition-all duration-500 hover:-translate-y-1 ${
+    <motion.article
+      variants={{
+        hidden: { opacity: 0, y: 20 },
+        show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }
+      }}
+      className={`group relative overflow-hidden rounded-[2rem] border transition-all duration-700 hover:-translate-y-2 ${
         featured 
-          ? "border-gold/30 bg-[linear-gradient(135deg,rgba(183,146,93,0.1),rgba(0,0,0,0))] shadow-[0_32px_64px_-16px_rgba(183,146,93,0.15)]" 
-          : "border-white/5 bg-[linear-gradient(145deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.4)] hover:border-gold/20"
-      } p-6 sm:p-8 ${className ?? ""}`}
+          ? "border-gold/40 bg-[linear-gradient(135deg,rgba(183,146,93,0.12),rgba(0,0,0,0))] shadow-[0_42px_80px_-20px_rgba(183,146,93,0.2)]" 
+          : "border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] hover:border-gold/30"
+      } p-8 sm:p-10 ${className ?? ""}`}
     >
-      <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-50" aria-hidden />
+      {/* Refined top glow line */}
+      <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent opacity-0 transition-opacity duration-700 group-hover:opacity-100" aria-hidden />
+      
       {featured && (
-        <div className="absolute top-0 right-0 p-6 opacity-20 transition-opacity duration-500 group-hover:opacity-40">
-          <Zap className="size-16 text-gold" />
+        <div className="absolute -top-10 -right-10 p-6 opacity-[0.03] transition-all duration-1000 group-hover:opacity-10 group-hover:scale-110">
+          <Zap className="size-48 text-gold" />
         </div>
       )}
-      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-text-dim mb-4">{label}</p>
-      <p className="font-serif text-4xl font-semibold leading-none tracking-tight text-white tabular-nums sm:text-5xl">
-        {value}
-      </p>
-      <div className="mt-6 flex flex-col gap-1.5">
-        <p className="text-[13px] font-medium text-emerald-400 flex items-center gap-1.5">
-          <ShieldCheck className="size-3.5" />
-          {helper}
+      
+      <div className="relative z-10">
+        <header className="flex items-center justify-between mb-6">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-gold/60">{label}</p>
+          <ArrowUpRight className="size-4 text-text-dim opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+        </header>
+        
+        <p className="font-serif text-5xl font-medium leading-none tracking-tight text-white tabular-nums sm:text-6xl lg:text-7xl">
+          {value}
         </p>
-        <p className="text-xs text-text-dim">{footnote}</p>
+        
+        <div className="mt-8 space-y-2">
+          <p className="text-[14px] font-medium text-emerald-400/90 flex items-center gap-2">
+            <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            {helper}
+          </p>
+          <p className="text-[12px] font-medium text-text-dim/60 leading-relaxed">{footnote}</p>
+        </div>
       </div>
-    </article>
+    </motion.article>
   );
 }
 
@@ -83,21 +98,29 @@ export default function SuperAdminDashboard() {
   const fmtCurrency = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 0 });
 
   return (
-    <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-bg-solid text-base text-text-primary antialiased selection:bg-gold/30 lg:text-[14px]">
+    <div className="relative flex min-h-screen flex-col bg-bg-solid text-base text-text-primary antialiased selection:bg-gold/30 lg:text-[14px]">
+      {/* Atmospheric Background Layers */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-40 mix-blend-color-dodge"
+        className="pointer-events-none absolute inset-0 opacity-60 mix-blend-soft-light"
         style={{
-          background:
-            "radial-gradient(circle at 10% 0%, rgba(183,146,93,0.15) 0%, transparent 50%), radial-gradient(circle at 90% 80%, rgba(183,146,93,0.1) 0%, transparent 50%)",
+          background: `
+            radial-gradient(circle at 15% 0%, rgba(183,146,93,0.2) 0%, transparent 45%),
+            radial-gradient(circle at 85% 90%, rgba(183,146,93,0.15) 0%, transparent 40%),
+            radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%)
+          `,
         }}
         aria-hidden
       />
-      <div
-        className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
+      <motion.div
+        animate={{ 
+          opacity: [0.03, 0.05, 0.03],
+          scale: [1, 1.02, 1]
+        }}
+        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+        className="pointer-events-none absolute inset-0 mix-blend-overlay"
         style={{
           backgroundImage: "url('https://grainy-gradients.vercel.app/noise.svg')",
-          opacity: 0.03,
-          mixBlendMode: "overlay",
+          opacity: 0.04,
         }}
         aria-hidden
       />
@@ -153,29 +176,46 @@ export default function SuperAdminDashboard() {
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-6 pb-20 pt-10 sm:px-10 sm:pt-14">
-        <header className="mb-12 max-w-3xl">
-          <p className="mb-4 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-gold">
-            <span className="h-px w-6 bg-gold" /> Visión Global
+        <motion.header 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+          className="mb-16 max-w-4xl"
+        >
+          <p className="mb-6 inline-flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.4em] text-gold/80">
+            <span className="h-[2px] w-8 bg-gold" /> Visión Global Operativa
           </p>
-          <h1 className="font-serif text-4xl font-medium leading-[1.05] tracking-tight text-white sm:text-6xl text-balance">
-            Métricas de plataforma y consolas de clientes.
+          <h1 className="font-serif text-5xl font-medium leading-[1] tracking-[-0.03em] text-white sm:text-7xl lg:text-8xl text-balance">
+            Bouquet <span className="italic font-light text-gold/90">Ops</span> Control Center.
           </h1>
-          <p className="mt-5 text-[15px] leading-relaxed text-text-dim max-w-xl">
-            Centro de control SaaS. Supervisa el crecimiento del MRR, consolida cadenas B2B y administra cuentas sin interrupciones.
+          <div className="mt-8 h-px w-full bg-gradient-to-r from-white/10 via-white/5 to-transparent" />
+          <p className="mt-8 text-[17px] leading-relaxed text-text-dim/80 max-w-2xl font-medium">
+            La capa de mando para el ecosistema Bouquet. Supervisa el crecimiento del MRR, consolida arquitecturas B2B multizona y administra flujos de tesorería sin fricciones.
           </p>
-        </header>
+        </motion.header>
 
         {!data ? (
           <DashboardSkeleton />
         ) : (
           <div className="space-y-12">
-            <section className="grid grid-cols-1 gap-5 lg:grid-cols-4 lg:grid-rows-2">
+            <motion.section 
+              initial="hidden"
+              animate="show"
+              variants={{
+                hidden: { opacity: 0 },
+                show: {
+                  opacity: 1,
+                  transition: { staggerChildren: 0.12, delayChildren: 0.4 }
+                }
+              }}
+              className="grid grid-cols-1 gap-6 lg:grid-cols-4 lg:grid-rows-2"
+            >
               <KpiCard
                 className="lg:col-span-2 lg:row-span-2 flex flex-col justify-between"
                 label="Ingreso Recurrente Mensual"
                 value={fmtCurrency(data.stats.mrr)}
                 helper="Cobranza 100% automatizada vía Stripe."
-                footnote="MRR proyectado para el ciclo en curso en USD."
+                footnote="MRR proyectado para el ciclo en curso en USD (Global Portfolio)."
                 featured
               />
               <KpiCard
@@ -183,23 +223,23 @@ export default function SuperAdminDashboard() {
                 label="Cadenas B2B"
                 value={data.stats.chains}
                 helper="Tenants activos"
-                footnote="Infraestructura aislada."
+                footnote="Instancias en nube privada Bouquet."
               />
               <KpiCard
                 className="lg:col-span-1 lg:row-span-1"
                 label="Sucursales"
                 value={data.stats.restaurants}
-                helper="Restaurantes operando"
-                footnote="Locaciones individuales."
+                helper="Nodos operativos"
+                footnote="Terminales activas en tiempo real."
               />
               <KpiCard
                 className="lg:col-span-2 lg:row-span-1"
-                label="Cobertura de Zonas"
+                label="Alcance Regional"
                 value={data.stats.zones}
-                helper="Mapeo regional"
-                footnote="Ciudades físicas servidas."
+                helper="Zonas servidas"
+                footnote="Densidad geográfica de la plataforma."
               />
-            </section>
+            </motion.section>
 
             <section className="rounded-2xl border border-white/5 bg-[#0a0a0a] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
               <div className="flex items-center justify-between border-b border-white/5 px-6 py-5 sm:px-8">

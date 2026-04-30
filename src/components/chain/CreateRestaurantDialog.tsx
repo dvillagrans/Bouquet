@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { X, Search, MapPin, Loader2 } from "lucide-react";
+import { X, Search, MapPin, Loader2, ChevronDown, UserPlus } from "lucide-react";
 import { createRestaurantInChain } from "@/actions/chain";
 import { Map, Marker, ZoomControl } from "pigeon-maps";
+import { CredentialShareCard } from "@/components/admin/CredentialShareCard";
 
 interface ZoneData {
   id: string;
@@ -21,19 +22,26 @@ export default function CreateRestaurantDialog({
   onCreated: () => void;
   onClose: () => void;
 }) {
+  const [step, setStep] = useState<"form" | "success">("form");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
+
   const [name, setName] = useState("");
   const [addressSearch, setAddressSearch] = useState("");
   const [colonia, setColonia] = useState("");
   const [cp, setCp] = useState("");
   const [alcaldia, setAlcaldia] = useState("");
   const [estado, setEstado] = useState("");
-  
+
   const [zoneId, setZoneId] = useState("");
   const [newZoneName, setNewZoneName] = useState("");
   const [isNewZone, setIsNewZone] = useState(zones.length === 0);
+
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [adminName, setAdminName] = useState("");
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
+  const [credentials, setCredentials] = useState<{ name: string; email: string; tempPassword: string } | null>(null);
 
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -118,7 +126,7 @@ export default function CreateRestaurantDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return setError("El nombre es requerido");
-    if (isNewZone && !newZoneName) return setError("El nombre de la nueva zona");
+    if (isNewZone && !newZoneName) return setError("El nombre de la nueva zona es requerido");
     if (!isNewZone && !zoneId) return setError("Selecciona una zona (o crea una)");
 
     setLoading(true);
@@ -133,11 +141,19 @@ export default function CreateRestaurantDialog({
         name,
         address: finalAddressString,
         zoneId: isNewZone ? undefined : zoneId,
-        newZoneName: isNewZone ? newZoneName : undefined
+        newZoneName: isNewZone ? newZoneName : undefined,
+        adminName: adminName.trim() || undefined,
+        adminEmail: adminEmail.trim() || undefined,
+        adminPassword: adminPassword.trim() || undefined,
       });
       if (res.success) {
         onCreated();
-        onClose();
+        if (res.credentials) {
+          setCredentials(res.credentials);
+          setStep("success");
+        } else {
+          onClose();
+        }
       } else {
         setError(res.error || "Error al crear la sucursal");
       }
@@ -231,19 +247,44 @@ export default function CreateRestaurantDialog({
           </button>
 
           <div className="relative z-10 flex min-h-0 flex-1 touch-auto flex-col overflow-y-auto overscroll-contain px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(3.25rem,env(safe-area-inset-top))] sm:px-8 sm:pb-8 sm:pt-14">
-            <header className="mb-6 shrink-0 sm:mb-8">
-              <h2
-                id="create-restaurant-title"
-                className="mb-2 pr-12 font-serif text-[1.375rem] font-medium leading-tight tracking-tight text-white sm:text-2xl sm:pr-14"
-              >
-                Registra tu sucursal
-              </h2>
-              <p className="max-w-md text-base leading-relaxed text-text-dim lg:text-[14px]">
-                Busca la dirección y autocompletaremos la posición comercial.
-              </p>
-            </header>
+            {step === "success" && credentials ? (
+              <div className="flex flex-1 flex-col justify-center gap-6">
+                <header className="text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20 mb-3">
+                    <svg className="size-6 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <h2 className="font-serif text-[1.375rem] font-medium leading-tight tracking-tight text-white sm:text-2xl">
+                    Sucursal creada
+                  </h2>
+                  <p className="mt-2 text-[13px] text-text-dim">
+                    {name} ha sido registrada exitosamente.
+                  </p>
+                </header>
+                <CredentialShareCard
+                  name={credentials.name}
+                  email={credentials.email}
+                  password={credentials.tempPassword}
+                  entityName={name}
+                  onClose={onClose}
+                />
+              </div>
+            ) : (
+              <>
+                <header className="mb-6 shrink-0 sm:mb-8">
+                  <h2
+                    id="create-restaurant-title"
+                    className="mb-2 pr-12 font-serif text-[1.375rem] font-medium leading-tight tracking-tight text-white sm:text-2xl sm:pr-14"
+                  >
+                    Registra tu sucursal
+                  </h2>
+                  <p className="max-w-md text-base leading-relaxed text-text-dim lg:text-[14px]">
+                    Busca la dirección y autocompletaremos la posición comercial.
+                  </p>
+                </header>
 
-            <form onSubmit={handleSubmit} className="relative flex flex-1 flex-col gap-5 pb-2 sm:gap-6">
+                <form onSubmit={handleSubmit} className="relative flex flex-1 flex-col gap-5 pb-2 sm:gap-6">
             {error && (
               <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400 lg:text-[13px]">
                 <span className="w-1 h-3 bg-red-500 rounded-full" />
@@ -388,26 +429,81 @@ export default function CreateRestaurantDialog({
                    ))}
                  </select>
                )}
-            </div>
+             </div>
 
-            {/* Submit — área táctil cómoda (adapt ≥44px) */}
-            <div className="sticky bottom-0 mt-auto border-t border-white/[0.06] bg-[#0a0a0a]/95 pt-4 backdrop-blur-sm supports-[backdrop-filter]:bg-[#0a0a0a]/85">
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-gold px-4 text-base font-medium text-bg-solid transition-transform active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 md:hover:scale-[1.01] lg:text-[14px]"
-              >
-                 {loading ? (
-                   <Loader2 className="size-5 animate-spin" />
-                 ) : (
-                   "Confirmar Sucursal"
-                 )}
-              </button>
+             {/* Admin Assignment */}
+             <div className="space-y-3 pt-2">
+               <button
+                 type="button"
+                 onClick={() => setShowAdmin(!showAdmin)}
+                 className="flex w-full items-center justify-between rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-left transition-colors hover:bg-white/5"
+               >
+                 <div className="flex items-center gap-2.5">
+                   <UserPlus className="size-4 text-gold" />
+                   <span className="text-[13px] font-medium text-text-primary">Asignar administrador de sucursal</span>
+                 </div>
+                 <ChevronDown className={`size-4 text-text-dim transition-transform ${showAdmin ? "rotate-180" : ""}`} />
+               </button>
+
+               {showAdmin && (
+                 <div className="space-y-4 rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                   <p className="text-[11px] leading-relaxed text-text-dim">
+                     Opcional. Crea un usuario con acceso administrativo exclusivo a esta sucursal. Si dejas el correo y contraseña en blanco se autogenerarán.
+                   </p>
+                   <div className="space-y-2">
+                     <label className="text-xs font-bold uppercase tracking-widest text-text-dim lg:text-[11px]">Nombre del administrador *</label>
+                     <input
+                       type="text"
+                       value={adminName}
+                       onChange={(e) => setAdminName(e.target.value)}
+                       placeholder="Ej. Juan Pérez"
+                       className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white outline-none transition-colors focus:border-gold/50 focus:bg-white/10 placeholder:text-white/20 lg:text-[14px]"
+                     />
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-xs font-bold uppercase tracking-widest text-text-dim lg:text-[11px]">Correo (opcional)</label>
+                     <input
+                       type="email"
+                       value={adminEmail}
+                       onChange={(e) => setAdminEmail(e.target.value)}
+                       placeholder="Dejar en blanco para autogenerar"
+                       className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white outline-none transition-colors focus:border-gold/50 focus:bg-white/10 placeholder:text-white/20 lg:text-[14px]"
+                     />
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-xs font-bold uppercase tracking-widest text-text-dim lg:text-[11px]">Contraseña temporal (opcional)</label>
+                     <input
+                       type="text"
+                       value={adminPassword}
+                       onChange={(e) => setAdminPassword(e.target.value)}
+                       placeholder="Dejar en blanco para autogenerar"
+                       className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white outline-none transition-colors focus:border-gold/50 focus:bg-white/10 placeholder:text-white/20 lg:text-[14px]"
+                     />
+                   </div>
+                 </div>
+               )}
+             </div>
+
+             {/* Submit — área táctil cómoda (adapt ≥44px) */}
+             <div className="sticky bottom-0 mt-auto border-t border-white/[0.06] bg-[#0a0a0a]/95 pt-4 backdrop-blur-sm supports-[backdrop-filter]:bg-[#0a0a0a]/85">
+               <button
+                 type="submit"
+                 disabled={loading}
+                 className="flex min-h-[48px] w-full items-center justify-center rounded-xl bg-gold px-4 text-base font-medium text-bg-solid transition-transform active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 md:hover:scale-[1.01] lg:text-[14px]"
+               >
+                  {loading ? (
+                    <Loader2 className="size-5 animate-spin" />
+                  ) : (
+                    "Confirmar Sucursal"
+                  )}
+               </button>
+             </div>
+            </form>
+              </>
+            )}
             </div>
-          </form>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }

@@ -1241,11 +1241,13 @@ CHECK (
 );
 
 -- UserRole: contextType debe coincidir con la FK poblada
+-- Jerarquía: PLATFORM → CHAIN → ZONE → RESTAURANT
+-- Los niveles inferiores pueden tener FKs superiores para navegación.
 ALTER TABLE "UserRole" ADD CONSTRAINT "UserRole_contextType_check"
 CHECK (
   ("contextType" = 'CHAIN' AND "chainId" IS NOT NULL AND "zoneId" IS NULL AND "restaurantId" IS NULL) OR
-  ("contextType" = 'ZONE' AND "zoneId" IS NOT NULL AND "chainId" IS NULL AND "restaurantId" IS NULL) OR
-  ("contextType" = 'RESTAURANT' AND "restaurantId" IS NOT NULL AND "chainId" IS NULL AND "zoneId" IS NULL) OR
+  ("contextType" = 'ZONE' AND "zoneId" IS NOT NULL AND "restaurantId" IS NULL) OR
+  ("contextType" = 'RESTAURANT' AND "restaurantId" IS NOT NULL) OR
   ("contextType" = 'PLATFORM' AND "chainId" IS NULL AND "zoneId" IS NULL AND "restaurantId" IS NULL)
 );
 

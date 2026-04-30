@@ -362,10 +362,13 @@ export async function createRestaurantInChain(data: {
   address?: string;
   zoneId?: string;
   newZoneName?: string;
+  adminName?: string;
+  adminEmail?: string;
+  adminPassword?: string;
 }) {
   try {
     let finalZoneId = data.zoneId;
-    
+
     if (!finalZoneId && data.newZoneName) {
       const zone = await prisma.zone.create({
         data: {
@@ -396,6 +399,59 @@ export async function createRestaurantInChain(data: {
         currency: "MXN",
       }
     });
+
+    // Si se proporcionó un admin, crearlo y asignar rol RESTAURANT_ADMIN
+    if (data.adminName?.trim()) {
+      const { hashPassword } = await import("@/lib/auth-password");
+
+      const role = await prisma.role.upsert({
+        where: { id: "role-restaurant-admin" },
+        update: {},
+        create: {
+          id: "role-restaurant-admin",
+          name: "RESTAURANT_ADMIN",
+          scope: "RESTAURANT",
+          isBase: true,
+          isActive: true,
+        },
+      });
+
+      const names = data.adminName.trim().split(/\s+/);
+      const firstName = names[0] ?? "Admin";
+      const lastName = names.slice(1).join(" ") ?? "Restaurante";
+      const email = data.adminEmail?.trim() || `admin-${Date.now()}@bouquet.internal`;
+      const tempPassword = data.adminPassword?.trim() || Math.random().toString(36).slice(-8);
+      const passwordHash = await hashPassword(tempPassword);
+
+      const adminUser = await prisma.appUser.create({
+        data: {
+          email,
+          passwordHash,
+          firstName,
+          lastName,
+          isActive: true,
+        },
+      });
+
+      await prisma.userRole.create({
+        data: {
+          userId: adminUser.id,
+          roleId: role.id,
+          contextType: "RESTAURANT",
+          restaurantId: rest.id,
+        },
+      });
+
+      return {
+        success: true,
+        restaurantId: rest.id,
+        credentials: {
+          email,
+          tempPassword,
+          name: `${firstName} ${lastName}`.trim(),
+        },
+      };
+    }
 
     return { success: true, restaurantId: rest.id };
   } catch (e: any) {
@@ -499,28 +555,114 @@ export interface ChainStaffListData {
   zones: { id: string; name: string }[];
 }
 
-export async function getChainStaffList(_tenantId: string): Promise<ChainStaffListData | null> {
-  // TODO: migrar a AppUser + UserRole
-  return null;
+export async function getChainStaffList(tenantId: string): Promise<ChainStaffListData | null> {
+  const chain = await prisma.chain.findUnique({
+    where: { id: tenantId },
+    select: { id: true, name: true },
+  });
+  if (!chain) return null;
+
+  const userRoles = await prisma.userRole.findMany({
+    where: {
+      OR: [
+        { chainId: tenantId, contextType: "CHAIN" },
+        { chainId: tenantId, contextType: "ZONE" },
+        { chainId: tenantId, contextType: "RESTAURANT" },
+      ],
+    },
+    include: {
+      user: { select: { id: true, firstName: true, lastName: true, isActive: true, createdAt: true } },
+      role: { select: { name: true } },
+      zone: { select: { id: true, name: true } },
+    },
+    orderBy: { assignedAt: "desc" },
+  });
+
+  const staff: ChainStaffRow[] = userRoles.map((ur) => ({
+    id: ur.user.id,
+    name: `${ur.user.firstName} ${ur.user.lastName}`.trim(),
+    role: (ur.role.name === "CHAIN_ADMIN" ? "CHAIN_ADMIN" : "ZONE_MANAGER") as ChainStaffRole,
+    isActive: ur.user.isActive,
+    zoneId: ur.zone?.id ?? null,
+    zoneName: ur.zone?.name ?? null,
+    createdAt: ur.user.createdAt.toISOString(),
+  }));
+
+  const zones = await prisma.zone.findMany({
+    where: { chainId: tenantId },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+
+  return { chain, staff, zones };
 }
 
-export async function createChainStaffMember(_input: {
+export async function createChainStaffMember(input: {
   chainId: string;
   name: string;
   role: ChainStaffRole;
   zoneId?: string | null;
 }): Promise<{ success: true } | { success: false; error: string }> {
-  // TODO: migrar a AppUser + UserRole
-  return { success: false, error: "chainStaff eliminado del schema." };
+  const { hashPassword } = await import("@/lib/auth-password");
+
+  const names = input.name.trim().split(/\s+/);
+  const firstName = names[0] ?? "Staff";
+  const lastName = names.slice(1).join(" ") ?? "Cadena";
+  const email = `staff-${Date.now()}@bouquet.internal`;
+  const tempPassword = Math.random().toString(36).slice(-8);
+  const passwordHash = await hashPassword(tempPassword);
+
+  const roleName = input.role; // CHAIN_ADMIN | ZONE_MANAGER
+
+  const role = await prisma.role.upsert({
+    where: { id: `role-${roleName.toLowerCase().replace("_", "-")}` },
+    update: {},
+    create: {
+      id: `role-${roleName.toLowerCase().replace("_", "-")}`,
+      name: roleName,
+      scope: input.role === "CHAIN_ADMIN" ? "CHAIN" : "ZONE",
+      isBase: true,
+      isActive: true,
+    },
+  });
+
+  const user = await prisma.appUser.create({
+    data: {
+      email,
+      passwordHash,
+      firstName,
+      lastName,
+      isActive: true,
+    },
+  });
+
+  await prisma.userRole.create({
+    data: {
+      userId: user.id,
+      roleId: role.id,
+      contextType: input.role === "CHAIN_ADMIN" ? "CHAIN" : "ZONE",
+      chainId: input.chainId,
+      zoneId: input.zoneId ?? null,
+    },
+  });
+
+  return { success: true };
 }
 
-export async function setChainStaffActive(_input: {
+export async function setChainStaffActive(input: {
   chainId: string;
   staffId: string;
   isActive: boolean;
 }): Promise<{ success: true } | { success: false; error: string }> {
-  // TODO: migrar a AppUser + UserRole
-  return { success: false, error: "chainStaff eliminado del schema." };
+  try {
+    await prisma.appUser.update({
+      where: { id: input.staffId },
+      data: { isActive: input.isActive },
+    });
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
 }
 
 // ── Auditoría (cadena) ──────────────────────────────────────

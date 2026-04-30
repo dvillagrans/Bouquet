@@ -3,14 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Copy,
-  KeyRound,
   MapPin,
   RefreshCw,
   ShieldCheck,
   SlidersHorizontal,
   Store,
 } from "lucide-react";
-import { getZoneSettings, rotateZonePin } from "@/actions/chain";
+import { getZoneSettings } from "@/actions/chain";
 import type { ZoneSettingsData } from "@/actions/chain";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import ZoneAuthGuard from "./ZoneAuthGuard";
@@ -23,10 +22,7 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
   const [zoneId, setZoneId] = useState<string | null>(null);
   const [data, setData] = useState<ZoneSettingsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [pin, setPin] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
+
 
   const load = useCallback(async (zid: string) => {
     try {
@@ -50,35 +46,8 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
   const copy = async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setMsg("Copiado al portapapeles.");
-      setTimeout(() => setMsg(null), 2000);
     } catch {
-      setErr("No se pudo copiar.");
-      setTimeout(() => setErr(null), 2000);
-    }
-  };
-
-  const rotate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!zoneId) return;
-    setErr(null);
-    setMsg(null);
-
-    const actorStaffId = sessionStorage.getItem(`bq_auth_z_${zoneId}`) ?? "";
-    if (!actorStaffId) {
-      setErr("Sesión no encontrada. Reingresa con tu PIN.");
-      return;
-    }
-
-    setSaving(true);
-    const res = await rotateZonePin({ zoneId, actorStaffId, newPin: pin });
-    setSaving(false);
-    if (res.success) {
-      setPin("");
-      setMsg("PIN actualizado con éxito.");
-      setTimeout(() => setMsg(null), 2000);
-    } else {
-      setErr(res.error ?? "No se pudo rotar el PIN.");
+      console.error("No se pudo copiar al portapapeles.");
     }
   };
 
@@ -237,64 +206,6 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
             </div>
           </div>
         </div>
-
-        {/* Security / Pin Rotation / Staggered entry 3 */}
-        <section 
-          className="rounded-3xl border border-white/5 bg-[linear-gradient(145deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] p-6 md:p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.3)] animate-in fade-in slide-in-from-bottom-[20px] duration-700 ease-out relative overflow-hidden" 
-          style={{ animationFillMode: "both", animationDelay: "600ms" }}
-        >
-          <div className="absolute right-0 top-0 h-full w-[40%] bg-[radial-gradient(ellipse_at_top_right,rgba(201,160,84,0.06),transparent_70%)] pointer-events-none" />
-          
-          <div className="relative z-10 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
-            <div className="max-w-lg">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex size-10 items-center justify-center rounded-full bg-white/[0.05] border border-white/10 shadow-inner">
-                  <KeyRound className="size-5 text-gold/70" />
-                </div>
-                <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-gold/60">Credenciales</p>
-              </div>
-              <h2 className="font-serif text-2xl text-white mb-2">Renovación de Pases</h2>
-              <p className="text-[13px] leading-relaxed text-neutral-400 font-light mb-6">
-                Rota la acreditación PIN del supervisor en caso de transiciones de turno, altas de nuevo equipo o incidentes de política interna.
-              </p>
-
-              {(msg || err) && (
-                <div className={`mb-6 rounded-xl border p-4 backdrop-blur-md ${msg ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300' : 'border-red-500/20 bg-red-500/10 text-red-300'}`}>
-                  <p className="text-[12px] font-medium">{msg || err}</p>
-                </div>
-              )}
-            </div>
-
-            <form onSubmit={rotate} className="w-full md:w-auto relative z-10 flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="relative w-full sm:w-[220px]">
-                  <input
-                    type="password"
-                    inputMode="numeric"
-                    autoComplete="new-password"
-                    value={pin}
-                    onChange={(e) => {
-                      setPin(e.target.value);
-                      setErr(null);
-                      setMsg(null);
-                    }}
-                    minLength={4}
-                    required
-                    placeholder="Nuevo PIN maestro..."
-                    className="w-full rounded-2xl border border-white/10 bg-black/50 px-5 py-4 font-mono text-[14px] tracking-[0.2em] text-white outline-none placeholder:text-neutral-600 placeholder:tracking-normal focus:border-gold/30 focus:bg-white/[0.02] focus:ring-1 focus:ring-gold/30 transition-all shadow-inner"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={saving || !pin.trim()}
-                  className="rounded-2xl border border-white/10 bg-white/5 px-8 py-4 text-[12px] font-medium uppercase tracking-[0.1em] text-white transition-all hover:bg-white/10 hover:text-gold disabled:opacity-40 disabled:hover:bg-white/5 disabled:hover:text-white shrink-0 shadow-[0_0_20px_rgba(255,255,255,0.02)]"
-                >
-                  {saving ? "Procesando..." : "Sellar Acceso"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </section>
 
       </div>
     </div>

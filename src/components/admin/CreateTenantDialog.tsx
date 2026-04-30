@@ -43,7 +43,6 @@ export function CreateTenantDialog({ open, onOpenChange, onCreated }: CreateTena
       await createTenant({
         name: newTenantName.trim(),
         adminName: adminName.trim(),
-        pin: adminPin.trim(),
       });
       onOpenChange(false);
       await onCreated?.();

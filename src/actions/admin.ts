@@ -16,7 +16,6 @@ export interface SuperAdminDashboardData {
     zonesCount: number;
     restaurantsCount: number;
     adminName?: string;
-    pin?: string;
   }[];
 }
 
@@ -59,7 +58,6 @@ export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData>
         zonesCount: c.zones.length,
         restaurantsCount: restCount,
         adminName,
-        pin: "—",
       };
     })
   );
@@ -85,7 +83,6 @@ export interface AdminClienteRow {
   zonesCount: number;
   restaurantsCount: number;
   adminName: string;
-  pin: string;
 }
 
 /** Listado de cadenas (tenants) para la consola super-admin, ordenado por fecha de alta. */
@@ -126,7 +123,6 @@ export async function getAdminClientesList(): Promise<AdminClienteRow[]> {
         zonesCount: c.zones.length,
         restaurantsCount,
         adminName,
-        pin: "—",
       };
     })
   );
@@ -209,7 +205,7 @@ export async function getAdminBillingOverview(): Promise<AdminBillingOverview> {
   };
 }
 
-export async function createTenant(data: { name: string; adminName: string; pin: string; currency?: string }) {
+export async function createTenant(data: { name: string; adminName: string; currency?: string }) {
   const { hashPassword } = await import("@/lib/auth-password");
 
   // Crear rol base CHAIN_ADMIN si no existe
@@ -229,7 +225,8 @@ export async function createTenant(data: { name: string; adminName: string; pin:
   const firstName = names[0] ?? "Admin";
   const lastName = names.slice(1).join(" ") ?? "Cadena";
   const email = `admin-${Date.now()}@bouquet.internal`;
-  const passwordHash = await hashPassword(data.pin);
+  const tempPassword = Math.random().toString(36).slice(-8);
+  const passwordHash = await hashPassword(tempPassword);
 
   const adminUser = await prisma.appUser.create({
     data: {

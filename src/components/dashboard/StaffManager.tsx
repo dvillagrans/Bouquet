@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { UserPlus, Trash2, Eye, EyeOff, Search } from "lucide-react";
+import { UserPlus, Trash2, Search } from "lucide-react";
 import { createStaffMember, deleteStaffMember, toggleStaffStatus } from "@/actions/staff";
-// TODO: migrar a AppUser + UserRole
 type Staff = { 
   id: string; 
   name: string; 
@@ -12,7 +11,6 @@ type Staff = {
   isActive: boolean; 
   createdAt: Date; 
   updatedAt: Date;
-  pin: string;
 };
 
 /* ── Role config ─────────────────────────────────────────────────── */
@@ -79,7 +77,6 @@ function StaffCard({
   onToggle: () => void;
   onDelete: () => void;
 }) {
-  const [showPin, setShowPin] = useState(false);
   const cfg = ROLE_CONFIG[member.role as Role] ?? ROLE_CONFIG.BARRA;
 
   return (
@@ -116,25 +113,6 @@ function StaffCard({
             {cfg.label}
           </span>
         </div>
-      </div>
-
-      {/* PIN row */}
-      <div className="flex items-center justify-between border-t border-wire px-5 py-3">
-        <div>
-          <p className="text-[0.48rem] font-bold uppercase tracking-[0.3em] text-dim/50">PIN acceso</p>
-          <p className="mt-0.5 font-mono text-[0.9rem] font-semibold tracking-[0.22em] text-light">
-            {showPin ? member.pin : "• • • •"}
-          </p>
-        </div>
-        <button
-          onClick={() => setShowPin(v => !v)}
-          aria-label={showPin ? "Ocultar PIN" : "Mostrar PIN"}
-          className="flex h-8 w-8 items-center justify-center text-dim/50 transition-colors hover:text-light"
-        >
-          {showPin
-            ? <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
-            : <Eye    className="h-3.5 w-3.5" aria-hidden="true" />}
-        </button>
       </div>
 
       {/* Footer actions */}
@@ -181,7 +159,6 @@ export default function StaffManager({ initialStaff }: { initialStaff: Staff[] }
   /* Create form state */
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<Role>("MESERO");
-  const [newPin, setNewPin]   = useState("");
 
   /* ── Handlers ──────────────────────────────────────────────────── */
   function handleDelete(id: string) {
@@ -204,22 +181,22 @@ export default function StaffManager({ initialStaff }: { initialStaff: Staff[] }
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!newName.trim() || newPin.length !== 4) return;
+    if (!newName.trim()) return;
 
     const fakeId = "optimistic-" + Date.now();
     const optimistic: Staff = {
       id: fakeId,
-      name: newName.trim(), role: newRole, pin: newPin,
+      name: newName.trim(), role: newRole,
       isActive: true, createdAt: new Date(), updatedAt: new Date(),
     };
 
     setStaff(prev => [...prev, optimistic]);
     setIsCreating(false);
-    setNewName(""); setNewPin("");
+    setNewName("");
 
     startTransition(async () => {
       try {
-        const created = (await createStaffMember({ name: optimistic.name, role: newRole, pin: newPin })) as unknown as Staff;
+        const created = (await createStaffMember({ name: optimistic.name, role: newRole })) as unknown as Staff;
         setStaff(prev => prev.map(s => s.id === fakeId ? created : s));
       } catch {
         setStaff(prev => prev.filter(s => s.id !== fakeId));
@@ -368,38 +345,17 @@ export default function StaffManager({ initialStaff }: { initialStaff: Staff[] }
                 </div>
               </div>
 
-              {/* PIN */}
-              <div>
-                <label className="mb-2 block text-[0.62rem] font-bold uppercase tracking-[0.2em] text-dim">
-                  PIN de acceso (4 dígitos)
-                </label>
-                <input
-                  required
-                  type="text"
-                  inputMode="numeric"
-                  pattern="\d{4}"
-                  maxLength={4}
-                  value={newPin}
-                  onChange={e => setNewPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  placeholder="1234"
-                  className="h-10 w-full border border-wire bg-transparent px-3 font-mono text-[0.9rem] tracking-[0.4em] text-light outline-none transition-colors focus:border-light/30"
-                />
-                <p className="mt-1.5 text-[0.58rem] font-medium text-dim/50">
-                  El empleado usará este PIN para autenticarse en el sistema.
-                </p>
-              </div>
-
               <div className="flex gap-3 border-t border-wire/50 pt-2">
                 <button
                   type="button"
-                  onClick={() => { setIsCreating(false); setNewName(""); setNewPin(""); }}
+                  onClick={() => { setIsCreating(false); setNewName(""); }}
                   className="flex-1 border border-wire py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-dim transition-colors hover:border-light/20 hover:text-light"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  disabled={isPending || !newName.trim() || newPin.length !== 4}
+                  disabled={isPending || !newName.trim()}
                   className="flex-1 bg-light py-3 text-[0.72rem] font-bold uppercase tracking-[0.18em] text-ink transition-all hover:-translate-y-px hover:bg-light/90 disabled:opacity-50"
                 >
                   {isPending ? "Guardando…" : "Crear empleado"}

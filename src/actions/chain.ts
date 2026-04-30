@@ -440,7 +440,6 @@ export async function createChainStaffMember(_input: {
   chainId: string;
   name: string;
   role: ChainStaffRole;
-  pin: string;
   zoneId?: string | null;
 }): Promise<{ success: true } | { success: false; error: string }> {
   // TODO: migrar a AppUser + UserRole
@@ -592,7 +591,6 @@ export async function getZoneStaff(zoneId: string): Promise<ZoneStaffData | null
 export async function createZoneStaffMember(_input: {
   zoneId: string;
   name: string;
-  pin: string;
   restaurantId: string;
 }): Promise<{ success: true } | { success: false; error: string }> {
   return { success: false, error: "staff eliminado del schema. Usa AppUser + UserRole." };

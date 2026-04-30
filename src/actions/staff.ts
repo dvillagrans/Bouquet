@@ -26,7 +26,6 @@ export type Staff = {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
-  pin: string;
 };
 
 function toStaff(user: {
@@ -49,7 +48,6 @@ function toStaff(user: {
     isActive: user.isActive,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
-    pin: "****",
   };
 }
 
@@ -80,7 +78,6 @@ export async function getStaffData(): Promise<Staff[]> {
 export async function createStaffMember(data: {
   name: string;
   role: "ADMIN" | "MESERO" | "COCINA" | "BARRA";
-  pin: string;
 }) {
   const restaurant = await getDefaultRestaurant();
   const roleName = data.role === "ADMIN" ? "ADMIN" : data.role;
@@ -90,7 +87,8 @@ export async function createStaffMember(data: {
   const firstName = names[0] ?? "Sin";
   const lastName = names.slice(1).join(" ") ?? "Nombre";
   const email = `staff-${Date.now()}@bouquet.internal`;
-  const passwordHash = await hashPassword(data.pin);
+  const tempPassword = Math.random().toString(36).slice(-8);
+  const passwordHash = await hashPassword(tempPassword);
 
   const user = await prisma.appUser.create({
     data: {

@@ -267,7 +267,6 @@ export default function AdminClientesPage() {
                             <div className="text-[12px] text-text-dim tabular-nums mt-0.5">{chain.zonesCount} zonas activas</div>
                           </td>
                           <td className="px-8 py-5 hidden lg:table-cell">
-                            <div className="text-[12px] text-white">PIN: <span className="font-mono text-gold">{chain.pin}</span></div>
                             <div className="text-[11px] text-text-dim mt-0.5">Alta: {fmtDate(chain.createdAt)}</div>
                           </td>
                           <td className="px-8 py-5">

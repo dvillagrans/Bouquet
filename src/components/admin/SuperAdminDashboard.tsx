@@ -304,7 +304,7 @@ export default function SuperAdminDashboard() {
                                 {chain.adminName}
                               </span>
                             </td>
-                            <td className="px-8 py-5 font-mono text-[13px] text-gold">{chain.pin}</td>
+                            <td className="px-8 py-5 text-[13px] text-text-dim">—</td>
                             <td className="px-8 py-5 text-right">
                               <a
                                 href={`/cadena?tenantId=${chain.id}`}

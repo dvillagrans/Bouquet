@@ -142,7 +142,6 @@ export default function ChainStaffRoster({ initialTenantId }: { initialTenantId?
   const [newName, setNewName] = useState("");
   const [newRole, setNewRole] = useState<ChainStaffRole>("ZONE_MANAGER");
   const [newZoneId, setNewZoneId] = useState("");
-  const [newPin, setNewPin] = useState("");
   const reduceMotion = useReducedMotion();
 
   const load = useCallback(async (tid: string) => {
@@ -184,13 +183,11 @@ export default function ChainStaffRoster({ initialTenantId }: { initialTenantId?
       chainId: tenantId,
       name: newName,
       role: newRole,
-      pin: newPin,
       zoneId: newRole === "ZONE_MANAGER" ? newZoneId || null : null,
     });
     setCreating(false);
     if (res.success) {
       setNewName("");
-      setNewPin("");
       setNewZoneId("");
       setNewRole("ZONE_MANAGER");
       await load(tenantId);
@@ -407,27 +404,6 @@ export default function ChainStaffRoster({ initialTenantId }: { initialTenantId?
               </div>
             ) : null}
 
-            <div>
-              <label htmlFor="staff-pin" className="mb-1.5 block text-[10px] font-medium uppercase tracking-[0.14em] text-text-dim">
-                PIN de acceso
-              </label>
-              <input
-                id="staff-pin"
-                type="password"
-                inputMode="numeric"
-                autoComplete="new-password"
-                value={newPin}
-                onChange={(e) => {
-                  setNewPin(e.target.value);
-                  setFormError("");
-                }}
-                required
-                minLength={4}
-                placeholder="Mínimo 4 caracteres"
-                className="w-full max-w-md rounded-xl border border-border-bright bg-bg-solid px-4 py-2.5 font-mono text-base tracking-[0.2em] text-text-primary outline-none placeholder:text-text-faint placeholder:tracking-normal focus:border-gold/45 focus:ring-1 focus:ring-gold/20 lg:text-[14px]"
-              />
-            </div>
-
             {formError ? <p className="text-[12px] text-dash-red">{formError}</p> : null}
 
             <button
@@ -435,7 +411,6 @@ export default function ChainStaffRoster({ initialTenantId }: { initialTenantId?
               disabled={
                 creating ||
                 !newName.trim() ||
-                !newPin.trim() ||
                 (newRole === "ZONE_MANAGER" && (!canAddZoneManager || !newZoneId))
               }
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-gold/45 bg-gold-faint/45 px-6 py-2.5 text-[12px] font-semibold text-gold transition-colors hover:bg-gold-faint/75 disabled:opacity-45"

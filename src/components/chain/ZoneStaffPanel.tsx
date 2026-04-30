@@ -6,7 +6,6 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowLeft,
-  KeyRound,
   MapPin,
   RefreshCw,
   ShieldCheck,
@@ -35,7 +34,6 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
   const [creating, setCreating] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [name, setName] = useState("");
-  const [pin, setPin] = useState("");
   const [restaurantId, setRestaurantId] = useState("");
   const [error, setError] = useState("");
 
@@ -75,11 +73,10 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
     setError("");
     setCreating(true);
     if (!restaurantId) { setError("Selecciona una sucursal."); setCreating(false); return; }
-    const res = await createZoneStaffMember({ zoneId, name, pin, restaurantId });
+    const res = await createZoneStaffMember({ zoneId, name, restaurantId });
     setCreating(false);
     if (res.success) {
       setName("");
-      setPin("");
       load(zoneId);
     } else {
       setError(res.error || "No se pudo crear.");
@@ -276,23 +273,6 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[11px] font-bold uppercase tracking-widest text-text-dim">PIN Único (4 a 6 dígitos)</label>
-                <div className="relative">
-                  <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-white/30" />
-                  <input
-                    required
-                    type="password"
-                    placeholder="••••"
-                    maxLength={6}
-                    min={4}
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                    className="w-full rounded-xl border border-white/10 bg-white/5 p-3.5 pl-11 text-[16px] tracking-[0.3em] font-mono text-white placeholder:text-text-dim outline-none transition-colors focus:border-gold/50 focus:bg-white/10 focus:ring-1 focus:ring-gold/30"
-                  />
-                </div>
-              </div>
-
               {error ? (
                 <div className="rounded-xl bg-red-500/10 p-3.5 border border-red-500/20 text-[13px] text-red-200">
                   {error}
@@ -301,7 +281,7 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
 
               <button
                 type="submit"
-                disabled={creating || !name || !pin || pin.length < 4}
+                disabled={creating || !name}
                 className="mt-2 flex w-full items-center justify-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-5 py-4 text-[13px] font-bold uppercase tracking-wider text-gold transition-all hover:bg-gold hover:text-black hover:border-gold disabled:opacity-50 active:scale-[0.98] group"
               >
                 {creating ? <RefreshCw className="size-4 animate-spin" /> : "Generar Perfil"}

@@ -236,7 +236,13 @@ export async function getAdminBillingOverview(): Promise<AdminBillingOverview> {
   };
 }
 
-export async function createTenant(data: { name: string; adminName: string; currency?: string }) {
+export async function createTenant(data: {
+  name: string;
+  adminName: string;
+  adminEmail?: string;
+  adminPassword?: string;
+  currency?: string;
+}) {
   const { hashPassword } = await import("@/lib/auth-password");
 
   // Crear rol base CHAIN_ADMIN si no existe
@@ -267,8 +273,8 @@ export async function createTenant(data: { name: string; adminName: string; curr
   const names = data.adminName.trim().split(/\s+/);
   const firstName = names[0] ?? "Admin";
   const lastName = names.slice(1).join(" ") ?? "Cadena";
-  const email = `admin-${Date.now()}@bouquet.internal`;
-  const tempPassword = Math.random().toString(36).slice(-8);
+  const email = data.adminEmail?.trim() || `admin-${Date.now()}@bouquet.internal`;
+  const tempPassword = data.adminPassword?.trim() || Math.random().toString(36).slice(-8);
   const passwordHash = await hashPassword(tempPassword);
 
   const adminUser = await prisma.appUser.create({
@@ -299,5 +305,13 @@ export async function createTenant(data: { name: string; adminName: string; curr
     },
   });
 
-  return { success: true, chainId: chain.id };
+  return {
+    success: true,
+    chainId: chain.id,
+    credentials: {
+      email,
+      tempPassword,
+      name: `${firstName} ${lastName}`.trim(),
+    },
+  };
 }

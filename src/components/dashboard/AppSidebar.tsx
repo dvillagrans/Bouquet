@@ -71,8 +71,9 @@ export function AppSidebar({
       </div>
 
       {/* Search */}
-      <div className="px-4 py-3 border-b border-border-main shrink-0">
+      <div className="px-4 py-3 border-b border-border-main shrink-0" suppressHydrationWarning>
         <input
+          suppressHydrationWarning
           className="w-full bg-bg-solid border border-border-main rounded px-3 py-2 text-xs text-text-primary font-sans outline-none transition-colors placeholder:text-text-faint focus:border-border-bright focus:text-text-secondary"
           type="text"
           placeholder="Buscar..."

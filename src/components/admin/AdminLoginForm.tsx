@@ -132,6 +132,7 @@ export default function AdminLoginForm({
                     <Mail className="size-4 text-[#ad9c81]" />
                   </div>
                   <Input
+                    suppressHydrationWarning
                     id="admin-email"
                     type="email"
                     autoComplete="username"
@@ -155,6 +156,7 @@ export default function AdminLoginForm({
                     <Lock className="size-4 text-[#ad9c81]" />
                   </div>
                   <Input
+                    suppressHydrationWarning
                     id="admin-password"
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"

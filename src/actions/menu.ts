@@ -25,7 +25,11 @@ export async function getMenuData(options?: { restaurantId?: string }) {
   let categories = await prisma.restaurantCategory.findMany({
     where: { restaurantId: restaurant.id },
     orderBy: { order: 'asc' },
-    include: { menuItems: true }
+    include: { 
+      menuItems: {
+        include: { variants: true }
+      }
+    }
   });
 
   // Crearlas si el usuario recién inicia
@@ -45,7 +49,11 @@ export async function getMenuData(options?: { restaurantId?: string }) {
     categories = await prisma.restaurantCategory.findMany({
       where: { restaurantId: restaurant.id },
       orderBy: { order: "asc" },
-      include: { menuItems: true },
+      include: { 
+        menuItems: {
+          include: { variants: true }
+        }
+      },
     });
   }
 
@@ -54,8 +62,11 @@ export async function getMenuData(options?: { restaurantId?: string }) {
     cat.menuItems.map(item => ({
       ...item,
       categoryName: cat.name,
-      // TODO: adaptar variants a relación RestaurantMenuItemVariant en vez de JSON
-      variants: [],
+      price: (item.priceCents || 0) / 100,
+      variants: item.variants.map(v => ({
+        name: v.name,
+        price: (v.priceCents || 0) / 100,
+      })),
     }))
   );
 

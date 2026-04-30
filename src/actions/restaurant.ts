@@ -28,6 +28,17 @@ export const getDefaultRestaurant = cache(async function getDefaultRestaurant() 
   }
 
   if (!restaurant) {
+    // Asegurar que existe la moneda base (MXN)
+    await prisma.currency.upsert({
+      where: { code: "MXN" },
+      update: {},
+      create: {
+        code: "MXN",
+        name: "Peso Mexicano",
+        symbol: "$",
+      }
+    });
+
     // Encontrar una cadena para asignar el restaurante demo
     let chain = await prisma.chain.findFirst();
     if (!chain) {

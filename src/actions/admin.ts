@@ -48,6 +48,7 @@ export interface SuperAdminDashboardData {
     zonesCount: number;
     restaurantsCount: number;
     adminName?: string;
+    adminEmail?: string;
   }[];
 }
 
@@ -81,7 +82,7 @@ export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData>
 
       const creator = await prisma.appUser.findUnique({
         where: { id: c.createdBy },
-        select: { firstName: true, lastName: true },
+        select: { firstName: true, lastName: true, email: true },
       });
       const adminName = creator ? `${creator.firstName} ${creator.lastName}`.trim() : "Sin admin";
 
@@ -92,6 +93,7 @@ export async function getSuperAdminDashboard(): Promise<SuperAdminDashboardData>
         zonesCount: c.zones.length,
         restaurantsCount: restCount,
         adminName,
+        adminEmail: creator?.email,
       };
     })
   );

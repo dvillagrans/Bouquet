@@ -300,6 +300,9 @@ export default function SuperAdminDashboard() {
                           <div>
                             <p className="text-[11px] font-bold uppercase tracking-widest text-text-dim">Admin</p>
                             <p className="mt-1 text-[13px] text-white truncate">{chain.adminName}</p>
+                            {chain.adminEmail && (
+                              <p className="mt-0.5 text-[11px] font-mono text-text-dim truncate">{chain.adminEmail}</p>
+                            )}
                           </div>
                         </div>
 
@@ -393,10 +396,17 @@ export default function SuperAdminDashboard() {
                               </span>
                             </td>
                             <td className="px-8 py-5">
-                              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[12px] font-medium text-emerald-400">
-                                <div className="size-1.5 rounded-full bg-emerald-400" />
-                                {chain.adminName}
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[12px] font-medium text-emerald-400">
+                                  <div className="size-1.5 rounded-full bg-emerald-400" />
+                                  {chain.adminName}
+                                </span>
+                                {chain.adminEmail && (
+                                  <span className="text-[11px] font-mono text-text-dim truncate max-w-[180px]">
+                                    {chain.adminEmail}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-8 py-5 text-right">
                               <div className="flex items-center justify-end gap-1">

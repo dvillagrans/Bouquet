@@ -67,7 +67,7 @@ export default function MobileBottomNav({
   const items = flattenNavGroups(navGroups);
   const activeHref = bestMatchHref(pathname, items);
   const handleLogout = async () => {
-    await fetch("/api/admin/logout", { method: "POST" });
+    await fetch("/api/logout", { method: "POST" });
     close();
     router.push("/admin/login");
     router.refresh();

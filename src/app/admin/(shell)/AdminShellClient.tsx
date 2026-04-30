@@ -20,12 +20,20 @@ const adminGroups = [
   },
 ];
 
-export default function AdminShellClient({ children }: { children: React.ReactNode }) {
+export default function AdminShellClient({
+  children,
+  userName,
+  userInitial,
+}: {
+  children: React.ReactNode;
+  userName: string;
+  userInitial: string;
+}) {
   return (
     <DashboardShell
       navGroups={adminGroups}
-      userInitial="SA"
-      userName="Admin Supremo"
+      userInitial={userInitial}
+      userName={userName}
       userRole="BouquetOps"
       showSidebarLogout
     >

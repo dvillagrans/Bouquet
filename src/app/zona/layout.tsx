@@ -1,8 +1,8 @@
-"use client";
-
+import { redirect } from "next/navigation";
 import { Map, Building2, Users, Settings2 } from "lucide-react";
+import { getCurrentSession } from "@/lib/auth-server";
+import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/dashboard/DashboardShell";
-import { defaultRestaurantGroups } from "@/components/dashboard/Sidebar";
 
 const zoneGroups = [
   {
@@ -15,19 +15,37 @@ const zoneGroups = [
   {
     label: "Gestión",
     items: [
-      { label: "Personal Zonal",  href: "/zona/staff", icon: Users },
+      { label: "Personal Zonal", href: "/zona/staff", icon: Users },
       { label: "Configuración", href: "/zona/settings", icon: Settings2 },
     ],
   },
 ];
 
-export default function ZoneLayout({ children }: { children: React.ReactNode }) {
+export default async function ZoneLayout({ children }: { children: React.ReactNode }) {
+  const session = await getCurrentSession();
+  if (!session?.ok) {
+    redirect("/login");
+  }
+
+  const allowed = ["PLATFORM_ADMIN", "CHAIN_ADMIN", "ZONE_MANAGER"];
+  if (!session.roles.some((r) => allowed.includes(r))) {
+    redirect("/login?error=unauthorized");
+  }
+
+  const user = await prisma.appUser.findUnique({
+    where: { id: session.appUserId },
+    select: { firstName: true, lastName: true },
+  });
+
+  const userName = user ? `${user.firstName} ${user.lastName}`.trim() : "Gerente";
+  const userInitial = userName.charAt(0).toUpperCase();
+
   return (
     <DashboardShell
       navGroups={zoneGroups}
-      userInitial="Z"
-      userName="Gerente Zona"
-      userRole="Norte"
+      userInitial={userInitial}
+      userName={userName}
+      userRole="Zona"
       showSidebarLogout
     >
       {children}

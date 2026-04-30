@@ -24,19 +24,17 @@ export function CreateTenantDialog({ open, onOpenChange, onCreated }: CreateTena
   const [creating, setCreating] = useState(false);
   const [newTenantName, setNewTenantName] = useState("");
   const [adminName, setAdminName] = useState("");
-  const [adminPin, setAdminPin] = useState("");
 
   useEffect(() => {
     if (open) {
       setNewTenantName("");
       setAdminName("");
-      setAdminPin("");
     }
   }, [open]);
 
   const handleCreateTenant = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!newTenantName.trim() || !adminName.trim() || !adminPin.trim()) return;
+    if (!newTenantName.trim() || !adminName.trim()) return;
 
     setCreating(true);
     try {
@@ -59,10 +57,10 @@ export function CreateTenantDialog({ open, onOpenChange, onCreated }: CreateTena
         <div className="flex flex-col gap-6 p-7">
           <DialogHeader className="items-center text-center gap-2">
             <DialogTitle className="font-serif text-[22px] font-bold tracking-tight text-text-primary leading-none">
-              Nuevo Client / Cadena
+              Nuevo Cliente / Cadena
             </DialogTitle>
             <DialogDescription className="text-[11px] text-text-muted font-light leading-relaxed max-w-xs">
-              Crea una nueva base y otorga su administrador principal para iniciar la implementación del restaurante.
+              Crea una nueva cadena y asigna su administrador principal. Se generará una contraseña temporal automáticamente.
             </DialogDescription>
           </DialogHeader>
 
@@ -92,7 +90,7 @@ export function CreateTenantDialog({ open, onOpenChange, onCreated }: CreateTena
                 htmlFor="admin-name"
                 className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim"
               >
-                Alias Administrador
+                Nombre del Administrador
               </Label>
               <Input
                 id="admin-name"
@@ -102,26 +100,6 @@ export function CreateTenantDialog({ open, onOpenChange, onCreated }: CreateTena
                 onChange={(e) => setAdminName(e.target.value)}
                 className="h-10 bg-bg-solid border-border-bright text-[12px] text-text-primary placeholder:text-text-faint focus-visible:border-gold focus-visible:ring-gold/30"
               />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label
-                htmlFor="admin-pin"
-                className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim"
-              >
-                Código PIN Maestro
-              </Label>
-              <Input
-                id="admin-pin"
-                required
-                placeholder="12345"
-                pattern="\d{4,8}"
-                title="De 4 a 8 números"
-                value={adminPin}
-                onChange={(e) => setAdminPin(e.target.value)}
-                className="h-10 bg-bg-solid border-border-bright text-[12px] text-text-primary font-mono placeholder:text-text-faint focus-visible:border-gold focus-visible:ring-gold/30"
-              />
-              <p className="text-[10px] text-text-dim font-light">4 a 8 dígitos. Acceso maestro para el tenant.</p>
             </div>
 
             <div className="flex gap-3 pt-2">
@@ -136,7 +114,7 @@ export function CreateTenantDialog({ open, onOpenChange, onCreated }: CreateTena
               </Button>
               <Button
                 type="submit"
-                disabled={creating || !newTenantName.trim() || !adminName.trim() || !adminPin.trim()}
+                disabled={creating || !newTenantName.trim() || !adminName.trim()}
                 className="flex-1 bg-gold border-gold text-bg-solid hover:opacity-90 disabled:opacity-50 shadow-[0_4px_12px_rgba(201,160,84,0.15)]"
               >
                 {creating && (

@@ -1,6 +1,7 @@
-"use client";
-
+import { redirect } from "next/navigation";
 import { Network, Map, LayoutTemplate, Users, ShieldAlert } from "lucide-react";
+import { getCurrentSession } from "@/lib/auth-server";
+import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
 const chainGroups = [
@@ -21,13 +22,31 @@ const chainGroups = [
   },
 ];
 
-export default function ChainLayout({ children }: { children: React.ReactNode }) {
+export default async function ChainLayout({ children }: { children: React.ReactNode }) {
+  const session = await getCurrentSession();
+  if (!session?.ok) {
+    redirect("/login");
+  }
+
+  const allowed = ["PLATFORM_ADMIN", "CHAIN_ADMIN"];
+  if (!session.roles.some((r) => allowed.includes(r))) {
+    redirect("/login?error=unauthorized");
+  }
+
+  const user = await prisma.appUser.findUnique({
+    where: { id: session.appUserId },
+    select: { firstName: true, lastName: true },
+  });
+
+  const userName = user ? `${user.firstName} ${user.lastName}`.trim() : "Operaciones";
+  const userInitial = userName.charAt(0).toUpperCase();
+
   return (
     <DashboardShell
       navGroups={chainGroups}
-      userInitial="C"
-      userName="Dir. Operaciones"
-      userRole="Cadena Nacional"
+      userInitial={userInitial}
+      userName={userName}
+      userRole="Cadena"
       showSidebarLogout
     >
       {children}

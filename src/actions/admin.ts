@@ -2,6 +2,37 @@
 
 import { prisma } from "@/lib/prisma";
 import { SAAS_USD_PER_SEAT_MONTH } from "@/lib/saas-pricing";
+import { cookies } from "next/headers";
+import { adminSessionCookieName, resolveAdminAuthSecret, verifyAdminSessionToken } from "@/lib/admin-session";
+
+export interface CurrentAdminUser {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export async function getCurrentAdminUser(): Promise<CurrentAdminUser | null> {
+  const secret = resolveAdminAuthSecret();
+  if (!secret) return null;
+
+  const cookieStore = await cookies();
+  const token = cookieStore.get(adminSessionCookieName())?.value;
+  const session = await verifyAdminSessionToken(token, secret);
+  if (!session.ok) return null;
+
+  const user = await prisma.appUser.findUnique({
+    where: { id: session.appUserId },
+    select: { id: true, email: true, firstName: true, lastName: true },
+  });
+
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    email: user.email,
+    name: `${user.firstName} ${user.lastName}`.trim(),
+  };
+}
 
 export interface SuperAdminDashboardData {
   stats: {

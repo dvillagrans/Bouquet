@@ -22,7 +22,7 @@ export function proxy(request: NextRequest) {
     let internalPath: string;
     if (rest.length === 0) {
       internalPath = "/dashboard";
-    } else if (rest[0] === "cocina" || rest[0] === "mesero") {
+    } else if (rest[0] === "cocina" || rest[0] === "mesero" || rest[0] === "barra") {
       internalPath = `/${rest.join("/")}`;
     } else {
       internalPath = `/dashboard/${rest.join("/")}`;
@@ -38,14 +38,7 @@ export function proxy(request: NextRequest) {
     return res;
   }
 
-  if (!pathname.startsWith("/admin")) {
-    return NextResponse.next();
-  }
-
-  if (pathname.startsWith("/admin/login")) {
-    return NextResponse.next();
-  }
-
+  // Pasar el pathname original para redirecciones post-login
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-bouquet-admin-pathname", pathname);
   return NextResponse.next({
@@ -54,7 +47,3 @@ export function proxy(request: NextRequest) {
     },
   });
 }
-
-export const config = {
-  matcher: ["/admin/:path*", "/restaurant/:path*"],
-};

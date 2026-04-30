@@ -34,7 +34,7 @@ export function AppSidebar({
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await fetch("/api/admin/logout", { method: "POST" });
+      await fetch("/api/logout", { method: "POST" });
       router.push("/admin/login");
       router.refresh();
     } catch (e) {

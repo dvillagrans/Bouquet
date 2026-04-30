@@ -26,15 +26,26 @@ export interface ZoneSummary {
 }
 
 export interface ChainDashboardData {
-  chain: { id: string; name: string };
+  chain: { id: string; name: string; currency: string };
   stats: {
     totalRevenue: number;
     totalSessions: number;
     activeTables: number;
     restaurantCount: number;
+    staffTotal: number;
+  };
+  yesterday: {
+    totalRevenue: number;
+    totalSessions: number;
   };
   zones: ZoneSummary[];
   restaurants: RestaurantSummary[];
+  alerts: {
+    id: string;
+    name: string;
+    type: "NO_SALES" | "NO_TABLES" | "LOW_OCCUPANCY";
+    message: string;
+  }[];
 }
 
 export interface ZoneDashboardData {
@@ -121,29 +132,65 @@ export async function getChainDashboard(tenantId: string): Promise<ChainDashboar
   const now = new Date();
   const dayStart = startOfDay(now);
   const dayEnd = endOfDay(now);
+  const yesterdayStart = startOfDay(new Date(now.getTime() - 86400000));
+  const yesterdayEnd = endOfDay(new Date(now.getTime() - 86400000));
 
-  const [chain, rawRestaurants] = await Promise.all([
-    prisma.chain.findUnique({ where: { id: tenantId }, select: { id: true, name: true } }),
+  const [chain, rawRestaurants, staffTotal] = await Promise.all([
+    prisma.chain.findUnique({ where: { id: tenantId }, select: { id: true, name: true, currency: true } }),
     fetchRestaurants(tenantId),
+    prisma.userRole.count({ where: { chainId: tenantId, contextType: "CHAIN" } }),
   ]);
 
   if (!chain) return null;
 
   const diningTableIds = rawRestaurants.flatMap((r) => r.diningTables.map((t: any) => t.id));
+
+  // Sesiones de hoy
   const sessionCountMap = new Map<string, number>();
+  // Sesiones de ayer (para comparativa)
+  const yesterdaySessionMap = new Map<string, number>();
+
   if (diningTableIds.length > 0) {
-    const counts = await prisma.diningSessionTable.groupBy({
-      by: ["tableId"],
-      where: {
-        tableId: { in: diningTableIds },
-        joinedAt: { gte: dayStart, lte: dayEnd },
-      },
-      _count: true,
-    });
-    for (const c of counts) {
+    const [todayCounts, yesterdayCounts] = await Promise.all([
+      prisma.diningSessionTable.groupBy({
+        by: ["tableId"],
+        where: {
+          tableId: { in: diningTableIds },
+          joinedAt: { gte: dayStart, lte: dayEnd },
+        },
+        _count: true,
+      }),
+      prisma.diningSessionTable.groupBy({
+        by: ["tableId"],
+        where: {
+          tableId: { in: diningTableIds },
+          joinedAt: { gte: yesterdayStart, lte: yesterdayEnd },
+        },
+        _count: true,
+      }),
+    ]);
+    for (const c of todayCounts) {
       sessionCountMap.set(c.tableId, (c._count as any)._all || 0);
     }
+    for (const c of yesterdayCounts) {
+      yesterdaySessionMap.set(c.tableId, (c._count as any)._all || 0);
+    }
   }
+
+  // Órdenes de ayer para comparativa de revenue
+  const yesterdayOrders = await prisma.restaurantOrder.findMany({
+    where: {
+      restaurant: { chainId: tenantId },
+      createdAt: { gte: yesterdayStart, lte: yesterdayEnd },
+      status: { in: ["READY", "DELIVERED"] },
+    },
+    include: { items: { select: { quantity: true, totalCents: true } } },
+  });
+  const yesterdayRevenue = yesterdayOrders.reduce((a, o) => {
+    const total = o.items.reduce((sum, it) => sum + it.quantity * (it.totalCents / 100), 0);
+    return a + total;
+  }, 0);
+  const yesterdaySessions = Array.from(yesterdaySessionMap.values()).reduce((a, b) => a + b, 0);
 
   const restaurants = rawRestaurants
     .map((r) => toSummary(r, sessionCountMap))
@@ -182,6 +229,21 @@ export async function getChainDashboard(tenantId: string): Promise<ChainDashboar
     { revenue: 0, sessions: 0, activeTables: 0 }
   );
 
+  // Alertas
+  const alerts: ChainDashboardData["alerts"] = [];
+  for (const r of restaurants) {
+    if (r.todayRevenue === 0 && r.totalTables > 0) {
+      alerts.push({ id: r.id, name: r.name, type: "NO_SALES", message: "Sin ventas hoy" });
+    } else if (r.totalTables === 0) {
+      alerts.push({ id: r.id, name: r.name, type: "NO_TABLES", message: "Sin mesas configuradas" });
+    } else if (r.totalTables > 0) {
+      const occ = (r.activeTables / r.totalTables) * 100;
+      if (occ < 15) {
+        alerts.push({ id: r.id, name: r.name, type: "LOW_OCCUPANCY", message: `Ocupación baja (${occ.toFixed(0)}%)` });
+      }
+    }
+  }
+
   return {
     chain,
     stats: {
@@ -189,9 +251,15 @@ export async function getChainDashboard(tenantId: string): Promise<ChainDashboar
       totalSessions: totals.sessions,
       activeTables: totals.activeTables,
       restaurantCount: restaurants.length,
+      staffTotal,
+    },
+    yesterday: {
+      totalRevenue: yesterdayRevenue,
+      totalSessions: yesterdaySessions,
     },
     zones: zones.sort((a, b) => b.totalRevenue - a.totalRevenue),
     restaurants,
+    alerts,
   };
 }
 

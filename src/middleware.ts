@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server";
-import { proxy } from "./proxy";
+import { proxy } from "./middleware-logic";
 
 export function middleware(request: NextRequest) {
   return proxy(request);

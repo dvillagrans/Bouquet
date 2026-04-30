@@ -5,15 +5,19 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowUpRight,
+  AlertTriangle,
   CircleDot,
   Compass,
   MapPin,
   MapPinned,
   Orbit,
   Plus,
+  ShieldAlert,
   Store,
+  TrendingDown,
   TrendingUp,
   Users,
+  Wallet,
 } from "lucide-react";
 import { getChainDashboard } from "@/actions/chain";
 import type { ChainDashboardData, RestaurantSummary, ZoneSummary } from "@/actions/chain";
@@ -35,6 +39,49 @@ function occupancyTone(pct: number) {
   if (pct >= 70) return "from-dash-green to-emerald-400/90";
   if (pct >= 40) return "from-gold to-amber-200/80";
   return "from-text-muted to-text-dim";
+}
+
+function TrendBadge({ current, previous, unit }: { current: number; previous: number; unit?: string }) {
+  const diff = previous > 0 ? ((current - previous) / previous) * 100 : 0;
+  const isUp = diff >= 0;
+  const abs = Math.abs(diff).toFixed(0);
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${isUp ? "bg-dash-green/10 text-dash-green" : "bg-red-500/10 text-red-400"}`}>
+      {isUp ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
+      {abs}%{unit ? ` ${unit}` : ""}
+    </span>
+  );
+}
+
+function AlertBanner({ alerts }: { alerts: ChainDashboardData["alerts"] }) {
+  if (alerts.length === 0) return null;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-4 backdrop-blur-sm"
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <AlertTriangle className="size-4 text-amber-400" />
+        <h3 className="text-[13px] font-semibold text-amber-200">
+          {alerts.length} sucursal{alerts.length === 1 ? "" : "es"} requiere{alerts.length === 1 ? "" : "n"} atención
+        </h3>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {alerts.map((a) => (
+          <Link
+            key={a.id}
+            href={`/dashboard?restaurantId=${a.id}`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/15 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-300 transition-colors hover:bg-amber-500/20"
+          >
+            <span className="size-1.5 rounded-full bg-amber-400" />
+            <span className="font-medium">{a.name}</span>
+            <span className="text-amber-400/70">· {a.message}</span>
+          </Link>
+        ))}
+      </div>
+    </motion.div>
+  );
 }
 
 function OccupancyBar({ active, total, reduceMotion }: { active: number; total: number; reduceMotion: boolean | null }) {
@@ -430,12 +477,18 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
                     {data.chain.name}
                   </span>
                 </h1>
-                <p className="mt-3.5 max-w-lg text-[13px] leading-relaxed text-text-muted">
-                  Monitoreo en tiempo real del desempeño territorial. Analiza zonas activas, pulso de servicio y actividad de cada sucursal en tu red.
-                </p>
+                <div className="mt-3.5 flex items-center gap-3">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-gold/5 px-2.5 py-1 text-[10px] font-mono font-medium text-gold">
+                    <Wallet className="size-3" />
+                    {data.chain.currency}
+                  </span>
+                  <span className="text-[13px] leading-relaxed text-text-muted">
+                    Monitoreo en tiempo real del desempeño territorial.
+                  </span>
+                </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 border-t border-border-main/40 pt-5">
+              <div className="grid grid-cols-4 gap-4 border-t border-border-main/40 pt-5">
                 <div>
                   <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-text-faint">Territorios</p>
                   <p className="mt-1 font-serif text-[22px] font-semibold tabular-nums text-text-primary">{data.zones.length}</p>
@@ -443,6 +496,10 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
                 <div>
                   <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-text-faint">Sucursales</p>
                   <p className="mt-1 font-serif text-[22px] font-semibold tabular-nums text-text-primary">{data.restaurants.length}</p>
+                </div>
+                <div>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-text-faint">Staff corporativo</p>
+                  <p className="mt-1 font-serif text-[22px] font-semibold tabular-nums text-text-primary">{data.stats.staffTotal}</p>
                 </div>
                 <div>
                   <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-text-faint">Sesiones hoy</p>
@@ -464,7 +521,21 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
                   className="inline-flex items-center gap-2 rounded-xl border border-border-bright bg-bg-solid/40 px-5 py-2.5 text-[12px] font-semibold text-text-secondary transition-colors hover:border-gold/35 hover:text-gold"
                 >
                   <Compass className="size-3.5" aria-hidden />
-                  Abrir atlas de zonas
+                  Atlas de zonas
+                </Link>
+                <Link
+                  href={`/cadena/staff?tenantId=${tenantId}`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border-bright bg-bg-solid/40 px-5 py-2.5 text-[12px] font-semibold text-text-secondary transition-colors hover:border-gold/35 hover:text-gold"
+                >
+                  <Users className="size-3.5" aria-hidden />
+                  Staff
+                </Link>
+                <Link
+                  href={`/cadena/auditoria?tenantId=${tenantId}`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border-bright bg-bg-solid/40 px-5 py-2.5 text-[12px] font-semibold text-text-secondary transition-colors hover:border-gold/35 hover:text-gold"
+                >
+                  <ShieldAlert className="size-3.5" aria-hidden />
+                  Auditoría
                 </Link>
               </div>
             </div>
@@ -509,7 +580,7 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
               <p className="mt-1 font-serif text-[28px] font-semibold tabular-nums leading-none text-gold">
                 {fmt(data.stats.totalRevenue)}
               </p>
-              <p className="mt-1.5 font-mono text-[10px] text-text-dim">MXN · acumulado del día</p>
+              <p className="mt-1.5 font-mono text-[10px] text-text-dim">{data.chain.currency} · acumulado del día</p>
             </div>
           </motion.aside>
         </div>
@@ -525,9 +596,10 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
             {
               label: "Ventas del día",
               value: fmt(data.stats.totalRevenue),
-              hint: "Acumulado MXN",
+              hint: `Acumulado ${data.chain.currency}`,
               icon: TrendingUp,
               tint: "text-gold",
+              trend: <TrendBadge current={data.stats.totalRevenue} previous={data.yesterday.totalRevenue} />,
             },
             {
               label: "Mesas activas",
@@ -542,6 +614,7 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
               hint: "Comensales / grupos",
               icon: Users,
               tint: "text-text-primary",
+              trend: <TrendBadge current={data.stats.totalSessions} previous={data.yesterday.totalSessions} unit="sesiones" />,
             },
             {
               label: "Sucursales",
@@ -558,7 +631,10 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
               <div className="pointer-events-none absolute right-3 top-3 opacity-[0.12]" aria-hidden>
                 <item.icon className="size-14 text-gold" strokeWidth={1} />
               </div>
-              <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-text-faint">{item.label}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-text-faint">{item.label}</p>
+                {item.trend}
+              </div>
               <p className={`mt-3 font-serif text-[26px] font-semibold leading-none tabular-nums ${item.tint}`}>
                 {item.value}
               </p>
@@ -572,6 +648,109 @@ export default function ChainDashboard({ initialTenantId }: { initialTenantId?: 
             </div>
           ))}
         </motion.div>
+
+        {/* ALERTAS */}
+        {data.alerts.length > 0 && (
+          <AlertBanner alerts={data.alerts} />
+        )}
+
+        {/* QUICK ACTIONS */}
+        <motion.section
+          initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: reduceMotion ? 0 : 0.12, duration: 0.4 }}
+          className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+        >
+          {[
+            { label: "Nueva sucursal", href: "#", icon: Plus, onClick: () => setIsCreatingRest(true), primary: true },
+            { label: "Atlas de zonas", href: `/cadena/zonas?tenantId=${tenantId}`, icon: Compass },
+            { label: "Plantillas de menú", href: `/cadena/plantillas?tenantId=${tenantId}`, icon: Wallet },
+            { label: "Personal", href: `/cadena/staff?tenantId=${tenantId}`, icon: Users },
+          ].map((action) => (
+            action.onClick ? (
+              <button
+                key={action.label}
+                type="button"
+                onClick={action.onClick}
+                className={`group flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all ${action.primary ? "border-gold/40 bg-gold/10 hover:bg-gold/15" : "border-border-main bg-bg-card/40 hover:border-gold/30 hover:bg-bg-card/60"}`}
+              >
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${action.primary ? "bg-gold/20 text-gold" : "bg-white/5 text-text-dim group-hover:text-gold"}`}>
+                  <action.icon className="size-4" />
+                </div>
+                <span className={`text-[12px] font-medium ${action.primary ? "text-gold" : "text-text-secondary group-hover:text-text-primary"}`}>{action.label}</span>
+              </button>
+            ) : (
+              <Link
+                key={action.label}
+                href={action.href}
+                className="group flex items-center gap-3 rounded-xl border border-border-main bg-bg-card/40 p-3.5 text-left transition-all hover:border-gold/30 hover:bg-bg-card/60"
+              >
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-text-dim group-hover:text-gold">
+                  <action.icon className="size-4" />
+                </div>
+                <span className="text-[12px] font-medium text-text-secondary group-hover:text-text-primary">{action.label}</span>
+              </Link>
+            )
+          ))}
+        </motion.section>
+
+        {/* TOP PERFORMER */}
+        {data.restaurants.length > 0 && (
+          <motion.section
+            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: reduceMotion ? 0 : 0.14, duration: 0.4 }}
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-gold/70">Sucursal del día</span>
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {/* Top */}
+              <div className="relative overflow-hidden rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/10 to-transparent p-5">
+                <div className="pointer-events-none absolute -right-8 -top-8 size-32 rounded-full bg-gold/10 blur-2xl" />
+                <div className="relative flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-gold/70">Top performer</p>
+                    <p className="mt-1 font-serif text-lg font-semibold text-text-primary">{data.restaurants[0].name}</p>
+                    <p className="text-[11px] text-text-dim">
+                      {data.restaurants[0].zoneName || "Sin zona"} · {data.restaurants[0].activeStaff} staff
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-serif text-2xl font-semibold text-gold">{fmt(data.restaurants[0].todayRevenue)}</p>
+                    <p className="text-[10px] text-text-dim">{data.restaurants[0].todaySessions} sesiones</p>
+                  </div>
+                </div>
+                <div className="relative mt-3">
+                  <OccupancyBar active={data.restaurants[0].activeTables} total={data.restaurants[0].totalTables} reduceMotion={reduceMotion} />
+                </div>
+              </div>
+              {/* Bottom */}
+              {data.restaurants.length > 1 && (
+                <div className="relative overflow-hidden rounded-2xl border border-border-main bg-bg-card/40 p-5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-text-faint">Menor desempeño hoy</p>
+                      <p className="mt-1 font-serif text-lg font-semibold text-text-primary">{data.restaurants[data.restaurants.length - 1].name}</p>
+                      <p className="text-[11px] text-text-dim">
+                        {data.restaurants[data.restaurants.length - 1].zoneName || "Sin zona"} · {data.restaurants[data.restaurants.length - 1].activeStaff} staff
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-serif text-2xl font-semibold text-text-muted">{fmt(data.restaurants[data.restaurants.length - 1].todayRevenue)}</p>
+                      <p className="text-[10px] text-text-dim">{data.restaurants[data.restaurants.length - 1].todaySessions} sesiones</p>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <OccupancyBar active={data.restaurants[data.restaurants.length - 1].activeTables} total={data.restaurants[data.restaurants.length - 1].totalTables} reduceMotion={reduceMotion} />
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.section>
+        )}
 
         {/* ZONAS — PREVIEW */}
         <section className="space-y-5">

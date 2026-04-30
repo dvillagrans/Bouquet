@@ -232,12 +232,14 @@ export async function guestJoinTable(
 
     const canonicalQr = table.publicCode;
 
-    const existingSessions = await prisma.diningSession.count({
+    const existingSessionsCount = await prisma.diningSession.count({
       where: {
         tables: { some: { tableId: table.id, leftAt: null } },
         status: { in: ["ACTIVA", "EN_CONSUMO"] },
       },
     });
+    const isFirstGuest = existingSessionsCount === 0;
+
     const activeStatuses = ["ACTIVA", "EN_CONSUMO", "POR_LIQUIDAR"];
     const existingSession = await prisma.diningSession.findFirst({
       where: {
@@ -257,6 +259,7 @@ export async function guestJoinTable(
       }
     }
 
+    // Intentar encontrar si este comensal ya estaba en una sesión activa de esta mesa
     let session = await prisma.diningSession.findFirst({
       where: {
         tables: { some: { tableId: table.id, leftAt: null } },
@@ -267,24 +270,38 @@ export async function guestJoinTable(
     });
 
     if (!session) {
-      session = await prisma.diningSession.create({
-        data: {
-          restaurantId: table.restaurantId,
-          status: "ACTIVA",
-          joinCode: generateJoinCode(), // joinCode is required and must be unique
-          accessCodeHash: "temp", // required field
-          // openedByUserId is nil for guest self-service joins
-          guests: { create: { name: guestName, isHost: isFirstGuest, isActive: true } },
-          tables: { create: { tableId: table.id } },
-        },
-      });
+      if (existingSession) {
+        // Unirse a la sesión existente
+        await prisma.guest.create({
+          data: { diningSessionId: existingSession.id, name: guestName, isHost: false, isActive: true },
+        });
+        session = existingSession;
+      } else {
+        // Crear nueva sesión (es el primero)
+        session = await prisma.diningSession.create({
+          data: {
+            restaurantId: table.restaurantId,
+            status: "ACTIVA",
+            joinCode: generateJoinCode(),
+            accessCodeHash: "temp",
+            guests: { create: { name: guestName, isHost: true, isActive: true } },
+            tables: { create: { tableId: table.id } },
+          },
+        });
+      }
     } else {
+      // El comensal ya estaba, asegurar que su registro Guest esté activo
       const existingGuest = await prisma.guest.findFirst({
         where: { diningSessionId: session.id, name: guestName },
       });
       if (!existingGuest) {
         await prisma.guest.create({
           data: { diningSessionId: session.id, name: guestName, isHost: false, isActive: true },
+        });
+      } else if (!existingGuest.isActive) {
+        await prisma.guest.update({
+          where: { id: existingGuest.id },
+          data: { isActive: true },
         });
       }
     }

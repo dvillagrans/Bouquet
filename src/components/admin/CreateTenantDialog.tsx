@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { CredentialShareCard } from "./CredentialShareCard";
 
 type CreateTenantDialogProps = {
   open: boolean;
@@ -78,20 +79,6 @@ export function CreateTenantDialog({ open, onOpenChange, onCreated }: CreateTena
       console.error(err);
     } finally {
       setCreating(false);
-    }
-  };
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // Fallback
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
     }
   };
 
@@ -259,92 +246,14 @@ export function CreateTenantDialog({ open, onOpenChange, onCreated }: CreateTena
             </DialogHeader>
 
             {result && (
-              <div className="flex flex-col gap-3 rounded-xl border border-border-main bg-bg-solid p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim">Administrador</p>
-                    <p className="text-[13px] font-medium text-text-primary truncate">{result.name}</p>
-                  </div>
-                </div>
-
-                <Separator className="bg-border-main/50" />
-
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim">Correo</p>
-                    <p className="text-[13px] font-mono text-text-primary truncate">{result.email}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(result.email)}
-                    className="shrink-0 rounded-md border border-border-main bg-bg-card px-2.5 py-1.5 text-[11px] font-medium text-text-dim hover:text-text-primary hover:border-border-bright transition-colors"
-                    title="Copiar correo"
-                  >
-                    Copiar
-                  </button>
-                </div>
-
-                <Separator className="bg-border-main/50" />
-
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim">Contraseña Temporal</p>
-                    <p className="text-[13px] font-mono text-gold truncate">{result.tempPassword}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(result.tempPassword)}
-                    className="shrink-0 rounded-md border border-border-main bg-bg-card px-2.5 py-1.5 text-[11px] font-medium text-text-dim hover:text-text-primary hover:border-border-bright transition-colors"
-                    title="Copiar contraseña"
-                  >
-                    Copiar
-                  </button>
-                </div>
-
-                <Separator className="bg-border-main/50" />
-
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim">ID Cadena</p>
-                    <p className="text-[12px] font-mono text-text-dim truncate">{result.chainId}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(result.chainId)}
-                    className="shrink-0 rounded-md border border-border-main bg-bg-card px-2.5 py-1.5 text-[11px] font-medium text-text-dim hover:text-text-primary hover:border-border-bright transition-colors"
-                    title="Copiar ID"
-                  >
-                    Copiar
-                  </button>
-                </div>
-              </div>
+              <CredentialShareCard
+                name={result.name}
+                email={result.email}
+                password={result.tempPassword}
+                entityName={tenantName}
+                onClose={() => onOpenChange(false)}
+              />
             )}
-
-            <div className="flex flex-col gap-2">
-              <Button
-                type="button"
-                onClick={() => {
-                  if (result) {
-                    const text = `Cadena: ${tenantName}\nAdmin: ${result.name}\nCorreo: ${result.email}\nContraseña: ${result.tempPassword}\nID: ${result.chainId}`;
-                    copyToClipboard(text);
-                  }
-                }}
-                className="w-full bg-bg-solid border border-border-main text-text-primary hover:bg-bg-hover hover:text-text-secondary"
-              >
-                <svg className="size-4 mr-1.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5" />
-                </svg>
-                Copiar todo
-              </Button>
-
-              <Button
-                type="button"
-                onClick={() => onOpenChange(false)}
-                className="w-full bg-gold border-gold text-bg-solid hover:opacity-90 shadow-[0_4px_12px_rgba(201,160,84,0.15)]"
-              >
-                Entendido, cerrar
-              </Button>
-            </div>
           </div>
         )}
       </DialogContent>

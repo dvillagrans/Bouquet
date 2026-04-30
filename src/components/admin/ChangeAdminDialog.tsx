@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { CredentialShareCard } from "./CredentialShareCard";
 
 type ChangeAdminDialogProps = {
   open: boolean;
@@ -60,19 +60,6 @@ export function ChangeAdminDialog({ open, onOpenChange, chainId, chainName, onCh
       console.error(err);
     } finally {
       setSaving(false);
-    }
-  };
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
     }
   };
 
@@ -175,55 +162,14 @@ export function ChangeAdminDialog({ open, onOpenChange, chainId, chainName, onCh
             </DialogHeader>
 
             {result && (
-              <div className="flex flex-col gap-3 rounded-xl border border-border-main bg-bg-solid p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim">Nombre</p>
-                    <p className="text-[13px] font-medium text-text-primary truncate">{result.name}</p>
-                  </div>
-                </div>
-
-                <Separator className="bg-border-main/50" />
-
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim">Correo</p>
-                    <p className="text-[13px] font-mono text-text-primary truncate">{result.email}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(result.email)}
-                    className="shrink-0 rounded-md border border-border-main bg-bg-card px-2.5 py-1.5 text-[11px] font-medium text-text-dim hover:text-text-primary hover:border-border-bright transition-colors"
-                  >
-                    Copiar
-                  </button>
-                </div>
-
-                <Separator className="bg-border-main/50" />
-
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-medium tracking-[0.16em] uppercase text-text-dim">Contraseña Temporal</p>
-                    <p className="text-[13px] font-mono text-gold truncate">{result.tempPassword}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(result.tempPassword)}
-                    className="shrink-0 rounded-md border border-border-main bg-bg-card px-2.5 py-1.5 text-[11px] font-medium text-text-dim hover:text-text-primary hover:border-border-bright transition-colors"
-                  >
-                    Copiar
-                  </button>
-                </div>
-              </div>
+              <CredentialShareCard
+                name={result.name}
+                email={result.email}
+                password={result.tempPassword}
+                entityName={chainName}
+                onClose={() => onOpenChange(false)}
+              />
             )}
-
-            <Button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="w-full bg-gold border-gold text-bg-solid hover:opacity-90 shadow-[0_4px_12px_rgba(201,160,84,0.15)]"
-            >
-              Entendido, cerrar
-            </Button>
           </div>
         )}
       </DialogContent>

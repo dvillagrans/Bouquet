@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Ellipsis, LogOut } from "lucide-react";
 import { NavGroup } from "./Sidebar";
+import { getNavIcon } from "@/lib/nav-icons";
 import { useMobileNav } from "./MobileNavContext";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
@@ -99,7 +100,7 @@ export default function MobileBottomNav({
           <div className="relative z-[1] flex w-full max-w-full items-stretch justify-between gap-1 px-1 py-1 sm:gap-2">
           {primaryItems.map((item) => {
             const active = activeHref !== null && item.href === activeHref;
-            const Icon = item.icon;
+            const Icon = getNavIcon(item.icon);
             return (
               <Link
                 key={item.href}
@@ -190,7 +191,7 @@ export default function MobileBottomNav({
                   <div className="overflow-hidden rounded-[1.25rem] border border-white/5 bg-white/5 shadow-inner">
                     {group.items.map((item, idx, arr) => {
                       const active = activeHref !== null && item.href === activeHref;
-                      const Icon = item.icon;
+                      const Icon = getNavIcon(item.icon);
                       return (
                         <Link
                           key={item.href}

@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { Map, Building2, Users, Settings2 } from "lucide-react";
 import { getCurrentSession } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/dashboard/DashboardShell";
@@ -8,15 +7,15 @@ const zoneGroups = [
   {
     label: "Visión Global",
     items: [
-      { label: "Panel de Zona", href: "/zona", icon: Map },
-      { label: "Sucursales", href: "/zona/sucursales", icon: Building2 },
+      { label: "Panel de Zona", href: "/zona", icon: "Map" },
+      { label: "Sucursales", href: "/zona/sucursales", icon: "Building2" },
     ],
   },
   {
     label: "Gestión",
     items: [
-      { label: "Personal Zonal", href: "/zona/staff", icon: Users },
-      { label: "Configuración", href: "/zona/settings", icon: Settings2 },
+      { label: "Personal Zonal", href: "/zona/staff", icon: "Users" },
+      { label: "Configuración", href: "/zona/settings", icon: "Settings2" },
     ],
   },
 ];

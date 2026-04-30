@@ -14,6 +14,14 @@
 --   derived  = GpP66iGbv2tnAFVdKXxkeUZWjJTF2vwAvj9PsEUUa4E=
 -- ============================================================
 
+-- 0) Monedas base (idempotente)
+INSERT INTO "Currency" (code, name, symbol, "isActive", "createdAt")
+VALUES
+  ('MXN', 'Peso Mexicano', '$', true, NOW()),
+  ('USD', 'Dólar Estadounidense', '$', true, NOW()),
+  ('EUR', 'Euro', '€', true, NOW())
+ON CONFLICT (code) DO NOTHING;
+
 -- 1) Rol base de plataforma (idempotente)
 INSERT INTO "Role" (id, name, scope, "isBase", "isActive", "createdAt", "updatedAt")
 VALUES (

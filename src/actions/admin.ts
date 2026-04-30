@@ -252,6 +252,18 @@ export async function createTenant(data: { name: string; adminName: string; curr
     },
   });
 
+  // Asegurar que la moneda exista antes de crear la cadena
+  const currencyCode = data.currency || "MXN";
+  await prisma.currency.upsert({
+    where: { code: currencyCode },
+    update: {},
+    create: {
+      code: currencyCode,
+      name: currencyCode === "MXN" ? "Peso Mexicano" : currencyCode,
+      symbol: currencyCode === "MXN" ? "$" : currencyCode,
+    },
+  });
+
   const names = data.adminName.trim().split(/\s+/);
   const firstName = names[0] ?? "Admin";
   const lastName = names.slice(1).join(" ") ?? "Cadena";
@@ -272,7 +284,7 @@ export async function createTenant(data: { name: string; adminName: string; curr
   const chain = await prisma.chain.create({
     data: {
       name: data.name,
-      currency: data.currency || "MXN",
+      currency: currencyCode,
       createdBy: adminUser.id,
     },
   });

@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { LogOut } from "lucide-react";
 import { NavGroup } from "./Sidebar";
+import { getNavIcon } from "@/lib/nav-icons";
 import {
   canonicalPathMatchesNavHref,
   resolveNavHref,
@@ -90,6 +91,7 @@ export function AppSidebar({
 
               {group.items.map((item) => {
                 const isActive = activeHref === item.href;
+                const Icon = getNavIcon(item.icon);
 
                 if (isActive) {
                   return (
@@ -98,7 +100,7 @@ export function AppSidebar({
                       href={resolveNavHref(item.href, restaurantBase)}
                       className="flex items-center gap-3 px-5 py-2.5 text-[12.5px] text-gold cursor-pointer transition-all border-l-2 bg-gradient-to-r from-gold-faint to-transparent border-gold w-full decoration-none"
                     >
-                      <item.icon
+                      <Icon
                         className="w-4 h-4 opacity-100 fill-none stroke-[1.75px] shrink-0"
                         aria-hidden="true"
                       />
@@ -112,7 +114,7 @@ export function AppSidebar({
                     href={resolveNavHref(item.href, restaurantBase)}
                     className="flex items-center gap-3 px-5 py-2.5 text-[12.5px] text-text-dim cursor-pointer transition-all border-l-2 border-transparent hover:bg-bg-hover hover:text-text-muted w-full decoration-none"
                   >
-                    <item.icon
+                    <Icon
                       className="w-4 h-4 opacity-50 fill-none stroke-[1.75px] shrink-0"
                       aria-hidden="true"
                     />

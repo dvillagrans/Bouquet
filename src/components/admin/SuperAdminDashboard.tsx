@@ -300,14 +300,13 @@ export default function SuperAdminDashboard() {
                       <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Entidad B2B</th>
                       <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Token / ID</th>
                       <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Administrador</th>
-                      <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Security PIN</th>
                       <th className="px-8 py-4 text-right text-[11px] font-bold uppercase tracking-widest text-text-dim">Flujo</th>
                     </tr>
                   </thead>
                   <tbody className="align-middle">
                     {data.chains.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-20 text-center text-sm text-text-dim">
+                        <td colSpan={5} className="py-20 text-center text-sm text-text-dim">
                           Plataforma vacía. Inicia añadiendo la primera entidad.
                         </td>
                       </tr>
@@ -344,7 +343,6 @@ export default function SuperAdminDashboard() {
                                 {chain.adminName}
                               </span>
                             </td>
-                            <td className="px-8 py-5 text-[13px] text-text-dim">—</td>
                             <td className="px-8 py-5 text-right">
                               <a
                                 href={`/cadena?tenantId=${chain.id}`}

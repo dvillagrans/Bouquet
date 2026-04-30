@@ -2,42 +2,39 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  X, LayoutGrid, BookOpen, ChefHat,
-  BarChart3, Users, Settings2, Store, UserRound,
-  type LucideIcon,
-} from "lucide-react";
+import { X } from "lucide-react";
+import { getNavIcon } from "@/lib/nav-icons";
 
-export type NavItem = { label: string; href: string; icon: LucideIcon };
+export type NavItem = { label: string; href: string; icon: string };
 export type NavGroup = { label: string; items: NavItem[] };
 
 export const defaultRestaurantGroups: NavGroup[] = [
   {
     label: "Visión Operativa",
     items: [
-      { label: "Panel Principal", href: "/dashboard",       icon: Store      },
+      { label: "Panel Principal", href: "/dashboard",       icon: "Store"      },
     ],
   },
   {
     label: "Operaciones",
     items: [
-      { label: "Mesas & QR",     href: "/dashboard/mesas",   icon: LayoutGrid },
-      { label: "Menú digital",   href: "/dashboard/menu",    icon: BookOpen   },
-      { label: "Monitor cocina", href: "/cocina",             icon: ChefHat    },
-      { label: "Vista mesero",   href: "/mesero",             icon: UserRound  },
+      { label: "Mesas & QR",     href: "/dashboard/mesas",   icon: "LayoutGrid" },
+      { label: "Menú digital",   href: "/dashboard/menu",    icon: "BookOpen"   },
+      { label: "Monitor cocina", href: "/cocina",             icon: "ChefHat"    },
+      { label: "Vista mesero",   href: "/mesero",             icon: "UserRound"  },
     ],
   },
   {
     label: "Análisis",
     items: [
-      { label: "Reportes", href: "/dashboard/reportes", icon: BarChart3 },
+      { label: "Reportes", href: "/dashboard/reportes", icon: "BarChart3" },
     ],
   },
   {
     label: "Equipo",
     items: [
-      { label: "Personal",      href: "/dashboard/staff",    icon: Users     },
-      { label: "Configuración", href: "/dashboard/settings", icon: Settings2 },
+      { label: "Personal",      href: "/dashboard/staff",    icon: "Users"     },
+      { label: "Configuración", href: "/dashboard/settings", icon: "Settings2" },
     ],
   },
 ];
@@ -121,7 +118,8 @@ export default function Sidebar({
               {groupLabel}
             </p>
 
-            {items.map(({ label, href, icon: Icon }, ii) => {
+            {items.map(({ label, href, icon }, ii) => {
+              const Icon = getNavIcon(icon);
               const active =
                 pathname === href || pathname.startsWith(href + "/");
               return (

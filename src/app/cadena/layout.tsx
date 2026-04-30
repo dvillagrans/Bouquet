@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { Network, Map, LayoutTemplate, Users, ShieldAlert } from "lucide-react";
 import { getCurrentSession } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import DashboardShell from "@/components/dashboard/DashboardShell";
@@ -8,16 +7,16 @@ const chainGroups = [
   {
     label: "Panel Maestro",
     items: [
-      { label: "Visión General", href: "/cadena", icon: Network },
-      { label: "Zonas", href: "/cadena/zonas", icon: Map },
+      { label: "Visión General", href: "/cadena", icon: "Network" },
+      { label: "Zonas", href: "/cadena/zonas", icon: "Map" },
     ],
   },
   {
     label: "Estandarización",
     items: [
-      { label: "Plantillas de Menú", href: "/cadena/plantillas", icon: LayoutTemplate },
-      { label: "Personal Corporativo", href: "/cadena/staff", icon: Users },
-      { label: "Auditoría", href: "/cadena/auditoria", icon: ShieldAlert },
+      { label: "Plantillas de Menú", href: "/cadena/plantillas", icon: "LayoutTemplate" },
+      { label: "Personal Corporativo", href: "/cadena/staff", icon: "Users" },
+      { label: "Auditoría", href: "/cadena/auditoria", icon: "ShieldAlert" },
     ],
   },
 ];

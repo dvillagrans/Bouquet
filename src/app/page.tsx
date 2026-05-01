@@ -1,11 +1,50 @@
+import type { Metadata } from "next";
 import { TopBar } from "@/components/landing/TopBar";
 import { Hero } from "@/components/landing/Hero";
 import { Ticker } from "@/components/landing/Ticker";
 import { Features } from "@/components/landing/Features";
 import { ProductSection } from "@/components/landing/ProductSection";
+import { ForWhoSection } from "@/components/landing/ForWhoSection";
 import { SocialProof } from "@/components/landing/SocialProof";
+import { FaqSection } from "@/components/landing/FaqSection";
 import { CtaBand } from "@/components/landing/CtaBand";
 import { Footer } from "@/components/landing/Footer";
+
+export const metadata: Metadata = {
+  title: "Bouquet — Hospitality OS para restaurantes",
+  description:
+    "Gestiona mesas, órdenes y pagos desde una sola plataforma. Pensada para restaurantes, taquerías y bares que no aceptan el desorden. Demo gratis en 20 minutos.",
+  keywords: [
+    "software para restaurantes",
+    "POS restaurante",
+    "gestión de mesas",
+    "sistema de órdenes",
+    "division de cuenta",
+    "Hospitality OS",
+    "Bouquet",
+  ],
+  openGraph: {
+    title: "Bouquet — Hospitality OS para restaurantes",
+    description:
+      "Gestiona mesas, órdenes y pagos desde una sola plataforma. Demo gratis en 20 minutos.",
+    type: "website",
+    locale: "es_MX",
+    siteName: "Bouquet",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bouquet — Hospitality OS para restaurantes",
+    description:
+      "Gestiona mesas, órdenes y pagos desde una sola plataforma.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: "https://bouquet.io",
+  },
+};
 
 export default function Home() {
   return (
@@ -34,7 +73,9 @@ export default function Home() {
         <Ticker />
         <Features />
         <ProductSection />
+        <ForWhoSection />
         <SocialProof />
+        <FaqSection />
         <CtaBand />
       </main>
       <Footer />

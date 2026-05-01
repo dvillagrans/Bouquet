@@ -22,7 +22,7 @@ export const TopBar = () => {
 
   return (
     <header
-      className="fixed inset-x-0 top-0 z-50 opacity-0 animate-[fade-in_0.5s_ease-out_forwards]"
+      className="fixed inset-x-0 top-0 z-50 animate-[fade-in_0.5s_ease-out_forwards]"
       aria-label="Barra de navegación"
     >
       <div

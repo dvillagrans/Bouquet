@@ -1,8 +1,11 @@
 ﻿"use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 
-const easeOutQuint = [0.22, 1, 0.36, 1] as const;
+gsap.registerPlugin(ScrollTrigger);
 
 /* Iconografía estilo línea minimalista */
 function IconMesas({ className }: { className?: string }) {
@@ -52,69 +55,130 @@ function FloralDivider({ className }: { className?: string }) {
   );
 }
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08, delayChildren: 0.06 },
+const features = [
+  {
+    num: "01",
+    title: "Mesas",
+    subtitle: "Organiza tu sala con claridad",
+    description: "Visualiza el estado de cada mesa en tiempo real. Sabe quién pide, quién espera y cuándo liberas cubierta.",
+    icon: IconMesas,
+    color: "text-rose",
+    bgColor: "bg-rose/5",
+    ringColor: "ring-rose/15",
+    highlight: "Sala en vivo",
   },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  show: {
-    opacity: 1, y: 0,
-    transition: { duration: 0.55, ease: easeOutQuint },
+  {
+    num: "02",
+    title: "Órdenes",
+    subtitle: "Flujo directo a cocina y barra",
+    description: "Las comandas llegan ordenadas por estación. El pase no se pierde entre páginas sueltas ni gritos.",
+    icon: IconOrdenes,
+    color: "text-burgundy",
+    bgColor: "bg-burgundy/5",
+    ringColor: "ring-burgundy/15",
+    highlight: "KDS integrado",
   },
-};
+  {
+    num: "03",
+    title: "Pagos",
+    subtitle: "Cierre sin fricción",
+    description: "División por comensal, propina y total en una sola línea de cobro. Menos calculadora, menos reclamos.",
+    icon: IconPagos,
+    color: "text-sage-deep",
+    bgColor: "bg-sage/10",
+    ringColor: "ring-sage/20",
+    highlight: "Split bill",
+  },
+];
 
 export const Features = () => {
-  const reduceMotion = useReducedMotion() === true;
-  const cVar = reduceMotion
-    ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0, delayChildren: 0 } } }
-    : containerVariants;
-  const iVar = reduceMotion
-    ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0 } } }
-    : itemVariants;
+  const sectionRef = useRef<HTMLElement>(null);
+  const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
+  const wideCardRef = useRef<HTMLDivElement>(null);
 
-  const features = [
-    {
-      num: "01",
-      title: "Mesas",
-      subtitle: "Organiza tu sala con claridad",
-      description: "Visualiza el estado de cada mesa en tiempo real. Sabe quién pide, quién espera y cuándo liberas cubierta.",
-      icon: IconMesas,
-      color: "text-rose",
-      bgColor: "bg-rose/5",
-      ringColor: "ring-rose/15",
-      highlight: "Sala en vivo",
-    },
-    {
-      num: "02",
-      title: "Órdenes",
-      subtitle: "Flujo directo a cocina y barra",
-      description: "Las comandas llegan ordenadas por estación. El pase no se pierde entre páginas sueltas ni gritos.",
-      icon: IconOrdenes,
-      color: "text-burgundy",
-      bgColor: "bg-burgundy/5",
-      ringColor: "ring-burgundy/15",
-      highlight: "KDS integrado",
-    },
-    {
-      num: "03",
-      title: "Pagos",
-      subtitle: "Cierre sin fricción",
-      description: "División por comensal, propina y total en una sola línea de cobro. Menos calculadora, menos reclamos.",
-      icon: IconPagos,
-      color: "text-sage-deep",
-      bgColor: "bg-sage/10",
-      ringColor: "ring-sage/20",
-      highlight: "Split bill",
-    },
-  ];
+  useGSAP(() => {
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      gsap.set([".feature-label", ".feature-headline", ".feature-desc", ".feature-card", ".feature-wide"], {
+        opacity: 1, y: 0, x: 0, scale: 1
+      });
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      // Header entrance
+      gsap.fromTo(".feature-label",
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.8, ease: "power3.out",
+          scrollTrigger: { trigger: ".feature-label", start: "top 85%", toggleActions: "play none none none" }
+        }
+      );
+      gsap.fromTo(".feature-headline",
+        { y: 40, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1, ease: "power4.out",
+          scrollTrigger: { trigger: ".feature-headline", start: "top 85%", toggleActions: "play none none none" }
+        }
+      );
+      gsap.fromTo(".feature-desc",
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.8, ease: "power3.out",
+          scrollTrigger: { trigger: ".feature-desc", start: "top 85%", toggleActions: "play none none none" }
+        }
+      );
+
+      // Cards staggered entrance with scroll
+      cardsRef.current.forEach((card, i) => {
+        if (!card) return;
+        gsap.fromTo(card,
+          { y: 60, opacity: 0, scale: 0.96 },
+          {
+            y: 0, opacity: 1, scale: 1, duration: 1, ease: "power4.out",
+            delay: i * 0.12,
+            scrollTrigger: {
+              trigger: card,
+              start: "top 88%",
+              toggleActions: "play none none none",
+            }
+          }
+        );
+      });
+
+      // Wide card entrance
+      if (wideCardRef.current) {
+        gsap.fromTo(wideCardRef.current,
+          { y: 80, opacity: 0, scale: 0.97 },
+          {
+            y: 0, opacity: 1, scale: 1, duration: 1.2, ease: "power4.out",
+            scrollTrigger: {
+              trigger: wideCardRef.current,
+              start: "top 85%",
+              toggleActions: "play none none none",
+            }
+          }
+        );
+      }
+
+      // Hover physics on cards
+      cardsRef.current.forEach((card) => {
+        if (!card) return;
+        const onEnter = () => {
+          gsap.to(card, { y: -8, scale: 1.01, duration: 0.5, ease: "power2.out" });
+        };
+        const onLeave = () => {
+          gsap.to(card, { y: 0, scale: 1, duration: 0.5, ease: "power2.out" });
+        };
+        card.addEventListener("mouseenter", onEnter);
+        card.addEventListener("mouseleave", onLeave);
+      });
+
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, { scope: sectionRef });
 
   return (
     <section
+      ref={sectionRef}
       id="como-funciona"
       className="relative overflow-hidden border-t border-burgundy/[0.06] bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,#FDF2F5_0%,#F5D5DC_40%,#FAF6F3_100%)] py-24 lg:py-36"
     >
@@ -128,52 +192,37 @@ export const Features = () => {
         aria-hidden="true"
       />
 
-      <motion.div
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, margin: "-8% 0px" }}
-        variants={cVar}
-        className="relative mx-auto max-w-[88rem] px-6 lg:px-12"
-      >
+      <div className="relative mx-auto max-w-[88rem] px-6 lg:px-12">
         {/* Encabezado */}
         <header className="mb-16 lg:mb-20">
           <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
-              <motion.p
-                variants={iVar}
-                className="mb-5 inline-flex items-center gap-3 text-[0.62rem] font-bold uppercase tracking-[0.34em] text-burgundy/45"
-              >
+              <p className="feature-label opacity-0 mb-5 inline-flex items-center gap-3 text-[0.62rem] font-bold uppercase tracking-[0.34em] text-burgundy/45">
                 <span className="h-px w-12 bg-gradient-to-r from-rose/80 to-rose/20" aria-hidden="true" />
                 Cómo funciona
-              </motion.p>
-              <motion.h2
-                variants={iVar}
-                className="font-serif text-[clamp(2.5rem,5vw,4.5rem)] font-medium italic leading-[1.02] tracking-[-0.02em] text-burgundy"
-              >
+              </p>
+              <h2 className="feature-headline opacity-0 font-serif text-[clamp(2.5rem,5vw,4.5rem)] font-medium italic leading-[1.02] tracking-[-0.02em] text-burgundy">
                 Tres pilares.
                 <span className="block font-sans text-[0.45em] font-black not-italic tracking-[-0.05em] text-burgundy/45 sm:mt-1">
                   Una sola plataforma.
                 </span>
-              </motion.h2>
+              </h2>
             </div>
-            <motion.p
-              variants={iVar}
-              className="max-w-md text-[1.05rem] font-medium leading-[1.75] text-burgundy/55 lg:pb-1"
-            >
+            <p className="feature-desc opacity-0 max-w-md text-[1.05rem] font-medium leading-[1.75] text-burgundy/55 lg:pb-1">
               Nada de pantallas que compiten entre sí: mesa, cocina, barra y caja comparten el mismo estado del turno.
-            </motion.p>
+            </p>
           </div>
         </header>
 
         {/* Grid de 3 features */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
-          {features.map((feature) => {
+          {features.map((feature, i) => {
             const Icon = feature.icon;
             return (
-              <motion.article
+              <div
                 key={feature.num}
-                variants={iVar}
-                className="group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-burgundy/[0.08] bg-white/[0.5] p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_8px_32px_rgba(74,26,44,0.06)] backdrop-blur-md lg:p-10 transition-all duration-500 hover:shadow-[0_12px_40px_rgba(74,26,44,0.1)] hover:-translate-y-1"
+                ref={(el) => { cardsRef.current[i] = el; }}
+                className="feature-card opacity-0 group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-burgundy/[0.08] bg-white/[0.5] p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_8px_32px_rgba(74,26,44,0.06)] backdrop-blur-md lg:p-10 transition-shadow duration-500 hover:shadow-[0_12px_40px_rgba(74,26,44,0.1)]"
               >
                 {/* Top line decorativa */}
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose/20 to-transparent opacity-80" />
@@ -209,15 +258,15 @@ export const Features = () => {
                 <div className="mt-auto pt-6">
                   <FloralDivider className="h-3 w-full opacity-40" />
                 </div>
-              </motion.article>
+              </div>
             );
           })}
         </div>
 
         {/* Gerencia — card ancha */}
-        <motion.article
-          variants={iVar}
-          className="relative mt-6 flex flex-col gap-10 overflow-hidden rounded-[1.75rem] border border-white/[0.07] bg-burgundy px-8 py-10 text-white shadow-[0_20px_60px_-35px_rgba(74,26,44,0.45)] lg:flex-row lg:items-center lg:justify-between lg:gap-14 lg:px-12 lg:py-11"
+        <div
+          ref={wideCardRef}
+          className="feature-wide opacity-0 relative mt-6 flex flex-col gap-10 overflow-hidden rounded-[1.75rem] border border-white/[0.07] bg-burgundy px-8 py-10 text-white shadow-[0_20px_60px_-35px_rgba(74,26,44,0.45)] lg:flex-row lg:items-center lg:justify-between lg:gap-14 lg:px-12 lg:py-11"
         >
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.04]"
@@ -253,10 +302,8 @@ export const Features = () => {
           </div>
 
           <div className="relative shrink-0">
-            <motion.a
+            <a
               href="#contacto"
-              whileHover={reduceMotion ? undefined : { y: -2 }}
-              whileTap={reduceMotion ? undefined : { scale: 0.98 }}
               className="group/btn inline-flex items-center gap-3 rounded-full bg-white/10 py-2 pl-5 pr-1.5 text-[0.82rem] font-semibold text-white ring-1 ring-white/15 transition-colors hover:bg-white/[0.14]"
             >
               <span>Hablar con el equipo</span>
@@ -265,10 +312,10 @@ export const Features = () => {
                   <path d="M4 10h12m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
-            </motion.a>
+            </a>
           </div>
-        </motion.article>
-      </motion.div>
+        </div>
+      </div>
     </section>
   );
 };

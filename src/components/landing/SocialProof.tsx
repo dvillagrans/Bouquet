@@ -1,45 +1,79 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 
-const easeOutQuint = [0.22, 1, 0.36, 1] as const;
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.07, delayChildren: 0.05 },
-  },
-};
-
-const containerVariantsReduced = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0, delayChildren: 0 },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { duration: 0.55, ease: easeOutQuint },
-  },
-};
-
-const itemVariantsReduced = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { duration: 0 } },
-};
+gsap.registerPlugin(ScrollTrigger);
 
 export const SocialProof = () => {
-  const reduceMotion = useReducedMotion() === true;
-  const cVar = reduceMotion ? containerVariantsReduced : containerVariants;
-  const iVar = reduceMotion ? itemVariantsReduced : itemVariants;
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useGSAP(() => {
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      gsap.set([".social-label", ".social-headline", ".social-desc", ".social-metrics", ".social-quote", ".social-testimonial"], {
+        opacity: 1, y: 0, x: 0, scale: 1
+      });
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      // Left column entrance
+      gsap.fromTo(".social-label",
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.8, ease: "power3.out",
+          scrollTrigger: { trigger: ".social-label", start: "top 85%", toggleActions: "play none none none" }
+        }
+      );
+      gsap.fromTo(".social-headline",
+        { y: 40, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1.2, ease: "power4.out",
+          scrollTrigger: { trigger: ".social-headline", start: "top 85%", toggleActions: "play none none none" }
+        }
+      );
+      gsap.fromTo(".social-desc",
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.8, ease: "power3.out",
+          scrollTrigger: { trigger: ".social-desc", start: "top 85%", toggleActions: "play none none none" }
+        }
+      );
+
+      // Metrics box entrance with staggered numbers
+      gsap.fromTo(".social-metrics",
+        { y: 50, opacity: 0, scale: 0.98 },
+        {
+          y: 0, opacity: 1, scale: 1, duration: 1, ease: "power4.out",
+          scrollTrigger: { trigger: ".social-metrics", start: "top 88%", toggleActions: "play none none none" }
+        }
+      );
+
+      // Quote entrance
+      gsap.fromTo(".social-quote",
+        { y: 60, opacity: 0, rotation: 0.5 },
+        {
+          y: 0, opacity: 1, rotation: 0, duration: 1.2, ease: "power4.out",
+          scrollTrigger: { trigger: ".social-quote", start: "top 85%", toggleActions: "play none none none" }
+        }
+      );
+
+      // Testimonial card entrance
+      gsap.fromTo(".social-testimonial",
+        { y: 50, opacity: 0, x: 20 },
+        {
+          y: 0, opacity: 1, x: 0, duration: 1, ease: "power4.out",
+          scrollTrigger: { trigger: ".social-testimonial", start: "top 88%", toggleActions: "play none none none" }
+        }
+      );
+
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, { scope: sectionRef });
 
   return (
-    <section className="relative overflow-hidden bg-burgundy py-24 lg:py-32">
+    <section ref={sectionRef} className="relative overflow-hidden bg-burgundy py-24 lg:py-32">
       {/* Transición */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/20 via-transparent to-transparent" />
       <div
@@ -47,13 +81,7 @@ export const SocialProof = () => {
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_60%_at_50%_-10%,rgba(199,91,122,0.08)_0%,transparent_55%)]"
       />
 
-      <motion.div
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, margin: "-10% 0px" }}
-        variants={cVar}
-        className="relative mx-auto max-w-[90rem] px-6 lg:px-12"
-      >
+      <div className="relative mx-auto max-w-[90rem] px-6 lg:px-12">
         <div className="grid gap-14 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.08fr)] lg:items-start lg:gap-16 xl:gap-24">
           {/* Columna editorial */}
           <div className="relative lg:pr-8">
@@ -62,31 +90,22 @@ export const SocialProof = () => {
               className="pointer-events-none absolute -left-4 top-2 bottom-8 hidden w-px bg-gradient-to-b from-rose/60 via-rose/20 to-transparent lg:block"
             />
 
-            <motion.p
-              variants={iVar}
-              className="flex items-center gap-3 text-[0.62rem] font-bold uppercase tracking-[0.34em] text-white/42"
-            >
+            <p className="social-label opacity-0 flex items-center gap-3 text-[0.62rem] font-bold uppercase tracking-[0.34em] text-white/42">
               <span className="h-px w-10 bg-gradient-to-r from-rose/70 to-transparent" aria-hidden="true" />
               Prueba social
-            </motion.p>
+            </p>
 
-            <motion.h2
-              variants={iVar}
-              className="mt-6 max-w-[13ch] text-balance font-serif text-[clamp(2.4rem,4.5vw,3.8rem)] font-semibold italic leading-[1.02] tracking-[-0.03em] text-white"
-            >
+            <h2 className="social-headline opacity-0 mt-6 max-w-[13ch] text-balance font-serif text-[clamp(2.4rem,4.5vw,3.8rem)] font-semibold italic leading-[1.02] tracking-[-0.03em] text-white">
               El turno se siente más corto.
-            </motion.h2>
+            </h2>
 
-            <motion.p
-              variants={iVar}
-              className="mt-8 max-w-lg text-[1.05rem] leading-[1.78] text-white/55"
-            >
+            <p className="social-desc opacity-0 mt-8 max-w-lg text-[1.05rem] leading-[1.78] text-white/55">
               Cuando la sala, la cocina y la caja dejan de pelearse entre sí, el equipo trabaja con más calma
               y el servicio se nota más fluido desde la primera semana.
-            </motion.p>
+            </p>
 
             {/* Métricas */}
-            <motion.div variants={iVar} className="mt-12 max-w-lg">
+            <div className="social-metrics opacity-0 mt-12 max-w-lg">
               <p className="mb-4 text-[0.58rem] font-bold uppercase tracking-[0.28em] text-white/35">
                 En una sola vista
               </p>
@@ -109,12 +128,12 @@ export const SocialProof = () => {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
           </div>
 
           {/* Testimonios */}
           <div className="flex flex-col gap-8 lg:gap-10">
-            <motion.div variants={iVar}>
+            <div className="social-quote opacity-0">
               <p className="mb-4 text-[0.58rem] font-bold uppercase tracking-[0.28em] text-white/35 lg:text-right">
                 En sus palabras
               </p>
@@ -131,12 +150,9 @@ export const SocialProof = () => {
                   queda esperando al cierre.
                 </p>
               </blockquote>
-            </motion.div>
+            </div>
 
-            <motion.div
-              variants={iVar}
-              className="flex flex-col gap-6 rounded-2xl border border-white/[0.07] bg-gradient-to-br from-white/[0.055] to-transparent px-8 py-7 lg:flex-row lg:items-center lg:justify-between lg:gap-10"
-            >
+            <div className="social-testimonial opacity-0 flex flex-col gap-6 rounded-2xl border border-white/[0.07] bg-gradient-to-br from-white/[0.055] to-transparent px-8 py-7 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
               <div className="flex min-w-0 flex-1 items-start gap-4">
                 <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-rose/25 bg-rose/[0.08] font-serif text-[1.05rem] font-semibold italic text-rose">
                   RC
@@ -157,10 +173,10 @@ export const SocialProof = () => {
                   Mis meseros ahora venden más y corren menos detrás de libretas.
                 </span>
               </blockquote>
-            </motion.div>
+            </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 };

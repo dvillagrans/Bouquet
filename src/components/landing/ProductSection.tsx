@@ -1,9 +1,11 @@
 ﻿"use client";
 
 import { useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
 
-const easeOutQuint = [0.32, 0.72, 0, 1] as const;
+gsap.registerPlugin(ScrollTrigger);
 
 /* Dashboard preview card */
 function DashboardPreview() {
@@ -54,26 +56,23 @@ function DashboardPreview() {
               <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="#E8D0D8" strokeWidth="0.5" strokeDasharray="2 2" />
             ))}
             {/* Line */}
-            <motion.path
+            <path
+              className="dash-line-path"
               d="M10 55 L40 45 L70 50 L100 35 L130 40 L160 25 L190 20"
               stroke="#C75B7A"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
               fill="none"
-              initial={{ pathLength: 0 }}
-              whileInView={{ pathLength: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1.5, ease: "easeOut" }}
+              pathLength="1"
+              strokeDasharray="1"
+              strokeDashoffset="1"
             />
             {/* Area under line */}
-            <motion.path
+            <path
+              className="dash-area-path opacity-0"
               d="M10 55 L40 45 L70 50 L100 35 L130 40 L160 25 L190 20 L190 65 L10 65Z"
               fill="url(#salesGradient)"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 0.2 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1, delay: 0.5 }}
             />
             <defs>
               <linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1">
@@ -85,16 +84,13 @@ function DashboardPreview() {
             {[
               [10, 55], [40, 45], [70, 50], [100, 35], [130, 40], [160, 25], [190, 20]
             ].map(([cx, cy], i) => (
-              <motion.circle
+              <circle
                 key={i}
+                className="dash-point opacity-0"
                 cx={cx} cy={cy} r="3"
                 fill="white"
                 stroke="#C75B7A"
                 strokeWidth="1.5"
-                initial={{ scale: 0 }}
-                whileInView={{ scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.8 + i * 0.1, type: "spring" }}
               />
             ))}
           </svg>
@@ -111,52 +107,53 @@ function DashboardPreview() {
           <p className="mb-3 text-[0.55rem] font-bold uppercase tracking-[0.15em] text-burgundy/40">Top productos</p>
           <div className="flex items-center gap-4">
             <svg viewBox="0 0 80 80" className="h-20 w-20 shrink-0">
-              <motion.circle
+              <circle
+                className="dash-donut"
                 cx="40" cy="40" r="32"
                 stroke="#C75B7A"
                 strokeWidth="10"
                 fill="none"
                 strokeLinecap="round"
                 strokeDasharray="80 120"
-                initial={{ rotate: -90 }}
-                whileInView={{ rotate: -90 }}
-                viewport={{ once: true }}
+                pathLength="1"
+                strokeDashoffset="1"
+                transform="rotate(-90 40 40)"
               />
-              <motion.circle
+              <circle
+                className="dash-donut"
                 cx="40" cy="40" r="32"
                 stroke="#D68C9F"
                 strokeWidth="10"
                 fill="none"
                 strokeLinecap="round"
                 strokeDasharray="60 140"
-                strokeDashoffset="-85"
-                initial={{ rotate: -90 }}
-                whileInView={{ rotate: -90 }}
-                viewport={{ once: true }}
+                strokeDashoffset="1"
+                pathLength="1"
+                transform="rotate(-90 40 40)"
               />
-              <motion.circle
+              <circle
+                className="dash-donut"
                 cx="40" cy="40" r="32"
                 stroke="#8A9A84"
                 strokeWidth="10"
                 fill="none"
                 strokeLinecap="round"
                 strokeDasharray="40 160"
-                strokeDashoffset="-150"
-                initial={{ rotate: -90 }}
-                whileInView={{ rotate: -90 }}
-                viewport={{ once: true }}
+                strokeDashoffset="1"
+                pathLength="1"
+                transform="rotate(-90 40 40)"
               />
-              <motion.circle
+              <circle
+                className="dash-donut"
                 cx="40" cy="40" r="32"
                 stroke="#E8A5B0"
                 strokeWidth="10"
                 fill="none"
                 strokeLinecap="round"
                 strokeDasharray="30 170"
-                strokeDashoffset="-195"
-                initial={{ rotate: -90 }}
-                whileInView={{ rotate: -90 }}
-                viewport={{ once: true }}
+                strokeDashoffset="1"
+                pathLength="1"
+                transform="rotate(-90 40 40)"
               />
             </svg>
             <div className="space-y-1.5">
@@ -181,13 +178,108 @@ function DashboardPreview() {
 
 export const ProductSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"],
-  });
 
-  const mockupY = useTransform(scrollYProgress, [0, 1], [100, -100]);
-  const textY = useTransform(scrollYProgress, [0, 1], [40, -40]);
+  useGSAP(() => {
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      gsap.set([".product-pill", ".product-headline", ".product-desc", ".product-mockup", ".product-bento-item"], {
+        opacity: 1, y: 0, x: 0, scale: 1
+      });
+      gsap.set(".dash-line-path", { strokeDashoffset: 0 });
+      gsap.set(".dash-area-path", { opacity: 0.2 });
+      gsap.set(".dash-point", { opacity: 1, scale: 1 });
+      gsap.set(".dash-donut", { strokeDashoffset: 0 });
+      return;
+    }
+
+    const ctx = gsap.context(() => {
+      // Parallax for text
+      gsap.fromTo(".product-text-col",
+        { y: 60 },
+        {
+          y: -60,
+          ease: "none",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1.5,
+          }
+        }
+      );
+
+      // Parallax for mockup (slower)
+      gsap.fromTo(".product-mockup",
+        { y: 120, scale: 0.96 },
+        {
+          y: -80, scale: 1,
+          ease: "none",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1.2,
+          }
+        }
+      );
+
+      // Header entrance
+      gsap.fromTo(".product-pill",
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.8, ease: "power3.out",
+          scrollTrigger: { trigger: ".product-pill", start: "top 85%", toggleActions: "play none none none" }
+        }
+      );
+      gsap.fromTo(".product-headline",
+        { y: 50, opacity: 0 },
+        { y: 0, opacity: 1, duration: 1.2, ease: "power4.out",
+          scrollTrigger: { trigger: ".product-headline", start: "top 85%", toggleActions: "play none none none" }
+        }
+      );
+      gsap.fromTo(".product-desc",
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.8, ease: "power3.out",
+          scrollTrigger: { trigger: ".product-desc", start: "top 85%", toggleActions: "play none none none" }
+        }
+      );
+
+      // Dashboard chart SVG draw animations
+      ScrollTrigger.create({
+        trigger: ".product-mockup",
+        start: "top 75%",
+        onEnter: () => {
+          // Line draw
+          gsap.to(".dash-line-path", { strokeDashoffset: 0, duration: 1.5, ease: "power2.inOut" });
+          // Area fade in
+          gsap.to(".dash-area-path", { opacity: 0.2, duration: 1, delay: 0.5, ease: "power2.out" });
+          // Points pop in
+          gsap.to(".dash-point", { opacity: 1, scale: 1, duration: 0.4, stagger: 0.08, delay: 0.8, ease: "back.out(2)" });
+          // Donut segments
+          gsap.to(".dash-donut", { strokeDashoffset: 0, duration: 1.2, stagger: 0.15, delay: 0.3, ease: "power2.inOut" });
+        },
+        once: true,
+      });
+
+      // Bento grid items entrance
+      gsap.utils.toArray<HTMLElement>(".product-bento-item").forEach((item, i) => {
+        gsap.fromTo(item,
+          { y: 50, opacity: 0 },
+          {
+            y: 0, opacity: 1, duration: 1, ease: "power4.out",
+            delay: i * 0.1,
+            scrollTrigger: {
+              trigger: item,
+              start: "top 90%",
+              toggleActions: "play none none none",
+            }
+          }
+        );
+      });
+
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, { scope: sectionRef });
 
   return (
     <section
@@ -213,9 +305,9 @@ export const ProductSection = () => {
 
       <div className="mx-auto max-w-[85rem] px-6 lg:px-10 relative">
         {/* Header editorial */}
-        <motion.div style={{ y: textY }} className="flex flex-col gap-6 lg:gap-10 mb-24 lg:mb-36">
+        <div className="product-text-col mb-24 lg:mb-36">
           <div className="inline-flex">
-            <div className="flex items-center gap-3 px-4 py-2 rounded-full ring-1 ring-white/10 bg-white/5 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+            <div className="product-pill opacity-0 flex items-center gap-3 px-4 py-2 rounded-full ring-1 ring-white/10 bg-white/5 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
               <span className="w-2 h-2 rounded-full bg-rose animate-pulse" />
               <span className="text-[0.65rem] font-bold uppercase tracking-[0.3em] text-white/70">
                 La Plataforma
@@ -224,25 +316,22 @@ export const ProductSection = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-12 lg:gap-20 items-end">
-            <h2 className="font-serif text-[clamp(3rem,6.5vw,5.5rem)] font-medium italic leading-[0.9] tracking-tight text-white m-0">
+            <h2 className="product-headline opacity-0 font-serif text-[clamp(3rem,6.5vw,5.5rem)] font-medium italic leading-[0.9] tracking-tight text-white m-0">
               Control <br />
               <span className="text-white/40">absoluto.</span>
             </h2>
-            <p className="max-w-md text-[1.1rem] font-light leading-[1.8] text-white/50 pb-2">
+            <p className="product-desc opacity-0 max-w-md text-[1.1rem] font-light leading-[1.8] text-white/50 pb-2">
               Bouquet unifica cada vértice del restaurante. Sin hardware excesivo, sin cables, sin fricción entre estaciones.
             </p>
           </div>
-        </motion.div>
+        </div>
 
         {/* Dashboard Preview */}
-        <motion.div
-          style={{ y: mockupY }}
-          className="relative rounded-[2rem] lg:rounded-[2.5rem] bg-gradient-to-b from-white/[0.07] to-white/[0.02] ring-1 ring-white/10 p-3 lg:p-6 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] mb-24 lg:mb-36 origin-bottom will-change-transform"
-        >
+        <div className="product-mockup relative rounded-[2rem] lg:rounded-[2.5rem] bg-gradient-to-b from-white/[0.07] to-white/[0.02] ring-1 ring-white/10 p-3 lg:p-6 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.08)] mb-24 lg:mb-36 origin-bottom will-change-transform">
           <div className="relative rounded-[calc(2rem-0.75rem)] lg:rounded-[calc(2.5rem-1.5rem)] overflow-hidden bg-black/40 ring-1 ring-white/5 shadow-[inset_0_4px_20px_rgba(255,255,255,0.05)]">
             <DashboardPreview />
           </div>
-        </motion.div>
+        </div>
 
         {/* Bento facts */}
         <div className="relative">
@@ -253,7 +342,7 @@ export const ProductSection = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-0 overflow-hidden rounded-[2rem] ring-1 ring-white/10 bg-white/[0.03] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
             {/* Feature 1 (Large) */}
-            <div className="col-span-1 md:col-span-7 p-10 lg:p-14 border-b md:border-b-0 md:border-r border-white/10 relative group">
+            <div className="product-bento-item opacity-0 col-span-1 md:col-span-7 p-10 lg:p-14 border-b md:border-b-0 md:border-r border-white/10 relative group">
               <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.02]" />
               <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-white/30 mb-8">Deploy Rápido</p>
               <div className="flex items-baseline gap-4 mb-4">
@@ -267,7 +356,7 @@ export const ProductSection = () => {
 
             {/* Constraints Block */}
             <div className="col-span-1 md:col-span-5 flex flex-col divide-y divide-white/10">
-              <div className="flex-1 p-10 lg:p-12 relative group">
+              <div className="product-bento-item opacity-0 flex-1 p-10 lg:p-12 relative group">
                 <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.02]" />
                 <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-white/30 mb-4">Ecosistema</p>
                 <p className="font-serif text-[2rem] lg:text-[2.2rem] font-medium leading-[1] text-white mb-2 tracking-tight">API Abierta.</p>
@@ -276,7 +365,7 @@ export const ProductSection = () => {
                 </p>
               </div>
 
-              <div className="flex-1 p-10 lg:p-12 relative group bg-rose/5">
+              <div className="product-bento-item opacity-0 flex-1 p-10 lg:p-12 relative group bg-rose/5">
                 <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.02]" />
                 <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-rose/60 mb-4">Respaldo</p>
                 <div className="flex items-center justify-between">

@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+
+gsap.registerPlugin(ScrollTrigger);
 
 type Status = "active" | "steady" | "closing" | "open";
 
@@ -62,7 +66,7 @@ function TableShape({
     !reduceMotion && (status === "active" || status === "closing");
 
   return (
-    <g>
+    <g className="floor-table">
       <rect
         x={x} y={y} width={w} height={h} rx={rx}
         fill={p.fill}
@@ -106,10 +110,11 @@ function TableShape({
 }
 
 export const FloorPlan = () => {
-  const reduceMotion = useReducedMotion() === true;
+  const reduceMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const [statusById, setStatusById] = useState<Record<string, Status>>(() =>
     Object.fromEntries(TABLES.map((t) => [t.id, t.status]))
   );
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const advanceRandomTables = () => {
@@ -130,12 +135,49 @@ export const FloorPlan = () => {
     return () => clearInterval(id);
   }, []);
 
+  useGSAP(() => {
+    if (reduceMotion || !containerRef.current) return;
+
+    const ctx = gsap.context(() => {
+      // Container entrance
+      gsap.fromTo(containerRef.current,
+        { y: 40, opacity: 0, scale: 0.98 },
+        {
+          y: 0, opacity: 1, scale: 1, duration: 1.2, ease: "power4.out",
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          }
+        }
+      );
+
+      // Table shapes staggered pop-in
+      gsap.fromTo(".floor-table",
+        { scale: 0.8, opacity: 0, transformOrigin: "center" },
+        {
+          scale: 1, opacity: 1, duration: 0.6, ease: "back.out(1.8)", stagger: 0.04,
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "top 75%",
+            toggleActions: "play none none none",
+          }
+        }
+      );
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, { scope: containerRef });
+
   const active  = TABLES.filter((t) => statusById[t.id] === "active").length;
   const closing = TABLES.filter((t) => statusById[t.id] === "closing").length;
   const open    = TABLES.filter((t) => statusById[t.id] === "open").length;
 
   return (
-    <div className="overflow-hidden rounded-[18px] border border-wire bg-canvas shadow-[0_32px_64px_-24px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.03)]">
+    <div
+      ref={containerRef}
+      className="floor-plan-container overflow-hidden rounded-[18px] border border-wire bg-canvas shadow-[0_32px_64px_-24px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.03)]"
+    >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-wire px-4 py-3">
         <div className="flex items-center gap-2">

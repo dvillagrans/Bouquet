@@ -295,7 +295,7 @@ export const Hero = () => {
     )
     .fromTo(".hero-cta",
       { y: 20, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.6, stagger: 0.15 },
+      { y: 0, opacity: 1, duration: 0.6, stagger: 0.15, clearProps: "transform" },
       "-=0.4"
     )
     .fromTo(".hero-badge",
@@ -418,9 +418,9 @@ export const Hero = () => {
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
             <a
               href="#contacto"
-              className="hero-cta opacity-0 group inline-flex h-14 w-full items-center justify-between gap-4 rounded-full bg-burgundy px-2 pl-8 text-[1rem] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(74,26,44,0.5)] transition-transform duration-300 hover:-translate-y-0.5 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:min-w-[280px]"
+              className="hero-cta opacity-0 group inline-flex h-14 w-full items-center justify-center gap-3 rounded-full bg-burgundy pl-7 pr-2 text-[1rem] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(74,26,44,0.5)] transition-colors duration-200 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:min-w-[280px] sm:justify-between sm:gap-4"
             >
-              <span>Reservar demo de 20 min</span>
+              <span className="whitespace-nowrap">Reservar demo de 20 min</span>
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose/95 ring-1 ring-white/20 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:scale-105">
                 <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                   <path d="M4 10h12m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -430,10 +430,10 @@ export const Hero = () => {
 
             <a
               href="#como-funciona"
-              className="hero-cta opacity-0 group inline-flex h-14 w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-burgundy/10 bg-white/60 px-8 text-[1rem] font-semibold text-burgundy transition-all duration-300 hover:-translate-y-0.5 hover:border-burgundy/25 hover:bg-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:min-w-[240px]"
+              className="hero-cta opacity-0 group inline-flex h-14 w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-burgundy/10 bg-white/60 px-8 text-[1rem] font-semibold text-burgundy transition-colors duration-200 hover:border-burgundy/25 hover:bg-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:min-w-[240px]"
             >
-              Ver recorrido operativo
-              <svg className="h-3.5 w-3.5 text-burgundy/50 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <span className="whitespace-nowrap">Ver recorrido operativo</span>
+              <svg className="h-3.5 w-3.5 shrink-0 text-burgundy/50 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M6 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </a>

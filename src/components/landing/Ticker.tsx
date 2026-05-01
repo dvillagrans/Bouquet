@@ -1,6 +1,11 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { useRef, useEffect } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const rowA = [
   "Mesas sentadas",
@@ -36,7 +41,7 @@ const Sep = () => (
   <span className="mx-8 inline-block h-[4px] w-[4px] shrink-0 rounded-full bg-rose/30 shadow-[0_0_8px_rgba(199,91,122,0.5)] align-middle" />
 );
 
-const TickerRow = ({
+function TickerRow({
   items,
   reverse = false,
   speed = 36,
@@ -46,15 +51,53 @@ const TickerRow = ({
   reverse?: boolean;
   speed?: number;
   pauseMotion?: boolean;
-}) => {
+}) {
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (pauseMotion || !rowRef.current) return;
+    const el = rowRef.current;
+    // Calculate total width
+    const totalWidth = el.scrollWidth / 3;
+    const direction = reverse ? -1 : 1;
+
+    // Base animation
+    const tween = gsap.to(el, {
+      x: direction * -totalWidth,
+      duration: speed,
+      ease: "none",
+      repeat: -1,
+      modifiers: {
+        x: gsap.utils.unitize((x) => parseFloat(x) % totalWidth),
+      },
+    });
+
+    // Scroll-driven speed multiplier
+    const scrollTrigger = ScrollTrigger.create({
+      trigger: el,
+      start: "top bottom",
+      end: "bottom top",
+      onUpdate: (self) => {
+        const velocity = Math.abs(self.getVelocity());
+        const multiplier = 1 + Math.min(velocity / 2000, 2);
+        tween.timeScale(multiplier);
+      },
+    });
+
+    return () => {
+      tween.kill();
+      scrollTrigger.kill();
+    };
+  }, [reverse, speed, pauseMotion]);
+
   if (pauseMotion) {
     return (
       <div className="overflow-hidden px-4">
         <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 py-2" role="list">
           {items.map((item, i) => (
             <span key={`${item}-${i}`} className="inline-flex items-center" role="listitem">
-                <span className="text-[0.75rem] font-bold uppercase tracking-[0.35em] text-white/85 flex items-center gap-4">
-                <span className={i % 2 === 0 ? "text-rose" : "text-white/30"} aria-hidden="true">
+              <span className="text-[0.75rem] font-bold uppercase tracking-[0.35em] text-white/85 flex items-center gap-4">
+                <span className={i % 2 === 0 ? "text-rose" : "text-white/40"} aria-hidden="true">
                   ///
                 </span>
                 <span>{item}</span>
@@ -69,10 +112,9 @@ const TickerRow = ({
   return (
     <div className="overflow-hidden">
       <div
+        ref={rowRef}
         className="flex items-center whitespace-nowrap"
-        style={{
-          animation: `${reverse ? "marquee-reverse" : "marquee"} ${speed}s linear infinite`,
-        }}
+        style={{ willChange: "transform" }}
       >
         {[...items, ...items, ...items].map((item, i) => (
           <span key={i} className="inline-flex items-center">
@@ -86,20 +128,38 @@ const TickerRow = ({
       </div>
     </div>
   );
-};
+}
 
 export const Ticker = () => {
-  const pauseMotion = useReducedMotion() === true;
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const prefersReduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  useGSAP(() => {
+    if (prefersReduced) return;
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(sectionRef.current,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1, y: 0, duration: 1, ease: "power4.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 90%",
+            toggleActions: "play none none none",
+          }
+        }
+      );
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, { scope: sectionRef });
 
   return (
-    <motion.div
-      initial={{ opacity: pauseMotion ? 1 : 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: pauseMotion ? 0 : 1, ease: [0.16, 1, 0.3, 1] }}
-      className="relative overflow-hidden border-y border-white/5 bg-burgundy py-8"
+    <div
+      ref={sectionRef}
+      className="relative overflow-hidden border-y border-white/5 bg-burgundy py-8 opacity-0"
       style={
-        pauseMotion
+        prefersReduced
           ? undefined
           : {
               WebkitMaskImage: "linear-gradient(to right, transparent 0, black 15%, black 85%, transparent 100%)",
@@ -120,10 +180,10 @@ export const Ticker = () => {
         aria-hidden
       />
 
-      <div className={`relative z-10 flex flex-col ${pauseMotion ? "gap-8" : "gap-6"}`}>
-        <TickerRow items={rowA} speed={40} pauseMotion={pauseMotion} />
-        <TickerRow items={rowB} speed={50} reverse pauseMotion={pauseMotion} />
+      <div className={`relative z-10 flex flex-col ${prefersReduced ? "gap-8" : "gap-6"}`}>
+        <TickerRow items={rowA} speed={40} pauseMotion={prefersReduced} />
+        <TickerRow items={rowB} speed={50} reverse pauseMotion={prefersReduced} />
       </div>
-    </motion.div>
+    </div>
   );
 };

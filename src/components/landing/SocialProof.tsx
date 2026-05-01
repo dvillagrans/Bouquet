@@ -4,8 +4,13 @@ import { useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import Image from "next/image";
 
 gsap.registerPlugin(ScrollTrigger);
+
+import cardBarBottle from "@/assets/industries/card_bar_bottle.png";
+import cardBarCocktail from "@/assets/industries/card_bar_cocktail.png";
+import cardTaqueriaTacos from "@/assets/industries/card_taqueria_tacos.png";
 
 const testimonials = [
   {
@@ -17,6 +22,7 @@ const testimonials = [
     quote:
       "Antes perdíamos horas cerrando caja y cuadrando cuentas. Con Bouquet cobramos más rápido y la sala ya no se queda esperando al cierre.",
     metric: "Cierre de caja 12 min más rápido",
+    image: cardBarBottle,
   },
   {
     initials: "LM",
@@ -27,6 +33,7 @@ const testimonials = [
     quote:
       "Implementamos Bouquet en un día. El equipo de cocina recibe las órdenes claras y la barra ya no se pierde entre notas manuscritas.",
     metric: "0 órdenes perdidas en 3 meses",
+    image: cardTaqueriaTacos,
   },
   {
     initials: "AP",
@@ -37,6 +44,7 @@ const testimonials = [
     quote:
       "La división de cuenta era un dolor de cabeza. Ahora los comensales pagan desde el celular y nosotros nos enfocamos en el servicio.",
     metric: "Reclamos de cuenta bajaron 85%",
+    image: cardBarCocktail,
   },
 ];
 
@@ -303,9 +311,19 @@ export const SocialProof = () => {
             {testimonials.map((t, i) => (
               <div
                 key={t.name}
-                className="social-testimonial opacity-0 flex flex-col gap-6 rounded-2xl border border-white/[0.07] bg-gradient-to-br from-white/[0.055] to-transparent px-8 py-7 lg:flex-row lg:items-center lg:justify-between lg:gap-10"
+                className="social-testimonial group relative overflow-hidden opacity-0 flex flex-col gap-6 rounded-2xl border border-white/[0.07] bg-gradient-to-br from-white/[0.055] to-transparent px-8 py-7 lg:flex-row lg:items-center lg:justify-between lg:gap-10"
               >
-                <div className="flex min-w-0 flex-1 items-start gap-4">
+                {/* Imagen de fondo de industria */}
+                {t.image && (
+                  <Image
+                    src={t.image}
+                    alt=""
+                    fill
+                    className="pointer-events-none absolute inset-0 object-cover opacity-[0.04] mix-blend-overlay grayscale group-hover:opacity-[0.08] transition-all duration-700"
+                  />
+                )}
+
+                <div className="relative z-10 flex min-w-0 flex-1 items-start gap-4">
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-rose/25 bg-rose/[0.08] font-serif text-[1.05rem] font-semibold italic text-rose">
                     {t.initials}
                   </span>

@@ -1,320 +1,339 @@
-﻿"use client";
+"use client";
 
 import { useRef } from "react";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Image from "next/image";
+import { LayoutGrid, ListOrdered, Receipt } from "lucide-react";
+
+// ── Assets import ──────────────────────────────────────────
+import petalSingle01 from "@/assets/floral-assets/petals/petal_single_01.png";
+import petalSingle03 from "@/assets/floral-assets/petals/petal_single_03.png";
+import petalSingle05 from "@/assets/floral-assets/petals/petal_single_05.png";
+import petalSingle07 from "@/assets/floral-assets/petals/petal_single_07.png";
+import petalSingle09 from "@/assets/floral-assets/petals/petal_single_09.png";
+import cornerTopRight from "@/assets/floral-assets/branches/corner_top_right.png";
+import cornerTopLeft from "@/assets/floral-assets/branches/corner_top_left.png";
+import cornerBottomRight from "@/assets/floral-assets/branches/corner_bottom_right.png";
+import floralConnectorFull from "@/assets/floral-assets/branches/floral_connector_full.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* Iconografía estilo línea minimalista */
-function IconMesas({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 48 48" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <rect x="8" y="8" width="14" height="14" rx="3" />
-      <rect x="26" y="8" width="14" height="14" rx="3" />
-      <rect x="8" y="26" width="14" height="14" rx="3" />
-      <rect x="26" y="26" width="14" height="14" rx="3" />
-    </svg>
-  );
-}
-
-function IconOrdenes({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 48 48" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <path d="M12 12h24M12 20h20M12 28h16M12 36h22" />
-      <circle cx="38" cy="28" r="4" fill="currentColor" fillOpacity="0.15" />
-      <path d="M36 28l1.5 1.5L40 26" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function IconPagos({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 48 48" className={className} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-      <rect x="6" y="14" width="36" height="20" rx="4" />
-      <path d="M6 22h36" strokeWidth="1" />
-      <circle cx="30" cy="24" r="6" fill="currentColor" fillOpacity="0.1" stroke="none" />
-      <text x="30" y="27" textAnchor="middle" fontSize="8" fontWeight="bold" fill="currentColor">$</text>
-    </svg>
-  );
-}
-
-/* Decoración floral SVG */
-function FloralDivider({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 120 20" className={className} fill="none" aria-hidden="true">
-      <circle cx="10" cy="10" r="3" fill="#E8A5B0" />
-      <circle cx="30" cy="8" r="2.5" fill="#D68C9F" />
-      <circle cx="50" cy="10" r="4" fill="#C75B7A" />
-      <circle cx="70" cy="8" r="2.5" fill="#D68C9F" />
-      <circle cx="90" cy="10" r="3" fill="#E8A5B0" />
-      <circle cx="110" cy="9" r="2" fill="#F5D5DC" />
-      <path d="M10 10 Q30 5 50 10 Q70 15 90 10 Q100 7 110 9" stroke="#C75B7A" strokeWidth="0.8" strokeLinecap="round" opacity="0.4" />
-    </svg>
-  );
-}
+const floatingPetals = [
+  { src: petalSingle01, left: "8%", top: "12%", width: "2rem", delay: 0 },
+  { src: petalSingle03, left: "22%", top: "78%", width: "1.5rem", delay: 0.8 },
+  { src: petalSingle05, left: "48%", top: "-8%", width: "1.75rem", delay: 1.6 },
+  { src: petalSingle07, left: "78%", top: "88%", width: "1.25rem", delay: 2.4 },
+  { src: petalSingle09, left: "92%", top: "35%", width: "2rem", delay: 3.2 },
+];
 
 const features = [
   {
-    num: "01",
-    title: "Mesas",
+    label: "SALA EN VIVO",
+    name: "Mesas",
     subtitle: "Organiza tu sala con claridad",
-    description: "Visualiza el estado de cada mesa en tiempo real. Sabe quién pide, quién espera y cuándo liberas cubierta.",
-    icon: IconMesas,
-    color: "text-rose",
-    bgColor: "bg-rose/5",
-    ringColor: "ring-rose/15",
-    highlight: "Sala en vivo",
+    description:
+      "Visualiza el estado de cada mesa en tiempo real. Sabe quién pide, quién espera y cuándo liberas cubierta.",
+    Icon: LayoutGrid,
   },
   {
-    num: "02",
-    title: "Órdenes",
+    label: "KDS INTEGRADO",
+    name: "Órdenes",
     subtitle: "Flujo directo a cocina y barra",
-    description: "Las comandas llegan ordenadas por estación. El pase no se pierde entre páginas sueltas ni gritos.",
-    icon: IconOrdenes,
-    color: "text-burgundy",
-    bgColor: "bg-burgundy/5",
-    ringColor: "ring-burgundy/15",
-    highlight: "KDS integrado",
+    description:
+      "Las comandas llegan ordenadas por estación. El pase no se pierde entre páginas sueltas ni gritos.",
+    Icon: ListOrdered,
   },
   {
-    num: "03",
-    title: "Pagos",
+    label: "SPLIT BILL",
+    name: "Pagos",
     subtitle: "Cierre sin fricción",
-    description: "División por comensal, propina y total en una sola línea de cobro. Menos calculadora, menos reclamos.",
-    icon: IconPagos,
-    color: "text-sage-deep",
-    bgColor: "bg-sage/10",
-    ringColor: "ring-sage/20",
-    highlight: "Split bill",
+    description:
+      "División por comensal, propina y total en una sola línea de cobro. Menos calculadora, menos reclamos.",
+    Icon: Receipt,
   },
 ];
 
 export const Features = () => {
   const sectionRef = useRef<HTMLElement>(null);
-  const cardsRef = useRef<(HTMLDivElement | null)[]>([]);
-  const wideCardRef = useRef<HTMLDivElement>(null);
 
-  useGSAP(() => {
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) {
-      gsap.set([".feature-label", ".feature-headline", ".feature-desc", ".feature-card", ".feature-wide"], {
-        opacity: 1, y: 0, x: 0, scale: 1
-      });
-      return;
-    }
+  useGSAP(
+    () => {
+      const prefersReducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
 
-    const ctx = gsap.context(() => {
-      // Header entrance
-      gsap.fromTo(".feature-label",
-        { y: 20, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, ease: "power3.out",
-          scrollTrigger: { trigger: ".feature-label", start: "top 85%", toggleActions: "play none none none" }
-        }
-      );
-      gsap.fromTo(".feature-headline",
-        { y: 40, opacity: 0 },
-        { y: 0, opacity: 1, duration: 1, ease: "power4.out",
-          scrollTrigger: { trigger: ".feature-headline", start: "top 85%", toggleActions: "play none none none" }
-        }
-      );
-      gsap.fromTo(".feature-desc",
-        { y: 20, opacity: 0 },
-        { y: 0, opacity: 1, duration: 0.8, ease: "power3.out",
-          scrollTrigger: { trigger: ".feature-desc", start: "top 85%", toggleActions: "play none none none" }
-        }
-      );
-
-      // Cards staggered entrance with scroll
-      cardsRef.current.forEach((card, i) => {
-        if (!card) return;
-        gsap.fromTo(card,
-          { y: 60, opacity: 0, scale: 0.96 },
-          {
-            y: 0, opacity: 1, scale: 1, duration: 1, ease: "power4.out",
-            delay: i * 0.12,
-            scrollTrigger: {
-              trigger: card,
-              start: "top 88%",
-              toggleActions: "play none none none",
-            }
-          }
+      if (prefersReducedMotion) {
+        gsap.set(
+          [
+            ".features-corner",
+            ".features-label",
+            ".features-title",
+            ".features-desc",
+            ".features-floral",
+            ".features-icon-dot",
+            ".features-card",
+            ".features-petal",
+          ],
+          { opacity: 1, y: 0, x: 0, scale: 1 }
         );
-      });
-
-      // Wide card entrance
-      if (wideCardRef.current) {
-        gsap.fromTo(wideCardRef.current,
-          { y: 80, opacity: 0, scale: 0.97 },
-          {
-            y: 0, opacity: 1, scale: 1, duration: 1.2, ease: "power4.out",
-            scrollTrigger: {
-              trigger: wideCardRef.current,
-              start: "top 85%",
-              toggleActions: "play none none none",
-            }
-          }
-        );
+        return;
       }
 
-      // Hover physics on cards
-      cardsRef.current.forEach((card) => {
-        if (!card) return;
-        const onEnter = () => {
-          gsap.to(card, { y: -8, scale: 1.01, duration: 0.5, ease: "power2.out" });
-        };
-        const onLeave = () => {
-          gsap.to(card, { y: 0, scale: 1, duration: 0.5, ease: "power2.out" });
-        };
-        card.addEventListener("mouseenter", onEnter);
-        card.addEventListener("mouseleave", onLeave);
+      // ── Corner decorations ─────────────────────────
+      gsap.fromTo(
+        ".features-corner",
+        { opacity: 0, scale: 0.92 },
+        {
+          opacity: 1,
+          scale: 1,
+          duration: 1.6,
+          ease: "power2.out",
+          stagger: 0.2,
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      // ── Header timeline ────────────────────────────
+      const headerTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: ".features-header",
+          start: "top 80%",
+          toggleActions: "play none none none",
+        },
+        defaults: { ease: "power3.out" },
       });
 
-    }, sectionRef);
+      headerTl
+        .fromTo(
+          ".features-label",
+          { x: -20, opacity: 0 },
+          { x: 0, opacity: 1, duration: 0.7 }
+        )
+        .fromTo(
+          ".features-title",
+          { y: 40, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.9 },
+          "-=0.5"
+        )
+        .fromTo(
+          ".features-desc",
+          { y: 30, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.8 },
+          "-=0.6"
+        );
 
-    return () => ctx.revert();
-  }, { scope: sectionRef });
+      // ── Floral image ───────────────────────────────
+      gsap.fromTo(
+        ".features-floral",
+        { opacity: 0, scale: 0.96, y: 30 },
+        {
+          opacity: 1,
+          scale: 1,
+          y: 0,
+          duration: 1.2,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: ".features-floral",
+            start: "top 82%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      // ── Icon dots on floral (desktop only) ─────────
+      gsap.fromTo(
+        ".features-icon-dot",
+        { scale: 0, opacity: 0 },
+        {
+          scale: 1,
+          opacity: 1,
+          duration: 0.7,
+          ease: "back.out(1.7)",
+          stagger: 0.12,
+          scrollTrigger: {
+            trigger: ".features-floral",
+            start: "top 75%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      // ── Feature cards ──────────────────────────────
+      gsap.fromTo(
+        ".features-card",
+        { y: 50, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.85,
+          ease: "power3.out",
+          stagger: 0.15,
+          scrollTrigger: {
+            trigger: ".features-grid",
+            start: "top 82%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      // ── Floating petals organic drift ──────────────
+      gsap.utils.toArray<HTMLElement>(".features-petal").forEach((petal) => {
+        const delay = parseFloat(petal.dataset.delay || "0");
+        gsap.to(petal, {
+          y: "random(-18, 18)",
+          x: "random(-10, 10)",
+          rotation: "random(-8, 8)",
+          duration: "random(3.5, 5.5)",
+          ease: "sine.inOut",
+          yoyo: true,
+          repeat: -1,
+          delay,
+        });
+      });
+    },
+    { scope: sectionRef }
+  );
 
   return (
     <section
       ref={sectionRef}
       id="como-funciona"
-      className="relative overflow-hidden border-t border-burgundy/[0.06] bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,#FDF2F5_0%,#F5D5DC_40%,#FAF6F3_100%)] py-24 lg:py-36"
+      className="relative overflow-hidden py-24 md:py-32 lg:py-40 px-6 md:px-10 lg:px-12"
+      style={{
+        background:
+          "radial-gradient(ellipse at center, #FDF0F4 0%, #F5E8ED 60%, #EDE0E6 100%)",
+      }}
     >
-      {/* Capa atmosférica */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.3]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 20% 30%, rgba(199,91,122,0.06) 0%, transparent 45%), radial-gradient(circle at 80% 70%, rgba(168,176,160,0.08) 0%, transparent 42%)",
-        }}
+      {/* ── Esquinas decorativas ─────────────────────── */}
+      <Image
+        src={cornerTopRight}
+        alt=""
+        className="features-corner absolute -top-12 -right-12 md:-top-20 md:-right-20 lg:-top-24 lg:-right-24 w-64 md:w-80 lg:w-[28rem] opacity-90 pointer-events-none z-0"
+        aria-hidden="true"
+      />
+      <Image
+        src={cornerTopLeft}
+        alt=""
+        className="features-corner absolute -top-12 -left-12 md:-top-20 md:-left-20 lg:-top-24 lg:-left-24 w-64 md:w-80 lg:w-[28rem] opacity-90 pointer-events-none z-0"
+        style={{ transform: "scaleX(-1)" }}
+        aria-hidden="true"
+      />
+      <Image
+        src={cornerBottomRight}
+        alt=""
+        className="features-corner absolute -bottom-12 -right-12 md:-bottom-20 md:-right-20 lg:-bottom-24 lg:-right-24 w-56 md:w-72 lg:w-[24rem] opacity-90 pointer-events-none z-0"
         aria-hidden="true"
       />
 
-      <div className="relative mx-auto max-w-[88rem] px-6 lg:px-12">
-        {/* Encabezado */}
-        <header className="mb-16 lg:mb-20">
-          <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <p className="feature-label opacity-0 mb-5 inline-flex items-center gap-3 text-[0.62rem] font-bold uppercase tracking-[0.34em] text-burgundy/45">
-                <span className="h-px w-12 bg-gradient-to-r from-rose/80 to-rose/20" aria-hidden="true" />
-                Cómo funciona
-              </p>
-              <h2 className="feature-headline opacity-0 font-serif text-[clamp(2.5rem,5vw,4.5rem)] font-medium italic leading-[1.02] tracking-[-0.02em] text-burgundy">
-                Tres pilares.
-                <span className="block font-sans text-[0.45em] font-black not-italic tracking-[-0.05em] text-burgundy/45 sm:mt-1">
-                  Una sola plataforma.
-                </span>
-              </h2>
-            </div>
-            <p className="feature-desc opacity-0 max-w-md text-[1.05rem] font-medium leading-[1.75] text-burgundy/55 lg:pb-1">
-              Nada de pantallas que compiten entre sí: mesa, cocina, barra y caja comparten el mismo estado del turno.
-            </p>
-          </div>
-        </header>
+      {/* ── Pétalos flotantes ────────────────────────── */}
+      {floatingPetals.map((petal, i) => (
+        <Image
+          key={i}
+          src={petal.src}
+          alt=""
+          data-delay={petal.delay}
+          className="features-petal absolute pointer-events-none z-20 opacity-80"
+          style={{
+            left: petal.left,
+            top: petal.top,
+            width: petal.width,
+          }}
+          aria-hidden="true"
+        />
+      ))}
 
-        {/* Grid de 3 features */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
-          {features.map((feature, i) => {
-            const Icon = feature.icon;
-            return (
-              <div
-                key={feature.num}
-                ref={(el) => { cardsRef.current[i] = el; }}
-                className="feature-card opacity-0 group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-burgundy/[0.08] bg-white/[0.5] p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_8px_32px_rgba(74,26,44,0.06)] backdrop-blur-md lg:p-10 transition-shadow duration-500 hover:shadow-[0_12px_40px_rgba(74,26,44,0.1)]"
-              >
-                {/* Top line decorativa */}
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose/20 to-transparent opacity-80" />
-
-                {/* Header de la card */}
-                <div className="mb-6 flex items-start justify-between">
-                  <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${feature.bgColor} ring-1 ${feature.ringColor}`}>
-                    <Icon className={`h-7 w-7 ${feature.color}`} />
-                  </div>
-                  <span className="font-mono text-[0.6rem] font-bold uppercase tracking-[0.15em] text-burgundy/30">
-                    {feature.num}
-                  </span>
-                </div>
-
-                {/* Contenido */}
-                <div className="mb-2">
-                  <span className={`inline-block rounded-full px-2.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-[0.15em] ${feature.bgColor} ${feature.color} mb-3`}>
-                    {feature.highlight}
-                  </span>
-                  <h3 className="font-serif text-[1.65rem] font-semibold leading-[1.12] tracking-tight text-burgundy">
-                    {feature.title}
-                  </h3>
-                  <p className="mt-1.5 text-[0.85rem] font-medium text-burgundy/50">
-                    {feature.subtitle}
-                  </p>
-                </div>
-
-                <p className="mt-4 text-[0.95rem] font-medium leading-[1.7] text-burgundy/55">
-                  {feature.description}
-                </p>
-
-                {/* Decoración floral sutil */}
-                <div className="mt-auto pt-6">
-                  <FloralDivider className="h-3 w-full opacity-40" />
-                </div>
-              </div>
-            );
-          })}
+      {/* ── Header ───────────────────────────────────── */}
+      <div className="features-header relative z-10 max-w-6xl mx-auto mb-10 md:mb-14 lg:mb-20">
+        <div className="flex items-center gap-4 mb-6 md:mb-8">
+          <div className="features-label h-[1px] w-10 md:w-12 bg-rose-800/30" />
+          <p className="features-label text-[11px] md:text-xs tracking-[0.25em] uppercase text-rose-800/60 font-medium">
+            CÓMO FUNCIONA
+          </p>
         </div>
 
-        {/* Gerencia — card ancha */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 lg:gap-16 items-end">
+          <h2 className="features-title font-serif italic text-4xl md:text-5xl lg:text-6xl text-rose-950 leading-[1.1]">
+            Tres pilares...
+          </h2>
+          <p className="features-desc text-[15px] md:text-base text-rose-950/70 leading-relaxed font-medium md:pb-1 lg:pb-2 max-w-md md:max-w-none">
+            Nada de pantallas que compiten entre sí: mesa, cocina, barra y caja
+            comparten el mismo estado del turno.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Floral connector (tablet + desktop) ──────── */}
+      <div className="features-floral relative z-10 w-full max-w-xl md:max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto mb-10 md:mb-6 lg:mb-2">
+        <Image
+          src={floralConnectorFull}
+          alt=""
+          className="w-full h-auto object-contain scale-105 md:scale-110"
+          priority
+          aria-hidden="true"
+        />
+
+        {/* Iconos absolutos — solo desktop (lg+) */}
         <div
-          ref={wideCardRef}
-          className="feature-wide opacity-0 relative mt-6 flex flex-col gap-10 overflow-hidden rounded-[1.75rem] border border-white/[0.07] bg-burgundy px-8 py-10 text-white shadow-[0_20px_60px_-35px_rgba(74,26,44,0.45)] lg:flex-row lg:items-center lg:justify-between lg:gap-14 lg:px-12 lg:py-11"
+          className="features-icon-dot absolute hidden lg:flex items-center justify-center rounded-full bg-white/30 backdrop-blur-md shadow-lg border border-white/50"
+          style={{ left: "19%", top: "51.5%", width: "56px", height: "56px", transform: "translate(-50%, -50%)" }}
         >
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.04]"
-            style={{
-              backgroundImage:
-                "url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.75%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/%3E%3C/svg%3E')",
-            }}
-            aria-hidden="true"
-          />
-          <div className="pointer-events-none absolute -right-20 top-1/2 h-[28rem] w-[28rem] -translate-y-1/2 rounded-full bg-rose/[0.07] blur-3xl" aria-hidden="true" />
-
-          <div className="relative max-w-2xl flex-1">
-            <p className="text-[0.62rem] font-bold uppercase tracking-[0.28em] text-white/40">04 · Gerencia</p>
-            <h3 className="mt-3 font-serif text-[clamp(1.65rem,3vw,2.5rem)] font-semibold leading-[1.05] tracking-tight text-white">
-              Un solo panel para varias sucursales.
-            </h3>
-            <p className="mt-4 text-[1.05rem] font-medium leading-[1.75] text-white/55">
-              Ticket medio, rotación y excepciones del turno en el teléfono del dueño — sin exportar Excel a medianoche.
-            </p>
-
-            <dl className="mt-8 grid max-w-xl grid-cols-3 gap-6 border-t border-white/10 pt-8">
-              {[
-                { label: "Ticket medio", value: "$286" },
-                { label: "Rotación / h", value: "2.4×" },
-                { label: "A pase", value: "11m" },
-              ].map(({ label, value }) => (
-                <div key={label}>
-                  <dt className="text-[0.52rem] font-bold uppercase tracking-[0.26em] text-white/38">{label}</dt>
-                  <dd className="mt-2 font-serif text-[1.35rem] font-semibold tabular-nums text-white">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          <div className="relative shrink-0">
-            <a
-              href="#contacto"
-              className="group/btn inline-flex items-center gap-3 rounded-full bg-white/10 py-2 pl-5 pr-1.5 text-[0.82rem] font-semibold text-white ring-1 ring-white/15 transition-colors hover:bg-white/[0.14]"
-            >
-              <span>Hablar con el equipo</span>
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-rose text-white transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/btn:translate-x-0.5 group-hover/btn:scale-105">
-                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                  <path d="M4 10h12m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-            </a>
-          </div>
+          <LayoutGrid className="w-6 h-6 text-rose-950" />
         </div>
+        <div
+          className="features-icon-dot absolute hidden lg:flex items-center justify-center rounded-full bg-white/30 backdrop-blur-md shadow-lg border border-white/50"
+          style={{ left: "50%", top: "49%", width: "56px", height: "56px", transform: "translate(-50%, -50%)" }}
+        >
+          <ListOrdered className="w-6 h-6 text-rose-950" />
+        </div>
+        <div
+          className="features-icon-dot absolute hidden lg:flex items-center justify-center rounded-full bg-white/30 backdrop-blur-md shadow-lg border border-white/50"
+          style={{ left: "81%", top: "52.5%", width: "56px", height: "56px", transform: "translate(-50%, -50%)" }}
+        >
+          <Receipt className="w-6 h-6 text-rose-950" />
+        </div>
+      </div>
+
+      {/* ── Feature cards grid ───────────────────────── */}
+      <div className="features-grid relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 lg:gap-10 max-w-6xl mx-auto px-2 md:px-0">
+        {features.map((feature, i) => {
+          const Icon = feature.Icon;
+          return (
+            <div
+              key={i}
+              className="features-card group flex flex-col text-center md:text-left"
+            >
+              {/* Icono — visible en mobile y tablet, oculto en desktop */}
+              <div className="lg:hidden mx-auto md:mx-0 mb-5 w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/70 shadow-md border border-white/80 flex items-center justify-center transition-transform duration-300 group-hover:scale-105">
+                <Icon className="w-6 h-6 md:w-7 md:h-7 text-rose-950" />
+              </div>
+
+              {/* Línea decorativa sutil */}
+              <div className="hidden md:block h-px w-8 bg-rose-800/15 mb-4 mx-auto md:mx-0 transition-all duration-500 group-hover:w-12 group-hover:bg-rose-800/30" />
+
+              <span className="text-[10px] md:text-[11px] tracking-[0.15em] font-bold uppercase text-rose-800/60 mb-2">
+                {feature.label}
+              </span>
+
+              <h3 className="font-serif italic text-2xl md:text-3xl lg:text-4xl text-rose-950 mb-1 md:mb-2">
+                {feature.name}
+              </h3>
+
+              <p className="text-sm md:text-[13px] lg:text-sm font-semibold text-rose-900 mb-2 md:mb-3">
+                {feature.subtitle}
+              </p>
+
+              <p className="text-[13px] lg:text-sm text-rose-950/65 leading-relaxed max-w-xs mx-auto md:mx-0">
+                {feature.description}
+              </p>
+            </div>
+          );
+        })}
       </div>
     </section>
   );

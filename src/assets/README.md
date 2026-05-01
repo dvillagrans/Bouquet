@@ -10,6 +10,14 @@ Los elementos base para la generación visual se encuentran en `src/assets/flora
 - `/petals/`: Pétalos individuales.
 - `/leaves/`: Hojas individuales.
 - `/branches/`: Ramas y conjuntos de hojas.
+- `/compositions/`: Composiciones florales complejas.
+
+## Industrias y Casos de Uso
+Los recursos específicos para diferentes tipos de negocios se encuentran en `src/assets/industries/`:
+
+- `card_bar_...`: Imágenes para bares y coctelería.
+- `card_taqueria_...`: Imágenes para taquerías y comida rápida.
+- `card_cafe_...`: Imágenes para cafeterías (futuro).
 
 ## Cómo usar las imágenes
 

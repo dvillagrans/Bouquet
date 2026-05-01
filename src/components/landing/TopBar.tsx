@@ -64,7 +64,7 @@ export const TopBar = () => {
             href="#contacto"
             className={[
               "group relative isolate hidden shrink-0 overflow-hidden lg:inline-flex",
-              "h-11 min-h-[44px] min-w-[15.5rem] max-w-[calc(100vw-2rem)] flex-nowrap items-center justify-between gap-2.5 rounded-full py-2 pl-5 pr-2 sm:min-w-[16rem] sm:pl-6",
+              "h-10 min-h-[40px] items-center gap-2 rounded-full px-5 py-2",
               "bg-burgundy text-[0.8125rem] font-semibold tracking-tight text-white",
               "shadow-[0_12px_34px_-14px_rgba(74,26,44,0.45)] ring-1 ring-white/12",
               "transition-[transform,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
@@ -74,11 +74,11 @@ export const TopBar = () => {
               "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose",
             ].join(" ")}
           >
-            <span className="relative z-[1] shrink-0 whitespace-nowrap pl-0.5">
+            <span className="relative z-[1] shrink-0 whitespace-nowrap">
               Demo en 20 min
             </span>
-            <span className="relative z-[1] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rose/95 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] ring-1 ring-burgundy/10 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:brightness-105">
-              <svg className="h-4 w-4 -translate-x-px" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <span className="relative z-[1] flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose/95 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] ring-1 ring-burgundy/10 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:brightness-105">
+              <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M4 10h12m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </span>

@@ -52,10 +52,7 @@ function FaqItem({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div
-      className="faq-item opacity-0 border-b border-burgundy/[0.08]"
-      style={{ transitionDelay: `${index * 0.08}s` }}
-    >
+    <div className="faq-item opacity-0 border-b border-burgundy/[0.08]">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="flex w-full items-center justify-between gap-4 py-5 text-left transition-colors hover:text-burgundy lg:py-6"
@@ -108,7 +105,7 @@ export function FaqSection() {
       "(prefers-reduced-motion: reduce)"
     ).matches;
     if (prefersReduced) {
-      gsap.set([".faq-label", ".faq-headline", ".faq-desc", ".faq-item"], {
+      gsap.set([".faq-header > *", ".faq-item"], {
         opacity: 1,
         y: 0,
       });
@@ -116,70 +113,41 @@ export function FaqSection() {
     }
 
     const ctx = gsap.context(() => {
+      // Header: un solo stagger para label, headline, desc
       gsap.fromTo(
-        ".faq-label",
-        { y: 20, opacity: 0 },
+        ".faq-header > *",
+        { y: 24, opacity: 0 },
         {
           y: 0,
           opacity: 1,
-          duration: 0.8,
-          ease: "power3.out",
+          duration: 0.6,
+          ease: "power2.out",
+          stagger: 0.1,
           scrollTrigger: {
-            trigger: ".faq-label",
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-      gsap.fromTo(
-        ".faq-headline",
-        { y: 40, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1,
-          ease: "power4.out",
-          scrollTrigger: {
-            trigger: ".faq-headline",
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-      gsap.fromTo(
-        ".faq-desc",
-        { y: 20, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.8,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: ".faq-desc",
+            trigger: ".faq-header",
             start: "top 85%",
             toggleActions: "play none none none",
           },
         }
       );
 
-      gsap.utils.toArray<HTMLElement>(".faq-item").forEach((item, i) => {
-        gsap.fromTo(
-          item,
-          { y: 30, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.8,
-            ease: "power3.out",
-            delay: i * 0.08,
-            scrollTrigger: {
-              trigger: item,
-              start: "top 90%",
-              toggleActions: "play none none none",
-            },
-          }
-        );
-      });
+      // Items: un solo batch con stagger
+      gsap.fromTo(
+        ".faq-item",
+        { y: 16, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.5,
+          ease: "power2.out",
+          stagger: 0.06,
+          scrollTrigger: {
+            trigger: ".faq-list",
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
     }, sectionRef);
 
     return () => ctx.revert();
@@ -194,25 +162,25 @@ export function FaqSection() {
       <div className="relative mx-auto max-w-[88rem] px-6 lg:px-12">
         <div className="grid gap-12 lg:grid-cols-[0.4fr_0.6fr] lg:gap-20">
           {/* Columna izquierda — sticky en desktop */}
-          <div className="lg:sticky lg:top-32 lg:self-start">
-            <p className="faq-label opacity-0 mb-5 inline-flex items-center gap-3 text-[0.62rem] font-bold uppercase tracking-[0.34em] text-burgundy/45">
+          <div className="faq-header lg:sticky lg:top-32 lg:self-start">
+            <p className="opacity-0 mb-5 inline-flex items-center gap-3 text-[0.62rem] font-bold uppercase tracking-[0.34em] text-burgundy/45">
               <span
                 className="h-px w-12 bg-gradient-to-r from-rose/80 to-rose/20"
                 aria-hidden="true"
               />
               Preguntas frecuentes
             </p>
-            <h2 className="faq-headline opacity-0 font-serif text-[clamp(2rem,4vw,3.5rem)] font-medium italic leading-[1.05] tracking-tight text-burgundy">
+            <h2 className="opacity-0 font-serif text-[clamp(2rem,4vw,3.5rem)] font-medium italic leading-[1.05] tracking-tight text-burgundy">
               Todo lo que necesitas saber.
             </h2>
-            <p className="faq-desc opacity-0 mt-6 max-w-sm text-[1rem] leading-[1.75] text-burgundy/55">
+            <p className="opacity-0 mt-6 max-w-sm text-[1rem] leading-[1.75] text-burgundy/55">
               Si no encontrás tu respuesta, escribinos. Respondemos en menos de
               2 horas.
             </p>
 
             <a
               href="#contacto"
-              className="faq-desc opacity-0 mt-8 inline-flex items-center gap-2 text-[0.85rem] font-semibold text-rose transition-colors hover:text-rose-light"
+              className="opacity-0 mt-8 inline-flex items-center gap-2 text-[0.85rem] font-semibold text-rose transition-colors hover:text-rose-light"
             >
               Hablar con el equipo
               <svg
@@ -233,7 +201,7 @@ export function FaqSection() {
           </div>
 
           {/* Columna derecha — preguntas */}
-          <div>
+          <div className="faq-list">
             {faqs.map((faq, i) => (
               <FaqItem key={i} index={i} {...faq} />
             ))}

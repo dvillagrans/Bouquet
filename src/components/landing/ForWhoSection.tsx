@@ -1,155 +1,150 @@
 "use client";
 
 import { useRef } from "react";
+import Image from "next/image";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const segments = [
-  {
-    icon: (
-      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-        <path d="M8 16h32M8 24h32M8 32h20" />
-        <circle cx="38" cy="32" r="4" fill="currentColor" fillOpacity="0.15" />
-        <path d="M36 32l1.5 1.5L40 30" strokeWidth="2" />
-        <rect x="12" y="8" width="24" height="32" rx="4" strokeDasharray="2 2" />
-      </svg>
-    ),
-    title: "Restaurantes de servicio completo",
-    benefit: "Control de salón y tiempos de salida",
-    description:
-      "Visualizá cada mesa en tiempo real, gestioná reservas y optimizá la rotación de cubiertos sin perder la calidad del servicio.",
-    color: "text-rose",
-    bgColor: "bg-rose/5",
-    ringColor: "ring-rose/15",
-  },
-  {
-    icon: (
-      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-        <path d="M12 20c0-8 8-12 12-12s12 4 12 12-8 16-12 20c-4-4-12-12-12-20z" />
-        <circle cx="24" cy="20" r="4" fill="currentColor" fillOpacity="0.15" />
-        <path d="M24 28v8M20 32h8" strokeWidth="1.5" />
-      </svg>
-    ),
-    title: "Taquerías & Fast casual",
-    benefit: "Velocidad en órdenes y caja",
-    description:
-      "Turnos de alta demanda sin caos. Órdenes directo a cocina, cobro rápido y métricas que te ayudan a identificar tu producto estrella.",
-    color: "text-burgundy",
-    bgColor: "bg-burgundy/5",
-    ringColor: "ring-burgundy/15",
-  },
-  {
-    icon: (
-      <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-        <path d="M14 38V20c0-6 4-10 10-10s10 4 10 10v18" />
-        <path d="M10 38h28" strokeWidth="2" />
-        <circle cx="24" cy="14" r="3" fill="currentColor" fillOpacity="0.15" />
-        <path d="M18 24h12M18 28h10M18 32h8" strokeWidth="1" />
-      </svg>
-    ),
-    title: "Bares & Coctelerías",
-    benefit: "División de cuenta y control de barra",
-    description:
-      "Split bill sin dolor de cabeza, control de inventario de barra en tiempo real y comandas que nunca se pierden entre la música.",
-    color: "text-sage-deep",
-    bgColor: "bg-sage/10",
-    ringColor: "ring-sage/20",
-  },
-];
+import cardRestaurant from "@/assets/industries/card_restaurant_waiter.png";
+import cardTaqueria from "@/assets/industries/card_taqueria_tacos.png";
+import cardBar from "@/assets/industries/card_bar_cocktail.png";
 
 export function ForWhoSection() {
   const sectionRef = useRef<HTMLElement>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  
+  const card1Ref = useRef<HTMLDivElement>(null);
+  const card2Ref = useRef<HTMLDivElement>(null);
+  const card3Ref = useRef<HTMLDivElement>(null);
+  
+  const waiterRef = useRef<HTMLImageElement>(null);
+  const tacosRef = useRef<HTMLImageElement>(null);
+  const cocktailRef = useRef<HTMLImageElement>(null);
 
-  useGSAP(() => {
-    const prefersReduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-    if (prefersReduced) {
-      gsap.set(
-        [
-          ".forwho-label",
-          ".forwho-headline",
-          ".forwho-desc",
-          ".forwho-card",
-        ],
-        { opacity: 1, y: 0 }
-      );
-      return;
-    }
+  useGSAP(
+    () => {
+      const prefersReduced = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
 
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".forwho-label",
-        { y: 20, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.8,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: ".forwho-label",
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-      gsap.fromTo(
-        ".forwho-headline",
-        { y: 40, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1,
-          ease: "power4.out",
-          scrollTrigger: {
-            trigger: ".forwho-headline",
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-      gsap.fromTo(
-        ".forwho-desc",
-        { y: 20, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.8,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: ".forwho-desc",
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
+      if (prefersReduced) {
+        gsap.set(
+          [".forwho-label", ".forwho-headline", ".forwho-desc", card1Ref.current, card2Ref.current, card3Ref.current],
+          { opacity: 1, x: 0, y: 0 }
+        );
+        return;
+      }
 
-      gsap.utils.toArray<HTMLElement>(".forwho-card").forEach((card, i) => {
+      const ctx = gsap.context(() => {
+        // Header entrances
         gsap.fromTo(
-          card,
-          { y: 50, opacity: 0, scale: 0.97 },
+          ".forwho-label",
+          { y: 20, opacity: 0 },
           {
             y: 0,
             opacity: 1,
-            scale: 1,
-            duration: 1,
-            ease: "power4.out",
-            delay: i * 0.12,
+            duration: 0.8,
+            ease: "power3.out",
             scrollTrigger: {
-              trigger: card,
-              start: "top 88%",
+              trigger: ".forwho-label",
+              start: "top 85%",
               toggleActions: "play none none none",
             },
           }
         );
-      });
-    }, sectionRef);
+        gsap.fromTo(
+          ".forwho-headline",
+          { y: 40, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 1,
+            ease: "power4.out",
+            scrollTrigger: {
+              trigger: ".forwho-headline",
+              start: "top 85%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
+        gsap.fromTo(
+          ".forwho-desc",
+          { y: 20, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.8,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: ".forwho-desc",
+              start: "top 85%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
 
-    return () => ctx.revert();
-  }, { scope: sectionRef });
+        // Cards entrance with stagger
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: gridRef.current,
+            start: "top 75%",
+            toggleActions: "play none none none",
+          },
+        });
+
+        tl.fromTo(
+          card1Ref.current,
+          { x: -60, opacity: 0 },
+          { x: 0, opacity: 1, duration: 0.7, ease: "power2.out" },
+          0
+        );
+        tl.fromTo(
+          card2Ref.current,
+          { y: 60, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.7, ease: "power2.out" },
+          0.2
+        );
+        tl.fromTo(
+          card3Ref.current,
+          { x: 60, opacity: 0 },
+          { x: 0, opacity: 1, duration: 0.7, ease: "power2.out" },
+          0.4
+        );
+      }, sectionRef);
+
+      return () => ctx.revert();
+    },
+    { scope: sectionRef }
+  );
+
+  // Individual hover handlers
+  const handleMouseEnter = (index: number) => {
+    if (index === 0) {
+      gsap.to(waiterRef.current, { y: -12, duration: 0.3, ease: "power2.out" });
+      gsap.to(".card1-bg", { y: -4, duration: 0.3, ease: "power2.out" });
+    } else if (index === 1) {
+      gsap.to(tacosRef.current, { scale: 1.04, rotate: -1, duration: 0.3, ease: "power2.out" });
+    } else if (index === 2) {
+      gsap.to(cocktailRef.current, { y: -10, duration: 0.3, ease: "power2.out" });
+      gsap.to(".card3-bg", { y: -3, duration: 0.3, ease: "power2.out" });
+    }
+  };
+
+  const handleMouseLeave = (index: number) => {
+    if (index === 0) {
+      gsap.to(waiterRef.current, { y: 0, duration: 0.3, ease: "power2.out" });
+      gsap.to(".card1-bg", { y: 0, duration: 0.3, ease: "power2.out" });
+    } else if (index === 1) {
+      // rotate resets to -2deg as per initial inline styling
+      gsap.to(tacosRef.current, { scale: 1, rotate: -2, duration: 0.3, ease: "power2.out" });
+    } else if (index === 2) {
+      gsap.to(cocktailRef.current, { y: 0, duration: 0.3, ease: "power2.out" });
+      gsap.to(".card3-bg", { y: 0, duration: 0.3, ease: "power2.out" });
+    }
+  };
 
   return (
     <section
@@ -169,83 +164,160 @@ export function ForWhoSection() {
 
       <div className="relative mx-auto max-w-[88rem] px-6 lg:px-12">
         {/* Header */}
-        <div className="mb-16 text-center lg:mb-20">
-          <p className="forwho-label opacity-0 mb-5 inline-flex items-center gap-3 text-[0.62rem] font-bold uppercase tracking-[0.34em] text-burgundy/45">
-            <span
-              className="h-px w-10 bg-gradient-to-r from-rose/80 to-rose/20"
-              aria-hidden="true"
-            />
-            Para quién es
-          </p>
-          <h2 className="forwho-headline opacity-0 font-serif text-[clamp(2.4rem,5vw,4rem)] font-medium italic leading-[1.02] tracking-tight text-burgundy">
+        <div className="mb-24 flex flex-col items-center text-center lg:mb-28">
+          <div className="forwho-label opacity-0 mb-6 flex flex-col items-center gap-3">
+            <div className="flex items-center gap-4 text-[0.65rem] font-bold uppercase tracking-[0.34em] text-rose-900/40">
+              <span className="h-px w-12 bg-gradient-to-r from-transparent to-rose-900/30" aria-hidden="true" />
+              <span>PARA QUIÉN ES</span>
+              <span className="h-px w-12 bg-gradient-to-l from-transparent to-rose-900/30" aria-hidden="true" />
+            </div>
+            <span className="text-[0.7rem] opacity-60">🌸</span>
+          </div>
+          <h2 className="forwho-headline opacity-0 font-serif text-[clamp(2.5rem,5vw,4.5rem)] font-medium italic leading-[1.05] tracking-tight text-rose-950">
             Diseñado para tu tipo de servicio.
           </h2>
-          <p className="forwho-desc opacity-0 mx-auto mt-6 max-w-lg text-[1.05rem] leading-[1.75] text-burgundy/55">
-            No importa el formato: si tenés mesas, órdenes y pagos, Bouquet se
-            adapta a tu operación.
+          <p className="forwho-desc opacity-0 mx-auto mt-6 max-w-[500px] text-[1.1rem] leading-[1.6] text-rose-900/60 font-medium">
+            No importa el formato: si tenés mesas, órdenes y pagos,<br className="hidden md:block"/> Bouquet se adapta a tu operación.
           </p>
         </div>
 
-        {/* Cards */}
-        <div className="grid gap-6 lg:grid-cols-3 lg:gap-8">
-          {segments.map((segment) => (
+        {/* Layout Escénico Grid */}
+        <div 
+          ref={gridRef}
+          className="grid gap-x-6 gap-y-24 lg:grid-cols-[1.5fr_1.2fr_0.8fr] lg:gap-y-0 lg:items-center"
+        >
+          {/* Card 1 — Restaurante de servicio completo */}
+          <div
+            ref={card1Ref}
+            className="group relative h-[480px] lg:h-[540px] w-full overflow-visible rounded-[2rem] opacity-0 mt-12 lg:mt-0"
+            onMouseEnter={() => handleMouseEnter(0)}
+            onMouseLeave={() => handleMouseLeave(0)}
+          >
+            {/* Fondo decorativo interno */}
             <div
-              key={segment.title}
-              className="forwho-card opacity-0 group relative flex flex-col overflow-hidden rounded-[1.75rem] border border-burgundy/[0.08] bg-white/[0.5] p-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_8px_32px_rgba(74,26,44,0.06)] backdrop-blur-md transition-shadow duration-500 hover:shadow-[0_12px_40px_rgba(74,26,44,0.1)] lg:p-10"
+              className="absolute inset-0 overflow-hidden rounded-[2rem] shadow-sm transition-all duration-500 group-hover:shadow-xl border border-white/60"
+              style={{ background: "linear-gradient(145deg, #FFF0F4 0%, #FCE3EA 100%)" }}
             >
-              {/* Top line decorativa */}
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose/20 to-transparent opacity-80" />
-
-              {/* Icono */}
-              <div
-                className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl ${segment.bgColor} ring-1 ${segment.ringColor}`}
-              >
-                <div className={`h-7 w-7 ${segment.color}`}>
-                  {segment.icon}
-                </div>
-              </div>
-
-              {/* Contenido */}
-              <div className="mb-2">
-                <span
-                  className={`inline-block rounded-full px-2.5 py-0.5 text-[0.55rem] font-bold uppercase tracking-[0.15em] ${segment.bgColor} ${segment.color} mb-3`}
-                >
-                  {segment.benefit}
-                </span>
-                <h3 className="font-serif text-[1.5rem] font-semibold leading-[1.15] tracking-tight text-burgundy lg:text-[1.65rem]">
-                  {segment.title}
-                </h3>
-              </div>
-
-              <p className="mt-4 text-[0.95rem] font-medium leading-[1.7] text-burgundy/55">
-                {segment.description}
-              </p>
-
-              {/* Hover indicator */}
-              <div className="mt-auto pt-6">
-                <a
-                  href="#contacto"
-                  className={`inline-flex items-center gap-2 text-[0.82rem] font-semibold ${segment.color} transition-colors`}
-                >
-                  Ver cómo funciona
-                  <svg
-                    className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M4 10h12m-6-6l6 6-6 6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </a>
-              </div>
+              <div className="card1-bg absolute inset-0" />
             </div>
-          ))}
+
+            {/* Ilustración desbordante */}
+            <Image
+              ref={waiterRef}
+              src={cardRestaurant}
+              alt="Mesero tomando orden en restaurante"
+              className="pointer-events-none absolute bottom-0 -left-[20%] z-20 h-[105%] w-auto max-w-none origin-bottom lg:-left-[35%] lg:h-[115%]"
+              priority
+            />
+
+            {/* Contenido texto */}
+            <div className="relative z-30 flex h-full flex-col justify-end p-6 pb-8 lg:absolute lg:right-0 lg:top-0 lg:bottom-0 lg:w-[50%] lg:justify-center lg:p-10 lg:pl-0">
+              <span className="mb-3 text-[0.65rem] font-bold uppercase tracking-[0.15em] text-rose-500">
+                SERVICIO DE MESA
+              </span>
+              <h3 className="mb-3 font-serif text-[1.5rem] lg:text-[1.7rem] font-semibold leading-[1.1] text-rose-950">
+                Restaurantes de<br/>servicio completo
+              </h3>
+              <p className="mb-6 text-[0.85rem] font-medium leading-[1.6] text-rose-900/70">
+                Tu sala entera en una pantalla. Sabé qué mesa espera, qué pide y cuándo liberar cubiertos, sin correr a preguntar a cocina.
+              </p>
+              <a
+                href="#contacto"
+                className="inline-flex items-center gap-2 text-[0.82rem] font-bold text-rose-950 transition-colors hover:text-rose-600"
+              >
+                Ver cómo funciona
+                <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Card 2 — Taquerías & Fast casual */}
+          <div
+            ref={card2Ref}
+            className="group relative h-[440px] lg:h-[480px] w-full overflow-hidden rounded-[2rem] opacity-0 mt-12 lg:mt-0"
+            onMouseEnter={() => handleMouseEnter(1)}
+            onMouseLeave={() => handleMouseLeave(1)}
+          >
+            {/* Fondo interno clipeado */}
+            <div
+              className="absolute inset-0 overflow-hidden rounded-[2rem] shadow-sm transition-all duration-500 group-hover:shadow-xl border border-white/60"
+              style={{ background: "linear-gradient(145deg, #FDF9F1 0%, #F5EBE0 100%)" }}
+            >
+              <div className="card2-bg absolute inset-0" />
+            </div>
+
+            {/* Ilustración desbordante */}
+            <Image
+              ref={tacosRef}
+              src={cardTaqueria}
+              alt="Tacos en taquería"
+              className="pointer-events-none absolute -right-[30%] top-[5%] z-20 h-auto w-[110%] max-w-none origin-center rotate-[-2deg] object-contain lg:-right-[25%] lg:top-[12%] lg:w-[85%]"
+            />
+
+            {/* Contenido texto */}
+            <div className="relative z-30 flex h-full flex-col justify-end p-6 pb-8 lg:justify-center lg:p-10 lg:w-[55%]">
+              <span className="mb-3 text-[0.65rem] font-bold uppercase tracking-[0.15em] text-amber-700">
+                VELOCIDAD Y VOLUMEN
+              </span>
+              <h3 className="mb-4 font-serif text-[1.8rem] lg:text-[2.2rem] font-semibold leading-[1.05] text-rose-950">
+                Taquerías &<br/>Fast casual
+              </h3>
+              <p className="mb-6 text-[0.9rem] font-medium leading-[1.6] text-rose-900/70 max-w-[280px] lg:max-w-none">
+                Comandas que llegan directo a la plancha. Cobro en segundos. Sin papelitos, sin gritos, sin cuentas que no cuadran al cierre.
+              </p>
+              <a
+                href="#contacto"
+                className="inline-flex items-center gap-2 text-[0.82rem] font-bold text-rose-950 transition-colors hover:text-amber-700"
+              >
+                Ver cómo funciona
+                <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Card 3 — Bares & Coctelerías */}
+          <div
+            ref={card3Ref}
+            className="group relative h-[500px] lg:h-[540px] w-full overflow-visible rounded-[2rem] opacity-0 mt-20 lg:mt-0"
+            onMouseEnter={() => handleMouseEnter(2)}
+            onMouseLeave={() => handleMouseLeave(2)}
+          >
+            {/* Fondo interno clipeado */}
+            <div
+              className="absolute inset-0 overflow-hidden rounded-[2rem] shadow-sm transition-all duration-500 group-hover:shadow-xl border border-white/60"
+              style={{ background: "linear-gradient(145deg, #F3F0FA 0%, #E6E0F5 100%)" }}
+            >
+              <div className="card3-bg absolute inset-0" />
+            </div>
+
+            {/* Ilustración desbordante */}
+            <Image
+              ref={cocktailRef}
+              src={cardBar}
+              alt="Cóctel en barra"
+              className="pointer-events-none absolute -top-[15%] left-[60%] z-20 h-auto w-[160%] max-w-none -translate-x-1/2 lg:-top-[15%] lg:left-[65%] lg:w-[190%]"
+            />
+
+            {/* Contenido texto */}
+            <div className="absolute bottom-0 left-0 right-0 z-30 flex flex-col justify-end p-6 pb-8 lg:p-8">
+              <span className="mb-3 text-[0.65rem] font-bold uppercase tracking-[0.15em] text-purple-700">
+                CONTROL DE BARRA
+              </span>
+              <h3 className="mb-3 font-serif text-[1.5rem] lg:text-[1.7rem] font-semibold leading-[1.1] text-rose-950">
+                Bares &<br/>Coctelerías
+              </h3>
+              <p className="mb-6 text-[0.85rem] font-medium leading-[1.6] text-rose-900/70">
+                Cada trago y cada cuenta dividida bajo control. Sin calculadora, sin pestañas perdidas.
+              </p>
+              <a
+                href="#contacto"
+                className="inline-flex items-center gap-2 text-[0.82rem] font-bold text-rose-950 transition-colors hover:text-purple-700"
+              >
+                Ver cómo funciona
+                <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </section>

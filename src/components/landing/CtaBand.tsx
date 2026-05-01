@@ -76,7 +76,7 @@ export const CtaBand = () => {
 
           {/* Formulario */}
           {!submitted ? (
-            <form onSubmit={handleSubmit} className="mt-10 space-y-4">
+            <form suppressHydrationWarning onSubmit={handleSubmit} className="mt-10 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label
@@ -95,6 +95,7 @@ export const CtaBand = () => {
                     }
                     className="h-12 w-full rounded-xl border border-burgundy/10 bg-white px-4 text-[0.9rem] text-burgundy placeholder:text-burgundy/30 transition-colors focus:border-rose/50 focus:outline-none focus:ring-2 focus:ring-rose/20"
                     placeholder="Ej: La Casa de Toño"
+                    suppressHydrationWarning
                   />
                 </div>
                 <div>
@@ -114,6 +115,7 @@ export const CtaBand = () => {
                     }
                     className="h-12 w-full rounded-xl border border-burgundy/10 bg-white px-4 text-[0.9rem] text-burgundy placeholder:text-burgundy/30 transition-colors focus:border-rose/50 focus:outline-none focus:ring-2 focus:ring-rose/20"
                     placeholder="Ej: María González"
+                    suppressHydrationWarning
                   />
                 </div>
               </div>
@@ -135,6 +137,7 @@ export const CtaBand = () => {
                     }
                     className="h-12 w-full rounded-xl border border-burgundy/10 bg-white px-4 text-[0.9rem] text-burgundy placeholder:text-burgundy/30 transition-colors focus:border-rose/50 focus:outline-none focus:ring-2 focus:ring-rose/20"
                     placeholder="maria@restaurante.com"
+                    suppressHydrationWarning
                   />
                 </div>
                 <div>
@@ -154,6 +157,7 @@ export const CtaBand = () => {
                     }
                     className="h-12 w-full rounded-xl border border-burgundy/10 bg-white px-4 text-[0.9rem] text-burgundy placeholder:text-burgundy/30 transition-colors focus:border-rose/50 focus:outline-none focus:ring-2 focus:ring-rose/20"
                     placeholder="55 1234 5678"
+                    suppressHydrationWarning
                   />
                 </div>
               </div>

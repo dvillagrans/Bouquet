@@ -238,8 +238,8 @@ export const Hero = () => {
     if (prefersReducedMotion) {
       // Just make everything visible immediately if reduced motion is on
       gsap.set([
-        ".bg-blob", ".hero-pill", ".hero-subtitle", ".hero-title-inner", 
-        ".hero-desc", ".hero-pillars span", ".hero-cta", ".hero-badge",
+        ".bg-blob", ".hero-subtitle", ".hero-title-inner",
+        ".hero-desc", ".hero-pillars span", ".hero-cta",
         ".hero-mockup-phone", ".hero-mockup-ticket", ".hero-qr-badge",
         ".floral-dot"
       ], { opacity: 1, y: 0, x: 0, scale: 1 });
@@ -268,12 +268,7 @@ export const Hero = () => {
     });
 
     // 2. Text Reveal
-    tl.fromTo(".hero-pill",
-      { y: 20, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.8, ease: "back.out(1.5)" },
-      0.2
-    )
-    .fromTo(".hero-subtitle",
+    tl.fromTo(".hero-subtitle",
       { y: 20, opacity: 0 },
       { y: 0, opacity: 1, duration: 0.6 },
       "-=0.5"
@@ -297,11 +292,6 @@ export const Hero = () => {
       { y: 20, opacity: 0 },
       { y: 0, opacity: 1, duration: 0.6, stagger: 0.15, clearProps: "transform" },
       "-=0.4"
-    )
-    .fromTo(".hero-badge",
-      { scale: 0.9, opacity: 0 },
-      { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2)", stagger: 0.1 },
-      "-=0.2"
     );
 
     // 3. Mockups Reveal
@@ -369,18 +359,6 @@ export const Hero = () => {
       <div className="mx-auto grid w-full max-w-7xl gap-12 px-6 lg:grid-cols-[1fr_0.9fr] lg:items-center lg:gap-8 lg:px-10">
         {/* Columna izquierda — texto */}
         <div className="max-w-xl">
-          <div>
-            <div className="hero-pill opacity-0 inline-flex items-center gap-3 rounded-full px-3.5 py-1.5 ring-1 ring-burgundy/10 bg-white/60 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-rose/50 animate-ping" aria-hidden="true" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-rose" aria-hidden="true" />
-              </span>
-              <span className="text-[0.65rem] font-bold uppercase tracking-[0.3em] text-burgundy/65">
-                Hospitality OS · servicio real
-              </span>
-            </div>
-          </div>
-
           {/* Logo grande */}
           <div className="mt-8">
             <p className="hero-subtitle opacity-0 mb-2 font-mono text-[0.75rem] font-bold uppercase tracking-[0.25em] text-rose">
@@ -418,11 +396,11 @@ export const Hero = () => {
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
             <a
               href="#contacto"
-              className="hero-cta opacity-0 group inline-flex h-14 w-full items-center justify-center gap-3 rounded-full bg-burgundy pl-7 pr-2 text-[1rem] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(74,26,44,0.5)] transition-colors duration-200 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:min-w-[280px] sm:justify-between sm:gap-4"
+              className="hero-cta opacity-0 group inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-full bg-burgundy px-5 text-[0.9375rem] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(74,26,44,0.5)] transition-colors duration-200 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto sm:justify-between"
             >
               <span className="whitespace-nowrap">Reservar demo de 20 min</span>
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose/95 ring-1 ring-white/20 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:scale-105">
-                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose/95 ring-1 ring-white/20 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:scale-105">
+                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                   <path d="M4 10h12m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </span>
@@ -430,7 +408,7 @@ export const Hero = () => {
 
             <a
               href="#como-funciona"
-              className="hero-cta opacity-0 group inline-flex h-14 w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-burgundy/10 bg-white/60 px-8 text-[1rem] font-semibold text-burgundy transition-colors duration-200 hover:border-burgundy/25 hover:bg-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:min-w-[240px]"
+              className="hero-cta opacity-0 group inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-burgundy/10 bg-white/60 px-5 text-[0.9375rem] font-semibold text-burgundy transition-colors duration-200 hover:border-burgundy/25 hover:bg-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto"
             >
               <span className="whitespace-nowrap">Ver recorrido operativo</span>
               <svg className="h-3.5 w-3.5 shrink-0 text-burgundy/50 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -439,19 +417,6 @@ export const Hero = () => {
             </a>
           </div>
 
-          {/* Badges de confianza */}
-          <div className="mt-8 flex flex-wrap items-center gap-2 text-[0.82rem] font-medium text-burgundy/55">
-            {[
-              { text: "Sin tarjeta de crédito", dot: "bg-burgundy/20" },
-              { text: "Configuración en 1 día", dot: "bg-burgundy/20" },
-              { text: "Soporte humano", dot: "bg-rose" },
-            ].map((badge) => (
-              <span key={badge.text} className="hero-badge opacity-0 flex items-center gap-2 px-3 py-1.5 rounded-full ring-1 ring-burgundy/5 bg-white/50 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
-                {badge.text}
-              </span>
-            ))}
-          </div>
         </div>
 
         {/* Columna derecha — mockups */}

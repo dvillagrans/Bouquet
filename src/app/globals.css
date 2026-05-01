@@ -254,6 +254,8 @@ body {
 :where(.px-8)  { padding-left: 2rem;    padding-right: 2rem;    }
 :where(.px-9)  { padding-left: 2.25rem; padding-right: 2.25rem; }
 :where(.px-10) { padding-left: 2.5rem;  padding-right: 2.5rem;  }
+:where(.px-12) { padding-left: 3rem;    padding-right: 3rem;    }
+:where(.px-16) { padding-left: 4rem;    padding-right: 4rem;    }
 
 /* padding-y */
 :where(.py-2\.5) { padding-top: 0.625rem; padding-bottom: 0.625rem; }
@@ -309,6 +311,10 @@ body {
 :where(.p-4) { padding: 1rem;   }
 :where(.p-5) { padding: 1.25rem; }
 :where(.p-6) { padding: 1.5rem;  }
+:where(.p-8) { padding: 2rem;    }
+:where(.p-10) { padding: 2.5rem;  }
+:where(.p-12) { padding: 3rem;    }
+:where(.p-16) { padding: 4rem;    }
 
 /* margin-top */
 :where(.mt-1)  { margin-top: 0.25rem; }
@@ -476,6 +482,25 @@ body {
 @keyframes float-gentle {
   0%, 100% { transform: translateY(0px);  }
   50%       { transform: translateY(-10px); }
+}
+
+@keyframes petal-float-1 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33%      { transform: translate(15px, -20px) rotate(15deg); }
+  66%      { transform: translate(-10px, 10px) rotate(-5deg); }
+}
+
+@keyframes petal-float-2 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  33%      { transform: translate(-20px, -15px) rotate(-15deg); }
+  66%      { transform: translate(10px, 15px) rotate(10deg); }
+}
+
+@keyframes floatPetal {
+  0%   { transform: translateY(0px)   rotate(0deg);  opacity: 0.75; }
+  33%  { transform: translateY(-14px) rotate(6deg);  opacity: 1;    }
+  66%  { transform: translateY(-8px)  rotate(-4deg); opacity: 0.85; }
+  100% { transform: translateY(0px)   rotate(0deg);  opacity: 0.75; }
 }
 
 @keyframes pulse-slow {

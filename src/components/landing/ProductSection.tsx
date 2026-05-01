@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRef } from "react";
 import gsap from "gsap";
@@ -12,7 +12,7 @@ function DashboardPreview() {
   return (
     <div className="relative w-full overflow-hidden rounded-2xl bg-rose-cream ring-1 ring-burgundy/5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_20px_60px_rgba(74,26,44,0.1)]">
       {/* Header del dashboard */}
-      <div className="flex items-center justify-between border-b border-burgundy/[0.06] bg-white/60 px-5 py-3">
+      <div className="flex items-center justify-between border-b border-burgundy/[0.06] bg-white/60 px-5 py-4 md:py-5">
         <div className="flex items-center gap-2.5">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-burgundy/5">
             <svg viewBox="0 0 20 20" className="h-4 w-4 text-burgundy" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -31,7 +31,7 @@ function DashboardPreview() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 px-4 pt-5 pb-4 sm:grid-cols-4">
         {[
           { label: "Ventas totales", value: "$12,540", color: "text-burgundy" },
           { label: "Mesas activas", value: "18", color: "text-rose" },
@@ -107,6 +107,7 @@ function DashboardPreview() {
           <p className="mb-3 text-[0.55rem] font-bold uppercase tracking-[0.15em] text-burgundy/40">Top productos</p>
           <div className="flex items-center gap-4">
             <svg viewBox="0 0 80 80" className="h-20 w-20 shrink-0">
+              {/* Entradas 35% */}
               <circle
                 className="dash-donut"
                 cx="40" cy="40" r="32"
@@ -114,11 +115,12 @@ function DashboardPreview() {
                 strokeWidth="10"
                 fill="none"
                 strokeLinecap="round"
-                strokeDasharray="80 120"
+                strokeDasharray="0.35 1"
+                strokeDashoffset="0.35"
                 pathLength="1"
-                strokeDashoffset="1"
                 transform="rotate(-90 40 40)"
               />
+              {/* Platos fuertes 30% */}
               <circle
                 className="dash-donut"
                 cx="40" cy="40" r="32"
@@ -126,11 +128,12 @@ function DashboardPreview() {
                 strokeWidth="10"
                 fill="none"
                 strokeLinecap="round"
-                strokeDasharray="60 140"
-                strokeDashoffset="1"
+                strokeDasharray="0.30 1"
+                strokeDashoffset="0.30"
                 pathLength="1"
-                transform="rotate(-90 40 40)"
+                transform="rotate(36 40 40)"
               />
+              {/* Bebidas 20% */}
               <circle
                 className="dash-donut"
                 cx="40" cy="40" r="32"
@@ -138,11 +141,12 @@ function DashboardPreview() {
                 strokeWidth="10"
                 fill="none"
                 strokeLinecap="round"
-                strokeDasharray="40 160"
-                strokeDashoffset="1"
+                strokeDasharray="0.20 1"
+                strokeDashoffset="0.20"
                 pathLength="1"
-                transform="rotate(-90 40 40)"
+                transform="rotate(144 40 40)"
               />
+              {/* Postres 15% */}
               <circle
                 className="dash-donut"
                 cx="40" cy="40" r="32"
@@ -150,10 +154,10 @@ function DashboardPreview() {
                 strokeWidth="10"
                 fill="none"
                 strokeLinecap="round"
-                strokeDasharray="30 170"
-                strokeDashoffset="1"
+                strokeDasharray="0.15 1"
+                strokeDashoffset="0.15"
                 pathLength="1"
-                transform="rotate(-90 40 40)"
+                transform="rotate(216 40 40)"
               />
             </svg>
             <div className="space-y-1.5">
@@ -284,7 +288,7 @@ export const ProductSection = () => {
   return (
     <section
       ref={sectionRef}
-      className="relative bg-burgundy text-white py-28 lg:py-40 overflow-hidden z-10"
+      className="relative bg-burgundy text-white pt-28 lg:pt-40 pb-32 lg:pb-48 overflow-hidden z-10"
       id="producto"
     >
       {/* Transición */}
@@ -305,7 +309,7 @@ export const ProductSection = () => {
 
       <div className="mx-auto max-w-[85rem] px-6 lg:px-10 relative">
         {/* Header editorial */}
-        <div className="product-text-col mb-24 lg:mb-36">
+        <div className="product-text-col mb-12 lg:mb-20">
           <div className="inline-flex">
             <div className="product-pill opacity-0 flex items-center gap-3 px-4 py-2 rounded-full ring-1 ring-white/10 bg-white/5 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
               <span className="w-2 h-2 rounded-full bg-rose animate-pulse" />
@@ -340,44 +344,90 @@ export const ProductSection = () => {
             <div className="h-px flex-1 bg-white/10" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-0 overflow-hidden rounded-[2rem] ring-1 ring-white/10 bg-white/[0.03] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-            {/* Feature 1 (Large) */}
-            <div className="product-bento-item opacity-0 col-span-1 md:col-span-7 p-10 lg:p-14 border-b md:border-b-0 md:border-r border-white/10 relative group">
-              <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.02]" />
-              <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-white/30 mb-8">Deploy Rápido</p>
-              <div className="flex items-baseline gap-4 mb-4">
-                <span className="font-serif text-[4rem] lg:text-[5.5rem] font-medium leading-[0.8] text-white tracking-tighter">1</span>
-                <span className="font-serif text-[1.8rem] lg:text-[2.2rem] italic text-white/40">Día</span>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-6">
+            {/* Feature 1 (Large / Main) */}
+            <div className="product-bento-item opacity-0 md:col-span-8 md:row-span-2 rounded-3xl ring-1 ring-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-10 lg:p-16 relative group overflow-hidden">
+              <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.03]" />
+              
+              {/* Decoración de fondo sutil */}
+              <div className="absolute -right-20 -top-20 w-64 h-64 bg-rose/5 rounded-full blur-3xl" />
+
+              {/* Icono */}
+              <div className="relative mb-6 flex h-11 w-11 items-center justify-center rounded-2xl bg-rose/10 ring-1 ring-rose/20 text-rose">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                </svg>
               </div>
-              <p className="text-[1rem] font-medium leading-relaxed text-white/60 max-w-[30ch]">
-                Del primer onboarding técnico a tu primer turno operativo real. Cero configuraciones traumáticas.
+
+              <p className="relative text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 mb-8">Eficacia Operativa</p>
+              
+              <div className="relative">
+                <h4 className="font-serif text-[2.5rem] lg:text-[3.2rem] font-medium leading-none text-white mb-4">Deploy Rápido</h4>
+                <div className="flex items-baseline gap-4 mt-6">
+                  <span className="font-serif text-[5rem] lg:text-[6.5rem] font-medium leading-none text-white">1</span>
+                  <span className="font-serif text-2xl lg:text-3xl italic text-white/30">día</span>
+                </div>
+              </div>
+              
+              <div className="relative h-px w-20 bg-white/20 my-8" />
+              
+              <p className="relative text-[1rem] font-medium leading-relaxed text-white/55 max-w-[36ch]">
+                Del primer onboarding técnico a tu primer turno operativo real. Cero configuraciones traumáticas o semanas de espera.
               </p>
             </div>
 
-            {/* Constraints Block */}
-            <div className="col-span-1 md:col-span-5 flex flex-col divide-y divide-white/10">
-              <div className="product-bento-item opacity-0 flex-1 p-10 lg:p-12 relative group">
-                <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.02]" />
-                <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-white/30 mb-4">Ecosistema</p>
-                <p className="font-serif text-[2rem] lg:text-[2.2rem] font-medium leading-[1] text-white mb-2 tracking-tight">API Abierta.</p>
-                <p className="text-[0.9rem] font-medium leading-snug text-white/50">
-                  Integraciones nativas automáticas con POS de caja y terminales bancarias.
-                </p>
+            {/* API (Standard) */}
+            <div className="product-bento-item opacity-0 md:col-span-4 rounded-3xl ring-1 ring-white/10 bg-gradient-to-br from-white/[0.07] to-white/[0.02] p-10 lg:p-12 relative group">
+              <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.03]" />
+              
+              <div className="relative mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5 ring-1 ring-white/10 text-white/70">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+                </svg>
               </div>
 
-              <div className="product-bento-item opacity-0 flex-1 p-10 lg:p-12 relative group bg-rose/5">
-                <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.02]" />
-                <p className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-rose/60 mb-4">Respaldo</p>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-serif text-[2rem] lg:text-[2.2rem] font-medium leading-[1] text-white mb-2 tracking-tight">24/7</p>
-                    <p className="text-[0.9rem] font-medium leading-snug text-white/50">Soporte humano en español.</p>
-                  </div>
-                  <div className="h-12 w-12 rounded-full border border-rose/30 flex items-center justify-center shrink-0 text-rose shadow-[0_0_20px_rgba(199,91,122,0.15)]">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
+              <p className="relative text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 mb-3">Ecosistema</p>
+              <p className="relative font-serif text-[1.7rem] lg:text-[2rem] font-medium leading-[1.1] text-white mb-3">API Abierta</p>
+              <p className="relative text-[0.9rem] font-medium leading-relaxed text-white/50">
+                Integraciones nativas con POS de caja y terminales bancarias líderes.
+              </p>
+            </div>
+
+            {/* 24/7 (Highlight) */}
+            <div className="product-bento-item opacity-0 md:col-span-4 rounded-3xl ring-1 ring-rose/20 bg-gradient-to-br from-rose/[0.08] to-rose/[0.02] p-10 lg:p-12 relative group">
+              <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.03]" />
+              
+              <div className="relative mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-rose/15 ring-1 ring-rose/25 text-rose">
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+
+              <p className="relative text-[11px] font-bold uppercase tracking-[0.2em] text-rose/60 mb-3">Respaldo</p>
+              <p className="relative font-serif text-[1.7rem] lg:text-[2rem] font-medium leading-[1.1] text-white mb-3">Soporte Humano</p>
+              <p className="relative text-[0.9rem] font-medium leading-relaxed text-white/50">
+                Respuesta en minutos, no en días. 24/7 en español.
+              </p>
+            </div>
+
+            {/* Feature 4 (Wide Footer) */}
+            <div className="product-bento-item opacity-0 md:col-span-12 rounded-3xl ring-1 ring-white/10 bg-gradient-to-r from-white/[0.07] via-white/[0.04] to-white/[0.07] p-10 lg:p-12 relative group flex flex-col md:flex-row items-center justify-between gap-10">
+              <div className="max-w-xl">
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/35 mb-3">Flexibilidad</p>
+                <p className="font-serif text-[2rem] lg:text-[2.4rem] font-medium leading-[1.1] text-white mb-4">Cualquier dispositivo</p>
+                <p className="text-[1rem] font-medium leading-relaxed text-white/50">
+                  Bouquet corre en la nube. Usa tablets, celulares o terminales de uso rudo. Tú eliges el hardware, nosotros ponemos la potencia.
+                </p>
+              </div>
+              
+              {/* Visual aid for devices */}
+              <div className="flex gap-6 items-end opacity-20 group-hover:opacity-40 transition-opacity duration-700">
+                <div className="w-12 h-20 rounded-lg border border-white/30 bg-white/10 hidden lg:block" />
+                <div className="w-32 h-44 rounded-xl border border-white/40 bg-white/10 relative">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-white/20 rounded-full" />
+                </div>
+                <div className="w-48 h-32 rounded-xl border border-white/40 bg-white/10 relative">
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-2 h-2 bg-white/20 rounded-full" />
                 </div>
               </div>
             </div>

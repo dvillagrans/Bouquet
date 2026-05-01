@@ -275,7 +275,7 @@ export const Hero = () => {
   return (
     <section className="relative overflow-hidden pt-32 pb-20 lg:pt-44 lg:pb-28">
       {/* Fondo atmosférico */}
-      <div className="absolute inset-0 -z-10">
+      <div className="absolute inset-0 -z-10 pointer-events-none">
         <motion.div
           initial={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
           animate={{ opacity: 1 }}

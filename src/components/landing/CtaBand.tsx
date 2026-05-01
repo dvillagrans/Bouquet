@@ -62,7 +62,7 @@ export const CtaBand = () => {
             con sala, cocina y caja en una sola vista.
           </motion.p>
 
-          <motion.div variants={itemVariants} className="mt-7 grid gap-2.5 sm:grid-cols-3">
+          <motion.div variants={itemVariants} className="mt-8 flex flex-wrap gap-3">
             {[
               "No tienes que cambiar de equipo",
               "No necesitas migracion compleja",
@@ -70,9 +70,9 @@ export const CtaBand = () => {
             ].map((item) => (
               <p
                 key={item}
-                className="inline-flex items-center gap-2 rounded-full border border-burgundy/10 bg-white px-3 py-1.5 text-[0.72rem] font-semibold text-burgundy/65"
+                className="inline-flex items-center gap-2.5 rounded-full border border-burgundy/10 bg-white px-4 py-2 text-[0.75rem] font-semibold text-burgundy/70 shadow-[0_1px_2px_rgba(74,26,44,0.04)]"
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-sage-deep" aria-hidden="true" />
+                <span className="h-1.5 w-1.5 rounded-full bg-sage-deep shrink-0" aria-hidden="true" />
                 {item}
               </p>
             ))}

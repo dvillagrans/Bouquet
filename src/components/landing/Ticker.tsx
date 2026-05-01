@@ -53,7 +53,7 @@ const TickerRow = ({
         <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 py-2" role="list">
           {items.map((item, i) => (
             <span key={`${item}-${i}`} className="inline-flex items-center" role="listitem">
-              <span className="text-[0.75rem] font-bold uppercase tracking-[0.35em] text-white/60 flex items-center gap-4">
+                <span className="text-[0.75rem] font-bold uppercase tracking-[0.35em] text-white/85 flex items-center gap-4">
                 <span className={i % 2 === 0 ? "text-rose" : "text-white/30"} aria-hidden="true">
                   ///
                 </span>
@@ -76,8 +76,8 @@ const TickerRow = ({
       >
         {[...items, ...items, ...items].map((item, i) => (
           <span key={i} className="inline-flex items-center">
-            <span className="text-[0.75rem] font-bold uppercase tracking-[0.35em] text-white/50 flex items-center gap-4 transition-colors hover:text-white">
-              <span className={i % 2 === 0 ? "text-rose shadow-rose/20 drop-shadow-md" : "text-white/20"}>///</span>
+            <span className="text-[0.75rem] font-bold uppercase tracking-[0.35em] text-white/80 flex items-center gap-4 transition-colors hover:text-white">
+              <span className={i % 2 === 0 ? "text-rose shadow-rose/20 drop-shadow-md" : "text-white/40"}>///</span>
               <span>{item}</span>
             </span>
             <Sep />

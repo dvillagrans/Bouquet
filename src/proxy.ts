@@ -1,9 +1,5 @@
 import { type NextRequest } from "next/server";
-import { proxy } from "./middleware-logic";
-
-export function middleware(request: NextRequest) {
-  return proxy(request);
-}
+export { proxy } from "./middleware-logic";
 
 export const config = {
   matcher: [

@@ -33,7 +33,7 @@ const rowB = [
 ];
 
 const Sep = () => (
-  <span className="mx-8 inline-block h-[4px] w-[4px] shrink-0 rounded-full bg-gold/30 shadow-[0_0_8px_rgba(183,146,93,0.8)] align-middle" />
+  <span className="mx-8 inline-block h-[4px] w-[4px] shrink-0 rounded-full bg-rose/30 shadow-[0_0_8px_rgba(199,91,122,0.5)] align-middle" />
 );
 
 const TickerRow = ({
@@ -50,14 +50,11 @@ const TickerRow = ({
   if (pauseMotion) {
     return (
       <div className="overflow-hidden px-4">
-        <div
-          className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 py-2"
-          role="list"
-        >
+        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-4 py-2" role="list">
           {items.map((item, i) => (
             <span key={`${item}-${i}`} className="inline-flex items-center" role="listitem">
               <span className="text-[0.75rem] font-bold uppercase tracking-[0.35em] text-white/60 flex items-center gap-4">
-                <span className={i % 2 === 0 ? "text-gold" : "text-white/30"} aria-hidden="true">
+                <span className={i % 2 === 0 ? "text-rose" : "text-white/30"} aria-hidden="true">
                   ///
                 </span>
                 <span>{item}</span>
@@ -80,7 +77,7 @@ const TickerRow = ({
         {[...items, ...items, ...items].map((item, i) => (
           <span key={i} className="inline-flex items-center">
             <span className="text-[0.75rem] font-bold uppercase tracking-[0.35em] text-white/50 flex items-center gap-4 transition-colors hover:text-white">
-              <span className={i % 2 === 0 ? "text-gold shadow-gold/20 drop-shadow-md" : "text-white/20"}>///</span>
+              <span className={i % 2 === 0 ? "text-rose shadow-rose/20 drop-shadow-md" : "text-white/20"}>///</span>
               <span>{item}</span>
             </span>
             <Sep />
@@ -99,27 +96,21 @@ export const Ticker = () => {
       initial={{ opacity: pauseMotion ? 1 : 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-100px" }}
-      transition={{
-        duration: pauseMotion ? 0 : 1,
-        ease: [0.16, 1, 0.3, 1],
-      }}
-      className="relative overflow-hidden border-y border-white/5 bg-[#0a0a0a] py-8"
+      transition={{ duration: pauseMotion ? 0 : 1, ease: [0.16, 1, 0.3, 1] }}
+      className="relative overflow-hidden border-y border-white/5 bg-burgundy py-8"
       style={
         pauseMotion
           ? undefined
           : {
-              WebkitMaskImage:
-                "linear-gradient(to right, transparent 0, black 15%, black 85%, transparent 100%)",
-              maskImage:
-                "linear-gradient(to right, transparent 0, black 15%, black 85%, transparent 100%)",
+              WebkitMaskImage: "linear-gradient(to right, transparent 0, black 15%, black 85%, transparent 100%)",
+              maskImage: "linear-gradient(to right, transparent 0, black 15%, black 85%, transparent 100%)",
             }
       }
     >
       <div
         className="pointer-events-none absolute inset-0 opacity-30 mix-blend-screen"
         style={{
-          background:
-            "radial-gradient(circle at 50% 50%, rgba(183,146,93,0.1) 0%, transparent 60%)",
+          background: "radial-gradient(circle at 50% 50%, rgba(199,91,122,0.12) 0%, transparent 60%)",
         }}
         aria-hidden
       />

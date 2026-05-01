@@ -166,12 +166,12 @@ export default function CreateRestaurantDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex touch-none flex-col justify-end bg-[#0a0a0a]/80 backdrop-blur-md animate-in fade-in-0 duration-300 md:touch-auto md:items-center md:justify-center md:overflow-y-auto md:p-4"
+      className="fixed inset-0 z-50 flex touch-none flex-col justify-end bg-[#1A0F14]/80 backdrop-blur-md animate-in fade-in-0 duration-300 md:touch-auto md:items-center md:justify-center md:overflow-y-auto md:p-4"
       role="presentation"
       onClick={onClose}
     >
       <div
-        className="flex max-h-[min(96dvh,100%)] w-full max-w-4xl flex-col overflow-hidden rounded-t-[1.75rem] border border-white/10 border-b-0 bg-[#0a0a0a] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] animate-in fade-in-0 duration-300 md:my-4 md:max-h-[min(92vh,920px)] md:flex-row md:rounded-2xl md:border-b"
+        className="flex max-h-[min(96dvh,100%)] w-full max-w-4xl flex-col overflow-hidden rounded-t-[1.75rem] border border-white/10 border-b-0 bg-[#1A0F14] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] animate-in fade-in-0 duration-300 md:my-4 md:max-h-[min(92vh,920px)] md:flex-row md:rounded-2xl md:border-b"
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-restaurant-title"
@@ -192,7 +192,7 @@ export default function CreateRestaurantDialog({
             <Marker width={28} anchor={center} color="#b7925d" />
             <ZoomControl style={{ bottom: 8, right: 8 }} />
           </Map>
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#0a0a0a] to-transparent py-6 pl-4">
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#1A0F14] to-transparent py-6 pl-4">
             <p className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-widest text-white/70">
               <MapPin className="size-3.5 shrink-0 text-gold" aria-hidden />
               Ubicación según dirección
@@ -212,13 +212,13 @@ export default function CreateRestaurantDialog({
             <Marker width={30} anchor={center} color="#b7925d" />
             <ZoomControl style={{ bottom: 10, right: 10 }} />
           </Map>
-          <div className="absolute bottom-2 left-2 z-[6] rounded-md bg-[#0a0a0a]/80 backdrop-blur-md px-2 py-1 text-[9px] text-white/50 border border-white/10 pointer-events-auto">
+          <div className="absolute bottom-2 left-2 z-[6] rounded-md bg-[#1A0F14]/80 backdrop-blur-md px-2 py-1 text-[9px] text-white/50 border border-white/10 pointer-events-auto">
             <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer noopener" className="hover:text-white transition-colors">© OSM</a>
             <span className="mx-1">·</span>
             <a href="https://carto.com/attributions" target="_blank" rel="noreferrer noopener" className="hover:text-white transition-colors">CARTO</a>
           </div>
           <div className="absolute top-4 left-4 z-10 pointer-events-none">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-[#0a0a0a]/80 backdrop-blur-md text-[10px] font-medium tracking-widest uppercase text-white shadow-xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-[#1A0F14]/80 backdrop-blur-md text-[10px] font-medium tracking-widest uppercase text-white shadow-xl">
               <div className="size-1.5 rounded-full bg-emerald-400 animate-pulse" />
               Live Locator
             </div>
@@ -226,7 +226,7 @@ export default function CreateRestaurantDialog({
         </div>
 
         {/* Formulario */}
-        <div className="relative flex min-h-0 w-full flex-1 flex-col bg-[#0a0a0a] md:w-3/5">
+        <div className="relative flex min-h-0 w-full flex-1 flex-col bg-[#1A0F14] md:w-3/5">
           <div
             className="pointer-events-none absolute inset-0 transition-opacity duration-1000"
             style={{
@@ -241,7 +241,7 @@ export default function CreateRestaurantDialog({
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
-            className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-50 flex size-11 min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-full bg-transparent text-white/45 ring-offset-background transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] sm:right-6 sm:top-6"
+            className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-50 flex size-11 min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center rounded-full bg-transparent text-white/45 ring-offset-background transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-offset-2 focus:ring-offset-[#1A0F14] sm:right-6 sm:top-6"
           >
             <X className="size-[1.125rem]" strokeWidth={2} aria-hidden />
           </button>
@@ -332,7 +332,7 @@ export default function CreateRestaurantDialog({
 
               {/* Dropdown Results */}
               {showResults && searchResults.length > 0 && (
-                <div className="absolute left-0 right-0 top-full z-20 mt-2 max-h-[min(14rem,40dvh)] overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-[#0a0a0a] shadow-2xl">
+                <div className="absolute left-0 right-0 top-full z-20 mt-2 max-h-[min(14rem,40dvh)] overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-[#1A0F14] shadow-2xl">
                   {searchResults.map((item, idx) => (
                     <button
                       key={idx}
@@ -485,7 +485,7 @@ export default function CreateRestaurantDialog({
              </div>
 
              {/* Submit — área táctil cómoda (adapt ≥44px) */}
-             <div className="sticky bottom-0 mt-auto border-t border-white/[0.06] bg-[#0a0a0a]/95 pt-4 backdrop-blur-sm supports-[backdrop-filter]:bg-[#0a0a0a]/85">
+             <div className="sticky bottom-0 mt-auto border-t border-white/[0.06] bg-[#1A0F14]/95 pt-4 backdrop-blur-sm supports-[backdrop-filter]:bg-[#1A0F14]/85">
                <button
                  type="submit"
                  disabled={loading}

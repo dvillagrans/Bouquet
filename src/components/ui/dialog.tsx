@@ -138,7 +138,7 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 touch-none bg-[#0a0a0a]/80 backdrop-blur-md transition-all duration-300 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 isolate z-50 touch-none bg-[#1A0F14]/80 backdrop-blur-md transition-all duration-300 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         /* Evita que el scroll del fondo “se cuele” en iOS cuando el modal está abierto */
         "overscroll-none",
         className
@@ -171,7 +171,7 @@ function DialogContent({
   )
 
   const closeButtonClasses =
-    "absolute right-3 top-3 flex size-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-transparent text-white/45 ring-offset-background transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-offset-2 focus:ring-offset-[#0a0a0a] disabled:pointer-events-none sm:right-6 sm:top-6"
+    "absolute right-3 top-3 flex size-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-transparent text-white/45 ring-offset-background transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-offset-2 focus:ring-offset-[#1A0F14] disabled:pointer-events-none sm:right-6 sm:top-6"
 
   return (
     <DialogPortal>
@@ -179,7 +179,7 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed z-50 flex w-full flex-col gap-4 bg-[#0a0a0a] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] duration-300 outline-none",
+          "fixed z-50 flex w-full flex-col gap-4 bg-[#1A0F14] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] duration-300 outline-none",
           "p-6 max-sm:min-h-0 max-sm:p-0 sm:p-8",
           // Móvil — sheet: scroll dentro del shell; escritorio — scroll del popup
           "max-sm:flex max-sm:flex-col max-sm:gap-0 max-sm:overflow-hidden max-sm:overscroll-contain sm:overflow-hidden",

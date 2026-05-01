@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Manrope, Geist, Geist_Mono } from "next/font/google";
+import { Space_Mono, DM_Sans, Playfair_Display } from "next/font/google";
 import { cookies } from "next/headers";
 import "./globals.css";
 import { ReactGrabDevLoader } from "@/components/dev/ReactGrabDevLoader";
@@ -8,26 +8,25 @@ import { GUEST_MENU_THEME_ATTRIBUTE, GUEST_MENU_THEME_COOKIE_KEY } from "@/lib/g
 import { APP_THEME_STORAGE_KEY } from "@/lib/theme-storage";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
-
-const geistMono = Geist_Mono({
+const spaceMono = Space_Mono({
   subsets: ["latin"],
-  variable: "--font-geist-mono",
+  variable: "--font-mono",
+  weight: ["400", "700"],
   display: "swap",
 });
 
-const serif = Cormorant_Garamond({
-  variable: "--font-cormorant",
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-sans",
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-serif",
+  weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
-  display: "swap",
-});
-
-const sans = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -59,9 +58,9 @@ export default async function RootLayout({
       lang="es"
       suppressHydrationWarning
       {...{ [GUEST_MENU_THEME_ATTRIBUTE]: guestTheme }}
-      className={cn("font-sans", geist.variable, geistMono.variable, !isLight && "dark")}
+      className={cn("font-sans", dmSans.variable, spaceMono.variable, playfair.variable, !isLight && "dark")}
     >
-      <body className={`${serif.variable} ${sans.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${dmSans.variable} ${spaceMono.variable} ${playfair.variable} font-sans antialiased`}>
         {process.env.NODE_ENV === "development" && <ReactGrabDevLoader />}
         <ThemePreferenceSync />
         {children}

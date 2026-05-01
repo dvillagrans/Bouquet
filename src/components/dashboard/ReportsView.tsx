@@ -198,7 +198,7 @@ export default function ReportsView({
   const chart    = reportData?.chartData[period] ?? [];
 
   return (
-    <div className="relative min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans overflow-hidden p-4 sm:p-8">
+    <div className="relative min-h-screen bg-[#1A0F14] text-white flex flex-col font-sans overflow-hidden p-4 sm:p-8">
       {/* Black/Gold Noise Background */}
       <div 
         className="fixed inset-0 z-0 pointer-events-none opacity-[0.1]"

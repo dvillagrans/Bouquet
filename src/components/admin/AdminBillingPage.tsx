@@ -178,7 +178,7 @@ export default function AdminBillingPage() {
               </div>
             )}
 
-            <section className="rounded-2xl border border-white/5 bg-[#0a0a0a] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden">
+            <section className="rounded-2xl border border-white/5 bg-[#1A0F14] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden">
               <div className="border-b border-white/5 px-6 py-5 sm:px-8">
                 <h2 className="text-base font-medium tracking-tight text-white">Contribución B2B (Mapeo por Cadena)</h2>
               </div>

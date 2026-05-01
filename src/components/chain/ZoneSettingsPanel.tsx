@@ -57,7 +57,7 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
 
   if (loading && !data) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6 bg-[#0a0a0a] px-4 text-neutral-400">
+      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6 bg-[#1A0F14] px-4 text-neutral-400">
         <div className="relative flex size-16 items-center justify-center rounded-full bg-white/[0.02] border border-white/5 shadow-inner">
           <SlidersHorizontal className="size-6 text-gold/50 animate-pulse" />
         </div>
@@ -68,14 +68,14 @@ export default function ZoneSettingsPanel({ initialZoneId }: { initialZoneId?: s
 
   if (!data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] p-8 text-center text-[13px] text-red-500/80">
+      <div className="flex min-h-screen items-center justify-center bg-[#1A0F14] p-8 text-center text-[13px] text-red-500/80">
         <p>Esta zona no existe o fue eliminada.</p>
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0a0a0a] font-sans text-neutral-200">
+    <div className="relative min-h-screen overflow-hidden bg-[#1A0F14] font-sans text-neutral-200">
       {/* Premium Background Effects */}
       <div className="pointer-events-none absolute inset-0 transition-opacity duration-1000 ease-out opacity-100">
         <div className="absolute -top-[20%] -left-[10%] h-[70vh] w-[70vw] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(201,160,84,0.15),transparent_60%)] blur-3xl" />

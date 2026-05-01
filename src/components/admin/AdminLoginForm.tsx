@@ -78,7 +78,7 @@ export default function AdminLoginForm({
       />
 
       <div className="relative z-10 mx-auto grid w-full max-w-5xl gap-5 md:gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-        <section className="hidden animate-[reveal-left_650ms_ease-out] text-[#ede8e1] lg:order-1 lg:block">
+        <section className="hidden animate-[reveal-left_650ms_ease-out] text-[#F5E6EB] lg:order-1 lg:block">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#c9a05455] bg-[#c9a0541f] px-3.5 py-1.5 text-[10px] font-medium tracking-[0.18em] uppercase md:px-4 md:text-[11px] md:tracking-[0.2em]">
             <Shield className="size-3.5 text-[#d7ae62]" aria-hidden />
             BouquetOps Security Layer

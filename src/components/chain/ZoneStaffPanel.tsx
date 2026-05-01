@@ -118,7 +118,7 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
   }
 
   return (
-    <div className="relative min-h-[100dvh] flex flex-col overflow-hidden bg-[#0a0a0a] text-[14px] text-text-primary antialiased selection:bg-gold/30">
+    <div className="relative min-h-[100dvh] flex flex-col overflow-hidden bg-[#1A0F14] text-[14px] text-text-primary antialiased selection:bg-gold/30">
       <div
         className="pointer-events-none fixed inset-0 opacity-40 mix-blend-color-dodge animate-in fade-in duration-[2000ms]"
         style={{
@@ -137,7 +137,7 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
         aria-hidden
       />
 
-      <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-white/5 bg-[#0a0a0a]/80 px-6 backdrop-blur-2xl sm:px-10 animate-in slide-in-from-top-full fade-in duration-700">
+      <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-white/5 bg-[#1A0F14]/80 px-6 backdrop-blur-2xl sm:px-10 animate-in slide-in-from-top-full fade-in duration-700">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-[12px] font-medium text-text-dim uppercase tracking-wider">
             <span className="text-white">Bouquet OPS</span>
@@ -228,7 +228,7 @@ export default function ZoneStaffPanel({ initialZoneId }: { initialZoneId?: stri
         <div className="grid gap-8 lg:grid-cols-3 xl:gap-12 items-start">
           {/* NEW ROLE */}
           <aside 
-            className="order-last lg:order-first lg:sticky lg:top-24 space-y-6 rounded-3xl border border-white/5 bg-[#0a0a0a] p-6 sm:p-8 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-bottom-12 duration-1000 ease-out"
+            className="order-last lg:order-first lg:sticky lg:top-24 space-y-6 rounded-3xl border border-white/5 bg-[#1A0F14] p-6 sm:p-8 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-bottom-12 duration-1000 ease-out"
             style={{ animationFillMode: "both", animationDelay: "750ms" }}
           >
             <div className="space-y-4 border-b border-white/5 pb-6">

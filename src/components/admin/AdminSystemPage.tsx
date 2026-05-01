@@ -81,7 +81,7 @@ export default function AdminSystemPage() {
           </div>
         ) : (
           <div className="space-y-8">
-            <section className="rounded-2xl border border-white/5 bg-[#0a0a0a] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden">
+            <section className="rounded-2xl border border-white/5 bg-[#1A0F14] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden">
               <div className="border-b border-white/5 px-6 py-5 sm:px-8 flex items-center gap-3">
                 <Shield className="size-5 text-gold" />
                 <h2 className="text-base font-medium tracking-tight text-white">Seguridad & Cumplimiento</h2>
@@ -116,7 +116,7 @@ export default function AdminSystemPage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/5 bg-[#0a0a0a] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden">
+            <section className="rounded-2xl border border-white/5 bg-[#1A0F14] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden">
               <div className="border-b border-white/5 px-6 py-5 sm:px-8 flex items-center gap-3">
                 <Database className="size-5 text-emerald-400" />
                 <h2 className="text-base font-medium tracking-tight text-white">Infraestructura</h2>

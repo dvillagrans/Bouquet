@@ -86,7 +86,7 @@ function BranchRow({
       className={`group relative w-full text-left rounded-2xl border p-5 transition-all duration-500 ease-out animate-in fade-in slide-in-from-bottom-6 ${
         active
           ? "border-gold/40 bg-[linear-gradient(135deg,rgba(183,146,93,0.1),rgba(0,0,0,0))] shadow-[0_32px_64px_-16px_rgba(183,146,93,0.15)] -translate-y-1"
-          : "border-white/5 bg-[#0a0a0a] hover:border-white/10 hover:bg-white/[0.02] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.4)] hover:-translate-y-0.5"
+          : "border-white/5 bg-[#1A0F14] hover:border-white/10 hover:bg-white/[0.02] shadow-[0_24px_48px_-12px_rgba(0,0,0,0.4)] hover:-translate-y-0.5"
       }`}
       style={{ animationFillMode: "both", animationDelay: delay }}
     >
@@ -331,7 +331,7 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
           </div>
 
           <aside 
-            className="hidden lg:block lg:sticky lg:top-24 rounded-3xl border border-white/5 bg-[#0a0a0a] p-8 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-bottom-12 duration-1000 ease-out"
+            className="hidden lg:block lg:sticky lg:top-24 rounded-3xl border border-white/5 bg-[#1A0F14] p-8 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] animate-in fade-in slide-in-from-bottom-12 duration-1000 ease-out"
             style={{ animationFillMode: "both", animationDelay: "1100ms" }}
           >
             <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-text-dim mb-6 flex items-center gap-2">
@@ -391,7 +391,7 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
           <SheetContent
             side="bottom"
             showCloseButton={false}
-            className="rounded-t-[2rem] border-x-0 border-b-0 border-t border-white/10 bg-[#0a0a0a] p-0 outline-none"
+            className="rounded-t-[2rem] border-x-0 border-b-0 border-t border-white/10 bg-[#1A0F14] p-0 outline-none"
           >
             <div className="absolute left-1/2 top-4 h-1.5 w-12 -translate-x-1/2 rounded-full bg-white/20" />
             

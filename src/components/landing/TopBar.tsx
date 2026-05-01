@@ -2,21 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
-/*
- *  Fixes applied (audit):
- *  C-1  — removed id="contacto" from CTA button
- *  C-3  — removed #casos nav item (no target on page)
- *  H-2  — removed backdrop-blur-xl; flat bg-ink on scroll
- *  H-3  — replaced Framer Motion with CSS grid-template-rows transition
- *  M-3  — added aria-label to desktop <nav>
- *  CTAs — href updated to #contacto
- */
+import { BouquetLogo } from "./BouquetLogo";
 
 const nav = [
-  { label: "Producto",      href: "#producto"      },
+  { label: "Producto", href: "#producto" },
   { label: "Cómo funciona", href: "#como-funciona" },
-  { label: "Contacto",      href: "#contacto"      },
+  { label: "Contacto", href: "#contacto" },
 ];
 
 export const TopBar = () => {
@@ -39,28 +30,22 @@ export const TopBar = () => {
           "mx-auto flex items-center justify-between transition-[max-width,padding,background,border-color,box-shadow,border-radius,margin] duration-[500ms]",
           "ease-[cubic-bezier(0.32,0.72,0,1)]",
           scrolled
-            ? "mt-4 max-w-[min(1180px,calc(100vw-1.5rem))] rounded-full border border-charcoal/10 bg-ivory/75 px-4 py-2.5 shadow-[0_18px_50px_-30px_rgba(43,36,30,0.35),inset_0_1px_0_rgba(255,255,255,0.85)] backdrop-blur-xl lg:px-5 lg:py-3"
+            ? "mt-4 max-w-[min(1180px,calc(100vw-1.5rem))] rounded-full border border-burgundy/10 bg-rose-cream/85 px-4 py-2.5 shadow-[0_18px_50px_-30px_rgba(74,26,44,0.25)] backdrop-blur-xl lg:px-6 lg:py-3"
             : "mt-0 max-w-7xl rounded-none border border-transparent bg-transparent px-6 py-4 lg:px-10 lg:py-5",
         ].join(" ")}
       >
-
         {/* Logo */}
-        <Link href="/" className="group flex items-baseline gap-2 shrink-0">
-          <span className="font-serif text-[1.55rem] font-semibold italic tracking-tight text-charcoal transition-opacity duration-200 group-hover:opacity-70">
-            bouquet
-          </span>
-          <span className="mb-0.5 hidden text-[0.54rem] font-bold uppercase tracking-[0.38em] text-charcoal/45 sm:block">
-            ops
-          </span>
+        <Link href="/" className="shrink-0">
+          <BouquetLogo size={scrolled ? "sm" : "md"} variant="dark" />
         </Link>
 
-        {/* Desktop nav — espacio generoso entre ítems (evita sensación “pegado”) */}
-        <nav className="hidden items-center lg:flex lg:gap-10 xl:gap-12" aria-label="Menú principal">
+        {/* Desktop nav */}
+        <nav className="hidden items-center lg:flex lg:gap-8 xl:gap-10" aria-label="Menú principal">
           {nav.map(({ label, href }) => (
             <Link
               key={href}
               href={href}
-              className="relative whitespace-nowrap rounded-full px-4 py-2 text-[0.84rem] font-medium text-charcoal/62 transition-colors duration-200 hover:bg-charcoal/[0.04] hover:text-charcoal lg:px-5"
+              className="relative whitespace-nowrap rounded-full px-4 py-2 text-[0.84rem] font-medium text-burgundy/65 transition-colors duration-200 hover:bg-burgundy/[0.04] hover:text-burgundy lg:px-5"
             >
               {label}
             </Link>
@@ -68,28 +53,31 @@ export const TopBar = () => {
         </nav>
 
         <div className="flex items-center gap-2 shrink-0">
-          <Link href="/scan" className="hidden lg:inline-flex text-[0.78rem] font-semibold text-charcoal/55 transition-colors hover:text-charcoal px-3">
+          <Link
+            href="/scan"
+            className="hidden lg:inline-flex text-[0.78rem] font-semibold text-burgundy/55 transition-colors hover:text-burgundy px-3"
+          >
             App Comensal
           </Link>
-          {/* Desktop CTA — altura táctil, relieve y acento dorado */}
+          {/* Desktop CTA */}
           <Link
             href="#contacto"
             className={[
               "group relative isolate hidden shrink-0 overflow-hidden lg:inline-flex",
               "h-11 min-h-[44px] min-w-[15.5rem] max-w-[calc(100vw-2rem)] flex-nowrap items-center justify-between gap-2.5 rounded-full py-2 pl-5 pr-2 sm:min-w-[16rem] sm:pl-6",
-              "bg-charcoal text-[0.8125rem] font-semibold tracking-tight text-cream",
-              "shadow-[0_12px_34px_-14px_rgba(43,36,30,0.55)] ring-1 ring-white/12",
+              "bg-burgundy text-[0.8125rem] font-semibold tracking-tight text-white",
+              "shadow-[0_12px_34px_-14px_rgba(74,26,44,0.45)] ring-1 ring-white/12",
               "transition-[transform,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]",
               "before:pointer-events-none before:absolute before:inset-0 before:rounded-full before:bg-gradient-to-b before:from-white/[0.07] before:to-transparent",
-              "hover:-translate-y-[2px] hover:bg-charcoal-light hover:shadow-[0_16px_42px_-16px_rgba(43,36,30,0.5)] hover:ring-white/18",
+              "hover:-translate-y-[2px] hover:bg-burgundy-light hover:shadow-[0_16px_42px_-16px_rgba(74,26,44,0.4)] hover:ring-white/18",
               "active:translate-y-0 active:scale-[0.98]",
-              "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold",
+              "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose",
             ].join(" ")}
           >
             <span className="relative z-[1] shrink-0 whitespace-nowrap pl-0.5">
               Demo en 20 min
             </span>
-            <span className="relative z-[1] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold/95 text-charcoal shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] ring-1 ring-charcoal/10 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:brightness-105">
+            <span className="relative z-[1] flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rose/95 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] ring-1 ring-burgundy/10 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:brightness-105">
               <svg className="h-4 w-4 -translate-x-px" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M4 10h12m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -100,7 +88,7 @@ export const TopBar = () => {
           <button
             onClick={() => setOpen(!open)}
             className={[
-              "flex items-center justify-center rounded-full border border-charcoal/10 text-charcoal/65 transition-[height,width,background-color,color] duration-300 hover:border-charcoal/25 hover:text-charcoal lg:hidden",
+              "flex items-center justify-center rounded-full border border-burgundy/10 text-burgundy/65 transition-[height,width,background-color,color] duration-300 hover:border-burgundy/25 hover:text-burgundy lg:hidden",
               scrolled ? "h-9 w-9 bg-white/40" : "h-11 w-11",
             ].join(" ")}
             aria-label={open ? "Cerrar menú" : "Abrir menú"}
@@ -120,12 +108,7 @@ export const TopBar = () => {
         </div>
       </div>
 
-      {/*
-       *  Mobile menu — CSS only (no Framer Motion).
-       *  Uses grid-template-rows: 0fr → 1fr transition to animate height
-       *  without touching layout properties (width/height/padding).
-       *  Individual items get staggered opacity+translateX via inline transition-delay.
-       */}
+      {/* Mobile menu */}
       <div
         id="mobile-menu"
         aria-hidden={!open}
@@ -133,21 +116,18 @@ export const TopBar = () => {
           "mx-3 grid overflow-hidden lg:hidden",
           "transition-[grid-template-rows,margin,border-color,box-shadow,background-color,backdrop-filter] duration-[350ms] ease-[cubic-bezier(0.25,0.46,0.45,0.94)]",
           open
-            ? "mt-2 grid-rows-[1fr] rounded-[1.5rem] border border-charcoal/10 bg-ivory/90 shadow-[0_30px_60px_-30px_rgba(43,36,30,0.35)] backdrop-blur-xl"
+            ? "mt-2 grid-rows-[1fr] rounded-[1.5rem] border border-burgundy/10 bg-rose-cream/95 shadow-[0_30px_60px_-30px_rgba(74,26,44,0.25)] backdrop-blur-xl"
             : "pointer-events-none mt-0 grid-rows-[0fr] border-0 bg-transparent shadow-none backdrop-blur-none",
         ].join(" ")}
       >
         <div className="min-h-0">
-          <nav
-            className="mx-auto flex flex-col px-5 pb-6 pt-4"
-            aria-label="Menú móvil"
-          >
+          <nav className="mx-auto flex flex-col px-5 pb-6 pt-4" aria-label="Menú móvil">
             {nav.map(({ label, href }, i) => (
               <Link
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className="block border-b border-charcoal/10 py-4 text-[0.9rem] font-medium text-charcoal/68 transition-[opacity,transform] hover:text-charcoal active:bg-charcoal/[0.03]"
+                className="block border-b border-burgundy/10 py-4 text-[0.9rem] font-medium text-burgundy/68 transition-[opacity,transform] hover:text-burgundy active:bg-burgundy/[0.03]"
                 style={{
                   transitionDuration: "0.4s",
                   transitionDelay: open ? `${0.05 + i * 0.06}s` : "0s",
@@ -159,7 +139,6 @@ export const TopBar = () => {
                 {label}
               </Link>
             ))}
-
             <div
               className="mt-6 px-1"
               style={{
@@ -174,7 +153,7 @@ export const TopBar = () => {
               <Link
                 href="#contacto"
                 onClick={() => setOpen(false)}
-                className="block rounded-full bg-charcoal px-6 py-3.5 text-center text-sm font-semibold text-cream transition-colors hover:bg-charcoal-light active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold"
+                className="block rounded-full bg-burgundy px-6 py-3.5 text-center text-sm font-semibold text-white transition-colors hover:bg-burgundy-light active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose"
               >
                 Demo en 20 min
               </Link>

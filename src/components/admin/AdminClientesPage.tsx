@@ -165,7 +165,7 @@ export default function AdminClientesPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar inquilino, ID, monedo o cuenta de administrador..."
-            className="w-full h-14 pl-12 rounded-2xl bg-[#0a0a0a] border border-white/10 text-base text-white placeholder:text-text-dim focus-visible:border-gold/50 focus-visible:ring-4 focus-visible:ring-gold/10 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] lg:text-[14px]"
+            className="w-full h-14 pl-12 rounded-2xl bg-[#1A0F14] border border-white/10 text-base text-white placeholder:text-text-dim focus-visible:border-gold/50 focus-visible:ring-4 focus-visible:ring-gold/10 transition-all shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] lg:text-[14px]"
             aria-label="Filtrar clientes"
           />
         </div>
@@ -173,7 +173,7 @@ export default function AdminClientesPage() {
         {loading && rows.length === 0 ? (
           <div className="h-[400px] animate-pulse rounded-2xl border border-white/5 bg-white/[0.02]" />
         ) : (
-          <section className="rounded-2xl border border-white/5 bg-[#0a0a0a] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden">
+          <section className="rounded-2xl border border-white/5 bg-[#1A0F14] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden">
             {/* VISTA MÓVIL */}
             <div className="sm:hidden divide-y divide-white/5">
               {filtered.length === 0 ? (

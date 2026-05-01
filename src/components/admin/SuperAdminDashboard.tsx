@@ -266,7 +266,7 @@ export default function SuperAdminDashboard() {
               />
             </motion.section>
 
-            <section className="rounded-2xl border border-white/5 bg-[#0a0a0a] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
+            <section className="rounded-2xl border border-white/5 bg-[#1A0F14] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
               <div className="flex items-center justify-between border-b border-white/5 px-6 py-5 sm:px-8">
                 <div>
                   <h2 className="text-base font-medium tracking-tight text-white">Inquilinos Activos</h2>

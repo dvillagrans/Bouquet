@@ -20,10 +20,10 @@ function nextStatus(s: Status): Status {
 }
 
 const PALETTE: Record<Status, { fill: string; stroke: string; dot: string; text: string }> = {
-  active:  { fill: "rgba(185,140,70,0.14)",  stroke: "rgba(185,140,70,0.50)",  dot: "#C9A054", text: "#C9A054" },
-  steady:  { fill: "rgba(237,232,225,0.05)", stroke: "rgba(237,232,225,0.18)", dot: "rgba(237,232,225,0.45)", text: "rgba(237,232,225,0.50)" },
-  closing: { fill: "rgba(168,185,165,0.12)", stroke: "rgba(168,185,165,0.48)", dot: "#A8B9A5", text: "#A8B9A5" },
-  open:    { fill: "transparent",            stroke: "rgba(237,232,225,0.10)", dot: "rgba(237,232,225,0.20)", text: "rgba(237,232,225,0.22)" },
+  active:  { fill: "rgba(199,91,122,0.14)",  stroke: "rgba(199,91,122,0.50)",  dot: "#E8A5B0", text: "#E8A5B0" },
+  steady:  { fill: "rgba(245,230,235,0.05)", stroke: "rgba(245,230,235,0.18)", dot: "rgba(245,230,235,0.45)", text: "rgba(245,230,235,0.50)" },
+  closing: { fill: "rgba(168,176,160,0.12)", stroke: "rgba(168,176,160,0.48)", dot: "#A8B0A0", text: "#A8B0A0" },
+  open:    { fill: "transparent",            stroke: "rgba(245,230,235,0.10)", dot: "rgba(245,230,235,0.20)", text: "rgba(245,230,235,0.22)" },
 };
 
 const TABLES: TableDef[] = [

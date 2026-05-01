@@ -12,17 +12,17 @@ import MesaCapacityPreview from "./MesaCapacityPreview";
 
 /* ── Design tokens (mirrors CSS vars) ─────────────────────────── */
 const C = {
-  ink:      "#0C0907",
-  canvas:   "#131008",
-  wire:     "#2C2418",
-  wireDim:  "#1F1A0F",
-  light:    "#EDE8E1",
-  dim:      "#8F8373",
-  glow:     "#C9A054",
-  sage:     "#6E8B6A",
-  ember:    "#A8562A",
-  gold:     "#B7925D",
-  goldHi:   "#C9A876",
+  ink:      "#1A0F14",
+  canvas:   "#24151C",
+  wire:     "#3D2430",
+  wireDim:  "#2E1B24",
+  light:    "#F5E6EB",
+  dim:      "#A88B96",
+  glow:     "#E8A5B0",
+  sage:     "#8A9A84",
+  ember:    "#C75B5B",
+  gold:     "#C75B7A",
+  goldHi:   "#E8A5B0",
 };
 
 const STATUS_FILL: Record<TableStatus, string> = {
@@ -33,9 +33,9 @@ const STATUS_FILL: Record<TableStatus, string> = {
 };
 
 const STATUS_STROKE: Record<TableStatus, string> = {
-  DISPONIBLE: "#8BB887",
-  OCUPADA:    "#D4AA5F",
-  SUCIA:      "#B85E2A",
+  DISPONIBLE: "#9EB898",
+  OCUPADA:    "#D68C9F",
+  SUCIA:      "#C75B5B",
   CERRANDO:   C.goldHi,
 };
 

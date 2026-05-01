@@ -212,7 +212,7 @@ export default function ZoneDashboard({ initialZoneId }: { initialZoneId?: strin
 
         {/* TABLE */}
         <section 
-          className="rounded-2xl border border-white/5 bg-[#0a0a0a] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in slide-in-from-bottom-12 duration-1000 ease-out"
+          className="rounded-2xl border border-white/5 bg-[#1A0F14] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] overflow-hidden animate-in fade-in slide-in-from-bottom-12 duration-1000 ease-out"
           style={{ animationFillMode: "both", animationDelay: "900ms" }}
         >
           <div className="border-b border-white/5 px-6 py-5 sm:px-8 flex items-center justify-between">

@@ -213,7 +213,16 @@ export default function ZoneBranchesConsole({ initialZoneId }: { initialZoneId?:
       <div className="flex min-h-[100dvh] items-center justify-center bg-bg-solid animate-in fade-in duration-1000">
         <div className="text-center">
           <h2 className="font-serif text-2xl text-white mb-2">Zona no encontrada</h2>
-          <p className="text-[14px] text-text-dim">Esta zona no existe o fue eliminada del sistema.</p>
+          <p className="text-[14px] text-text-dim mb-6">Esta zona no existe o fue eliminada del sistema.</p>
+          <button
+            onClick={() => {
+              localStorage.removeItem("bq_current_zone");
+              window.location.href = "/";
+            }}
+            className="rounded-full bg-white/10 px-6 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-white/20"
+          >
+            Volver al inicio
+          </button>
         </div>
       </div>
     );

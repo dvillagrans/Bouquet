@@ -20,14 +20,16 @@ export default function ZoneAuthGuard({ zoneId, onAuthenticated }: GuardProps) {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const savedZid = localStorage.getItem("bq_current_zone");
-      if (savedZid) {
-        setZid(savedZid);
-        onAuthenticated(savedZid);
-      } else if (zoneId) {
+      if (zoneId) {
         localStorage.setItem("bq_current_zone", zoneId);
         setZid(zoneId);
         onAuthenticated(zoneId);
+      } else {
+        const savedZid = localStorage.getItem("bq_current_zone");
+        if (savedZid) {
+          setZid(savedZid);
+          onAuthenticated(savedZid);
+        }
       }
     }
   }, [zoneId, onAuthenticated]);

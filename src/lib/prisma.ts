@@ -44,17 +44,9 @@ function createPrismaClient() {
   return new PrismaClient({ adapter });
 }
 
-function prismaClientHasSuperAdmin(client: PrismaClient): boolean {
-  return typeof (client as unknown as { superAdmin?: { findUnique?: unknown } }).superAdmin?.findUnique === "function";
-}
-
 function getPrisma(): PrismaClient {
-  const cached = globalForPrisma.prisma;
-  if (cached && prismaClientHasSuperAdmin(cached)) {
-    return cached;
-  }
-  if (cached) {
-    void cached.$disconnect().catch(() => {});
+  if (globalForPrisma.prisma) {
+    return globalForPrisma.prisma;
   }
   const fresh = createPrismaClient();
   globalForPrisma.prisma = fresh;

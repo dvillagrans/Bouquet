@@ -158,10 +158,12 @@ function generateMockHourlySales() {
   const hours: { hour: string; orders: number }[] = [];
   for (let h = 0; h < 24; h++) {
     let base = 0;
-    if (h >= 13 && h <= 15) base = 1800 + Math.random() * 1200;
-    else if (h >= 19 && h <= 21) base = 1400 + Math.random() * 1000;
-    else if (h >= 9 && h <= 11) base = 600 + Math.random() * 400;
-    else base = Math.random() * 200;
+    // Deterministic pseudo-randomness based on hour to avoid hydration mismatch
+    const pseudoRand = ((h * 17) % 10) / 10; 
+    if (h >= 13 && h <= 15) base = 1800 + pseudoRand * 1200;
+    else if (h >= 19 && h <= 21) base = 1400 + pseudoRand * 1000;
+    else if (h >= 9 && h <= 11) base = 600 + pseudoRand * 400;
+    else base = pseudoRand * 200;
     hours.push({ hour: `${h.toString().padStart(2, "0")}h`, orders: Math.round(base) });
   }
   return hours;

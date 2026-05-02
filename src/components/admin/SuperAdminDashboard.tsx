@@ -499,8 +499,9 @@ export default function SuperAdminDashboard() {
                             data.chains.map((chain, i) => {
                               const initials = chain.name.substring(0, 1).toUpperCase();
                               const hue = (i * 55 + 340) % 360;
-                              const mockHealth = 0.85 + Math.random() * 0.14; // TODO: real health metric
-                              const mockTrend = Array.from({ length: 10 }, () => 20 + Math.random() * 80); // TODO: real trend data
+                              // Deterministic mock metrics based on index to avoid hydration mismatch
+                              const mockHealth = 0.85 + ((i * 7) % 10) * 0.014;
+                              const mockTrend = Array.from({ length: 10 }, (_, idx) => 20 + ((idx + i) * 13) % 80);
 
                               return (
                                 <div
@@ -838,7 +839,7 @@ export default function SuperAdminDashboard() {
                         .map((chain, i) => {
                           const initials = chain.name.substring(0, 1).toUpperCase();
                           const hue = (i * 55 + 340) % 360;
-                          const health = 0.88 + Math.random() * 0.1;
+                          const health = 0.88 + ((i * 9) % 10) * 0.01;
 
                           return (
                             <div

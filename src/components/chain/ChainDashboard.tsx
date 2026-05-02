@@ -57,20 +57,25 @@ const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 // TODO: Replace with real 7-day-per-branch API
 function generateMock7Day(revenue: number) {
   const base = revenue / 7;
-  return DAY_LABELS.map((day) => ({
-    day,
-    revenue: Math.round(base * (0.65 + Math.random() * 0.7)),
-  }));
+  return DAY_LABELS.map((day, idx) => {
+    // Deterministic factor based on day index
+    const factor = 0.65 + ((idx * 7) % 10) * 0.07;
+    return {
+      day,
+      revenue: Math.round(base * factor),
+    };
+  });
 }
 
 // TODO: Replace with real hourly orders API
 function generateMockHourly(peak: number) {
   const hours: number[] = [];
   for (let h = 0; h < 24; h++) {
-    if (h >= 12 && h <= 15) hours.push(peak * (0.5 + Math.random() * 0.5));
-    else if (h >= 18 && h <= 21) hours.push(peak * (0.4 + Math.random() * 0.6));
-    else if (h >= 7 && h <= 10) hours.push(peak * (0.15 + Math.random() * 0.25));
-    else hours.push(peak * (0.01 + Math.random() * 0.08));
+    const pseudoRand = ((h * 13) % 10) / 10;
+    if (h >= 12 && h <= 15) hours.push(peak * (0.5 + pseudoRand * 0.5));
+    else if (h >= 18 && h <= 21) hours.push(peak * (0.4 + pseudoRand * 0.6));
+    else if (h >= 7 && h <= 10) hours.push(peak * (0.15 + pseudoRand * 0.25));
+    else hours.push(peak * (0.01 + pseudoRand * 0.08));
   }
   return hours.map((v, i) => ({
     hour: `${i.toString().padStart(2, "0")}h`,
@@ -640,12 +645,12 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                     <span className="w-16">OCUP</span>
                   </div>
                   <BranchRankings
-                    branches={data.restaurants.map((r) => ({
+                    branches={data.restaurants.map((r, idx) => ({
                       id: r.id,
                       name: r.name,
                       zoneName: r.zoneName,
                       todayRevenue: r.todayRevenue,
-                      yesterdayRevenue: r.todayRevenue * (0.75 + Math.random() * 0.5), // TODO: real yesterday per branch
+                      yesterdayRevenue: r.todayRevenue * (0.75 + ((idx * 3) % 10) * 0.05), // Deterministic mock delta
                       occupancyPct: r.totalTables > 0 ? (r.activeTables / r.totalTables) * 100 : 0,
                     }))}
                   />

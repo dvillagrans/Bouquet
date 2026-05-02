@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import { BouquetLogo } from "./BouquetLogo";
 
 const nav = [
-  { label: "Producto", href: "#producto" },
-  { label: "Cómo funciona", href: "#como-funciona" },
+  { label: "Plataforma", href: "#producto" },
+  { label: "Flujo", href: "#como-funciona" },
+  { label: "Segmentos", href: "#segmentos" },
   { label: "Contacto", href: "#contacto" },
 ];
 

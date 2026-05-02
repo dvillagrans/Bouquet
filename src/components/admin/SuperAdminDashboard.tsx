@@ -1,79 +1,96 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, RefreshCw, Layers, ShieldCheck, Zap, ArrowUpRight, Pencil, UserCog, Archive } from "lucide-react";
+import { Plus, RefreshCw, Pencil, UserCog, Archive, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getSuperAdminDashboard, archiveTenant, type SuperAdminDashboardData } from "@/actions/admin";
 import { CreateTenantDialog } from "@/components/admin/CreateTenantDialog";
 import { EditTenantDialog } from "@/components/admin/EditTenantDialog";
 import { ChangeAdminDialog } from "@/components/admin/ChangeAdminDialog";
+import { SuperKpiCard } from "@/components/admin/SuperKpiCard";
+import { Sparkline } from "@/components/admin/Sparkline";
+import { LiveDot } from "@/components/admin/LiveDot";
+import { AdminAvatar } from "@/components/admin/AdminAvatar";
+import { NavRow } from "@/components/admin/NavRow";
 
-type KpiCardProps = {
-  label: string;
-  value: string | number;
-  helper: string;
-  footnote: string;
-  className?: string;
-  featured?: boolean;
+// ─── Mock data (Stage 2 → real API) ───
+
+const mockOrdersHourly = [120, 180, 240, 320, 410, 480, 520, 560, 610, 680, 720, 790, 840, 890, 920, 950, 980, 1020, 1100, 1180, 1240, 1290, 1320, 1340];
+
+// TODO: Connect to real alert/incident API
+const mockAlerts = [
+  { sev: "crit" as const, area: "Sync · Puerto Madero", msg: "Sync caído > 8m", time: "21:39", link: "TENANT" },
+  { sev: "warn" as const, area: "Latencia KDS", msg: "p95 1.2s en sucursal Recoleta", time: "21:42", link: "INFRA" },
+  { sev: "warn" as const, area: "Pago Mercadolibre", msg: "Errores 3.2% (umbral 1%)", time: "21:35", link: "PAYM" },
+  { sev: "info" as const, area: "Nuevo local", msg: "Activado en Don Julio Group", time: "21:18", link: "TENANT" },
+  { sev: "info" as const, area: "Sistema", msg: "Deploy v4.12 completado", time: "20:52", link: "DEPLOY" },
+];
+
+const sevStyles = {
+  crit: { bg: "bg-dash-red-bg", fg: "text-pink-light-glow", line: "bg-pink-light-glow", pulse: true },
+  warn: { bg: "bg-dash-amber-bg/50", fg: "text-dash-amber", line: "bg-dash-amber", pulse: false },
+  info: { bg: "bg-dash-blue-bg", fg: "text-dash-blue", line: "bg-dash-blue", pulse: false },
 };
 
-function KpiCard({ label, value, helper, footnote, className, featured }: KpiCardProps) {
-  return (
-    <motion.article
-      variants={{
-        hidden: { opacity: 0, y: 20 },
-        show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }
-      }}
-      className={`group relative overflow-hidden rounded-[2rem] border transition-all duration-700 hover:-translate-y-2 ${
-        featured 
-          ? "border-gold/40 bg-[linear-gradient(135deg,rgba(183,146,93,0.12),rgba(0,0,0,0))] shadow-[0_42px_80px_-20px_rgba(183,146,93,0.2)]" 
-          : "border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.04),rgba(255,255,255,0.01))] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6)] hover:border-gold/30"
-      } p-8 sm:p-10 ${className ?? ""}`}
-    >
-      {/* Refined top glow line */}
-      <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-gold/40 to-transparent opacity-0 transition-opacity duration-700 group-hover:opacity-100" aria-hidden />
-      
-      {featured && (
-        <div className="absolute -top-10 -right-10 p-6 opacity-[0.03] transition-all duration-1000 group-hover:opacity-10 group-hover:scale-110">
-          <Zap className="size-48 text-gold" />
-        </div>
-      )}
-      
-      <div className="relative z-10">
-        <header className="flex items-center justify-between mb-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-gold/60">{label}</p>
-          <ArrowUpRight className="size-4 text-text-dim opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-        </header>
-        
-        <p className="font-serif text-5xl font-medium leading-none tracking-tight text-white tabular-nums sm:text-6xl lg:text-7xl">
-          {value}
-        </p>
-        
-        <div className="mt-8 space-y-2">
-          <p className="text-[14px] font-medium text-emerald-400/90 flex items-center gap-2">
-            <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            {helper}
-          </p>
-          <p className="text-[12px] font-medium text-text-dim/60 leading-relaxed">{footnote}</p>
-        </div>
-      </div>
-    </motion.article>
-  );
+// TODO: Connect to real regional distribution API
+const mockRegions = [
+  { code: "AR · BA", locales: 142, pct: 0.46, color: "var(--color-pink-glow)" },
+  { code: "AR · CBA", locales: 38, pct: 0.12, color: "var(--color-rose-light)" },
+  { code: "MX · CDMX", locales: 64, pct: 0.21, color: "var(--color-dash-blue)" },
+  { code: "MX · MTY", locales: 28, pct: 0.09, color: "#93C5FD" },
+  { code: "UY · MVD", locales: 24, pct: 0.08, color: "var(--color-dash-green)" },
+  { code: "OTROS", locales: 16, pct: 0.04, color: "var(--color-dim)" },
+];
+
+// TODO: Connect to real infrastructure health API
+const mockServices = [
+  { name: "API · core", up: 99.99, ms: 42, ok: true },
+  { name: "Realtime · WS", up: 99.97, ms: 18, ok: true },
+  { name: "KDS · gateway", up: 99.82, ms: 280, ok: true },
+  { name: "Pagos · MP", up: 96.80, ms: 320, ok: false },
+  { name: "Pagos · Stripe", up: 99.95, ms: 110, ok: true },
+  { name: "Search", up: 99.91, ms: 64, ok: true },
+];
+
+// ─── Helpers ───
+
+function fmtCurrency(n: number) {
+  return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 0 });
 }
+
+function fmtShort(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(0) + "k";
+  return String(n);
+}
+
+function pctDiff(current: number, previous: number): string {
+  if (!previous) return "+0%";
+  const pct = ((current - previous) / previous) * 100;
+  const sign = pct >= 0 ? "+" : "";
+  return `${sign}${pct.toFixed(1)}%`;
+}
+
+// ─── Dashboard Skeleton ───
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-4 lg:grid-rows-2">
-        <div className="lg:col-span-2 lg:row-span-2 h-[280px] animate-pulse rounded-2xl border border-white/5 bg-white/[0.02]" />
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-[130px] animate-pulse rounded-2xl border border-white/5 bg-white/[0.02]" />
+    <div className="flex flex-1 flex-col gap-4 p-5">
+      <div className="grid grid-cols-4 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-[160px] animate-pulse rounded-[22px] border border-wire bg-white/[0.02]" />
         ))}
       </div>
-      <div className="h-[400px] animate-pulse rounded-2xl border border-white/5 bg-white/[0.02]" />
+      <div className="grid flex-1 grid-cols-[1.3fr_0.95fr_0.85fr] gap-3">
+        <div className="animate-pulse rounded-[22px] border border-wire bg-white/[0.02]" />
+        <div className="animate-pulse rounded-[22px] border border-wire bg-white/[0.02]" />
+        <div className="animate-pulse rounded-[22px] border border-wire bg-white/[0.02]" />
+      </div>
     </div>
   );
 }
+
+// ─── Main Component ───
 
 export default function SuperAdminDashboard() {
   const [data, setData] = useState<SuperAdminDashboardData | null>(null);
@@ -104,8 +121,6 @@ export default function SuperAdminDashboard() {
     return () => clearInterval(iv);
   }, []);
 
-  const fmtCurrency = (n: number) => "$" + n.toLocaleString("en-US", { minimumFractionDigits: 0 });
-
   const handleArchive = async () => {
     if (!archiveConfirm) return;
     if (archiveConfirmText.trim() !== archiveConfirm.name) return;
@@ -122,310 +137,355 @@ export default function SuperAdminDashboard() {
     }
   };
 
+  const now = new Date();
+  const dateLabel = now
+    .toLocaleDateString("es-AR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })
+    .toUpperCase()
+    .replace(/\./g, "");
+  const timeLabel = now.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+
   return (
-    <div className="relative flex min-h-screen flex-col bg-bg-solid text-base text-text-primary antialiased selection:bg-gold/30 lg:text-[14px]">
-      {/* Atmospheric Background Layers */}
+    <div className="relative flex min-h-screen bg-ink font-sans text-[13px] text-light antialiased selection:bg-pink-glow/20">
+      {/* ── Atmosphere ── */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-60 mix-blend-soft-light"
+        className="pointer-events-none absolute inset-0 z-0"
         style={{
-          background: `
-            radial-gradient(circle at 15% 0%, rgba(183,146,93,0.2) 0%, transparent 45%),
-            radial-gradient(circle at 85% 90%, rgba(183,146,93,0.15) 0%, transparent 40%),
-            radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.4) 100%)
-          `,
+          background:
+            "radial-gradient(ellipse 60% 40% at 80% 0%, rgba(244,114,182,0.18), transparent 60%), radial-gradient(ellipse 50% 50% at 0% 100%, rgba(167,243,208,0.04), transparent 60%)",
         }}
         aria-hidden
       />
-      <motion.div
-        animate={{ 
-          opacity: [0.03, 0.05, 0.03],
-          scale: [1, 1.02, 1]
-        }}
-        transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-        className="pointer-events-none absolute inset-0 mix-blend-overlay"
-        style={{
-          backgroundImage: "url('https://grainy-gradients.vercel.app/noise.svg')",
-          opacity: 0.04,
-        }}
-        aria-hidden
-      />
+      <div className="bq-grain" />
 
-      <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-white/5 bg-bg-solid/80 px-6 backdrop-blur-2xl sm:px-10">
-        <div className="flex items-center gap-3">
-          <Layers className="size-4 text-gold" />
-          <div className="flex items-center gap-2 text-[12px] font-medium text-text-dim">
-            <span className="text-white">Bouquet OPS</span>
-            <span className="text-white/20">/</span>
-            <span className="tracking-wide">CONSOLA MAESTRA</span>
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-3">
+      {/* ═══════ SIDEBAR ═══════ */}
+      <aside className="relative z-10 flex w-[232px] shrink-0 flex-col gap-5 border-r border-wire bg-burgundy-dark p-5">
+        {/* Brand */}
+        <div className="flex items-center gap-2.5 px-1">
           <div
-            className={
-              loading
-                ? "hidden items-center gap-2 rounded-full bg-gold/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-gold sm:flex"
-                : "hidden items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-400 sm:flex"
-            }
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] font-serif text-[18px] font-semibold italic text-ink"
+            style={{
+              background: "linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)",
+              boxShadow: "0 4px 12px -4px rgba(199,91,122,0.6), inset 0 1px 0 rgba(255,255,255,0.3)",
+            }}
           >
-            <span className="relative flex size-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-75" />
-              <span className="relative inline-flex size-1.5 rounded-full bg-current" />
-            </span>
-            {loading ? "Sincronizando" : "Operativo"}
+            b
+          </div>
+          <div className="min-w-0">
+            <div className="font-serif text-[18px] font-semibold italic leading-tight tracking-[-0.02em] text-light">
+              bouquet
+            </div>
+            <div className="font-mono text-[8.5px] tracking-[0.3em] text-pink-glow/55">
+              CONTROL · GOD
+            </div>
+          </div>
+        </div>
+
+        {/* View selector */}
+        <button
+          type="button"
+          className="rounded-[10px] border border-pink-glow/20 bg-pink-glow/8 px-3 py-2.5 text-left transition-colors hover:bg-pink-glow/12"
+        >
+          <div className="text-[8.5px] font-bold uppercase tracking-[0.3em] text-pink-glow">
+            VISTA
+          </div>
+          <div className="mt-1 flex items-center justify-between text-[13px] font-medium text-light">
+            Toda la red
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+              <path d="M2 4l4 4 4-4" stroke="var(--color-dim)" strokeWidth="1.4" />
+            </svg>
+          </div>
+          <div className="mt-0.5 font-mono text-[10px] text-dim">
+            {data ? `${data.stats.chains} cadenas · ${data.stats.restaurants} locales` : "…"}
+          </div>
+        </button>
+
+        {/* Nav */}
+        <nav className="flex flex-col gap-0.5">
+          <div className="px-3 pb-2 pt-1 text-[8.5px] font-bold uppercase tracking-[0.3em] text-dim">
+            OVERVIEW
+          </div>
+          <NavRow label="Control" active badge={null} />
+          <NavRow label="Cadenas" badge={data ? String(data.stats.chains) : "…"} />
+          <NavRow label="Locales" badge={data ? String(data.stats.restaurants) : "…"} />
+          <NavRow label="Usuarios" badge="…" />
+
+          <div className="px-3 pb-2 pt-4 text-[8.5px] font-bold uppercase tracking-[0.3em] text-dim">
+            SISTEMA
+          </div>
+          <NavRow label="Infraestructura" badge={null} />
+          <NavRow label="Pagos" badge={null} />
+          <NavRow label="Integraciones" badge={null} />
+          <NavRow label="Despliegues" badge={null} />
+          <NavRow label="Auditoría" badge={null} />
+
+          <div className="px-3 pb-2 pt-4 text-[8.5px] font-bold uppercase tracking-[0.3em] text-dim">
+            NEGOCIO
+          </div>
+          <NavRow label="Facturación" badge={null} />
+          <NavRow label="Plans & SLAs" badge={null} />
+        </nav>
+
+        <div className="flex-1" />
+
+        {/* Status footer */}
+        <div className="border-t border-wire pt-3 font-mono text-[10px] text-dim">
+          <div className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-1.5 w-1.5 rounded-full bg-dash-green"
+              style={{ boxShadow: "0 0 6px var(--color-dash-green)" }}
+            />
+            <span className="text-light">ALL SYSTEMS</span>
+          </div>
+          <div className="mt-1 opacity-70">us-east-1 · prod</div>
+        </div>
+      </aside>
+
+      {/* ═══════ MAIN ═══════ */}
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
+        {/* ── Header ── */}
+        <header className="flex items-end justify-between border-b border-wire px-6 py-4">
+          <div>
+            <p className="font-mono text-[10px] tracking-[0.25em] text-dim">
+              {dateLabel} · {timeLabel} · CONTROL CENTER
+            </p>
+            <h1 className="mt-1.5 font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.015em] text-light">
+              Toda la{" "}
+              <span className="italic text-pink-glow">red</span>, una pantalla.
+            </h1>
           </div>
 
-          <div className="h-4 w-px bg-white/10 hidden sm:block" />
-
-          <button
-            onClick={() => {
-              setLoading(true);
-              load();
-            }}
-            disabled={loading}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-transparent text-text-dim transition-colors hover:border-white/20 hover:text-white disabled:opacity-50 sm:w-auto sm:gap-2 sm:px-4"
-          >
-            <RefreshCw className={`size-4 shrink-0 col text-emerald-400 ${loading ? "animate-spin" : ""}`} aria-hidden />
-            <span className="hidden text-[12px] font-medium sm:inline">Actualizar</span>
-          </button>
-          
-          <button
-            onClick={() => setIsCreatingTenant(true)}
-            className="inline-flex h-9 items-center gap-2 rounded-xl bg-white px-4 text-[12px] font-semibold text-black transition-all hover:bg-white/90 hover:scale-[0.98] active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.1)]"
-          >
-            <Plus className="size-4 shrink-0" aria-hidden />
-            <span className="hidden sm:inline">Añadir Inquilino</span>
-            <span className="sm:hidden">Añadir</span>
-          </button>
-        </div>
-      </header>
-
-      <main className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-6 pb-20 pt-10 sm:px-10 sm:pt-14">
-        <motion.header 
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          className="mb-16 max-w-4xl"
-        >
-          <p className="mb-6 inline-flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.4em] text-gold/80">
-            <span className="h-[2px] w-8 bg-gold" /> Visión Global Operativa
-          </p>
-          <h1 className="font-serif text-5xl font-medium leading-[1] tracking-[-0.03em] text-white sm:text-7xl lg:text-8xl text-balance">
-            Bouquet <span className="italic font-light text-gold/90">Ops</span> Control Center.
-          </h1>
-          <div className="mt-8 h-px w-full bg-gradient-to-r from-white/10 via-white/5 to-transparent" />
-          <p className="mt-8 text-[17px] leading-relaxed text-text-dim/80 max-w-2xl font-medium">
-            La capa de mando para el ecosistema Bouquet. Supervisa el crecimiento del MRR, consolida arquitecturas B2B multizona y administra flujos de tesorería sin fricciones.
-          </p>
-        </motion.header>
-
-        {!data ? (
-          <DashboardSkeleton />
-        ) : (
-          <div className="space-y-12">
-            <motion.section 
-              initial="hidden"
-              animate="show"
-              variants={{
-                hidden: { opacity: 0 },
-                show: {
-                  opacity: 1,
-                  transition: { staggerChildren: 0.12, delayChildren: 0.4 }
-                }
-              }}
-              className="grid grid-cols-1 gap-6 lg:grid-cols-4 lg:grid-rows-2"
+          <div className="flex items-center gap-2.5">
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full bg-dash-red-bg px-2.5 py-1 font-mono text-[10px] font-bold tracking-[0.12em] text-pink-light-glow"
             >
-              <KpiCard
-                className="lg:col-span-2 lg:row-span-2 flex flex-col justify-between"
-                label="Ingreso Recurrente Mensual"
-                value={fmtCurrency(data.stats.mrr)}
-                helper="Cobranza 100% automatizada vía Stripe."
-                footnote="MRR proyectado para el ciclo en curso en USD (Global Portfolio)."
-                featured
-              />
-              <KpiCard
-                className="lg:col-span-1 lg:row-span-1"
-                label="Cadenas B2B"
-                value={data.stats.chains}
-                helper="Tenants activos"
-                footnote="Instancias en nube privada Bouquet."
-              />
-              <KpiCard
-                className="lg:col-span-1 lg:row-span-1"
-                label="Sucursales"
-                value={data.stats.restaurants}
-                helper="Nodos operativos"
-                footnote="Terminales activas en tiempo real."
-              />
-              <KpiCard
-                className="lg:col-span-2 lg:row-span-1"
-                label="Alcance Regional"
-                value={data.stats.zones}
-                helper="Zonas servidas"
-                footnote="Densidad geográfica de la plataforma."
-              />
-            </motion.section>
+              <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-pink-light-glow" />
+              1 INCIDENTE
+            </span>
+            <LiveDot />
 
-            <section className="rounded-2xl border border-white/5 bg-[#1A0F14] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)]">
-              <div className="flex items-center justify-between border-b border-white/5 px-6 py-5 sm:px-8">
-                <div>
-                  <h2 className="text-base font-medium tracking-tight text-white">Inquilinos Activos</h2>
-                  <p className="mt-1 text-[13px] text-text-dim">Acceso y administración por cuenta B2B</p>
-                </div>
-              </div>
+            <div className="bq-glass flex items-center gap-2.5 rounded-full px-3.5 py-2 text-[12px] text-dim">
+              <Search className="h-3 w-3 shrink-0" />
+              <span className="min-w-[140px]">Buscar cadena, local…</span>
+              <span className="rounded bg-white/[0.06] px-1.5 py-0.5 font-mono text-[9.5px] text-light">
+                ⌘K
+              </span>
+            </div>
 
-              <div className="sm:hidden divide-y divide-white/5">
-                {data.chains.length === 0 ? (
-                  <div className="px-6 py-16 text-center text-[14px] text-text-dim">Base de datos plana. Añade el primer cliente para continuar.</div>
-                ) : (
-                  data.chains.map((chain) => {
-                    const avatar = chain.name.substring(0, 1).toUpperCase();
-                    return (
-                      <article key={chain.id} className="p-6 transition-colors hover:bg-white/[0.02]">
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white/5 text-lg font-serif text-white border border-white/10">
-                            {avatar}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h3 className="truncate text-base font-medium text-white">{chain.name}</h3>
-                            <p className="mt-0.5 text-[12px] font-mono text-text-dim">ID: {chain.id.split("-")[0]}</p>
-                          </div>
-                        </div>
+            <button
+              onClick={() => {
+                setLoading(true);
+                load();
+              }}
+              disabled={loading}
+              className="hidden h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-dim transition-colors hover:border-white/20 hover:text-light disabled:opacity-40 sm:flex"
+              title="Actualizar"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            </button>
 
-                        <div className="mt-5 grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-widest text-text-dim">Sucursales</p>
-                            <p className="mt-1 text-[15px] font-mono text-white">{chain.restaurantsCount}</p>
-                          </div>
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-widest text-text-dim">Admin</p>
-                            <p className="mt-1 text-[13px] text-white truncate">{chain.adminName}</p>
-                            {chain.adminEmail && (
-                              <p className="mt-0.5 text-[11px] font-mono text-text-dim truncate">{chain.adminEmail}</p>
-                            )}
-                          </div>
-                        </div>
+            <button
+              onClick={() => setIsCreatingTenant(true)}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white px-3.5 text-[12px] font-semibold text-ink transition-all hover:bg-white/90 active:scale-95"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Añadir</span>
+            </button>
 
-                        <a
-                          href={`/cadena?tenantId=${chain.id}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-6 flex w-full items-center justify-center rounded-xl bg-white/5 px-4 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-white/10"
-                        >
-                          Acceder a consola
-                        </a>
+            <AdminAvatar initials="MN" />
+          </div>
+        </header>
 
-                        <div className="mt-3 flex items-center gap-2">
+        {/* ── Content ── */}
+        <main className="flex flex-1 flex-col gap-3 overflow-y-auto p-5">
+          {!data ? (
+            <DashboardSkeleton />
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key="loaded"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-1 flex-col gap-3"
+              >
+                {/* ── KPI Strip ── */}
+                <motion.section
+                  initial="hidden"
+                  animate="show"
+                  variants={{
+                    hidden: { opacity: 0 },
+                    show: { opacity: 1, transition: { staggerChildren: 0.08 } },
+                  }}
+                  className="grid grid-cols-4 gap-3"
+                >
+                  <SuperKpiCard
+                    label="MRR · RED"
+                    value={`$${fmtShort(data.stats.mrr)}`}
+                    delta="+8.2%"
+                    deltaTone="green"
+                    unit="USD · {month}"
+                    trend={[180, 200, 220, 240, 250, 260, 265, 272, 280, 284]}
+                    accent="pink"
+                    delay={0}
+                  />
+                  <SuperKpiCard
+                    label="CADENAS B2B"
+                    value={String(data.stats.chains)}
+                    delta="+2"
+                    deltaTone="green"
+                    unit="TENANTS ACTIVOS"
+                    trend={[36, 37, 38, 39, 40, 40, 41, 41, 42, 42]}
+                    accent="blue"
+                    delay={80}
+                  />
+                  <SuperKpiCard
+                    label="LOCALES"
+                    value={String(data.stats.restaurants)}
+                    delta="+12"
+                    deltaTone="green"
+                    unit="SUCURSALES · UP"
+                    trend={[304, 306, 308, 309, 310, 311, 312, 312, 312, 311, 312]}
+                    accent="pink"
+                    delay={160}
+                  />
+                  <SuperKpiCard
+                    label="ZONAS SERVIDAS"
+                    value={String(data.stats.zones)}
+                    delta="+4"
+                    deltaTone="green"
+                    unit="DENSIDAD GEOGRÁFICA"
+                    trend={[58, 60, 62, 64, 65, 66, 68, 70, 71, 72]}
+                    accent="green"
+                    delay={240}
+                  />
+                </motion.section>
+
+                {/* ── Lower Grid (3 cols) ── */}
+                <div className="grid flex-1 grid-cols-[1.3fr_0.95fr_0.85fr] gap-3">
+                  {/* ── CHAINS LEAGUE TABLE ── */}
+                  <div className="bq-card flex flex-col overflow-hidden !p-0">
+                    <div className="flex items-end justify-between border-b border-wire px-4 py-3.5">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
+                          CADENAS · TOP PERFORMERS
+                        </p>
+                        <p className="mt-0.5 font-serif text-[20px] font-medium leading-tight text-light">
+                          El <span className="italic text-pink-glow">ramo</span>
+                        </p>
+                      </div>
+                      <div className="flex gap-1 rounded-full border border-white/[0.06] bg-white/[0.02] p-0.5">
+                        {["GMV", "MRR", "LOCALES"].map((t, i) => (
                           <button
+                            key={t}
                             type="button"
-                            onClick={() => setEditChain({ id: chain.id, name: chain.name, currency: chain.currency || "MXN" })}
-                            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] py-2 text-[12px] font-medium text-text-dim transition-colors hover:bg-white/10 hover:text-white"
+                            className={`rounded-full px-2.5 py-1 font-mono text-[9.5px] tracking-[0.12em] transition-colors ${
+                              i === 0
+                                ? "bg-pink-glow font-bold text-burgundy-dark"
+                                : "font-medium text-dim hover:text-light"
+                            }`}
                           >
-                            <Pencil className="size-3.5" />
-                            Editar
+                            {t}
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setChangeAdminChainId(chain.id);
-                              setChangeAdminChainName(chain.name);
-                            }}
-                            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] py-2 text-[12px] font-medium text-text-dim transition-colors hover:bg-white/10 hover:text-white"
-                          >
-                            <UserCog className="size-3.5" />
-                            Cambiar Admin
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setArchiveConfirm({ id: chain.id, name: chain.name })}
-                            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-red-500/10 bg-red-500/[0.03] py-2 text-[12px] font-medium text-red-400 transition-colors hover:bg-red-500/10"
-                          >
-                            <Archive className="size-3.5" />
-                            Baja
-                          </button>
-                        </div>
-                      </article>
-                    );
-                  })
-                )}
-              </div>
+                        ))}
+                      </div>
+                    </div>
 
-              <div className="hidden w-full overflow-x-auto sm:block">
-                <table className="w-full text-left font-sans">
-                  <thead>
-                    <tr className="border-b border-white/5 bg-transparent">
-                      <th className="w-16 px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">#</th>
-                      <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Entidad B2B</th>
-                      <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Token / ID</th>
-                      <th className="px-8 py-4 text-[11px] font-bold uppercase tracking-widest text-text-dim">Administrador</th>
-                      <th className="px-8 py-4 text-right text-[11px] font-bold uppercase tracking-widest text-text-dim">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="align-middle">
-                    {data.chains.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="py-20 text-center text-sm text-text-dim">
-                          Plataforma vacía. Inicia añadiendo la primera entidad.
-                        </td>
-                      </tr>
-                    ) : (
-                      data.chains.map((chain, i) => {
-                        const avatar = chain.name.substring(0, 1).toUpperCase();
-                        return (
-                          <tr
-                            key={chain.id}
-                            className="group border-b border-white/5 transition-colors hover:bg-white/[0.02]"
-                          >
-                            <td className="px-8 py-5 text-[13px] text-text-dim">
-                              {(i + 1).toString().padStart(2, "0")}
-                            </td>
-                            <td className="px-8 py-5">
-                              <div className="flex items-center gap-4">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/5 border border-white/10 text-[14px] font-serif text-white">
-                                  {avatar}
-                                </div>
-                                <div>
-                                  <p className="text-[14px] font-medium text-white">{chain.name}</p>
-                                  <p className="mt-0.5 text-[12px] text-text-dim">{chain.restaurantsCount} sucursales físicas</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-8 py-5">
-                              <span className="font-mono text-[12px] text-text-dim bg-white/5 px-2 py-1 rounded">
-                                {chain.id.split("-")[0]}
+                    {/* Table header */}
+                    <div
+                      className="grid items-center gap-2 border-b border-white/[0.04] px-4 py-2.5 font-mono text-[9px] tracking-[0.2em] text-dim"
+                      style={{ gridTemplateColumns: "14px minmax(0,1fr) 28px 36px 52px 52px 44px 44px" }}
+                    >
+                      <span>#</span>
+                      <span>CADENA</span>
+                      <span />
+                      <span className="text-right">LOC</span>
+                      <span className="text-right">MRR</span>
+                      <span className="text-right">GMV</span>
+                      <span>HEALTH</span>
+                      <span className="text-right">ACCIONES</span>
+                    </div>
+
+                    {/* Chains rows */}
+                    <div className="flex-1 overflow-hidden">
+                      {data.chains.length === 0 ? (
+                        <div className="flex h-full items-center justify-center text-[13px] text-dim">
+                          Sin cadenas aún. Añade la primera.
+                        </div>
+                      ) : (
+                        data.chains.map((chain, i) => {
+                          const initials = chain.name.substring(0, 1).toUpperCase();
+                          const hue = (i * 55 + 340) % 360;
+                          const mockHealth = 0.85 + Math.random() * 0.14; // TODO: real health metric
+                          const mockTrend = Array.from({ length: 10 }, () => 20 + Math.random() * 80); // TODO: real trend data
+
+                          return (
+                            <div
+                              key={chain.id}
+                              className="group grid items-center gap-2 border-b border-white/[0.04] px-4 py-2.5 text-[12px] text-light transition-colors hover:bg-white/[0.015]"
+                              style={{
+                                gridTemplateColumns: "14px minmax(0,1fr) 28px 36px 52px 52px 44px 44px",
+                                animation: `dash-row-enter 500ms ${i * 60}ms var(--ease, ease) both`,
+                              }}
+                            >
+                              <span className="font-mono text-[10px] text-dim">
+                                {String(i + 1).padStart(2, "0")}
                               </span>
-                            </td>
-                            <td className="px-8 py-5">
-                              <div className="flex flex-col gap-1">
-                                <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[12px] font-medium text-emerald-400">
-                                  <div className="size-1.5 rounded-full bg-emerald-400" />
-                                  {chain.adminName}
+                              <span className="flex min-w-0 items-center gap-2">
+                                <span
+                                  className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[7px] font-mono text-[9px] font-bold tracking-[-0.02em] text-ink"
+                                  style={{
+                                    background: `linear-gradient(135deg, hsl(${hue} 60% 60%) 0%, hsl(${hue} 60% 40%) 100%)`,
+                                  }}
+                                >
+                                  {initials}
                                 </span>
-                                {chain.adminEmail && (
-                                  <span className="text-[11px] font-mono text-text-dim truncate max-w-[180px]">
-                                    {chain.adminEmail}
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-8 py-5 text-right">
-                              <div className="flex items-center justify-end gap-1">
+                                <span className="min-w-0 truncate font-medium">{chain.name}</span>
+                              </span>
+                              <Sparkline data={mockTrend} w={28} h={18} color="var(--color-dash-green)" />
+                              <span className="font-mono tabular-nums text-right">{chain.restaurantsCount}</span>
+                              <span className="font-mono tabular-nums text-right text-dim">
+                                {/* TODO: real MRR per chain */}
+                                ${fmtShort(chain.restaurantsCount * 800)}
+                              </span>
+                              <span className="font-mono tabular-nums text-right font-semibold">
+                                {/* TODO: real GMV per chain */}
+                                ${fmtShort(chain.restaurantsCount * 3200)}
+                              </span>
+                              <span className="flex items-center gap-1.5">
+                                <span className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                                  <span
+                                    className="block h-full rounded-full"
+                                    style={{
+                                      width: `${mockHealth * 100}%`,
+                                      background:
+                                        mockHealth > 0.9
+                                          ? "var(--color-dash-green)"
+                                          : mockHealth > 0.85
+                                            ? "var(--color-dash-amber)"
+                                            : "var(--color-pink-light-glow)",
+                                    }}
+                                  />
+                                </span>
+                              </span>
+                              <span className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                                 <a
                                   href={`/cadena?tenantId=${chain.id}`}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-[12px] font-medium text-text-dim transition-all hover:bg-white hover:text-black hover:scale-105 active:scale-95"
-                                  title="Entrar a consola"
+                                  className="grid h-7 w-7 place-items-center rounded-lg text-dim transition-colors hover:bg-white/10 hover:text-light"
+                                  title="Entrar"
                                 >
-                                  Entrar &rarr;
+                                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                                    <path d="M3 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                  </svg>
                                 </a>
                                 <button
                                   type="button"
                                   onClick={() => setEditChain({ id: chain.id, name: chain.name, currency: chain.currency || "MXN" })}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-text-dim transition-colors hover:bg-white/10 hover:text-white"
-                                  title="Editar cadena"
+                                  className="grid h-7 w-7 place-items-center rounded-lg text-dim transition-colors hover:bg-white/10 hover:text-light"
+                                  title="Editar"
                                 >
-                                  <Pencil className="size-3.5" />
+                                  <Pencil className="h-3 w-3" />
                                 </button>
                                 <button
                                   type="button"
@@ -433,32 +493,221 @@ export default function SuperAdminDashboard() {
                                     setChangeAdminChainId(chain.id);
                                     setChangeAdminChainName(chain.name);
                                   }}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-text-dim transition-colors hover:bg-white/10 hover:text-white"
-                                  title="Cambiar administrador"
+                                  className="grid h-7 w-7 place-items-center rounded-lg text-dim transition-colors hover:bg-white/10 hover:text-light"
+                                  title="Cambiar admin"
                                 >
-                                  <UserCog className="size-3.5" />
+                                  <UserCog className="h-3 w-3" />
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setArchiveConfirm({ id: chain.id, name: chain.name })}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-text-dim transition-colors hover:bg-red-500/10 hover:text-red-400"
+                                  className="grid h-7 w-7 place-items-center rounded-lg text-dim transition-colors hover:bg-red-500/10 hover:text-red-400"
                                   title="Dar de baja"
                                 >
-                                  <Archive className="size-3.5" />
+                                  <Archive className="h-3 w-3" />
                                 </button>
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Table footer */}
+                    <div className="flex items-center justify-between border-t border-wire bg-white/[0.015] px-4 py-2.5">
+                      <span className="font-mono text-[10px] tracking-[0.2em] text-dim">
+                        {data.chains.length} / {data.stats.chains} CADENAS
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setIsCreatingTenant(true)}
+                        className="font-mono text-[10px] font-bold tracking-[0.2em] text-pink-glow transition-colors hover:text-pink-light-glow"
+                      >
+                        AÑADIR ↗
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ── MIDDLE: Alerts ── */}
+                  <div className="flex flex-col gap-3">
+                    {/* GMV mini card */}
+                    <div className="bq-card p-4">
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
+                            GMV · 24H
+                          </p>
+                          <p className="mt-0.5 font-serif text-[17px] font-medium leading-tight text-light">
+                            Flujo <span className="italic text-pink-glow">continuo</span>
+                          </p>
+                        </div>
+                        <span className="font-mono text-[18px] font-bold tabular-nums text-light">$1.28M</span>
+                      </div>
+                      <div className="mt-2.5">
+                        <Sparkline data={mockOrdersHourly} w={320} h={70} fill color="var(--color-pink-glow)" />
+                      </div>
+                      <div className="mt-1 flex justify-between font-mono text-[9px] text-dim">
+                        <span>00h</span>
+                        <span>06h</span>
+                        <span>12h</span>
+                        <span>18h</span>
+                        <span>24h</span>
+                      </div>
+                    </div>
+
+                    {/* Alerts panel */}
+                    <div className="bq-card flex flex-1 flex-col overflow-hidden !p-0">
+                      <div className="flex items-end justify-between border-b border-wire px-4 py-3.5">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
+                            ALERTAS · 5
+                          </p>
+                          <p className="mt-0.5 font-serif text-[17px] font-medium leading-tight text-light">
+                            <span className="italic text-pink-glow">Espinas</span> a sacar
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          className="rounded-full border border-white/10 px-2.5 py-1 font-mono text-[9px] tracking-[0.12em] text-dim transition-colors hover:text-light"
+                        >
+                          FILTRAR
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-hidden">
+                        {/* TODO: Connect to real alert management */}
+                        {mockAlerts.map((a, i) => {
+                          const s = sevStyles[a.sev];
+                          return (
+                            <div
+                              key={i}
+                              className="relative flex gap-2.5 border-b border-white/[0.04] px-4 py-2.5"
+                              style={{ animation: `dash-row-enter 500ms ${i * 60}ms var(--ease, ease) both` }}
+                            >
+                              {a.sev === "crit" && (
+                                <span className={`absolute inset-y-0 left-0 w-[2px] ${s.line}`} />
+                              )}
+                              <span
+                                className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${s.line} ${
+                                  s.pulse ? "animate-pulse" : ""
+                                }`}
+                                style={s.pulse ? { boxShadow: `0 0 6px var(--color-pink-light-glow)` } : undefined}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-baseline justify-between gap-2">
+                                  <span className="truncate text-[11.5px] font-medium text-light">
+                                    {a.area}
+                                  </span>
+                                  <span className="shrink-0 font-mono text-[9px] text-dim">{a.time}</span>
+                                </div>
+                                <p className={`mt-0.5 text-[11px] ${s.fg}`}>{a.msg}</p>
+                                <p className="mt-0.5 font-mono text-[8.5px] tracking-[0.15em] text-dim">
+                                  {a.link} ↗
+                                </p>
                               </div>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </div>
-        )}
-      </main>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── RIGHT: Regions + System health ── */}
+                  <div className="flex flex-col gap-3">
+                    {/* Regional split */}
+                    <div className="bq-card p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
+                        DISTRIBUCIÓN · POR REGIÓN
+                      </p>
+                      <p className="mt-0.5 font-serif text-[17px] font-medium leading-tight text-light">
+                        {data.stats.restaurants}{" "}
+                        <span className="italic text-pink-glow">locales</span>
+                      </p>
+                      {/* TODO: Real regional distribution data */}
+                      <div className="mt-3 flex h-2 overflow-hidden rounded-full">
+                        {mockRegions.map((r) => (
+                          <div key={r.code} style={{ flex: r.pct, background: r.color }} />
+                        ))}
+                      </div>
+                      <div className="mt-2.5 flex flex-col gap-1.5">
+                        {mockRegions.map((r) => (
+                          <div key={r.code} className="flex items-center justify-between text-[11px]">
+                            <span className="flex items-center gap-1.5 text-light">
+                              <span
+                                className="inline-block h-2 w-2 rounded-[2px]"
+                                style={{ background: r.color }}
+                              />
+                              <span className="font-mono text-[10px] tracking-[0.1em]">{r.code}</span>
+                            </span>
+                            <span className="font-mono tabular-nums text-dim">
+                              {r.locales} · {Math.round(r.pct * 100)}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* System health */}
+                    <div className="bq-card flex flex-1 flex-col p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
+                        INFRA · STATUS
+                      </p>
+                      <p className="mt-0.5 font-serif text-[17px] font-medium leading-tight text-light">
+                        Salud del <span className="italic text-pink-glow">jardín</span>
+                      </p>
+                      <div className="mt-3 flex flex-1 flex-col gap-2">
+                        {/* TODO: Connect to real infrastructure monitoring */}
+                        {mockServices.map((s, i) => (
+                          <div
+                            key={s.name}
+                            className="flex items-center gap-2.5"
+                            style={{ animation: `dash-row-enter 500ms ${i * 50}ms var(--ease, ease) both` }}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                                s.ok ? "bg-dash-green" : "bg-pink-light-glow"
+                              }`}
+                              style={{
+                                boxShadow: s.ok
+                                  ? "0 0 4px var(--color-dash-green)"
+                                  : "0 0 6px var(--color-pink-light-glow)",
+                                animation: s.ok ? "none" : "pulse-slow 1.4s infinite",
+                              }}
+                            />
+                            <span className="flex-1 text-[11px] text-light">{s.name}</span>
+                            <span className="font-mono text-[10px] tabular-nums text-dim">
+                              {s.up.toFixed(2)}%
+                            </span>
+                            <span
+                              className={`w-[44px] text-right font-mono text-[10px] tabular-nums ${
+                                s.ms > 200 ? "text-dash-amber" : "text-dim"
+                              }`}
+                            >
+                              {s.ms}ms
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 flex justify-between border-t border-white/[0.04] pt-2.5">
+                        <span className="font-mono text-[9px] tracking-[0.15em] text-dim">
+                          p95 · 30D
+                        </span>
+                        <button
+                          type="button"
+                          className="font-mono text-[9px] tracking-[0.15em] text-pink-glow transition-colors hover:text-pink-light-glow"
+                        >
+                          STATUS PAGE ↗
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </main>
+      </div>
+
+      {/* ── Dialogs ── */}
 
       <CreateTenantDialog
         open={isCreatingTenant}
@@ -486,43 +735,43 @@ export default function SuperAdminDashboard() {
         onChanged={load}
       />
 
-      {/* Confirmación de baja */}
+      {/* Archive confirm modal */}
       {archiveConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div className="w-full max-w-md rounded-2xl border border-red-500/20 bg-bg-card p-7 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-[22px] border border-red-500/20 bg-bg-card p-6 shadow-2xl">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20">
-                <svg className="size-5 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10">
+                <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                 </svg>
               </div>
               <div>
                 <h3 className="font-serif text-lg font-bold text-white">Eliminar cadena permanentemente</h3>
-                <p className="text-[12px] text-text-dim">Esta acción no se puede deshacer.</p>
+                <p className="text-[12px] text-dim">Esta acción no se puede deshacer.</p>
               </div>
             </div>
 
-            <div className="mt-5 space-y-3 rounded-xl border border-red-500/10 bg-red-500/[0.03] p-4">
-              <p className="text-[13px] text-text-dim leading-relaxed">
+            <div className="mt-4 space-y-3 rounded-xl border border-red-500/10 bg-red-500/[0.03] p-4">
+              <p className="text-[13px] leading-relaxed text-dim">
                 Estás por eliminar <strong className="text-white">{archiveConfirm.name}</strong>. Esto desactivará:
               </p>
-              <ul className="space-y-1.5 text-[12px] text-text-dim">
+              <ul className="space-y-1.5 text-[12px] text-dim">
                 <li className="flex items-start gap-2">
-                  <span className="mt-1.5 size-1 rounded-full bg-red-400 shrink-0" />
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-red-400" />
                   Todas las sucursales y zonas asociadas
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="mt-1.5 size-1 rounded-full bg-red-400 shrink-0" />
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-red-400" />
                   El acceso de todos los administradores y staff
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="mt-1.5 size-1 rounded-full bg-red-400 shrink-0" />
+                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-red-400" />
                   Menús, plantillas y configuraciones de la cadena
                 </li>
               </ul>
             </div>
 
-            <div className="mt-5 flex flex-col gap-1.5">
+            <div className="mt-4 flex flex-col gap-1.5">
               <label htmlFor="confirm-name" className="text-[10px] font-medium tracking-[0.16em] uppercase text-red-400/80">
                 Escribe el nombre de la cadena para confirmar
               </label>
@@ -533,11 +782,11 @@ export default function SuperAdminDashboard() {
                 value={archiveConfirmText}
                 onChange={(e) => setArchiveConfirmText(e.target.value)}
                 placeholder={archiveConfirm.name}
-                className="h-10 rounded-md border border-border-bright bg-bg-solid px-3 text-[12px] text-text-primary outline-none placeholder:text-text-faint focus:border-red-400 focus:ring-1 focus:ring-red-400/30"
+                className="h-10 rounded-md border border-border-bright bg-bg-solid px-3 text-[12px] text-light outline-none placeholder:text-text-faint focus:border-red-400 focus:ring-1 focus:ring-red-400/30"
               />
             </div>
 
-            <div className="mt-6 flex gap-3">
+            <div className="mt-5 flex gap-3">
               <button
                 type="button"
                 disabled={archiving}
@@ -545,7 +794,7 @@ export default function SuperAdminDashboard() {
                   setArchiveConfirm(null);
                   setArchiveConfirmText("");
                 }}
-                className="flex-1 rounded-xl border border-border-mid px-4 py-2.5 text-[13px] font-medium text-text-muted transition-colors hover:text-text-secondary"
+                className="flex-1 rounded-xl border border-border-mid px-4 py-2.5 text-[13px] font-medium text-dim transition-colors hover:text-light"
               >
                 Cancelar
               </button>
@@ -553,7 +802,7 @@ export default function SuperAdminDashboard() {
                 type="button"
                 disabled={archiving || archiveConfirmText.trim() !== archiveConfirm.name}
                 onClick={handleArchive}
-                className="flex-1 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-2.5 text-[13px] font-medium text-red-400 transition-colors hover:bg-red-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex-1 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-[13px] font-medium text-red-400 transition-colors hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {archiving ? "Eliminando..." : "Eliminar permanentemente"}
               </button>

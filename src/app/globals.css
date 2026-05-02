@@ -702,6 +702,12 @@ body {
   --color-dash-red-bg: #2E1A1A;
   --color-dash-blue: #7A9EC7;
   --color-dash-blue-bg: #1A242E;
+
+  /* ── Super Admin accent / glow tokens ── */
+  --color-pink-glow: #F472B6;
+  --color-pink-light-glow: #FC8EAC;
+  --color-dash-amber: #FCD34D;
+  --color-dash-amber-bg: rgba(252, 211, 77, 0.08);
 }
 
 /*
@@ -884,4 +890,42 @@ body {
     animation: none;
     opacity: 0.55;
   }
+}
+
+/* ─── Dashboard utility classes (Super Admin / dark-mode surfaces) ─── */
+
+.bq-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: overlay;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.bq-glass {
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bq-card {
+  background: var(--color-canvas);
+  border: 1px solid var(--color-wire);
+  border-radius: 22px;
+  box-shadow: 0 24px 64px -20px rgba(0, 0, 0, 0.45);
+}
+
+.bq-card-padded {
+  padding: 1rem 1.25rem;
+  border-radius: 22px;
+  border: 1px solid var(--color-wire);
+  background: var(--color-canvas);
+}
+
+/* Tabular numbers — fixed-width digits for aligned columns */
+.tnum {
+  font-variant-numeric: tabular-nums;
 }

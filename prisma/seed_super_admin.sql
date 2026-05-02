@@ -5,8 +5,8 @@
 -- usuario admin inicial con rol PLATFORM_ADMIN.
 --
 -- Credenciales por defecto:
---   Email:    admin@bouquet.com
---   Password: temporal123
+--   Email:    [EMAIL_ADDRESS]
+--   Password: [PASSWORD]
 --
 -- El passwordHash fue generado con scrypt (mismo algoritmo
 -- usado por auth-password.ts):

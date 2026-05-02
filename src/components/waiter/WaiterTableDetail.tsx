@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
-import { Plus, Lock, Copy, ExternalLink, CheckCheck, Loader2, Share2, X, CreditCard, AlertTriangle } from "lucide-react";
+import { Plus, Lock, Copy, ExternalLink, CheckCheck, Loader2, Share2, X, CreditCard, AlertTriangle, Users, Clock, Edit3, ArrowRightLeft, Brush, Bell } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { advanceOrderStatus } from "@/actions/orders";
 import { getTableDetail, closeTable } from "@/actions/waiter";
@@ -48,7 +48,7 @@ export default function WaiterTableDetail({
 }: {
   tableId: string;
   restaurantId?: string;
-  presentation?: "modal" | "sheetMd";
+  presentation?: "modal" | "sheetMd" | "inline";
   onClose: () => void;
   onRefresh: () => void;
 }) {
@@ -178,6 +178,20 @@ export default function WaiterTableDetail({
   const deliveredTotal = coalescedDeliveredItems.reduce((acc, i) => acc + i.totalPrice, 0);
 
   if (loading || !tableData) {
+    if (presentation === "inline") {
+      return (
+        <div className="flex h-full flex-col items-center justify-center p-8 text-text-muted">
+          <div className="relative">
+            <div className="absolute inset-0 animate-ping rounded-full bg-pink-glow/20" />
+            <Loader2 className="relative h-8 w-8 animate-spin text-pink-glow" strokeWidth={1.5} />
+          </div>
+          <p className="mt-6 font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-pink-glow/60 animate-pulse">
+            Sincronizando mesa
+          </p>
+        </div>
+      );
+    }
+
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-solid/90 backdrop-blur-sm">
         <motion.div 
@@ -284,6 +298,156 @@ export default function WaiterTableDetail({
       ? { y: "100%", transition: { type: "spring", damping: 30, stiffness: 300 } }
       : { opacity: 0, scale: 0.96, y: 15, transition: { duration: 0.22, ease: "easeOut" } }
   };
+
+  if (presentation === "inline") {
+    // Collect some flattened items for the recent items list
+    const recentItems = activeOrders.flatMap((o) => o.items).slice(0, 3);
+    const hasMoreItems = activeOrders.flatMap((o) => o.items).length > 3;
+
+    return (
+      <div className="flex h-full flex-col overflow-y-auto overflow-x-hidden p-6 custom-scrollbar relative">
+        {/* Close button for inline mode (optional, but good for UX) */}
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full bg-white/[0.03] text-text-muted hover:bg-white/10 hover:text-light transition-colors"
+        >
+          <X className="size-4" />
+        </button>
+
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="font-serif text-[28px] font-medium text-light flex items-center gap-3">
+              Mesa {table.number}
+              <span className={cn("rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+                session ? "bg-dash-green/10 border-dash-green/20 text-dash-green" : "bg-white/5 border-white/10 text-text-muted"
+              )}>
+                {session ? "ACTIVA" : table.status}
+              </span>
+            </h2>
+            {session && (
+              <div className="mt-2 flex flex-col gap-1.5 text-[11px] text-text-muted">
+                <span className="flex items-center gap-2"><Users className="size-3.5" /> {session.pax} comensales</span>
+                <span className="flex items-center gap-2"><Clock className="size-3.5" /> {seatedMinutes}m en mesa</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 border-t border-border-main/50 pt-5">
+          <p className="text-[10px] text-text-muted">Ticket actual</p>
+          <p className="font-mono text-[32px] font-bold tracking-tight text-pink-glow">${billTotal.toFixed(2)}</p>
+        </div>
+
+        {session && (
+          <div className="mt-5 border-t border-border-main/50 pt-5 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-text-muted">Mesero asignado</p>
+              <p className="text-[13px] font-medium text-light mt-0.5">Bouquet Staff</p>
+            </div>
+            <button className="flex size-7 items-center justify-center rounded-lg border border-border-main/60 bg-white/[0.03] text-text-muted transition-colors hover:text-light hover:bg-white/10">
+              <Edit3 className="size-3.5" />
+            </button>
+          </div>
+        )}
+
+        <div className="mt-6 border-t border-border-main/50 pt-5">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-text-muted">Últimos artículos</p>
+            {hasMoreItems && <button className="text-[10px] text-pink-glow hover:underline">Ver todo</button>}
+          </div>
+          <div className="mt-3 space-y-2">
+            {recentItems.length > 0 ? (
+              recentItems.map((item, idx) => (
+                <div key={`${item.id}-${idx}`} className="flex items-center justify-between text-[11px]">
+                  <span className="text-light truncate pr-2"><span className="text-pink-glow font-bold mr-1">{item.quantity}x</span> {item.name}</span>
+                  <span className="font-mono text-text-muted shrink-0">${item.totalPrice.toFixed(2)}</span>
+                </div>
+              ))
+            ) : (
+              <p className="text-[11px] text-text-muted italic">Sin artículos pendientes</p>
+            )}
+          </div>
+        </div>
+
+        {session && (
+          <div className="mt-6 grid grid-cols-2 gap-2">
+            <button className="col-span-2 flex items-center justify-center rounded-xl bg-pink-glow/15 border border-pink-glow/30 py-3 text-[11px] font-bold uppercase tracking-wide text-pink-glow transition hover:bg-pink-glow/25">
+              <Plus className="size-3.5 mr-2" /> Agregar Productos
+            </button>
+            <button onClick={() => setActiveTab("orders")} className="col-span-1 rounded-xl bg-pink-glow py-3 text-[11px] font-bold uppercase tracking-wide text-ink transition hover:opacity-90">Ver cuenta</button>
+            <button onClick={() => setActiveTab("payment")} className="col-span-1 rounded-xl border border-gold/40 bg-gold/10 py-3 text-[11px] font-bold uppercase tracking-wide text-gold transition hover:bg-gold/15">Cobrar</button>
+            <button className="col-span-1 flex items-center justify-center rounded-xl border border-border-main/60 bg-white/[0.02] py-3 text-[11px] font-bold text-light transition hover:bg-white/5"><ArrowRightLeft className="size-3 mr-2" /> Mover</button>
+            <button onClick={handleCloseTable} className="col-span-1 flex items-center justify-center rounded-xl border border-border-main/60 bg-white/[0.02] py-3 text-[11px] font-bold text-light transition hover:bg-white/5"><Brush className="size-3 mr-2" /> Limpiar</button>
+          </div>
+        )}
+
+        {table.status === "DISPONIBLE" && !session && guestMenuUrl && (
+          <div className="mt-6 border-t border-border-main/50 pt-5">
+            <button
+              type="button"
+              onClick={() => void handleShareGuestQr()}
+              className="w-full inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-gold/45 bg-gold/12 px-4 text-[11px] font-bold uppercase tracking-wider text-gold transition hover:bg-gold/20"
+            >
+              <Share2 className="h-4 w-4" strokeWidth={1.8} />
+              Compartir QR de Mesa
+            </button>
+          </div>
+        )}
+
+        <div className="mt-6 border-t border-border-main/50 pt-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[11px] font-semibold text-light">Actividad reciente</p>
+            <button className="text-[10px] text-pink-glow hover:underline">Ver todo</button>
+          </div>
+          <div className="space-y-4">
+            {/* Mock recent activity matching design */}
+            {activeOrders.length > 0 && (
+              <div className="flex gap-3">
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-full border border-pink-glow/30 bg-pink-glow/10 text-pink-glow">
+                  <Plus className="size-3" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <p className="text-[11px] font-bold text-light">Nuevo pedido agregado</p>
+                    <span className="text-[9px] text-text-muted">Ahora</span>
+                  </div>
+                  <p className="text-[10px] text-text-muted mt-0.5">{activeOrders[0].items.length} artículos</p>
+                </div>
+              </div>
+            )}
+            {deliveredOrders.length > 0 && (
+              <div className="flex gap-3">
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-full border border-dash-amber/30 bg-dash-amber/10 text-dash-amber">
+                  <Bell className="size-3" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <p className="text-[11px] font-bold text-light">Pedido enviado a cocina</p>
+                    <span className="text-[9px] text-text-muted">Hace {Math.max(1, Math.floor((Date.now() - new Date(deliveredOrders[0].createdAt).getTime())/60000))}m</span>
+                  </div>
+                  <p className="text-[10px] text-text-muted mt-0.5">Ticket #{deliveredOrders[0].id.slice(-4)}</p>
+                </div>
+              </div>
+            )}
+            {session && (
+              <div className="flex gap-3">
+                <div className="flex size-6 shrink-0 items-center justify-center rounded-full border border-dash-green/30 bg-dash-green/10 text-dash-green">
+                  <Users className="size-3" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <p className="text-[11px] font-bold text-light">Mesa abierta</p>
+                    <span className="text-[9px] text-text-muted">Hace {seatedMinutes}m</span>
+                  </div>
+                  <p className="text-[10px] text-text-muted mt-0.5">{session.pax} comensales</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

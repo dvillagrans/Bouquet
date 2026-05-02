@@ -127,8 +127,8 @@ export function WaiterMesaCard({
       whileHover={reduceMotion ? undefined : { y: -2 }}
       whileTap={reduceMotion ? undefined : { scale: 0.985 }}
       transition={spring}
-      className={cn(
-        "group relative flex h-full min-h-0 cursor-pointer flex-col overflow-hidden rounded-[20px] border border-border-main bg-bg-card p-4 sm:p-5 shadow-[inset_0_1px_0_var(--status-color)]",
+        className={cn(
+          "group relative flex h-full min-h-0 cursor-pointer flex-col overflow-hidden rounded-[18px] border border-border-main bg-bg-card p-3 sm:p-4 shadow-[inset_0_1px_0_var(--status-color)]",
         isJoinMode && isInGroup && "cursor-not-allowed",
         isJoinMode && isInGroup && "opacity-[0.55]",
         isSelectedToJoin && "ring-2 ring-gold ring-offset-2 ring-offset-bg-solid",
@@ -151,7 +151,7 @@ export function WaiterMesaCard({
         </div>
       )}
 
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-4">
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col gap-3">
         <header className="flex items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-border-main bg-bg-solid/70 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-light">
@@ -192,30 +192,30 @@ export function WaiterMesaCard({
           </div>
         </header>
 
-        <div className="space-y-2">
-          <p className="text-[11px] font-medium text-text-muted">Mesa</p>
+        <div className="space-y-1">
+          <p className="text-[10px] font-medium text-text-muted">Mesa</p>
           <p
             className={cn(
-              "font-semibold tabular-nums leading-none tracking-[-0.04em] sm:text-[56px]",
-              label ? "text-[38px] sm:text-[42px]" : "text-[52px]",
+              "font-semibold tabular-nums leading-none tracking-[-0.04em]",
+              label ? "text-[32px] sm:text-[36px]" : "text-[44px] sm:text-[48px]",
               numberClass,
             )}
             style={numberStyle}
           >
             {label ?? table.number}
           </p>
-          <div className="flex min-h-[28px] items-center gap-2">
+          <div className="flex min-h-[22px] items-center gap-2">
             {table.activeSession ? (
               <>
                 <GuestAvatar name={table.activeSession.guestName} />
-                <p className="line-clamp-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-gold">
+                <p className="line-clamp-1 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-gold">
                   {table.activeSession.guestName}
                 </p>
               </>
             ) : (
               <>
-                <Users className="h-5 w-5 shrink-0 text-text-muted/60" strokeWidth={1.5} aria-hidden />
-                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                <Users className="h-4 w-4 shrink-0 text-text-muted/60" strokeWidth={1.5} aria-hidden />
+                <p className="font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-text-muted">
                   Esperando comensales
                 </p>
               </>
@@ -230,20 +230,16 @@ export function WaiterMesaCard({
         ) : null}
 
         {/* Bloque inferior fijo: métricas + franja de acción con altura mínima siempre (evita cards más bajas en mesas activas sin botón). */}
-        <div className="mt-auto flex min-h-0 flex-col gap-3 pt-2">
-          <div className="border-t border-border-main/60 pt-4">
+        <div className="mt-auto flex min-h-0 flex-col gap-2">
+          <div className="border-t border-border-main/60 pt-3">
             <div className="grid grid-cols-3 divide-x divide-border-main/50 text-center">
               <div className="px-1">
-                <p className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-text-muted">
-                  Cocina
-                </p>
-                <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-light">{table.pendingCount}</p>
+                <p className="font-mono text-[8px] font-bold uppercase tracking-[0.16em] text-text-muted">Cocina</p>
+                <p className="mt-0.5 font-mono text-base font-semibold tabular-nums text-light">{table.pendingCount}</p>
               </div>
               <div className="px-1">
-                <p className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-text-muted">
-                  Listos
-                </p>
-                <p className="mt-1 flex items-center justify-center gap-1 font-mono text-lg font-semibold tabular-nums text-light">
+                <p className="font-mono text-[8px] font-bold uppercase tracking-[0.16em] text-text-muted">Listos</p>
+                <p className="mt-0.5 flex items-center justify-center gap-1 font-mono text-base font-semibold tabular-nums text-light">
                   {table.readyCount > 0 ? (
                     <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-dash-green" aria-hidden />
                   ) : null}
@@ -251,17 +247,15 @@ export function WaiterMesaCard({
                 </p>
               </div>
               <div className="px-1">
-                <p className="font-mono text-[9px] font-bold uppercase tracking-[0.18em] text-text-muted">
-                  Total
-                </p>
-                <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-gold">
+                <p className="font-mono text-[8px] font-bold uppercase tracking-[0.16em] text-text-muted">Total</p>
+                <p className="mt-0.5 font-mono text-base font-semibold tabular-nums text-gold">
                   {busy && table.billTotal > 0 ? `$${MXN.format(table.billTotal)}` : "—"}
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex min-h-11 flex-wrap items-center gap-2 opacity-100 transition group-hover:opacity-100 md:opacity-90">
+          <div className="flex min-h-9 flex-wrap items-center gap-1.5 opacity-100 transition group-hover:opacity-100 md:opacity-90">
             {table.status === "SUCIA" && (
               <button
                 type="button"
@@ -269,7 +263,7 @@ export function WaiterMesaCard({
                   e.stopPropagation();
                   onClean();
                 }}
-                className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-border-main bg-bg-solid px-3 text-xs font-medium text-light transition hover:border-dash-red hover:bg-dash-red/10 active:scale-[0.98]"
+                className="inline-flex min-h-9 flex-1 items-center justify-center rounded-full border border-border-main bg-bg-solid px-3 text-[11px] font-medium text-light transition hover:border-dash-red hover:bg-dash-red/10 active:scale-[0.98]"
               >
                 Marcar libre
               </button>
@@ -283,7 +277,7 @@ export function WaiterMesaCard({
                   onRegenerateQr();
                 }}
                 className={cn(
-                  "inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full border px-3 text-xs font-medium transition active:scale-[0.98]",
+                  "inline-flex min-h-9 flex-1 items-center justify-center gap-2 rounded-full border px-3 text-[11px] font-medium transition active:scale-[0.98]",
                   confirmQrId === table.id
                     ? "border-gold bg-gold text-bg-solid"
                     : "border-border-main text-text-muted hover:border-gold hover:text-gold",

@@ -114,3 +114,24 @@ export async function getSignedGuestPreviewUrl(publicCode: string) {
   const k = signTableJoinProof(table.publicCode);
   return `/mesa/${encodeURIComponent(table.publicCode)}?k=${encodeURIComponent(k)}`;
 }
+
+export async function updateTableConfig(
+  tableId: string,
+  data: { shape?: string; capacity?: number; number?: number }
+) {
+  const table = await prisma.diningTable.findUnique({
+    where: { id: tableId },
+    select: { restaurantId: true },
+  });
+  if (!table) throw new Error("Mesa no encontrada");
+
+  const update: Record<string, unknown> = {};
+  if (data.shape != null) update.shape = data.shape;
+  if (data.capacity != null) update.capacity = data.capacity;
+  if (data.number != null) update.number = data.number;
+
+  await prisma.diningTable.update({ where: { id: tableId }, data: update });
+  revalidatePath("/mesero");
+  revalidatePath("/dashboard/mesas");
+  await broadcastKdsOrdersRefresh(table.restaurantId);
+}

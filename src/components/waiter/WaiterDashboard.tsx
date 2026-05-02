@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "framer-motion";
-import { RefreshCw, LayoutGrid, Link as LinkIcon } from "lucide-react";
+import { RefreshCw, LayoutGrid, Link as LinkIcon, Users, Wallet, Brush, Sparkles, Plus, QrCode, ListChecks, FileText, History } from "lucide-react";
 import { getWaiterTablesSummary, regenerateTableQr, updateTableStatus } from "@/actions/waiter";
 import { getTables } from "@/actions/tables";
 import { createTableGroup, releaseTableGroup } from "@/actions/table-groups";
@@ -10,7 +10,6 @@ import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { WifiOff, Wifi } from "lucide-react";
 import WaiterTableDetail from "./WaiterTableDetail";
 import FloorMapClient from "@/components/dashboard/FloorMapClient";
-import WaiterMobileFloorMap from "./WaiterMobileFloorMap";
 import { createClient } from "@/lib/supabase/client";
 import type { FloorMapTable } from "@/components/dashboard/FloorMap";
 import type { TableStatus } from "@/lib/prisma-legacy-types";
@@ -21,6 +20,7 @@ import { SegmentedControl, type SegmentedItem } from "./ui/segmented-control";
 import { AnimatedNumber } from "./ui/animated-number";
 import { MesaCardSkeleton } from "./ui/mesa-card-skeleton";
 import { FloatingActionBar, FloatingActionPrimary } from "./ui/floating-action-bar";
+import { cn } from "@/lib/utils";
 
 type FilterType = "todas" | "ocupadas" | "pendientes" | "listas" | "sucias";
 type ViewType = "lista" | "mapa";
@@ -437,20 +437,25 @@ export default function WaiterDashboard({
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
           <header className="flex flex-col gap-4 border-b border-border-main/70 pb-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="space-y-3">
-                <div className="inline-flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-border-main/60 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-text-muted">
-                    {restaurantName ?? "Restaurante"} · {weekdayLabel}
-                  </span>
-                  <DynamicIsland loading={refreshing} banner={banner} />
-                </div>
-                <div>
-                  <h1 className="text-[32px] font-semibold leading-[0.95] tracking-tight text-light sm:text-[40px]">
+              <div className="space-y-1.5">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-pink-glow/80">
+                  {restaurantName ? `SUCURSAL ${restaurantName.toUpperCase()}` : "SUCURSAL LINDAVISTA"}
+                </p>
+                <div className="flex items-center gap-3">
+                  <h1 className="font-serif text-[40px] md:text-[44px] font-medium leading-none tracking-tight text-light">
                     Mesas
                   </h1>
-                  <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.18em] text-text-muted">
-                    <AnimatedNumber value={stats.occupied} /> en piso · {clockLive}
-                  </p>
+                  <div className="flex items-center gap-2 rounded-full border border-pink-glow/30 bg-pink-glow/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.15em] text-pink-glow">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-pink-glow opacity-60" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-pink-glow shadow-[0_0_8px_rgba(244,114,182,0.8)]" />
+                    </span>
+                    EN VIVO
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 pt-1 font-mono text-[11px] text-text-muted">
+                  <AnimatedNumber value={stats.occupied} /> en piso · {clockLive} {new Date().getHours() >= 12 ? 'P.M.' : 'A.M.'}
+                  <DynamicIsland loading={refreshing} banner={banner} />
                 </div>
               </div>
 
@@ -494,26 +499,34 @@ export default function WaiterDashboard({
             </div>
 
             <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-stretch divide-x divide-border-main/70 overflow-hidden rounded-2xl border border-border-main/80 bg-bg-card">
-                {(
-                  [
-                    ["Activas", stats.occupied, "text-light"],
-                    ["Limpiar", stats.dirty, "text-light"],
-                  ] as const
-                ).map(([label, val, color]) => (
-                  <div
-                    key={label}
-                    className="min-w-[calc(50%-1px)] flex-1 px-4 py-3 text-center sm:min-w-0"
-                  >
-                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-text-muted">
-                      {label}
-                    </p>
-                    <p className={`mt-1 flex items-center justify-center gap-2 font-mono text-2xl font-semibold tabular-nums ${color}`}>
-                      <AnimatedNumber value={val as number} />
-                    </p>
+              {(() => {
+                const kpis = [
+                  { id: "activas", label: "ACTIVAS", value: stats.occupied, icon: Users, colorClass: "text-pink-glow border-pink-glow/30 bg-pink-glow/[0.08]" },
+                  { id: "por-cobrar", label: "POR COBRAR", value: stats.pending, icon: Wallet, colorClass: "text-dash-amber border-dash-amber/30 bg-dash-amber/[0.08]" },
+                  { id: "por-limpiar", label: "POR LIMPIAR", value: stats.dirty, icon: Brush, colorClass: "text-text-muted border-border-main bg-white/[0.03]" },
+                  { id: "nuevas", label: "NUEVAS", value: stats.ready, icon: Sparkles, colorClass: "text-pink-light-glow border-pink-light-glow/30 bg-pink-light-glow/[0.08] shadow-[0_0_15px_rgba(244,114,182,0.1)]" },
+                ];
+                return (
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+                    {kpis.map(({ id, label, value, icon: Icon, colorClass }) => (
+                      <div
+                        key={id}
+                        className="flex items-center gap-4 rounded-xl border border-white/[0.06] bg-bg-card px-4 py-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)]"
+                      >
+                        <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl border", colorClass)}>
+                          <Icon className="size-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-text-muted/80">{label}</p>
+                          <p className="font-serif text-[1.5rem] font-bold tabular-nums leading-none text-light">
+                            <AnimatedNumber value={value} />
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
 
               <AnimatePresence>
                 {(stats.ready > 0 || stats.pending > 0) && (
@@ -579,35 +592,24 @@ export default function WaiterDashboard({
           )}
 
           {view === "mapa" && (
-            <>
-              {loading && mapTables.length === 0 ? (
-                <section className="relative overflow-hidden rounded-[1.25rem] border border-border-main bg-bg-card">
+            <div className="flex flex-col lg:flex-row items-stretch gap-4">
+              <section className={cn(
+                "relative overflow-hidden rounded-[1.25rem] border border-border-main bg-bg-card transition-all flex-1",
+                selectedTable ? "hidden lg:block lg:flex-[2]" : "block"
+              )}>
+                {loading && mapTables.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-text-muted">
                     <RefreshCw className="mb-3 h-7 w-7 animate-spin" strokeWidth={1.6} aria-hidden />
                     <p className="text-sm">Cargando mapa…</p>
                   </div>
-                </section>
-              ) : (
-                <>
-                  {/* Mobile: HTML/CSS spatial map — touch-friendly */}
-                  <section className="md:hidden">
-                    <WaiterMobileFloorMap
+                ) : (
+                  <div className="relative h-full min-h-[500px]">
+                    <FloorMapClient
                       tables={filteredMapTables}
-                      selectionMode={isJoinMode}
-                      selectedIds={selectedTablesToJoin}
-                      disabledIds={
-                        isJoinMode
-                          ? tables.filter((t) => !!t.groupId).map((t) => t.id)
-                          : []
-                      }
+                      readOnly
+                      showSeatGlyphs={showMapSeatGlyphs}
+                      showOperationsBar={false}
                       onTableClick={(id) => {
-                        if (isJoinMode) {
-                          const t = tables.find((x) => x.id === id);
-                          if (t && !t.groupId) {
-                            handleToggleJoinTable(id, false);
-                          }
-                          return;
-                        }
                         const t = tables.find((x) => x.id === id);
                         if (!t) return;
                         if (t.status === "SUCIA") {
@@ -617,31 +619,34 @@ export default function WaiterDashboard({
                         void openTableDetail(t);
                       }}
                     />
-                  </section>
+                  </div>
+                )}
+              </section>
 
-                  {/* Desktop: Konva canvas map */}
-                  <section className="hidden md:block relative overflow-hidden rounded-[1.25rem] border border-border-main bg-bg-card">
-                    <div className="relative">
-                      <FloorMapClient
-                        tables={filteredMapTables}
-                        readOnly
-                        showSeatGlyphs={showMapSeatGlyphs}
-                        showOperationsBar={false}
-                        onTableClick={(id) => {
-                          const t = tables.find((x) => x.id === id);
-                          if (!t) return;
-                          if (t.status === "SUCIA") {
-                            void handleCleanTable(t.id);
-                            return;
-                          }
-                          void openTableDetail(t);
+              <AnimatePresence>
+                {selectedTable && (
+                  <motion.aside
+                    initial={{ opacity: 0, x: 20, width: 0 }}
+                    animate={{ opacity: 1, x: 0, width: "auto" }}
+                    exit={{ opacity: 0, x: 20, width: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className="w-full shrink-0 overflow-hidden lg:w-[380px]"
+                  >
+                    <div className="h-full w-full lg:w-[380px] rounded-[1.25rem] border border-border-main bg-bg-card">
+                      <WaiterTableDetail
+                        tableId={selectedTable}
+                        restaurantId={restaurantId}
+                        presentation="inline"
+                        onClose={() => setSelectedTable(null)}
+                        onRefresh={() => {
+                          void loadTables({ silent: true });
                         }}
                       />
                     </div>
-                  </section>
-                </>
-              )}
-            </>
+                  </motion.aside>
+                )}
+              </AnimatePresence>
+            </div>
           )}
 
           {view === "lista" && (
@@ -725,6 +730,65 @@ export default function WaiterDashboard({
               </section>
             </LayoutGroup>
           )}
+
+          {/* Bottom Action Bar */}
+          <div className="sticky bottom-0 z-40 -mx-4 mt-4 border-t border-border-main/50 bg-bg-solid/90 p-4 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+            <div className="mx-auto flex w-full max-w-7xl items-center gap-3 overflow-x-auto scrollbar-hide pb-2 lg:pb-0">
+              <button className="group inline-flex min-h-[52px] shrink-0 items-center gap-3 rounded-xl border border-white/[0.06] bg-bg-card px-4 text-[11px] font-semibold text-light shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] transition-colors hover:bg-white/5 hover:border-pink-glow/30">
+                <span className="flex size-7 items-center justify-center rounded-full border border-pink-glow/30 text-pink-glow group-hover:bg-pink-glow/10 transition-colors">
+                  <Plus className="size-4" />
+                </span>
+                <div className="flex flex-col items-start leading-tight">
+                  <span className="font-bold">Nueva mesa</span>
+                  <span className="text-[9.5px] font-normal text-text-muted">Abrir nueva mesa</span>
+                </div>
+              </button>
+              <button className="group inline-flex min-h-[52px] shrink-0 items-center gap-3 rounded-xl border border-white/[0.06] bg-bg-card px-4 text-[11px] font-semibold text-light shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] transition-colors hover:bg-white/5 hover:border-pink-glow/30">
+                <div className="flex size-7 items-center justify-center rounded-lg bg-pink-glow/10 text-pink-glow group-hover:bg-pink-glow/20 transition-colors">
+                  <QrCode className="size-4" />
+                </div>
+                <div className="flex flex-col items-start leading-tight">
+                  <span className="font-bold">Generar QR</span>
+                  <span className="text-[9.5px] font-normal text-text-muted">Código de menú</span>
+                </div>
+              </button>
+              <button 
+                onClick={() => setView("lista")}
+                className="group inline-flex min-h-[52px] shrink-0 items-center gap-3 rounded-xl border border-white/[0.06] bg-bg-card px-4 text-[11px] font-semibold text-light shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] transition-colors hover:bg-white/5 hover:border-pink-glow/30"
+              >
+                <div className="flex size-7 items-center justify-center rounded-lg bg-pink-glow/10 text-pink-glow group-hover:bg-pink-glow/20 transition-colors">
+                  <ListChecks className="size-4" />
+                </div>
+                <div className="flex flex-col items-start leading-tight">
+                  <span className="font-bold">Cambiar a lista</span>
+                  <span className="text-[9.5px] font-normal text-text-muted">Ver todas las mesas</span>
+                </div>
+              </button>
+              <button className="group inline-flex min-h-[52px] shrink-0 items-center gap-3 rounded-xl border border-white/[0.06] bg-bg-card px-4 text-[11px] font-semibold text-light shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] transition-colors hover:bg-white/5 hover:border-pink-glow/30">
+                <div className="flex size-7 items-center justify-center rounded-lg bg-pink-glow/10 text-pink-glow group-hover:bg-pink-glow/20 transition-colors relative">
+                  <FileText className="size-4" />
+                  {stats.pending > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-pink-glow font-mono text-[9px] font-bold text-ink shadow-[0_0_8px_rgba(244,114,182,0.8)]">
+                      {stats.pending}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col items-start leading-tight">
+                  <span className="font-bold">Ver comandas</span>
+                  <span className="text-[9.5px] font-normal text-text-muted">Órdenes activas</span>
+                </div>
+              </button>
+              <button className="group inline-flex min-h-[52px] shrink-0 items-center gap-3 rounded-xl border border-white/[0.06] bg-bg-card px-4 text-[11px] font-semibold text-light shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)] transition-colors hover:bg-white/5 hover:border-pink-glow/30">
+                <div className="flex size-7 items-center justify-center rounded-lg bg-pink-glow/10 text-pink-glow group-hover:bg-pink-glow/20 transition-colors">
+                  <History className="size-4" />
+                </div>
+                <div className="flex flex-col items-start leading-tight">
+                  <span className="font-bold">Historial</span>
+                  <span className="text-[9.5px] font-normal text-text-muted">Tickets y movimientos</span>
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
       </main>
 
@@ -781,21 +845,6 @@ export default function WaiterDashboard({
           to   { opacity: 1; transform: translateY(0); }
         }
       ` }} />
-
-      <AnimatePresence>
-        {selectedTable && (
-          <WaiterTableDetail
-            key="table-detail-panel"
-            tableId={selectedTable}
-            restaurantId={restaurantId}
-            presentation={view === "mapa" ? "sheetMd" : "modal"}
-            onClose={() => setSelectedTable(null)}
-            onRefresh={() => {
-              void loadTables({ silent: true });
-            }}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 }

@@ -2,9 +2,9 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Stage, Layer, Rect, Circle, Text, Group, Path } from "react-konva";
+import { Stage, Layer, Rect, Circle, Text, Group, Path, RegularPolygon } from "react-konva";
 import Konva from "konva";
-import { Save, Edit3, Eye, Move, Circle as CircleIcon, Square } from "lucide-react";
+import { Save, Edit3, Eye, Move, Circle as CircleIcon, Square, Hexagon } from "lucide-react";
 import type { DiningTable as Table } from "@/generated/prisma";
 import type { TableStatus } from "@/lib/prisma-legacy-types";
 import { getSignedGuestPreviewUrl } from "@/actions/tables";
@@ -23,20 +23,31 @@ const C = {
   ember:    "#C75B5B",
   gold:     "#C75B7A",
   goldHi:   "#E8A5B0",
+  pinkGlow: "#F472B6",
+  amber:    "#F59E0B",
+  blue:     "#94A3B8",
+  green:    "#4ADE80",
 };
 
 const STATUS_FILL: Record<TableStatus, string> = {
-  DISPONIBLE: C.sage,
-  OCUPADA:    C.glow,
-  SUCIA:      C.ember,
-  CERRANDO:   C.gold,
+  DISPONIBLE: "#2a1525",
+  OCUPADA:    C.pinkGlow,
+  SUCIA:      C.blue,
+  CERRANDO:   C.amber,
 };
 
 const STATUS_STROKE: Record<TableStatus, string> = {
-  DISPONIBLE: "#9EB898",
-  OCUPADA:    "#D68C9F",
-  SUCIA:      "#C75B5B",
-  CERRANDO:   C.goldHi,
+  DISPONIBLE: "#4a2535",
+  OCUPADA:    C.pinkGlow,
+  SUCIA:      C.blue,
+  CERRANDO:   C.amber,
+};
+
+const STATUS_GLOW: Record<TableStatus, boolean> = {
+  DISPONIBLE: false,
+  OCUPADA:    true,
+  SUCIA:      false,
+  CERRANDO:   true,
 };
 
 const STATUS_LABEL: Record<TableStatus, string> = {
@@ -74,6 +85,10 @@ const DotGridMemo = memo(DotGrid);
 function getTableSize(capacity: number, shape: string): { w: number; h: number } {
   if (shape === "round") {
     const d = capacity <= 2 ? 60 : capacity <= 4 ? 76 : capacity <= 6 ? 92 : 108;
+    return { w: d, h: d };
+  }
+  if (shape === "hexagon") {
+    const d = capacity <= 2 ? 56 : capacity <= 4 ? 72 : capacity <= 6 ? 88 : 104;
     return { w: d, h: d };
   }
   if (capacity <= 2)  return { w: 64,  h: 64  };
@@ -163,9 +178,11 @@ interface TableNodeProps {
 
 function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGlyphs = true }: TableNodeProps) {
   const isSelected  = selected === table.id;
-  const fill        = STATUS_FILL[table.status as TableStatus];
-  const stroke      = STATUS_STROKE[table.status as TableStatus];
+  const fill        = STATUS_FILL[table.status as TableStatus] ?? "#4a2535";
+  const stroke      = STATUS_STROKE[table.status as TableStatus] ?? "#4a2535";
+  const hasGlow     = STATUS_GLOW[table.status as TableStatus] ?? false;
   const isRound     = table.shape === "round";
+  const isHex       = table.shape === "hexagon";
 
   const { w, h }    = getTableSize(table.capacity, table.shape);
   const cx          = w / 2;
@@ -228,6 +245,9 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGly
         isRound ? (
           <Circle x={cx} y={cy} radius={cx + 11}
             stroke={fill} strokeWidth={1.5} opacity={0.4} dash={[3, 5]} listening={false} />
+        ) : isHex ? (
+          <RegularPolygon x={cx} y={cy} sides={6} radius={cx + 11}
+            stroke={fill} strokeWidth={1.5} opacity={0.4} dash={[3, 5]} listening={false} />
         ) : (
           <Rect x={-9} y={-9} width={w + 18} height={h + 18} cornerRadius={cornerR + 8}
             stroke={fill} strokeWidth={1.5} opacity={0.4} dash={[3, 5]} listening={false} />
@@ -240,8 +260,17 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGly
           <Circle x={cx} y={cy} radius={cx}
             {...bodyGrad} stroke={stroke}
             strokeWidth={isSelected ? 2 : 1.5}
-            shadowColor={fill} shadowBlur={isSelected ? 24 : 10} shadowOpacity={isSelected ? 0.5 : 0.22} />
+            shadowColor={fill} shadowBlur={hasGlow || isSelected ? 24 : 6} shadowOpacity={hasGlow ? 0.4 : isSelected ? 0.5 : 0.1} />
           <Circle x={cx} y={cy} radius={cx * 0.68}
+            fill="#00000040" stroke="#FFFFFF0E" strokeWidth={0.8} listening={false} />
+        </>
+      ) : isHex ? (
+        <>
+          <RegularPolygon x={cx} y={cy} sides={6} radius={cx}
+            {...bodyGrad} stroke={stroke}
+            strokeWidth={isSelected ? 2 : 1.5}
+            shadowColor={fill} shadowBlur={hasGlow || isSelected ? 24 : 6} shadowOpacity={hasGlow ? 0.4 : isSelected ? 0.5 : 0.1} />
+          <RegularPolygon x={cx} y={cy} sides={6} radius={cx * 0.64}
             fill="#00000040" stroke="#FFFFFF0E" strokeWidth={0.8} listening={false} />
         </>
       ) : (
@@ -249,7 +278,7 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGly
           <Rect width={w} height={h} cornerRadius={cornerR}
             {...bodyGrad} stroke={stroke}
             strokeWidth={isSelected ? 2 : 1.5}
-            shadowColor={fill} shadowBlur={isSelected ? 24 : 10} shadowOpacity={isSelected ? 0.5 : 0.22} />
+            shadowColor={fill} shadowBlur={hasGlow || isSelected ? 24 : 6} shadowOpacity={hasGlow ? 0.4 : isSelected ? 0.5 : 0.1} />
           <Rect
             x={w * 0.10} y={h * 0.12}
             width={w * 0.80} height={h * 0.76}
@@ -753,6 +782,13 @@ export default function FloorMap({
         className="relative overflow-hidden rounded-2xl border border-wire/40 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(237,232,225,0.03)]"
         style={{ height: layoutBounds.logicalHeight * scale + 2 }}
       >
+        {/* Floral decoration (corner) */}
+        <img
+          src="/floral-assets/branches/complete_2.png"
+          alt=""
+          className="pointer-events-none absolute -right-8 -bottom-8 h-32 w-auto opacity-[0.06] mix-blend-overlay grayscale"
+          aria-hidden
+        />
         <Stage
           width={layoutBounds.logicalWidth * scale}
           height={layoutBounds.logicalHeight * scale}

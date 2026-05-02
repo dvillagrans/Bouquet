@@ -3,6 +3,13 @@
 /**
  * Anillo pequeño con minutos de sesión; tono de alerta tras `warnMinutes`.
  */
+function formatTime(m: number): string {
+  const hours = Math.floor(m / 60);
+  const mins = m % 60;
+  if (hours > 0) return `${hours}h ${String(mins).padStart(2, "0")}m`;
+  return `${mins}m`;
+}
+
 export function SessionTimeRing({
   minutes,
   warnMinutes = 45,
@@ -50,9 +57,9 @@ export function SessionTimeRing({
         />
       </svg>
       <span
-        className={`absolute inset-0 flex items-center justify-center font-mono text-[10px] font-bold tabular-nums leading-none ${warn ? "text-dash-red" : "text-light"}`}
+        className={`absolute inset-0 flex items-center justify-center font-mono text-[9px] font-bold tabular-nums leading-none ${warn ? "text-dash-red" : "text-light"}`}
       >
-        {minutes}
+        {formatTime(minutes)}
       </span>
       <span className="sr-only">{minutes} minutos en mesa</span>
     </div>

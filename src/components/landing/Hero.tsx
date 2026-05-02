@@ -344,7 +344,7 @@ export const Hero = () => {
   }, { scope: containerRef });
 
   return (
-    <section ref={containerRef} className="relative overflow-hidden pt-32 pb-20 lg:pt-44 lg:pb-28">
+    <section ref={containerRef} className="relative flex min-h-[100dvh] flex-col justify-center overflow-hidden pt-32 pb-20 lg:pt-44 lg:pb-28">
       {/* Fondo atmosférico */}
       <div className="absolute inset-0 -z-10 pointer-events-none">
         <div className="bg-blob absolute left-[-10%] top-[-5%] h-[30rem] w-[30rem] rounded-full bg-rose/10 blur-3xl opacity-0" />

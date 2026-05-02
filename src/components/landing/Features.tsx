@@ -204,7 +204,7 @@ export const Features = () => {
     <section
       ref={sectionRef}
       id="como-funciona"
-      className="relative overflow-hidden py-24 md:py-32 lg:py-40 px-6 md:px-10 lg:px-12"
+      className="relative flex min-h-[80dvh] flex-col justify-center overflow-hidden py-24 md:py-32 lg:py-40 px-6 md:px-10 lg:px-12"
       style={{
         background:
           "radial-gradient(ellipse at center, #FDF0F4 0%, #F5E8ED 60%, #EDE0E6 100%)",

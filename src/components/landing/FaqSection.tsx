@@ -157,7 +157,7 @@ export function FaqSection() {
     <section
       ref={sectionRef}
       id="faq"
-      className="relative overflow-hidden bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,#FDF2F5_0%,#FAF6F3_100%)] py-24 lg:py-36"
+      className="relative flex min-h-[80dvh] flex-col justify-center overflow-hidden bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,#FDF2F5_0%,#FAF6F3_100%)] py-24 lg:py-36"
     >
       <div className="relative mx-auto max-w-[88rem] px-6 lg:px-12">
         <div className="grid gap-12 lg:grid-cols-[0.4fr_0.6fr] lg:gap-20">

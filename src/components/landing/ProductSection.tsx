@@ -288,7 +288,7 @@ export const ProductSection = () => {
   return (
     <section
       ref={sectionRef}
-      className="relative bg-burgundy text-white pt-28 lg:pt-40 pb-32 lg:pb-48 overflow-hidden z-10"
+      className="relative flex min-h-[90dvh] flex-col justify-center bg-burgundy text-white pt-28 lg:pt-40 pb-32 lg:pb-48 overflow-hidden z-10"
       id="producto"
     >
       {/* Transición */}

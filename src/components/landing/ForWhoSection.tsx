@@ -150,7 +150,7 @@ export function ForWhoSection() {
     <section
       ref={sectionRef}
       id="segmentos"
-      className="relative overflow-hidden bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,#FDF2F5_0%,#F5D5DC_40%,#FAF6F3_100%)] py-24 lg:py-36"
+      className="relative flex min-h-[90dvh] flex-col justify-center overflow-hidden bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,#FDF2F5_0%,#F5D5DC_40%,#FAF6F3_100%)] py-24 lg:py-36"
     >
       {/* Capa atmosférica */}
       <div
@@ -184,12 +184,12 @@ export function ForWhoSection() {
         {/* Layout Escénico Grid */}
         <div 
           ref={gridRef}
-          className="grid gap-x-6 gap-y-24 lg:grid-cols-[1.5fr_1.2fr_0.8fr] lg:gap-y-0 lg:items-center"
+          className="grid gap-x-6 gap-y-24 md:grid-cols-2 lg:grid-cols-[1.1fr_1.6fr_0.8fr] lg:gap-y-0 lg:items-center"
         >
           {/* Card 1 — Restaurante de servicio completo */}
           <div
             ref={card1Ref}
-            className="group relative h-[480px] lg:h-[540px] w-full overflow-visible rounded-[2rem] opacity-0 mt-12 lg:mt-0"
+            className="group relative h-[480px] lg:h-[480px] w-full overflow-visible rounded-[2rem] opacity-0 mt-12 lg:mt-0"
             onMouseEnter={() => handleMouseEnter(0)}
             onMouseLeave={() => handleMouseLeave(0)}
           >
@@ -211,7 +211,7 @@ export function ForWhoSection() {
             />
 
             {/* Contenido texto */}
-            <div className="relative z-30 flex h-full flex-col justify-end p-6 pb-8 lg:absolute lg:right-0 lg:top-0 lg:bottom-0 lg:w-[50%] lg:justify-center lg:p-10 lg:pl-0">
+            <div className="relative z-30 flex h-full flex-col justify-end p-6 pb-8 lg:absolute lg:right-0 lg:top-0 lg:bottom-0 lg:w-[60%] lg:justify-center lg:p-8 lg:pl-0">
               <span className="mb-3 text-[0.65rem] font-bold uppercase tracking-[0.15em] text-rose-500">
                 SERVICIO DE MESA
               </span>
@@ -252,10 +252,11 @@ export function ForWhoSection() {
               src={cardTaqueria}
               alt="Tacos en taquería"
               className="pointer-events-none absolute -right-[30%] top-[5%] z-20 h-auto w-[110%] max-w-none origin-center rotate-[-2deg] object-contain lg:-right-[25%] lg:top-[12%] lg:w-[85%]"
+              priority
             />
 
             {/* Contenido texto */}
-            <div className="relative z-30 flex h-full flex-col justify-end p-6 pb-8 lg:justify-center lg:p-10 lg:w-[55%]">
+            <div className="relative z-30 flex h-full flex-col justify-end p-6 pb-8 lg:justify-center lg:p-12 lg:w-[50%]">
               <span className="mb-3 text-[0.65rem] font-bold uppercase tracking-[0.15em] text-amber-700">
                 VELOCIDAD Y VOLUMEN
               </span>
@@ -278,7 +279,7 @@ export function ForWhoSection() {
           {/* Card 3 — Bares & Coctelerías */}
           <div
             ref={card3Ref}
-            className="group relative h-[500px] lg:h-[540px] w-full overflow-visible rounded-[2rem] opacity-0 mt-20 lg:mt-0"
+            className="group relative h-[500px] lg:h-[540px] w-full overflow-visible rounded-[2rem] opacity-0 mt-20 md:col-span-2 lg:col-span-1 lg:mt-0"
             onMouseEnter={() => handleMouseEnter(2)}
             onMouseLeave={() => handleMouseLeave(2)}
           >
@@ -296,6 +297,7 @@ export function ForWhoSection() {
               src={cardBar}
               alt="Cóctel en barra"
               className="pointer-events-none absolute -top-[15%] left-[60%] z-20 h-auto w-[160%] max-w-none -translate-x-1/2 lg:-top-[15%] lg:left-[65%] lg:w-[190%]"
+              priority
             />
 
             {/* Contenido texto */}

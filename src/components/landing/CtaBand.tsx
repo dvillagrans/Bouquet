@@ -27,7 +27,7 @@ export const CtaBand = () => {
   return (
     <section
       id="contacto"
-      className="relative border-t border-burgundy/10 bg-rose-cream py-20 lg:py-28 overflow-hidden"
+      className="relative flex min-h-[80dvh] flex-col justify-center border-t border-burgundy/10 bg-rose-cream py-20 lg:py-28 overflow-hidden"
     >
       {/* Bookend */}
       <div
@@ -165,6 +165,7 @@ export const CtaBand = () => {
                 type="submit"
                 disabled={isSubmitting}
                 className="group inline-flex h-14 items-center justify-center gap-3 rounded-full bg-burgundy px-10 text-[1rem] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(74,26,44,0.5)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-burgundy-light active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed"
+                suppressHydrationWarning
               >
                 {isSubmitting ? (
                   <>

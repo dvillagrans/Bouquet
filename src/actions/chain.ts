@@ -25,6 +25,15 @@ export interface ZoneSummary {
   activeTables: number;
 }
 
+export interface ChainStaffRow {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  restaurantName?: string;
+  lastActive?: string;
+}
+
 export interface ChainDashboardData {
   chain: { id: string; name: string; currency: string };
   stats: {
@@ -40,6 +49,7 @@ export interface ChainDashboardData {
   };
   zones: ZoneSummary[];
   restaurants: RestaurantSummary[];
+  staff: ChainStaffRow[];
   alerts: {
     id: string;
     name: string;
@@ -244,6 +254,40 @@ export async function getChainDashboard(tenantId: string): Promise<ChainDashboar
     }
   }
 
+  // Fetch some staff for the dashboard
+  const staffMembers = await prisma.userRole.findMany({
+    where: {
+      OR: [
+        { chainId: tenantId },
+        { restaurant: { chainId: tenantId } }
+      ]
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        }
+      },
+      restaurant: {
+        select: { name: true }
+      }
+    },
+    take: 50,
+    orderBy: { createdAt: 'desc' }
+  });
+
+  const staff: ChainStaffRow[] = staffMembers.map(sm => ({
+    id: sm.user.id,
+    name: `${sm.user.firstName} ${sm.user.lastName}`,
+    email: sm.user.email,
+    role: sm.role,
+    restaurantName: sm.restaurant?.name || "Corporativo",
+    lastActive: new Date().toISOString() // Placeholder
+  }));
+
   return {
     chain,
     stats: {
@@ -259,6 +303,7 @@ export async function getChainDashboard(tenantId: string): Promise<ChainDashboar
     },
     zones: zones.sort((a, b) => b.totalRevenue - a.totalRevenue),
     restaurants,
+    staff,
     alerts,
   };
 }

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, RefreshCw, Pencil, UserCog, Archive, Search, ArrowRight, MapPin, Building2, Layers, Users, ShieldCheck, Mail, Server, Database, Cpu, Activity, Terminal, CreditCard, TrendingUp, DollarSign, History, Calendar } from "lucide-react";
+import { Plus, RefreshCw, Pencil, UserCog, Archive, Search, ArrowRight, MapPin, Building2, Layers, Users, ShieldCheck, Mail, Server, Database, Cpu, Activity, Terminal, CreditCard, TrendingUp, DollarSign, History, Calendar, Link as LinkIcon, Blocks, Webhook, Settings2, ExternalLink } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getSuperAdminDashboard, archiveTenant, getSuperAdminRestaurants, getSuperAdminUsers, getSuperAdminInfra, getSuperAdminPayments, type SuperAdminDashboardData, type SuperAdminRestaurantRow, type SuperAdminUserRow, type SuperAdminInfraData, type SuperAdminPaymentsData } from "@/actions/admin";
+import { getSuperAdminDashboard, archiveTenant, getSuperAdminRestaurants, getSuperAdminUsers, getSuperAdminInfra, getSuperAdminPayments, getSuperAdminIntegrations, type SuperAdminDashboardData, type SuperAdminRestaurantRow, type SuperAdminUserRow, type SuperAdminInfraData, type SuperAdminPaymentsData, type SuperAdminIntegrationRow } from "@/actions/admin";
 import { CreateTenantDialog } from "@/components/admin/CreateTenantDialog";
 import { EditTenantDialog } from "@/components/admin/EditTenantDialog";
 import { ChangeAdminDialog } from "@/components/admin/ChangeAdminDialog";
@@ -96,7 +96,7 @@ export default function SuperAdminDashboard() {
   const [data, setData] = useState<SuperAdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"CONTROL" | "CADENAS" | "LOCALES" | "USUARIOS" | "INFRAESTRUCTURA" | "PAGOS">("CONTROL");
+  const [activeTab, setActiveTab] = useState<"CONTROL" | "CADENAS" | "LOCALES" | "USUARIOS" | "INFRAESTRUCTURA" | "PAGOS" | "INTEGRACIONES">("CONTROL");
   const [isCreatingTenant, setIsCreatingTenant] = useState(false);
 
   const [editChain, setEditChain] = useState<{ id: string; name: string; currency: string } | null>(null);
@@ -114,6 +114,8 @@ export default function SuperAdminDashboard() {
   const [loadingInfra, setLoadingInfra] = useState(false);
   const [paymentsData, setPaymentsData] = useState<SuperAdminPaymentsData | null>(null);
   const [loadingPayments, setLoadingPayments] = useState(false);
+  const [integrations, setIntegrations] = useState<SuperAdminIntegrationRow[]>([]);
+  const [loadingIntegrations, setLoadingIntegrations] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -145,6 +147,9 @@ export default function SuperAdminDashboard() {
     }
     if (activeTab === "PAGOS" && !paymentsData) {
       loadPayments();
+    }
+    if (activeTab === "INTEGRACIONES" && integrations.length === 0) {
+      loadIntegrations();
     }
   }, [activeTab]);
 
@@ -185,6 +190,16 @@ export default function SuperAdminDashboard() {
       setPaymentsData(res);
     } finally {
       setLoadingPayments(false);
+    }
+  };
+
+  const loadIntegrations = async () => {
+    setLoadingIntegrations(true);
+    try {
+      const res = await getSuperAdminIntegrations();
+      setIntegrations(res);
+    } finally {
+      setLoadingIntegrations(false);
     }
   };
 
@@ -281,7 +296,7 @@ export default function SuperAdminDashboard() {
           </div>
           <NavRow label="Infraestructura" active={activeTab === "INFRAESTRUCTURA"} onClick={() => setActiveTab("INFRAESTRUCTURA")} badge={null} />
           <NavRow label="Pagos" active={activeTab === "PAGOS"} onClick={() => setActiveTab("PAGOS")} badge={null} />
-          <NavRow label="Integraciones" badge={null} />
+          <NavRow label="Integraciones" active={activeTab === "INTEGRACIONES"} onClick={() => setActiveTab("INTEGRACIONES")} badge={null} />
           <NavRow label="Despliegues" badge={null} />
           <NavRow label="Auditoría" badge={null} />
 
@@ -1400,6 +1415,86 @@ export default function SuperAdminDashboard() {
                         </div>
                       </>
                     ) : null}
+                  </div>
+                ) : activeTab === "INTEGRACIONES" ? (
+                  <div className="flex flex-1 flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="flex items-end justify-between px-2">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
+                          SISTEMA · SERVICIOS EXTERNOS
+                        </p>
+                        <h2 className="mt-1 font-serif text-[24px] font-medium leading-tight text-light">
+                          Network <span className="italic text-pink-glow">Integrations</span>
+                        </h2>
+                      </div>
+                      <button
+                        onClick={loadIntegrations}
+                        className="flex h-9 items-center gap-2 rounded-full border border-white/5 bg-white/[0.03] px-4 text-[12px] text-dim hover:bg-white/10 hover:text-light transition-all"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${loadingIntegrations ? 'animate-spin' : ''}`} />
+                        Sincronizar APIs
+                      </button>
+                    </div>
+
+                    {loadingIntegrations && integrations.length === 0 ? (
+                      <div className="flex h-60 items-center justify-center text-dim">
+                        <RefreshCw className="h-6 w-6 animate-spin" />
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {integrations.map((it, i) => (
+                          <div
+                            key={it.id}
+                            className="bq-card group relative overflow-hidden transition-all hover:border-white/20"
+                            style={{ animation: `dash-row-enter 500ms ${i * 60}ms ease both` }}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.03] text-light transition-colors group-hover:bg-pink-glow/10 group-hover:text-pink-glow">
+                                {it.type === "PAYMENTS" ? <CreditCard className="h-6 w-6" /> :
+                                 it.type === "MESSAGING" ? <Webhook className="h-6 w-6" /> :
+                                 it.type === "AI" ? <Blocks className="h-6 w-6" /> :
+                                 <Server className="h-6 w-6" />}
+                              </div>
+                              <span className={`flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[9px] font-bold tracking-wider ${
+                                it.status === "CONNECTED" ? 'bg-dash-green/10 text-dash-green border border-dash-green/20' :
+                                it.status === "ERROR" ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                                'bg-white/5 text-dim border border-white/10'
+                              }`}>
+                                <span className={`h-1 w-1 rounded-full ${it.status === "CONNECTED" ? 'bg-dash-green' : it.status === "ERROR" ? 'bg-red-400' : 'bg-dim'}`} />
+                                {it.status}
+                              </span>
+                            </div>
+
+                            <div className="mt-6">
+                              <h3 className="font-serif text-lg font-bold text-light">{it.name}</h3>
+                              <p className="mt-1 text-[11px] text-dim font-mono opacity-60">{it.provider}</p>
+                            </div>
+
+                            <div className="mt-8 flex items-center justify-between border-t border-white/[0.05] pt-4">
+                              <div className="text-[10px] text-dim">
+                                <span className="block uppercase tracking-tighter opacity-50">Last Sync</span>
+                                <span className="font-mono">{new Date(it.lastSync).toLocaleTimeString()}</span>
+                              </div>
+                              <button className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/5 bg-white/[0.02] text-dim hover:bg-white/10 hover:text-light transition-all">
+                                <Settings2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Background decoration */}
+                            <div className="absolute -bottom-6 -right-6 h-24 w-24 rounded-full bg-pink-glow/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        ))}
+
+                        {/* Add integration placeholder */}
+                        <button className="flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-white/5 bg-white/[0.01] p-8 text-dim transition-all hover:border-pink-glow/20 hover:bg-pink-glow/[0.02] hover:text-light">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 mb-4">
+                            <Plus className="h-6 w-6" />
+                          </div>
+                          <p className="font-medium text-[13px]">Nueva Integración</p>
+                          <p className="mt-1 text-[11px] opacity-60">Conectar API externa</p>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : null}
               </motion.div>

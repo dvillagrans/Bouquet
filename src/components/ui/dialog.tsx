@@ -138,8 +138,8 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 touch-none bg-[#1A0F14]/80 backdrop-blur-md transition-all duration-300 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
-        /* Evita que el scroll del fondo “se cuele” en iOS cuando el modal está abierto */
+        "fixed inset-0 z-50 bg-[#0A0507]/60 backdrop-blur-[12px] transition-all duration-500",
+        "data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
         "overscroll-none",
         className
       )}
@@ -158,20 +158,30 @@ function DialogContent({
 }) {
   const isMobileSheet = useMobileSheetBreakpoint()
 
-  const noiseLayer = (
-    <div
-      className="pointer-events-none absolute inset-0 -z-10 transition-opacity duration-1000"
-      style={{
-        backgroundImage: "url('https://grainy-gradients.vercel.app/noise.svg')",
-        opacity: 0.04,
-        mixBlendMode: "overlay",
-      }}
-      aria-hidden
-    />
+  const premiumBackdrop = (
+    <>
+      <div className="absolute inset-0 -z-10 bg-[#140C0F]/95 sm:bg-[#140C0F]/80 sm:backdrop-blur-3xl" />
+      <div 
+        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.12] mix-blend-overlay"
+        style={{
+          backgroundImage: "radial-gradient(circle at 50% -20%, var(--color-rose-light), transparent 70%)"
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 opacity-[0.03] transition-opacity duration-1000"
+        style={{
+          backgroundImage: "url('https://grainy-gradients.vercel.app/noise.svg')",
+          mixBlendMode: "overlay",
+        }}
+        aria-hidden
+      />
+      {/* Silk Inner Border */}
+      <div className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] border border-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]" />
+    </>
   )
 
   const closeButtonClasses =
-    "absolute right-3 top-3 flex size-11 min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full bg-transparent text-white/45 ring-offset-background transition-colors hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-gold/50 focus:ring-offset-2 focus:ring-offset-[#1A0F14] disabled:pointer-events-none sm:right-6 sm:top-6"
+    "absolute right-3 top-3 z-20 flex size-10 items-center justify-center rounded-full bg-white/5 text-white/40 transition-all hover:bg-white/10 hover:text-white hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-pink-glow/30 sm:right-6 sm:top-6"
 
   return (
     <DialogPortal>
@@ -179,18 +189,17 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed z-50 flex w-full flex-col gap-4 bg-[#1A0F14] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.8)] duration-300 outline-none",
-          "p-6 max-sm:min-h-0 max-sm:p-0 sm:p-8",
-          // Móvil — sheet: scroll dentro del shell; escritorio — scroll del popup
+          "fixed z-50 flex w-full flex-col gap-4 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.05)] outline-none duration-500",
+          "max-sm:min-h-0 max-sm:p-0",
+          // Layout
           "max-sm:flex max-sm:flex-col max-sm:gap-0 max-sm:overflow-hidden max-sm:overscroll-contain sm:overflow-hidden",
           // Móvil — bottom sheet
-          "max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:max-h-[min(92dvh,100dvh)] max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-t-[1.75rem] max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0 max-sm:border-t max-sm:border-white/10",
-          "max-sm:data-open:animate-in max-sm:data-open:fade-in-0 max-sm:data-open:slide-in-from-bottom-6 max-sm:data-open:zoom-in-95",
-          "max-sm:data-closed:animate-out max-sm:data-closed:fade-out-0 max-sm:data-closed:slide-out-to-bottom-6 max-sm:data-closed:zoom-out-95",
-          // Desktop — modal centrado
-          "sm:left-1/2 sm:top-1/2 sm:max-h-[min(90dvh,100dvh)] sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:border sm:border-white/10 sm:overflow-y-auto",
-          "sm:data-open:animate-in sm:data-open:fade-in-0 sm:data-open:zoom-in-95 sm:data-open:slide-in-from-left-1/2 sm:data-open:slide-in-from-top-[48%]",
-          "sm:data-closed:animate-out sm:data-closed:fade-out-0 sm:data-closed:zoom-out-95 sm:data-closed:slide-out-to-left-1/2 sm:data-closed:slide-out-to-top-[48%]",
+          "max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:max-h-[92dvh] max-sm:rounded-t-[2rem] max-sm:border-t max-sm:border-white/10",
+          "max-sm:data-open:animate-in max-sm:data-open:fade-in-0 max-sm:data-open:slide-in-from-bottom-full max-sm:data-closed:animate-out max-sm:data-closed:fade-out-0 max-sm:data-closed:slide-out-to-bottom-full",
+          // Desktop — centered modal
+          "sm:left-1/2 sm:top-1/2 sm:max-h-[90dvh] sm:max-w-[480px] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[24px] sm:p-0",
+          "sm:data-open:animate-in sm:data-open:fade-in-0 sm:data-open:zoom-in-[0.98] sm:data-open:slide-in-from-top-[52%] sm:data-open:slide-in-from-left-1/2",
+          "sm:data-closed:animate-out sm:data-closed:fade-out-0 sm:data-closed:zoom-out-[0.98] sm:data-closed:slide-out-to-top-[52%] sm:data-closed:slide-out-to-left-1/2",
           className
         )}
         {...props}
@@ -198,47 +207,29 @@ function DialogContent({
         {isMobileSheet ? (
           <DialogSheetMotionShell dragEnabled={isMobileSheet}>
             <div className="relative flex min-h-0 flex-1 flex-col">
-              {noiseLayer}
-              <div className="relative grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-2">
+              {premiumBackdrop}
+              <div className="relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-6 pb-8 pt-4">
                 {children}
               </div>
               {showCloseButton && (
-                <DialogPrimitive.Close
-                  data-slot="dialog-close"
-                  render={
-                    <button type="button" className={closeButtonClasses} />
-                  }
-                >
-                  <X
-                    className="size-[1.125rem] sm:size-4"
-                    strokeWidth={2}
-                    aria-hidden
-                  />
+                <DialogPrimitive.Close data-slot="dialog-close" render={<button type="button" className={closeButtonClasses} />}>
+                  <X className="size-4" strokeWidth={2.5} />
                   <span className="sr-only">Cerrar</span>
                 </DialogPrimitive.Close>
               )}
             </div>
           </DialogSheetMotionShell>
         ) : (
-          <>
-            {noiseLayer}
+          <div className="relative flex flex-col p-8">
+            {premiumBackdrop}
             {children}
             {showCloseButton && (
-              <DialogPrimitive.Close
-                data-slot="dialog-close"
-                render={
-                  <button type="button" className={closeButtonClasses} />
-                }
-              >
-                <X
-                  className="size-[1.125rem] sm:size-4"
-                  strokeWidth={2}
-                  aria-hidden
-                />
+              <DialogPrimitive.Close data-slot="dialog-close" render={<button type="button" className={closeButtonClasses} />}>
+                <X className="size-4" strokeWidth={2.5} />
                 <span className="sr-only">Cerrar</span>
               </DialogPrimitive.Close>
             )}
-          </>
+          </div>
         )}
       </DialogPrimitive.Popup>
     </DialogPortal>
@@ -249,7 +240,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-3 text-center sm:text-left", className)}
+      className={cn("flex flex-col gap-1.5 text-center sm:text-left", className)}
       {...props}
     />
   )
@@ -267,7 +258,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-6 -mb-6 mt-6 flex flex-col-reverse gap-3 border-t border-white/5 bg-white/[0.02] px-6 py-5 max-sm:-mx-5 max-sm:gap-3.5 max-sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:-mx-8 sm:-mb-8 sm:mt-8 sm:flex-row sm:justify-end sm:px-8",
+        "mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end sm:gap-4",
         className
       )}
       {...props}
@@ -287,7 +278,7 @@ function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
     <DialogPrimitive.Title
       data-slot="dialog-title"
       className={cn(
-        "font-serif text-2xl font-medium tracking-tight text-white leading-tight",
+        "font-serif text-2xl font-bold tracking-tight text-white",
         className
       )}
       {...props}
@@ -303,8 +294,7 @@ function DialogDescription({
     <DialogPrimitive.Description
       data-slot="dialog-description"
       className={cn(
-        /* ≥16px en móvil reduce zoom involuntario iOS (adapt) */
-        "text-base leading-relaxed text-text-dim lg:text-[14px] lg:leading-relaxed *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-white",
+        "text-[14px] leading-relaxed text-white/50",
         className
       )}
       {...props}

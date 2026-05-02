@@ -123,7 +123,7 @@ export async function getSuperAdminRestaurants(): Promise<SuperAdminRestaurantRo
       id: true,
       name: true,
       address: true,
-      isActive: true,
+      archivedAt: true,
       zone: {
         select: {
           name: true,
@@ -140,7 +140,7 @@ export async function getSuperAdminRestaurants(): Promise<SuperAdminRestaurantRo
     chainName: r.zone?.chain?.name || "Independiente",
     zoneName: r.zone?.name || "Sin zona",
     address: r.address || "Sin dirección",
-    status: r.isActive ? "ACTIVE" : "INACTIVE"
+    status: r.archivedAt === null ? "ACTIVE" : "INACTIVE"
   }));
 }
 
@@ -319,6 +319,60 @@ export async function getSuperAdminPayments(): Promise<SuperAdminPaymentsData> {
     totalVolumeCents,
     recentPayments: recentPayments.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())
   };
+}
+
+export interface SuperAdminIntegrationRow {
+  id: string;
+  name: string;
+  provider: string;
+  status: "CONNECTED" | "DISCONNECTED" | "ERROR";
+  type: "PAYMENTS" | "MESSAGING" | "INFRA" | "AI";
+  lastSync: string;
+}
+
+export async function getSuperAdminIntegrations(): Promise<SuperAdminIntegrationRow[]> {
+  return [
+    {
+      id: "stripe-prod",
+      name: "Stripe Connect",
+      provider: "Stripe",
+      status: "CONNECTED",
+      type: "PAYMENTS",
+      lastSync: new Date().toISOString()
+    },
+    {
+      id: "whatsapp-api",
+      name: "Meta WhatsApp Business",
+      provider: "Meta",
+      status: "CONNECTED",
+      type: "MESSAGING",
+      lastSync: new Date().toISOString()
+    },
+    {
+      id: "aws-s3-assets",
+      name: "AWS S3 Assets",
+      provider: "Amazon Web Services",
+      status: "CONNECTED",
+      type: "INFRA",
+      lastSync: new Date().toISOString()
+    },
+    {
+      id: "openai-gpt4",
+      name: "OpenAI GPT-4",
+      provider: "OpenAI",
+      status: "ERROR",
+      type: "AI",
+      lastSync: new Date(Date.now() - 3600000).toISOString()
+    },
+    {
+      id: "resend-mail",
+      name: "Resend transactional",
+      provider: "Resend",
+      status: "CONNECTED",
+      type: "MESSAGING",
+      lastSync: new Date().toISOString()
+    }
+  ];
 }
 
 export interface AdminClienteRow {

@@ -4,26 +4,23 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import {
-  ArrowUpRight,
   AlertTriangle,
-  CircleDot,
-  Compass,
-  MapPin,
-  MapPinned,
-  Orbit,
   Plus,
-  ShieldAlert,
+  MapPin,
   Store,
-  TrendingDown,
-  TrendingUp,
   Users,
-  Wallet,
 } from "lucide-react";
 import { getChainDashboard } from "@/actions/chain";
-import type { ChainDashboardData, RestaurantSummary, ZoneSummary } from "@/actions/chain";
-import { useShellChrome } from "@/components/dashboard/ShellChromeContext";
+import type { ChainDashboardData } from "@/actions/chain";
 import ChainAuthGuard from "./ChainAuthGuard";
 import CreateRestaurantDialog from "./CreateRestaurantDialog";
+import { Sparkline } from "@/components/admin/Sparkline";
+import { NavRow } from "@/components/admin/NavRow";
+import { SuperKpiCard } from "@/components/admin/SuperKpiCard";
+import { MultiLineChart } from "./MultiLineChart";
+import { PeakHourBar } from "./PeakHourBar";
+
+// ─── Helpers ───
 
 function fmt(n: number) {
   return `$${n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -35,82 +32,60 @@ function compact(n: number) {
   return String(n);
 }
 
-function occupancyTone(pct: number) {
-  if (pct >= 70) return "from-dash-green to-emerald-400/90";
-  if (pct >= 40) return "from-gold to-amber-200/80";
-  return "from-text-muted to-text-dim";
+function pctDiff(current: number, previous: number): string {
+  if (!previous) return "+0%";
+  const pct = ((current - previous) / previous) * 100;
+  const sign = pct >= 0 ? "+" : "";
+  return `${sign}${pct.toFixed(1)}%`;
 }
 
-function TrendBadge({ current, previous, unit }: { current: number; previous: number; unit?: string }) {
-  const diff = previous > 0 ? ((current - previous) / previous) * 100 : 0;
-  const isUp = diff >= 0;
-  const abs = Math.abs(diff).toFixed(0);
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${isUp ? "bg-dash-green/10 text-dash-green" : "bg-red-500/10 text-red-400"}`}>
-      {isUp ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
-      {abs}%{unit ? ` ${unit}` : ""}
-    </span>
-  );
+// ─── Mock data for features without API ───
+
+const DAY_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+// TODO: Replace with real 7-day-per-branch API
+function generateMock7Day(revenue: number) {
+  const base = revenue / 7;
+  return DAY_LABELS.map((day) => ({
+    day,
+    revenue: Math.round(base * (0.65 + Math.random() * 0.7)),
+  }));
 }
 
-function AlertBanner({ alerts }: { alerts: ChainDashboardData["alerts"] }) {
-  if (alerts.length === 0) return null;
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-amber-500/20 bg-amber-500/[0.04] p-4 backdrop-blur-sm"
-    >
-      <div className="flex items-center gap-2 mb-3">
-        <AlertTriangle className="size-4 text-amber-400" />
-        <h3 className="text-[13px] font-semibold text-amber-200">
-          {alerts.length} sucursal{alerts.length === 1 ? "" : "es"} requiere{alerts.length === 1 ? "" : "n"} atención
-        </h3>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {alerts.map((a) => (
-          <Link
-            key={a.id}
-            href={`/dashboard?restaurantId=${a.id}`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/15 bg-amber-500/10 px-2.5 py-1.5 text-[11px] text-amber-300 transition-colors hover:bg-amber-500/20"
-          >
-            <span className="size-1.5 rounded-full bg-amber-400" />
-            <span className="font-medium">{a.name}</span>
-            <span className="text-amber-400/70">· {a.message}</span>
-          </Link>
-        ))}
-      </div>
-    </motion.div>
-  );
+// TODO: Replace with real hourly orders API
+function generateMockHourly(peak: number) {
+  const hours: number[] = [];
+  for (let h = 0; h < 24; h++) {
+    if (h >= 12 && h <= 15) hours.push(peak * (0.5 + Math.random() * 0.5));
+    else if (h >= 18 && h <= 21) hours.push(peak * (0.4 + Math.random() * 0.6));
+    else if (h >= 7 && h <= 10) hours.push(peak * (0.15 + Math.random() * 0.25));
+    else hours.push(peak * (0.01 + Math.random() * 0.08));
+  }
+  return hours.map((v, i) => ({
+    hour: `${i.toString().padStart(2, "0")}h`,
+    orders: Math.round(v),
+  }));
 }
 
-function OccupancyBar({ active, total, reduceMotion }: { active: number; total: number; reduceMotion: boolean | null }) {
-  const pct = total > 0 ? (active / total) * 100 : 0;
-  const tone = occupancyTone(pct);
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[9px] uppercase tracking-[0.14em] text-text-faint">
-        <span>Ocupación</span>
-        <span className="font-mono tabular-nums text-text-muted">{pct.toFixed(0)}% · {active}/{total}</span>
-      </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-bg-solid ring-1 ring-border-main">
-        <motion.div
-          className={`h-full w-full origin-left rounded-full bg-gradient-to-r ${tone}`}
-          initial={reduceMotion ? false : { scaleX: 0 }}
-          animate={{ scaleX: pct / 100 }}
-          transition={{ duration: reduceMotion ? 0 : 0.9, ease: [0.22, 1, 0.36, 1] }}
-        />
-      </div>
-    </div>
-  );
-}
+const BRANCH_COLORS = [
+  "var(--color-pink-glow)",
+  "var(--color-dash-blue)",
+  "var(--color-dash-green)",
+  "var(--color-dash-amber)",
+  "#A78BFA",
+  "#F9A8D4",
+  "#93C5FD",
+  "#86EFAC",
+];
+
+// ─── OccupancyDial (restyled to Bouquet) ───
 
 function OccupancyDial({ pct, reduceMotion }: { pct: number; reduceMotion: boolean | null }) {
   const p = Math.min(100, Math.max(0, pct));
   return (
-    <div className="relative size-48 shrink-0 sm:size-56">
+    <div className="relative size-36 shrink-0 sm:size-44">
       <motion.div
-        className="absolute inset-0 rounded-full border border-border-main/70 bg-bg-solid/80 p-[3px] shadow-[inset_0_0_50px_rgba(0,0,0,0.55)]"
+        className="absolute inset-0 rounded-full border border-wire bg-ink/80 p-[3px] shadow-[inset_0_0_50px_rgba(0,0,0,0.55)]"
         initial={reduceMotion ? false : { rotate: -90, opacity: 0 }}
         animate={{ rotate: 0, opacity: 1 }}
         transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
@@ -118,785 +93,579 @@ function OccupancyDial({ pct, reduceMotion }: { pct: number; reduceMotion: boole
         <div
           className="size-full rounded-full"
           style={{
-            background: `conic-gradient(var(--color-gold) ${p * 3.6}deg, var(--color-border-mid) 0deg)`,
+            background: `conic-gradient(var(--color-pink-glow) ${p * 3.6}deg, var(--color-wire) 0deg)`,
           }}
         />
       </motion.div>
-      <div className="absolute inset-[14px] flex flex-col items-center justify-center rounded-full bg-bg-card/95 text-center shadow-[inset_0_0_30px_rgba(0,0,0,0.6)]">
-        <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-text-faint">Pulso de sala</p>
-        <p className="mt-1 font-serif text-[44px] font-semibold leading-none tabular-nums text-gold">
+      <div className="absolute inset-[12px] flex flex-col items-center justify-center rounded-full bg-bg-card/95 text-center shadow-[inset_0_0_30px_rgba(0,0,0,0.6)]">
+        <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-dim">Pulso de sala</p>
+        <p className="mt-1 font-serif text-[36px] font-semibold leading-none tabular-nums text-pink-glow">
           {p.toFixed(0)}
-          <span className="ml-0.5 text-lg text-gold/70">%</span>
+          <span className="ml-0.5 text-base text-pink-glow/70">%</span>
         </p>
-        <p className="mt-1.5 font-mono text-[10px] text-text-dim">en tiempo real</p>
+        <p className="mt-1 font-mono text-[9px] text-dim">en tiempo real</p>
       </div>
-      <div className="pointer-events-none absolute inset-[-18px] rounded-full border border-gold/10 [mask-image:radial-gradient(circle,transparent_60%,black_70%)]" aria-hidden />
+      <div className="pointer-events-none absolute inset-[-14px] rounded-full border border-pink-glow/10 [mask-image:radial-gradient(circle,transparent_60%,black_70%)]" aria-hidden />
     </div>
   );
 }
 
-function ZoneSharePill({ pct }: { pct: number }) {
-  const p = Math.min(100, Math.max(0, pct));
-  return (
-    <div
-      className="relative size-12 shrink-0 rounded-full border border-border-main/80 bg-bg-solid/70 p-[2px] shadow-[inset_0_0_14px_rgba(0,0,0,0.5)]"
-      aria-hidden
-    >
-      <div
-        className="size-full rounded-full"
-        style={{ background: `conic-gradient(var(--color-gold) ${p * 3.6}deg, var(--color-border-mid) 0deg)` }}
-      />
-      <div className="absolute inset-[6px] flex items-center justify-center rounded-full bg-bg-card/95">
-        <span className="font-mono text-[9px] font-semibold tabular-nums text-gold">{p.toFixed(0)}%</span>
+// ─── Branch Rankings Table ───
+
+interface BranchRankRow {
+  id: string;
+  name: string;
+  zoneName: string | null;
+  todayRevenue: number;
+  yesterdayRevenue: number;
+  occupancyPct: number;
+}
+
+function BranchRankings({ branches }: { branches: BranchRankRow[] }) {
+  const sorted = [...branches].sort((a, b) => b.todayRevenue - a.todayRevenue);
+
+  if (sorted.length === 0) {
+    return (
+      <div className="flex flex-1 items-center justify-center text-[13px] text-dim">
+        Sin sucursales. Añade la primera.
       </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-hidden">
+      {sorted.map((b, i) => {
+        const delta = b.yesterdayRevenue > 0
+          ? ((b.todayRevenue - b.yesterdayRevenue) / b.yesterdayRevenue) * 100
+          : 0;
+        const isUp = delta >= 0;
+
+        return (
+          <div
+            key={b.id}
+            className="flex items-center gap-2 border-b border-white/[0.04] px-4 py-2.5 text-[12px] text-light transition-colors hover:bg-white/[0.015]"
+            style={{ animation: `dash-row-enter 500ms ${i * 55}ms ease both` }}
+          >
+            <span className="w-5 font-mono text-[10px] text-dim">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <span className="min-w-0 flex-1 truncate font-medium">{b.name}</span>
+            <span className="shrink-0 font-mono text-[11px] tabular-nums font-semibold">
+              {fmt(b.todayRevenue)}
+            </span>
+            <span
+              className={`shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[9px] font-semibold tabular-nums ${
+                isUp ? "bg-dash-green/10 text-dash-green" : "bg-pink-light-glow/10 text-pink-light-glow"
+              }`}
+            >
+              {isUp ? "+" : ""}{delta.toFixed(0)}%
+            </span>
+            <span className="flex w-16 items-center gap-1.5">
+              <span className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                <span
+                  className="block h-full rounded-full"
+                  style={{
+                    width: `${Math.min(100, b.occupancyPct)}%`,
+                    background:
+                      b.occupancyPct >= 70
+                        ? "var(--color-dash-green)"
+                        : b.occupancyPct >= 40
+                          ? "var(--color-dash-amber)"
+                          : "var(--color-pink-light-glow)",
+                  }}
+                />
+              </span>
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function ZoneMiniCard({
-  zone,
-  index,
-  sharePct,
-  reduceMotion,
-  tenantId,
-}: {
-  zone: ZoneSummary;
-  index: number;
-  sharePct: number;
-  reduceMotion: boolean | null;
-  tenantId: string;
-}) {
-  const occPct = zone.totalTables > 0 ? (zone.activeTables / zone.totalTables) * 100 : 0;
-  const tone = occupancyTone(occPct);
+// ─── Main Component ───
 
-  return (
-    <motion.article
-      layout
-      initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 320, damping: 30, delay: reduceMotion ? 0 : 0.04 * index }}
-      className="group relative overflow-hidden rounded-2xl border border-border-main bg-bg-card/60 p-5 backdrop-blur-sm transition-[border-color,box-shadow] duration-500 hover:border-gold-dim/50 hover:shadow-[0_0_0_1px_rgba(201,160,84,0.12),0_28px_80px_-36px_rgba(201,160,84,0.08)]"
-    >
-      <div
-        className="pointer-events-none absolute -right-12 -top-16 size-40 rounded-full bg-gradient-to-br from-gold/10 via-transparent to-transparent opacity-60 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
-        aria-hidden
-      />
-
-      <div className="relative flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-border-mid bg-bg-solid/80 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.2em] text-text-dim">
-            Territorio {String(index + 1).padStart(2, "0")}
-          </span>
-          <h3 className="mt-2 font-serif text-[18px] font-semibold leading-tight tracking-tight text-text-primary truncate">
-            {zone.name}
-          </h3>
-          <p className="mt-0.5 text-[11px] text-text-dim font-light">
-            {zone.restaurantCount} {zone.restaurantCount === 1 ? "sucursal" : "sucursales"} · {zone.totalTables} mesas
-          </p>
-        </div>
-        <ZoneSharePill pct={sharePct} />
-      </div>
-
-      <div className="relative mt-4 space-y-3.5">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-text-faint">Ventas hoy</p>
-            <p className="mt-0.5 font-serif text-xl font-semibold text-gold tabular-nums">{fmt(zone.totalRevenue)}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-text-faint">Pulso</p>
-            <p className="mt-0.5 font-mono text-[13px] tabular-nums text-text-secondary">{occPct.toFixed(0)}%</p>
-          </div>
-        </div>
-
-        <div className="h-1.5 overflow-hidden rounded-full bg-bg-solid ring-1 ring-border-main">
-          <motion.div
-            className={`h-full w-full origin-left rounded-full bg-gradient-to-r ${tone}`}
-            initial={reduceMotion ? false : { scaleX: 0 }}
-            animate={{ scaleX: occPct / 100 }}
-            transition={{ duration: reduceMotion ? 0 : 0.9, delay: 0.08 * index, ease: [0.22, 1, 0.36, 1] }}
-          />
-        </div>
-      </div>
-
-      <div className="relative mt-4 flex items-center justify-between gap-2 border-t border-border-main/60 pt-3">
-        <Link
-          href={`/zona?zoneId=${zone.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-gold/90 transition-colors hover:text-gold"
-        >
-          Consola
-          <ArrowUpRight className="size-3" aria-hidden />
-        </Link>
-        <Link
-          href={`/cadena/zonas?tenantId=${tenantId}#${zone.id}`}
-          className="font-mono text-[10px] text-text-faint transition-colors hover:text-gold"
-        >
-          Ver en atlas →
-        </Link>
-      </div>
-    </motion.article>
-  );
-}
-
-function RestaurantRow({
-  rest,
-  reduceMotion,
-  index,
-}: {
-  rest: RestaurantSummary;
-  reduceMotion: boolean | null;
-  index: number;
-}) {
-  const occPct = rest.totalTables > 0 ? (rest.activeTables / rest.totalTables) * 100 : 0;
-
-  return (
-    <motion.tr
-      initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: reduceMotion ? 0 : 0.02 * index, duration: 0.35 }}
-      className="group border-b border-border-main/40 transition-colors last:border-b-0 hover:bg-bg-hover/50"
-    >
-      <td className="px-5 py-3.5">
-        <div className="font-medium text-[12.5px] text-text-primary group-hover:text-gold transition-colors">
-          {rest.name}
-        </div>
-        <div className="truncate max-w-[220px] text-[10px] font-light text-text-faint">
-          {rest.address || "Sin dirección registrada"}
-        </div>
-      </td>
-      <td className="px-5 py-3.5">
-        {rest.zoneName ? (
-          <span className="inline-flex items-center gap-1.5 rounded-md border border-border-mid bg-bg-solid/80 px-2 py-1 font-mono text-[10px] text-text-muted">
-            <MapPinned className="size-2.5 text-gold/70" aria-hidden />
-            {rest.zoneName}
-          </span>
-        ) : (
-          <span className="text-[10px] italic text-text-faint">Independiente</span>
-        )}
-      </td>
-      <td className="px-5 py-3.5">
-        <div className="font-serif text-[14px] font-medium tabular-nums tracking-tight text-gold">
-          {fmt(rest.todayRevenue)}
-        </div>
-        <div className="mt-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-text-faint">
-          {rest.todaySessions} sesiones
-        </div>
-      </td>
-      <td className="w-40 px-5 py-3.5">
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between font-mono text-[9px] tabular-nums text-text-dim">
-            <span>{rest.activeTables}/{rest.totalTables}</span>
-            <span>{occPct.toFixed(0)}%</span>
-          </div>
-          <div className="h-1 overflow-hidden rounded-full bg-bg-solid ring-1 ring-border-main/70">
-            <div
-              className={`h-full rounded-full bg-gradient-to-r ${occupancyTone(occPct)}`}
-              style={{ width: `${occPct}%` }}
-            />
-          </div>
-        </div>
-      </td>
-      <td className="px-5 py-3.5 text-right">
-        <span className="inline-flex items-center gap-1.5 font-mono text-[11px] tabular-nums text-text-secondary">
-          <Users className="size-3 text-text-faint" aria-hidden />
-          {rest.activeStaff}
-        </span>
-      </td>
-    </motion.tr>
-  );
-}
-
-function RestaurantCard({
-  rest,
-  reduceMotion,
-  index,
-}: {
-  rest: RestaurantSummary;
-  reduceMotion: boolean | null;
-  index: number;
-}) {
-  return (
-    <motion.article
-      initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: reduceMotion ? 0 : 0.04 * index, duration: 0.4 }}
-      className="rounded-xl border border-border-main bg-bg-card/60 p-4 backdrop-blur-sm"
-    >
-      <div className="mb-3 flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <h3 className="truncate text-[13.5px] font-medium text-text-primary leading-tight">{rest.name}</h3>
-          <p className="mt-0.5 truncate text-[10px] font-light text-text-faint">
-            {rest.address || "Sin dirección registrada"}
-          </p>
-        </div>
-        {rest.zoneName ? (
-          <span className="shrink-0 rounded border border-border-mid bg-bg-solid/80 px-1.5 py-0.5 font-mono text-[9px] text-text-muted">
-            {rest.zoneName}
-          </span>
-        ) : (
-          <span className="shrink-0 text-[9px] italic text-text-faint">Indep.</span>
-        )}
-      </div>
-
-      <div className="mb-3 grid grid-cols-3 gap-[1px] overflow-hidden rounded border border-border-main bg-border-main">
-        <div className="bg-bg-solid/60 px-2 py-1.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-text-faint">Ventas</p>
-          <p className="mt-0.5 font-serif text-[13px] font-medium tabular-nums tracking-tight text-gold">
-            {fmt(rest.todayRevenue)}
-          </p>
-        </div>
-        <div className="bg-bg-solid/60 px-2 py-1.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-text-faint">Sesiones</p>
-          <p className="mt-0.5 font-mono text-[13px] tabular-nums text-text-primary">{rest.todaySessions}</p>
-        </div>
-        <div className="bg-bg-solid/60 px-2 py-1.5">
-          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-text-faint">Staff</p>
-          <p className="mt-0.5 font-mono text-[13px] tabular-nums text-text-primary">{rest.activeStaff}</p>
-        </div>
-      </div>
-
-      <OccupancyBar active={rest.activeTables} total={rest.totalTables} reduceMotion={reduceMotion} />
-    </motion.article>
-  );
-}
-
-export default function ChainDashboard({ initialTenantId }: { initialTenantId?: string }) {
+export default function ChainDashboard({ tenantId }: { tenantId: string }) {
   const reduceMotion = useReducedMotion();
-  const { setHideDashboardChrome } = useShellChrome();
-  const [tenantId, setTenantId] = useState<string | null>(null);
   const [data, setData] = useState<ChainDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isCreatingRest, setIsCreatingRest] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
-  useEffect(() => {
-    if (!isCreatingRest) return;
-    setHideDashboardChrome(true);
-    return () => setHideDashboardChrome(false);
-  }, [isCreatingRest, setHideDashboardChrome]);
-
-  const load = useCallback(async (tid: string) => {
+  const load = useCallback(async () => {
     try {
-      setLoading(true);
-      const res = await getChainDashboard(tid);
+      const res = await getChainDashboard(tenantId);
       setData(res);
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tenantId]);
 
   useEffect(() => {
-    if (tenantId) {
-      load(tenantId);
-      const iv = setInterval(() => load(tenantId), 30000);
-      return () => clearInterval(iv);
-    }
-  }, [tenantId, load]);
+    load();
+    const iv = setInterval(load, 45000);
+    return () => clearInterval(iv);
+  }, [load]);
 
   const derived = useMemo(() => {
     if (!data) return null;
-    const totalTables = data.zones.reduce((a, z) => a + z.totalTables, 0);
-    const activeTables = data.stats.activeTables;
-    const occPct = totalTables > 0 ? (activeTables / totalTables) * 100 : 0;
-    const zoneRevenueTotal = data.zones.reduce((a, z) => a + z.totalRevenue, 0);
-    const topZones = [...data.zones].slice(0, 4);
-    return { totalTables, activeTables, occPct, zoneRevenueTotal, topZones };
+    const occPct =
+      data.restaurants.reduce((acc, r) => acc + r.totalTables, 0) > 0
+        ? (data.stats.activeTables /
+            data.restaurants.reduce((acc, r) => acc + r.totalTables, 0)) *
+          100
+        : 0;
+    const avgTicket =
+      data.stats.totalSessions > 0
+        ? data.stats.totalRevenue / data.stats.totalSessions
+        : 0;
+    const yesterdayAvgTicket =
+      data.yesterday.totalSessions > 0
+        ? data.yesterday.totalRevenue / data.yesterday.totalSessions
+        : 0;
+
+    return { occPct, avgTicket, yesterdayAvgTicket };
   }, [data]);
 
-  if (!tenantId) {
-    return <ChainAuthGuard tenantId={initialTenantId} onAuthenticated={(tid) => setTenantId(tid)} />;
-  }
+  // Mock data (TODO: real APIs)
+  const mock7DayBranches = useMemo(() => {
+    if (!data) return [];
+    return data.restaurants.slice(0, 8).map((r, i) => ({
+      name: r.name,
+      data: generateMock7Day(r.todayRevenue),
+      color: BRANCH_COLORS[i % BRANCH_COLORS.length],
+    }));
+  }, [data]);
 
-  if (loading && !data) {
+  const mockPeakHours = useMemo(() => {
+    return generateMockHourly(data ? Math.round(data.stats.totalSessions || 100) : 100);
+  }, [data]);
+
+  const peakLabel = useMemo(() => {
+    if (mockPeakHours.length === 0) return "—";
+    let maxI = 0;
+    mockPeakHours.forEach((d, i) => {
+      if (d.orders > mockPeakHours[maxI].orders) maxI = i;
+    });
+    return mockPeakHours[maxI].hour;
+  }, [mockPeakHours]);
+
+  const now = new Date();
+  const dateLabel = now
+    .toLocaleDateString("es-AR", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })
+    .toUpperCase()
+    .replace(/\./g, "");
+
+  if (!tenantId) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 bg-bg-solid px-4 font-sans text-text-dim">
-        <motion.div
-          animate={reduceMotion ? {} : { rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 14, ease: "linear" }}
-          className="text-gold/40"
-          aria-hidden
-        >
-          <Compass className="size-12" strokeWidth={1} />
-        </motion.div>
-        <p className="text-[11px] uppercase tracking-[0.24em]">Sincronizando cadena…</p>
-      </div>
+      <ChainAuthGuard
+        tenantId={tenantId}
+        onAuthenticated={(_tid) => {}}
+      />
     );
   }
 
-  if (!data || !derived) {
+  if (loading || !data) {
     return (
-      <div className="min-h-screen bg-bg-solid p-8 text-center text-[13px] text-dash-red">
-        No se encontró la cadena o fue eliminada.
+      <div className="flex min-h-screen items-center justify-center bg-ink font-sans text-[13px] text-light antialiased">
+        <div className="flex flex-col items-center gap-4">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "linear" }}
+          >
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="var(--color-pink-glow)" strokeWidth="1.5" strokeDasharray="12 50" />
+            </svg>
+          </motion.div>
+          <span className="font-mono text-[12px] tracking-[0.2em] text-dim">Sincronizando cadena…</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-bg-solid font-sans text-text-primary antialiased">
-      {/* ATMÓSFERA */}
-      <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className="absolute -left-1/4 top-0 h-[min(90vh,720px)] w-[min(120vw,900px)] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(201,160,84,0.14),transparent_65%)] blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-[50vh] w-[70vw] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(77,132,96,0.08),transparent_60%)] blur-3xl" />
-        <div
-          className="absolute inset-0 opacity-[0.035]"
-          style={{
-            backgroundImage: `linear-gradient(90deg, var(--color-border-bright) 1px, transparent 1px), linear-gradient(var(--color-border-bright) 1px, transparent 1px)`,
-            backgroundSize: "48px 48px",
-          }}
-        />
-      </div>
+    <div className="relative flex min-h-screen bg-ink font-sans text-[13px] text-light antialiased selection:bg-pink-glow/20">
+      {/* ── Atmosphere ── */}
+      <div
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 60% 40% at 80% 0%, rgba(244,114,182,0.16), transparent 60%), radial-gradient(ellipse 50% 50% at 0% 100%, rgba(167,243,208,0.04), transparent 60%)",
+        }}
+        aria-hidden
+      />
+      <div className="bq-grain" />
 
-      {/* CONTENT */}
-      <div className="relative z-10 mx-auto w-full max-w-7xl flex-1 px-4 pb-20 pt-6 sm:px-8 sm:pt-10 space-y-10 sm:space-y-12">
-        {/* HERO SPLIT */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_1fr] lg:items-center">
-          <motion.section
-            initial={reduceMotion ? false : { opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-            className="relative flex flex-col justify-center py-1"
+      {/* ═══════ SIDEBAR ═══════ */}
+      <aside className="relative z-10 flex w-[232px] shrink-0 flex-col gap-5 border-r border-wire bg-burgundy-dark p-5">
+        {/* Brand */}
+        <div className="flex items-center gap-2.5 px-1">
+          <div
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] font-serif text-[18px] font-semibold italic text-ink"
+            style={{
+              background: "linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)",
+              boxShadow: "0 4px 12px -4px rgba(199,91,122,0.6), inset 0 1px 0 rgba(255,255,255,0.3)",
+            }}
           >
-            <div
-              className="absolute inset-0 opacity-[0.02]"
-              style={{
-                backgroundImage: `linear-gradient(var(--color-gold) 1px, transparent 1px), linear-gradient(90deg, var(--color-gold) 1px, transparent 1px)`,
-                backgroundSize: "24px 24px",
-              }}
-              aria-hidden
-            />
-
-            <div className="relative z-10 space-y-6">
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-text-faint">Vista consolidada · {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}</p>
-                <h1 className="mt-2 font-serif text-[clamp(2rem,4.5vw,3.25rem)] font-semibold leading-[1.04] tracking-tight">
-                  Cadena{" "}
-                  <span className="bg-gradient-to-r from-gold via-[#e4c78a] to-gold-dim bg-clip-text text-transparent">
-                    {data.chain.name}
-                  </span>
-                </h1>
-                <div className="mt-3.5 flex items-center gap-3">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-gold/20 bg-gold/5 px-2.5 py-1 text-[10px] font-mono font-medium text-gold">
-                    <Wallet className="size-3" />
-                    {data.chain.currency}
-                  </span>
-                  <span className="text-[13px] leading-relaxed text-text-muted">
-                    Monitoreo en tiempo real del desempeño territorial.
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 gap-4 border-t border-border-main/40 pt-5">
-                <div>
-                  <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-text-faint">Territorios</p>
-                  <p className="mt-1 font-serif text-[22px] font-semibold tabular-nums text-text-primary">{data.zones.length}</p>
-                </div>
-                <div>
-                  <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-text-faint">Sucursales</p>
-                  <p className="mt-1 font-serif text-[22px] font-semibold tabular-nums text-text-primary">{data.restaurants.length}</p>
-                </div>
-                <div>
-                  <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-text-faint">Staff corporativo</p>
-                  <p className="mt-1 font-serif text-[22px] font-semibold tabular-nums text-text-primary">{data.stats.staffTotal}</p>
-                </div>
-                <div>
-                  <p className="font-mono text-[9px] uppercase tracking-[0.22em] text-text-faint">Sesiones hoy</p>
-                  <p className="mt-1 font-serif text-[22px] font-semibold tabular-nums text-text-primary">{compact(data.stats.totalSessions)}</p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setIsCreatingRest(true)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-gold bg-gold px-5 py-2.5 text-[12px] font-semibold tracking-[0.04em] text-bg-solid shadow-[0_6px_24px_-8px_rgba(201,160,84,0.55)] transition-opacity hover:opacity-90"
-                >
-                  <Plus className="size-3.5" aria-hidden />
-                  Nueva sucursal
-                </button>
-                <Link
-                  href={`/cadena/zonas?tenantId=${tenantId}`}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border-bright bg-bg-solid/40 px-5 py-2.5 text-[12px] font-semibold text-text-secondary transition-colors hover:border-gold/35 hover:text-gold"
-                >
-                  <Compass className="size-3.5" aria-hidden />
-                  Atlas de zonas
-                </Link>
-                <Link
-                  href={`/cadena/staff?tenantId=${tenantId}`}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border-bright bg-bg-solid/40 px-5 py-2.5 text-[12px] font-semibold text-text-secondary transition-colors hover:border-gold/35 hover:text-gold"
-                >
-                  <Users className="size-3.5" aria-hidden />
-                  Staff
-                </Link>
-                <Link
-                  href={`/cadena/auditoria?tenantId=${tenantId}`}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border-bright bg-bg-solid/40 px-5 py-2.5 text-[12px] font-semibold text-text-secondary transition-colors hover:border-gold/35 hover:text-gold"
-                >
-                  <ShieldAlert className="size-3.5" aria-hidden />
-                  Auditoría
-                </Link>
-              </div>
+            b
+          </div>
+          <div className="min-w-0">
+            <div className="font-serif text-[18px] font-semibold italic leading-tight tracking-[-0.02em] text-light">
+              bouquet
             </div>
-          </motion.section>
-
-          <motion.aside
-            initial={reduceMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.9, delay: 0.2 }}
-            className="relative flex flex-col items-center justify-center gap-5 p-7 sm:p-10"
-          >
-            <div
-              className="pointer-events-none absolute inset-0 opacity-[0.04]"
-              style={{
-                backgroundImage: `linear-gradient(var(--color-gold) 1px, transparent 1px), linear-gradient(90deg, var(--color-gold) 1px, transparent 1px)`,
-                backgroundSize: "22px 22px",
-              }}
-              aria-hidden
-            />
-            <div className="pointer-events-none absolute -left-16 -top-24 size-56 rounded-full bg-gold/12 blur-3xl" aria-hidden />
-
-            <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full border border-gold/30 bg-bg-solid/50 px-3 py-1 text-[10px] text-gold backdrop-blur">
-              <span className="size-1.5 animate-pulse rounded-full bg-gold" />
-              Pulso en vivo
+            <div className="font-mono text-[8.5px] tracking-[0.3em] text-pink-glow/55">
+              CADENA · MASTER
             </div>
-
-            <OccupancyDial pct={derived.occPct} reduceMotion={reduceMotion} />
-
-            <div className="relative grid w-full max-w-[280px] grid-cols-2 gap-2.5">
-              <div className="text-center">
-                <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-text-faint">Activas</p>
-                <p className="mt-0.5 font-mono text-[16px] font-semibold tabular-nums text-dash-green">{derived.activeTables}</p>
-              </div>
-              <div className="text-center">
-                <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-text-faint">Totales</p>
-                <p className="mt-0.5 font-mono text-[16px] font-semibold tabular-nums text-text-secondary">{derived.totalTables}</p>
-              </div>
-            </div>
-
-            <div className="relative w-full max-w-[280px] border-t border-border-main pt-4 text-center">
-              <p className="font-mono text-[9px] uppercase tracking-[0.24em] text-text-faint">Ventas consolidadas</p>
-              <p className="mt-1 font-serif text-[28px] font-semibold tabular-nums leading-none text-gold">
-                {fmt(data.stats.totalRevenue)}
-              </p>
-              <p className="mt-1.5 font-mono text-[10px] text-text-dim">{data.chain.currency} · acumulado del día</p>
-            </div>
-          </motion.aside>
+          </div>
         </div>
 
-        {/* MÉTRICAS SECUNDARIAS */}
-        <motion.div
-          initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: reduceMotion ? 0 : 0.08, duration: 0.45 }}
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-        >
-          {[
-            {
-              label: "Ventas del día",
-              value: fmt(data.stats.totalRevenue),
-              hint: `Acumulado ${data.chain.currency}`,
-              icon: TrendingUp,
-              tint: "text-gold",
-              trend: <TrendBadge current={data.stats.totalRevenue} previous={data.yesterday.totalRevenue} />,
-            },
-            {
-              label: "Mesas activas",
-              value: String(derived.activeTables),
-              hint: `de ${derived.totalTables} en red`,
-              icon: CircleDot,
-              tint: "text-dash-green",
-            },
-            {
-              label: "Sesiones",
-              value: String(data.stats.totalSessions),
-              hint: "Comensales / grupos",
-              icon: Users,
-              tint: "text-text-primary",
-              trend: <TrendBadge current={data.stats.totalSessions} previous={data.yesterday.totalSessions} unit="sesiones" />,
-            },
-            {
-              label: "Sucursales",
-              value: String(data.stats.restaurantCount),
-              hint: `en ${data.zones.length} ${data.zones.length === 1 ? "zona" : "zonas"}`,
-              icon: Store,
-              tint: "text-text-primary",
-            },
-          ].map((item, i) => (
-            <div
-              key={item.label}
-              className="relative overflow-hidden rounded-2xl border border-border-main bg-bg-card/50 p-5 backdrop-blur-md"
-            >
-              <div className="pointer-events-none absolute right-3 top-3 opacity-[0.12]" aria-hidden>
-                <item.icon className="size-14 text-gold" strokeWidth={1} />
-              </div>
-              <div className="flex items-center gap-2">
-                <p className="text-[9px] font-medium uppercase tracking-[0.2em] text-text-faint">{item.label}</p>
-                {item.trend}
-              </div>
-              <p className={`mt-3 font-serif text-[26px] font-semibold leading-none tabular-nums ${item.tint}`}>
-                {item.value}
-              </p>
-              <p className="mt-2 text-[11px] text-text-dim">{item.hint}</p>
-              <motion.div
-                className="absolute bottom-0 left-0 h-[2px] bg-gold/60"
-                initial={reduceMotion ? false : { width: "0%" }}
-                animate={{ width: "100%" }}
-                transition={{ delay: reduceMotion ? 0 : 0.15 + i * 0.08, duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </div>
-          ))}
-        </motion.div>
+        {/* Chain name badge */}
+        <div className="rounded-[10px] border border-pink-glow/20 bg-pink-glow/8 px-3 py-2.5">
+          <div className="text-[8.5px] font-bold uppercase tracking-[0.3em] text-pink-glow">
+            CADENA
+          </div>
+          <div className="mt-1 text-[13px] font-medium text-light truncate">
+            {data.chain.name}
+          </div>
+          <div className="mt-0.5 font-mono text-[10px] text-dim">
+            {data.stats.restaurantCount} sucursales · {data.stats.staffTotal} staff
+          </div>
+        </div>
 
-        {/* ALERTAS */}
-        {data.alerts.length > 0 && (
-          <AlertBanner alerts={data.alerts} />
-        )}
+        {/* Nav */}
+        <nav className="flex flex-col gap-0.5">
+          <div className="px-3 pb-2 pt-1 text-[8.5px] font-bold uppercase tracking-[0.3em] text-dim">
+            PANEL MAESTRO
+          </div>
+          <NavRow label="Visión General" active badge={null} />
+          <NavRow label="Zonas" badge={String(data.zones.length)} />
+          <NavRow label="Sucursales" badge={String(data.stats.restaurantCount)} />
+          <NavRow label="Staff" badge={String(data.stats.staffTotal)} />
 
-        {/* QUICK ACTIONS */}
-        <motion.section
-          initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: reduceMotion ? 0 : 0.12, duration: 0.4 }}
-          className="grid grid-cols-2 gap-3 sm:grid-cols-4"
-        >
-          {[
-            { label: "Nueva sucursal", href: "#", icon: Plus, onClick: () => setIsCreatingRest(true), primary: true },
-            { label: "Atlas de zonas", href: `/cadena/zonas?tenantId=${tenantId}`, icon: Compass },
-            { label: "Plantillas de menú", href: `/cadena/plantillas?tenantId=${tenantId}`, icon: Wallet },
-            { label: "Personal", href: `/cadena/staff?tenantId=${tenantId}`, icon: Users },
-          ].map((action) => (
-            action.onClick ? (
-              <button
-                key={action.label}
-                type="button"
-                onClick={action.onClick}
-                className={`group flex items-center gap-3 rounded-xl border p-3.5 text-left transition-all ${action.primary ? "border-gold/40 bg-gold/10 hover:bg-gold/15" : "border-border-main bg-bg-card/40 hover:border-gold/30 hover:bg-bg-card/60"}`}
-              >
-                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${action.primary ? "bg-gold/20 text-gold" : "bg-white/5 text-text-dim group-hover:text-gold"}`}>
-                  <action.icon className="size-4" />
-                </div>
-                <span className={`text-[12px] font-medium ${action.primary ? "text-gold" : "text-text-secondary group-hover:text-text-primary"}`}>{action.label}</span>
-              </button>
-            ) : (
-              <Link
-                key={action.label}
-                href={action.href}
-                className="group flex items-center gap-3 rounded-xl border border-border-main bg-bg-card/40 p-3.5 text-left transition-all hover:border-gold/30 hover:bg-bg-card/60"
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 text-text-dim group-hover:text-gold">
-                  <action.icon className="size-4" />
-                </div>
-                <span className="text-[12px] font-medium text-text-secondary group-hover:text-text-primary">{action.label}</span>
-              </Link>
-            )
-          ))}
-        </motion.section>
-
-        {/* TOP PERFORMER */}
-        {data.restaurants.length > 0 && (
-          <motion.section
-            initial={reduceMotion ? false : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: reduceMotion ? 0 : 0.14, duration: 0.4 }}
+          <div className="px-3 pb-2 pt-4 text-[8.5px] font-bold uppercase tracking-[0.3em] text-dim">
+            ESTANDARIZACIÓN
+          </div>
+          <Link
+            href={`/cadena/plantillas?tenantId=${tenantId}`}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light"
           >
-            <div className="flex items-center gap-2 mb-3">
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-gold/70">Sucursal del día</span>
-              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {/* Top */}
-              <div className="relative overflow-hidden rounded-2xl border border-gold/20 bg-gradient-to-br from-gold/10 to-transparent p-5">
-                <div className="pointer-events-none absolute -right-8 -top-8 size-32 rounded-full bg-gold/10 blur-2xl" />
-                <div className="relative flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-gold/70">Top performer</p>
-                    <p className="mt-1 font-serif text-lg font-semibold text-text-primary">{data.restaurants[0].name}</p>
-                    <p className="text-[11px] text-text-dim">
-                      {data.restaurants[0].zoneName || "Sin zona"} · {data.restaurants[0].activeStaff} staff
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-serif text-2xl font-semibold text-gold">{fmt(data.restaurants[0].todayRevenue)}</p>
-                    <p className="text-[10px] text-text-dim">{data.restaurants[0].todaySessions} sesiones</p>
-                  </div>
-                </div>
-                <div className="relative mt-3">
-                  <OccupancyBar active={data.restaurants[0].activeTables} total={data.restaurants[0].totalTables} reduceMotion={reduceMotion} />
-                </div>
-              </div>
-              {/* Bottom */}
-              {data.restaurants.length > 1 && (
-                <div className="relative overflow-hidden rounded-2xl border border-border-main bg-bg-card/40 p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-text-faint">Menor desempeño hoy</p>
-                      <p className="mt-1 font-serif text-lg font-semibold text-text-primary">{data.restaurants[data.restaurants.length - 1].name}</p>
-                      <p className="text-[11px] text-text-dim">
-                        {data.restaurants[data.restaurants.length - 1].zoneName || "Sin zona"} · {data.restaurants[data.restaurants.length - 1].activeStaff} staff
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-serif text-2xl font-semibold text-text-muted">{fmt(data.restaurants[data.restaurants.length - 1].todayRevenue)}</p>
-                      <p className="text-[10px] text-text-dim">{data.restaurants[data.restaurants.length - 1].todaySessions} sesiones</p>
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <OccupancyBar active={data.restaurants[data.restaurants.length - 1].activeTables} total={data.restaurants[data.restaurants.length - 1].totalTables} reduceMotion={reduceMotion} />
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.section>
-        )}
+            Plantillas
+          </Link>
+          <Link
+            href={`/cadena/auditoria?tenantId=${tenantId}`}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light"
+          >
+            Auditoría
+          </Link>
+          <Link
+            href={`/cadena/staff?tenantId=${tenantId}`}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light"
+          >
+            Staff
+          </Link>
+        </nav>
 
-        {/* ZONAS — PREVIEW */}
-        <section className="space-y-5">
-          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border-main pb-4">
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.26em] text-text-faint">Cartografía operativa</p>
-              <h2 className="mt-1 font-serif text-[22px] font-semibold tracking-tight text-text-primary">
-                Territorios <em className="not-italic text-gold">activos.</em>
-              </h2>
-              <p className="mt-1 text-[12px] text-text-dim">
-                Top {Math.min(4, data.zones.length)} zonas por ventas · {data.zones.length} en total.
-              </p>
-            </div>
+        <div className="flex-1" />
+
+        {/* Actions */}
+        <div className="flex flex-col gap-1.5">
+          <button
+            type="button"
+            onClick={() => setIsCreating(true)}
+            className="flex w-full items-center gap-2 rounded-lg bg-white px-3 py-2 text-[12px] font-semibold text-ink transition-all hover:bg-white/90 active:scale-[0.98]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Nueva sucursal
+          </button>
+          <Link
+            href={`/cadena/zonas?tenantId=${tenantId}`}
+            className="flex w-full items-center gap-2 rounded-lg border border-white/[0.08] px-3 py-2 text-[12px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light"
+          >
+            <MapPin className="h-3.5 w-3.5" />
+            Atlas de zonas
+          </Link>
+        </div>
+
+        {/* Status footer */}
+        <div className="border-t border-wire pt-3 font-mono text-[10px] text-dim">
+          <div className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-1.5 w-1.5 rounded-full bg-dash-green"
+              style={{ boxShadow: "0 0 6px var(--color-dash-green)" }}
+            />
+            <span className="text-light">OPERATIVO</span>
+          </div>
+          <div className="mt-1 opacity-70">{data.chain.currency}</div>
+        </div>
+      </aside>
+
+      {/* ═══════ MAIN ═══════ */}
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
+        {/* ── Header ── */}
+        <header className="flex items-end justify-between border-b border-wire px-6 py-4">
+          <div>
+            <p className="font-mono text-[10px] tracking-[0.25em] text-dim">
+              {dateLabel} · CADENA
+            </p>
+            <h1 className="mt-1.5 font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.015em] text-light">
+              {data.chain.name}{" "}
+              <span className="italic text-pink-glow">bajo control</span>
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="rounded-full border border-pink-glow/15 bg-pink-glow/8 px-3 py-1.5 font-mono text-[11px] font-semibold text-pink-glow">
+              {data.chain.currency}
+            </span>
             <Link
               href={`/cadena/zonas?tenantId=${tenantId}`}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border-main bg-bg-card/60 px-3.5 py-2 text-[11px] font-medium text-text-muted transition-colors hover:border-gold/35 hover:text-gold"
+              className="hidden rounded-full border border-white/10 px-3.5 py-1.5 text-[11px] font-medium text-dim transition-colors hover:border-white/20 hover:text-light sm:inline-flex sm:items-center sm:gap-1.5"
             >
-              <Compass className="size-3.5 text-gold/70" aria-hidden />
-              Atlas completo
-              <ArrowUpRight className="size-3" aria-hidden />
+              <MapPin className="h-3.5 w-3.5" />
+              Zonas
+            </Link>
+            <Link
+              href={`/cadena/staff?tenantId=${tenantId}`}
+              className="hidden rounded-full border border-white/10 px-3.5 py-1.5 text-[11px] font-medium text-dim transition-colors hover:border-white/20 hover:text-light sm:inline-flex sm:items-center sm:gap-1.5"
+            >
+              <Users className="h-3.5 w-3.5" />
+              Staff
             </Link>
           </div>
+        </header>
 
-          {data.zones.length === 0 ? (
-            <div className="relative overflow-hidden rounded-2xl border border-dashed border-border-bright/60 bg-gradient-to-b from-bg-card/40 to-bg-solid px-6 py-14 text-center">
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.06]">
-                <Orbit className="size-[min(50vw,260px)] text-gold" strokeWidth={0.35} aria-hidden />
-              </div>
-              <div className="relative mx-auto max-w-md space-y-3">
-                <div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-border-main bg-bg-bar/80">
-                  <MapPin className="size-5 text-gold" aria-hidden />
-                </div>
-                <h3 className="font-serif text-xl text-text-primary">Aún no hay zonas cartografiadas</h3>
-                <p className="text-[12px] leading-relaxed text-text-muted">
-                  Designa una zona al crear una sucursal para agrupar tus operaciones territoriales.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {derived.topZones.map((zone, i) => {
-                const sharePct = derived.zoneRevenueTotal > 0 ? (zone.totalRevenue / derived.zoneRevenueTotal) * 100 : 0;
-                return (
-                  <ZoneMiniCard
-                    key={zone.id}
-                    zone={zone}
-                    index={i}
-                    sharePct={sharePct}
-                    reduceMotion={reduceMotion}
-                    tenantId={tenantId}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </section>
+        {/* ── Content ── */}
+        <main className="flex flex-1 flex-col gap-3 overflow-y-auto p-5">
+          {/* ── KPI Strip ── */}
+          <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <SuperKpiCard
+              label="VENTAS DEL DÍA"
+              value={fmt(data.stats.totalRevenue)}
+              delta={pctDiff(data.stats.totalRevenue, data.yesterday.totalRevenue)}
+              deltaTone="green"
+              unit={data.chain.currency}
+              trend={[120, 180, 240, 310, 380, 420, 480, 520, 560, data.stats.totalRevenue / 1000]}
+              accent="pink"
+              delay={0}
+            />
+            <SuperKpiCard
+              label="TICKET PROMEDIO"
+              value={fmt(derived!.avgTicket)}
+              delta={pctDiff(derived!.avgTicket, derived!.yesterdayAvgTicket)}
+              deltaTone={derived!.avgTicket >= derived!.yesterdayAvgTicket ? "green" : "amber"}
+              unit="POR COMANDA"
+              accent="blue"
+              delay={80}
+            />
+            <SuperKpiCard
+              label="MESAS ACTIVAS"
+              value={String(data.stats.activeTables)}
+              delta={derived!.occPct.toFixed(0) + "%"}
+              deltaTone={derived!.occPct >= 50 ? "green" : "amber"}
+              unit="OCUPACIÓN RED"
+              trend={[40, 45, 50, 55, 60, 62, 65, 68, 70, derived!.occPct]}
+              accent="pink"
+              delay={160}
+            />
+            <SuperKpiCard
+              label="SESIONES"
+              value={String(data.stats.totalSessions)}
+              delta={pctDiff(data.stats.totalSessions, data.yesterday.totalSessions)}
+              deltaTone="green"
+              unit="COMENSALES HOY"
+              accent="green"
+              delay={240}
+            />
+          </section>
 
-        {/* SUCURSALES */}
-        <section className="space-y-5">
-          <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border-main pb-4">
-            <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.26em] text-text-faint">Unidades operativas</p>
-              <h2 className="mt-1 font-serif text-[22px] font-semibold tracking-tight text-text-primary">
-                Desempeño por <em className="not-italic text-gold">sucursal.</em>
-              </h2>
-              <p className="mt-1 text-[12px] text-text-dim">
-                Todas las ubicaciones reportando actividad en vivo.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border-main bg-bg-card/60 px-2.5 py-1 font-mono text-[10px] text-text-muted">
-                <span className="size-1.5 rounded-full bg-dash-green animate-pulse" />
-                {data.restaurants.length} ubicaciones
-              </span>
-            </div>
-          </div>
-
-          {data.restaurants.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border-bright/60 bg-bg-card/30 px-6 py-14 text-center">
-              <div className="mx-auto flex size-12 items-center justify-center rounded-2xl border border-border-main bg-bg-bar/80">
-                <Store className="size-5 text-gold" aria-hidden />
+          {/* ── Alerts Banner ── */}
+          {data.alerts.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-[18px] border border-pink-light-glow/20 bg-pink-light-glow/[0.04] p-4"
+            >
+              <div className="mb-3 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-pink-light-glow" />
+                <h3 className="text-[13px] font-semibold text-rose-pale">
+                  {data.alerts.length} sucursal{data.alerts.length > 1 ? "es" : ""} requiere{data.alerts.length === 1 ? "" : "n"} atención
+                </h3>
               </div>
-              <h3 className="mt-3 font-serif text-lg text-text-primary">Aún no hay sucursales</h3>
-              <p className="mx-auto mt-1.5 max-w-xs text-[12px] text-text-muted">
-                Crea la primera ubicación usando el botón <span className="text-gold">Nueva sucursal</span> del encabezado.
-              </p>
-              <button
-                type="button"
-                onClick={() => setIsCreatingRest(true)}
-                className="mt-5 inline-flex items-center gap-2 rounded-xl border border-gold bg-gold px-4 py-2 text-[11px] font-semibold text-bg-solid transition-opacity hover:opacity-90"
-              >
-                <Plus className="size-3.5" aria-hidden />
-                Crear sucursal
-              </button>
-            </div>
-          ) : (
-            <>
-              {/* MOBILE */}
-              <div className="space-y-3 sm:hidden">
-                {data.restaurants.map((rest, i) => (
-                  <RestaurantCard key={rest.id} rest={rest} reduceMotion={reduceMotion} index={i} />
+              <div className="flex flex-wrap gap-2">
+                {data.alerts.map((a) => (
+                  <Link
+                    key={a.id}
+                    href={`/dashboard?restaurantId=${a.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-pink-light-glow/15 bg-pink-light-glow/10 px-2.5 py-1.5 text-[11px] text-rose-pale transition-colors hover:bg-pink-light-glow/20"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-pink-light-glow" />
+                    <span className="font-medium">{a.name}</span>
+                    <span className="text-pink-light-glow/70">· {a.message}</span>
+                  </Link>
                 ))}
               </div>
+            </motion.div>
+          )}
 
-              {/* DESKTOP */}
-              <div className="hidden overflow-hidden rounded-2xl border border-border-main bg-bg-card/40 backdrop-blur-sm sm:block">
-                <div className="scrollbar-hide overflow-x-auto">
-                  <table className="w-full border-collapse text-left">
-                    <thead>
-                      <tr className="border-b border-border-main bg-bg-bar/60">
-                        <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-text-dim">Sucursal</th>
-                        <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-text-dim">Zona</th>
-                        <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-text-dim">Ventas hoy</th>
-                        <th className="px-5 py-3 font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-text-dim">Ocupación</th>
-                        <th className="px-5 py-3 text-right font-mono text-[10px] font-medium uppercase tracking-[0.14em] text-text-dim">Staff</th>
-                      </tr>
-                    </thead>
-                    <tbody className="align-middle">
-                      {data.restaurants.map((rest, i) => (
-                        <RestaurantRow key={rest.id} rest={rest} reduceMotion={reduceMotion} index={i} />
-                      ))}
-                    </tbody>
-                  </table>
+          {/* ── Lower Grid ── */}
+          <div className="grid flex-1 gap-3 lg:grid-cols-1 xl:grid-cols-[1.3fr_0.95fr_0.85fr]">
+            {/* LEFT: 7-day chart */}
+            <div className="bq-card flex flex-col !p-0 overflow-hidden lg:order-1">
+              <div className="border-b border-wire px-4 py-3.5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
+                  VENTAS · 7 DÍAS POR SUCURSAL
+                </p>
+                <p className="mt-0.5 font-serif text-[20px] font-medium leading-tight text-light">
+                  El <span className="italic text-pink-glow">jardín</span> completo
+                </p>
+              </div>
+              <div className="flex-1 p-3">
+                <MultiLineChart branches={mock7DayBranches} className="h-full" />
+              </div>
+              <div className="border-t border-wire px-4 py-2">
+                <span className="font-mono text-[9px] tracking-[0.15em] text-dim">
+                  {mock7DayBranches.length} sucursales · {/* TODO: real 7-day API */} datos simulados
+                </span>
+              </div>
+            </div>
+
+            {/* MIDDLE: Branch rankings */}
+            <div className="bq-card flex flex-col !p-0 overflow-hidden lg:order-2">
+              <div className="border-b border-wire px-4 py-3.5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
+                  RANKING · HOY
+                </p>
+                <p className="mt-0.5 font-serif text-[20px] font-medium leading-tight text-light">
+                  ¿Quién <span className="italic text-pink-glow">lidera</span>?
+                </p>
+              </div>
+              {/* Table header */}
+              <div className="flex items-center gap-2 border-b border-white/[0.04] px-4 py-2 font-mono text-[9px] tracking-[0.2em] text-dim">
+                <span className="w-5">#</span>
+                <span className="min-w-0 flex-1">SUCURSAL</span>
+                <span className="w-[72px] text-right">HOY</span>
+                <span className="w-[44px] text-right">Δ</span>
+                <span className="w-16">OCUP</span>
+              </div>
+              <BranchRankings
+                branches={data.restaurants.map((r) => ({
+                  id: r.id,
+                  name: r.name,
+                  zoneName: r.zoneName,
+                  todayRevenue: r.todayRevenue,
+                  yesterdayRevenue: r.todayRevenue * (0.75 + Math.random() * 0.5), // TODO: real yesterday per branch
+                  occupancyPct: r.totalTables > 0 ? (r.activeTables / r.totalTables) * 100 : 0,
+                }))}
+              />
+              <div className="border-t border-wire px-4 py-2.5">
+                <span className="font-mono text-[9px] tracking-[0.15em] text-dim">
+                  {data.restaurants.length} sucursales activas
+                </span>
+              </div>
+            </div>
+
+            {/* RIGHT: Occupancy + Peak + Quick stats */}
+            <div className="flex flex-col gap-3 lg:order-3">
+              {/* Occupancy dial */}
+              <div className="bq-card flex items-center justify-center gap-6 p-5">
+                <OccupancyDial pct={derived!.occPct} reduceMotion={reduceMotion} />
+                <div className="space-y-2">
+                  <div>
+                    <p className="font-mono text-[18px] font-semibold tabular-nums text-light">
+                      {data.stats.activeTables}
+                      <span className="ml-1 font-mono text-[11px] text-dim">
+                        / {data.restaurants.reduce((acc, r) => acc + r.totalTables, 0)}
+                      </span>
+                    </p>
+                    <p className="text-[10px] text-dim">mesas activas/total</p>
+                  </div>
+                  <div>
+                    <p className="font-mono text-[18px] font-semibold tabular-nums text-light">
+                      {data.stats.restaurantCount}
+                    </p>
+                    <p className="text-[10px] text-dim">sucursales</p>
+                  </div>
                 </div>
               </div>
-            </>
-          )}
-        </section>
 
-        <div className="flex items-center justify-between border-t border-border-main/60 pt-4 text-[10px] text-text-faint">
-          <p className="font-mono uppercase tracking-[0.2em]">Bouquet · V{new Date().getFullYear()}</p>
-          <div className="flex items-center gap-1.5">
-            <div className="h-1.5 w-1.5 rounded-full bg-dash-green" />
-            <span className="font-mono uppercase tracking-widest">Data stream activo</span>
+              {/* Peak hour */}
+              <div className="bq-card flex flex-col p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
+                  HORA PICO · CONSOLIDADO
+                </p>
+                <p className="mt-0.5 font-serif text-[17px] font-medium leading-tight text-light">
+                  Pico a las{" "}
+                  <span className="italic text-pink-glow">{peakLabel}</span>
+                </p>
+                <div className="mt-2 h-[72px]">
+                  <PeakHourBar data={mockPeakHours} className="h-full" />
+                </div>
+                <div className="mt-1 font-mono text-[9px] tracking-[0.15em] text-dim">
+                  {/* TODO: real hourly API */} simulado
+                </div>
+              </div>
+
+              {/* Zones summary */}
+              <div className="bq-card p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
+                  ZONAS · TOP
+                </p>
+                <div className="mt-3 flex flex-col gap-2">
+                  {data.zones.slice(0, 4).map((z) => {
+                    const zoneOcc =
+                      z.totalTables > 0
+                        ? Math.round((z.activeTables / z.totalTables) * 100)
+                        : 0;
+                    return (
+                      <div key={z.id} className="flex items-center justify-between text-[12px]">
+                        <div className="flex min-w-0 items-center gap-2">
+                          <Store className="h-3.5 w-3.5 shrink-0 text-dim" />
+                          <span className="truncate font-medium text-light">{z.name}</span>
+                          <span className="font-mono text-[10px] text-dim">
+                            {z.restaurantCount} loc.
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                          <span className="font-mono text-[11px] tabular-nums text-dim">
+                            {fmt(z.totalRevenue)}
+                          </span>
+                          <span className="flex w-16 items-center gap-1.5">
+                            <span className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                              <span
+                                className="block h-full rounded-full"
+                                style={{
+                                  width: `${zoneOcc}%`,
+                                  background:
+                                    zoneOcc >= 70
+                                      ? "var(--color-dash-green)"
+                                      : zoneOcc >= 40
+                                        ? "var(--color-dash-amber)"
+                                        : "var(--color-pink-light-glow)",
+                                }}
+                              />
+                            </span>
+                            <span className="font-mono text-[9px] tabular-nums text-dim">
+                              {zoneOcc}%
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        </main>
       </div>
 
-      {isCreatingRest && (
+      {isCreating && (
         <CreateRestaurantDialog
           chainId={tenantId}
-          zones={data.zones}
-          onCreated={() => {
-            load(tenantId);
-          }}
-          onClose={() => setIsCreatingRest(false)}
+          zones={data.zones.map((z) => ({ id: z.id, name: z.name }))}
+          onCreated={() => { setIsCreating(false); load(); }}
+          onClose={() => setIsCreating(false)}
         />
       )}
     </div>

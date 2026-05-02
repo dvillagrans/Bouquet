@@ -72,7 +72,6 @@ export const Features = () => {
             ".features-title",
             ".features-desc",
             ".features-floral",
-            ".features-icon-dot",
             ".features-card",
             ".features-petal",
           ],
@@ -146,23 +145,7 @@ export const Features = () => {
         }
       );
 
-      // ── Icon dots on floral (desktop only) ─────────
-      gsap.fromTo(
-        ".features-icon-dot",
-        { scale: 0, opacity: 0 },
-        {
-          scale: 1,
-          opacity: 1,
-          duration: 0.7,
-          ease: "back.out(1.7)",
-          stagger: 0.12,
-          scrollTrigger: {
-            trigger: ".features-floral",
-            start: "top 75%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
+
 
       // ── Feature cards ──────────────────────────────
       gsap.fromTo(
@@ -278,25 +261,7 @@ export const Features = () => {
           aria-hidden="true"
         />
 
-        {/* Iconos absolutos — solo desktop (lg+) */}
-        <div
-          className="features-icon-dot absolute hidden lg:flex items-center justify-center rounded-full bg-white/30 backdrop-blur-md shadow-lg border border-white/50"
-          style={{ left: "19%", top: "51.5%", width: "56px", height: "56px", transform: "translate(-50%, -50%)" }}
-        >
-          <LayoutGrid className="w-6 h-6 text-rose-950" />
-        </div>
-        <div
-          className="features-icon-dot absolute hidden lg:flex items-center justify-center rounded-full bg-white/30 backdrop-blur-md shadow-lg border border-white/50"
-          style={{ left: "50%", top: "49%", width: "56px", height: "56px", transform: "translate(-50%, -50%)" }}
-        >
-          <ListOrdered className="w-6 h-6 text-rose-950" />
-        </div>
-        <div
-          className="features-icon-dot absolute hidden lg:flex items-center justify-center rounded-full bg-white/30 backdrop-blur-md shadow-lg border border-white/50"
-          style={{ left: "81%", top: "52.5%", width: "56px", height: "56px", transform: "translate(-50%, -50%)" }}
-        >
-          <Receipt className="w-6 h-6 text-rose-950" />
-        </div>
+
       </div>
 
       {/* ── Feature cards grid ───────────────────────── */}

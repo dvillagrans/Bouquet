@@ -164,7 +164,7 @@ export function ForWhoSection() {
 
       <div className="relative mx-auto max-w-[88rem] px-6 lg:px-12">
         {/* Header */}
-        <div className="mb-24 flex flex-col items-center text-center lg:mb-28">
+        <div className="mb-6 flex flex-col items-center text-center lg:mb-8">
           <div className="forwho-label opacity-0 mb-6 flex flex-col items-center gap-3">
             <div className="flex items-center gap-4 text-[0.65rem] font-bold uppercase tracking-[0.34em] text-rose-900/40">
               <span className="h-px w-12 bg-gradient-to-r from-transparent to-rose-900/30" aria-hidden="true" />

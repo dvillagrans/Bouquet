@@ -7,7 +7,12 @@ import { useGSAP } from "@gsap/react";
 import Image from "next/image";
 import floralLeft from "@/assets/floral-assets/branches/complete_2.png";
 import floralRight from "@/assets/floral-assets/branches/complete_3.png";
-import { Armchair, Bell, CreditCard, UtensilsCrossed, Receipt, ChevronRight, Clock, Users, CreditCard as CardIcon, MapPin } from "lucide-react";
+import iconMesa from "@/assets/mesa.png";
+import iconCampana from "@/assets/campana.png";
+import iconTarjeta from "@/assets/tarjeta.png";
+import iconRecibo from "@/assets/recibo.png";
+import iconCuchilloTenedor from "@/assets/cuchillo_tenedor.png";
+import { Armchair, Bell, CreditCard, UtensilsCrossed, Receipt, ChevronRight, Clock, Users, CreditCard as CardIcon, MapPin, Utensils } from "lucide-react";
 
 /* ── iPhone Frame Shell ── */
 function IPhoneFrame({ children }: { children: React.ReactNode }) {
@@ -85,17 +90,17 @@ function PhoneMockup() {
           {/* Action cards */}
           <div className="space-y-3">
             {[
-              { icon: UtensilsCrossed, label: "Explorar menú", desc: "Carta completa", color: "bg-rose/10 text-rose", ring: "ring-rose/20" },
-              { icon: Clock, label: "Mis órdenes", desc: "3 ítems en preparación", color: "bg-amber-50 text-amber-600", ring: "ring-amber-200" },
-              { icon: Users, label: "Cuenta compartida", desc: "4 comensales", color: "bg-sky-50 text-sky-600", ring: "ring-sky-200" },
-              { icon: CardIcon, label: "Pagar", desc: "$1,240 total", color: "bg-emerald-50 text-emerald-600", ring: "ring-emerald-200" },
+              { icon: iconCuchilloTenedor, label: "Explorar menú", desc: "Carta completa", color: "bg-rose/10 text-rose", ring: "ring-rose/20" },
+              { icon: iconCampana, label: "Mis órdenes", desc: "3 ítems en preparación", color: "bg-amber-50 text-amber-600", ring: "ring-amber-200" },
+              { icon: iconMesa, label: "Cuenta compartida", desc: "4 comensales", color: "bg-sky-50 text-sky-600", ring: "ring-sky-200" },
+              { icon: iconTarjeta, label: "Pagar", desc: "$1,240 total", color: "bg-emerald-50 text-emerald-600", ring: "ring-emerald-200" },
             ].map((item) => (
               <button
                 key={item.label}
                 className="group flex w-full items-center gap-4 rounded-2xl bg-white/70 px-4 py-3.5 shadow-[0_1px_3px_rgba(74,26,44,0.05)] ring-1 ring-burgundy/[0.06] backdrop-blur-sm transition-all active:scale-[0.98]"
               >
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.color} ring-1 ${item.ring}`}>
-                  <item.icon className="h-4.5 w-4.5" strokeWidth={1.8} />
+                  <Image src={item.icon} alt="" className="h-5.5 w-5.5 object-contain" />
                 </div>
                 <div className="flex-1 text-left">
                   <p className="text-[0.82rem] font-semibold text-burgundy">{item.label}</p>
@@ -236,7 +241,7 @@ export const Hero = () => {
     if (prefersReducedMotion) {
       gsap.set([
         ".hero-floral-left", ".hero-floral-right", ".bg-blob", ".hero-title-inner", 
-        ".hero-subtitle", ".hero-pillars span", ".hero-cta", ".hero-pink-circle",
+        ".hero-subtitle", ".hero-desc", ".hero-pillar-item", ".hero-pillar-divider", ".hero-cta", ".hero-pink-circle",
         ".hero-mockup-phone", ".hero-mockup-ticket", ".hero-toast"
       ], { opacity: 1, y: 0, x: 0, scale: 1 });
       return;
@@ -244,8 +249,8 @@ export const Hero = () => {
 
     const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
-    // 1. Flores de fondo + círculo rosa (escenografía)
-    tl.fromTo([".hero-floral-left", ".hero-floral-right", ".hero-pink-circle"],
+    // 1. Fondo + flores + círculo rosa (escenografía)
+    tl.fromTo([".bg-blob", ".hero-floral-left", ".hero-floral-right", ".hero-pink-circle"],
       { opacity: 0, scale: 0.9 },
       { opacity: 1, scale: 1, duration: 1, stagger: 0.08 },
       0
@@ -256,10 +261,10 @@ export const Hero = () => {
       { y: 0, opacity: 1, duration: 0.7 },
       0.2
     )
-    // 3. Subtítulo y pilares
-    .fromTo([".hero-subtitle", ".hero-pillars span"],
+    // 3. Subtítulo, descripción y pilares
+    .fromTo([".hero-subtitle", ".hero-desc", ".hero-pillar-item", ".hero-pillar-divider"],
       { y: 20, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.6, stagger: 0.05 },
+      { y: 0, opacity: 1, duration: 0.6, stagger: 0.06 },
       0.4
     )
     // 4. CTAs
@@ -291,52 +296,51 @@ export const Hero = () => {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-burgundy/10 to-transparent" />
       </div>
 
-      <div className="mx-auto grid w-full max-w-7xl gap-12 px-6 lg:grid-cols-[1fr_0.9fr] lg:items-center lg:gap-8 lg:px-10">
+      <div className="mx-auto grid w-full max-w-7xl gap-6 px-6 md:gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-center lg:gap-8 lg:px-10">
         {/* Columna izquierda — texto */}
-        <div className="max-w-xl">
+        <div className="max-w-xl mx-auto lg:mx-0 text-center lg:text-left">
           {/* Logo grande */}
-          <div className="mt-8">
+          <div className="mt-0 lg:mt-8">
             <p className="hero-subtitle opacity-0 mb-2 text-xs tracking-[0.25em] uppercase text-rose-700/60">
               PARA RESTAURANTES QUE QUIEREN CRECER
             </p>
             {/* Wrapper for overflow hidden reveal effect */}
             <div className="overflow-hidden leading-[0.85] pb-2">
-              <h1 className="hero-title-inner opacity-0 origin-left font-serif text-5xl md:text-6xl lg:text-7xl font-semibold italic tracking-[-0.03em] text-burgundy">
+              <h1 className="hero-title-inner opacity-0 origin-left font-serif text-3xl sm:text-4xl md:text-[2.75rem] lg:text-7xl font-semibold italic tracking-[-0.03em] text-burgundy">
                 El sistema que <span style={{ color: '#C06A78' }}>ordena el servicio</span> de tu restaurante.
               </h1>
             </div>
           </div>
 
           {/* Tagline */}
-          <p className="hero-desc opacity-0 mt-6 max-w-lg text-balance text-[1.1rem] leading-[1.75] text-burgundy/65">
+          <p className="hero-desc opacity-0 mt-5 lg:mt-6 max-w-lg mx-auto lg:mx-0 text-balance text-[0.95rem] md:text-[1.1rem] leading-[1.7] text-burgundy/65">
             Bouquet conecta mesas, órdenes y pagos en una sola operación.
             Menos caos, más control y un mejor servicio para tus clientes.
           </p>
 
-          {/* Pilares */}
-          <div className="hero-pillars mt-6 flex flex-wrap items-center gap-3">
-            {[
-              { label: "Mesas", icon: <Armchair className="h-4 w-4" /> },
-              { label: "Órdenes", icon: <Bell className="h-4 w-4" /> },
-              { label: "Pagos", icon: <CreditCard className="h-4 w-4" /> },
-            ].map((pilar, i) => (
-              <span key={pilar.label} className="flex items-center gap-3 opacity-0">
-                <span className="flex items-center gap-2 rounded-full border border-rose-200 px-4 py-1.5 text-sm text-rose-900/70">
-                  {pilar.icon}
-                  {pilar.label}
-                </span>
-                {i < 2 && (
-                  <span className="h-4 w-px bg-rose-200" />
-                )}
-              </span>
-            ))}
+          {/* Pilares Unificados */}
+          <div className="hero-pillars mt-6 lg:mt-8 inline-flex flex-wrap items-center justify-center rounded-full border border-rose-100 bg-rose-50/50 px-2.5 py-2 md:px-3 md:py-2.5 shadow-sm">
+            <div className="hero-pillar-item opacity-0 flex items-center gap-2 md:gap-3 px-3 py-2 md:px-5 md:py-3">
+              <Image src={iconMesa} alt="" className="h-5 w-5 md:h-7 md:w-7 object-contain" />
+              <span className="text-[0.85rem] md:text-[1rem] font-bold text-burgundy">Mesas</span>
+            </div>
+            <div className="hero-pillar-divider opacity-0 hidden h-5 md:h-7 w-px bg-rose-200/60 sm:block" />
+            <div className="hero-pillar-item opacity-0 flex items-center gap-2 md:gap-3 px-3 py-2 md:px-5 md:py-3">
+              <Image src={iconCampana} alt="" className="h-5 w-5 md:h-7 md:w-7 object-contain" />
+              <span className="text-[0.85rem] md:text-[1rem] font-bold text-burgundy">Órdenes</span>
+            </div>
+            <div className="hero-pillar-divider opacity-0 hidden h-5 md:h-7 w-px bg-rose-200/60 sm:block" />
+            <div className="hero-pillar-item opacity-0 flex items-center gap-2 md:gap-3 px-3 py-2 md:px-5 md:py-3">
+              <Image src={iconTarjeta} alt="" className="h-5 w-5 md:h-7 md:w-7 object-contain" />
+              <span className="text-[0.85rem] md:text-[1rem] font-bold text-burgundy">Pagos</span>
+            </div>
           </div>
 
           {/* CTAs */}
-          <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+          <div className="mt-8 lg:mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
             <a
               href="#contacto"
-              className="hero-cta opacity-0 group inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-full bg-burgundy px-5 text-[0.9375rem] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(74,26,44,0.5)] transition-colors duration-200 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto sm:justify-between"
+              className="hero-cta opacity-0 group inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-full bg-burgundy px-5 text-[0.9rem] md:text-[0.9375rem] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(74,26,44,0.5)] transition-colors duration-200 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto sm:justify-between"
             >
               <span className="whitespace-nowrap">Reservar demo de 20 min</span>
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose/95 ring-1 ring-white/20 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:scale-105">
@@ -348,7 +352,7 @@ export const Hero = () => {
 
             <a
               href="#como-funciona"
-              className="hero-cta opacity-0 group inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-burgundy/10 bg-white/60 px-5 text-[0.9375rem] font-semibold text-burgundy transition-colors duration-200 hover:border-burgundy/25 hover:bg-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto"
+              className="hero-cta opacity-0 group inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-burgundy/10 bg-white/60 px-5 text-[0.9rem] md:text-[0.9375rem] font-semibold text-burgundy transition-colors duration-200 hover:border-burgundy/25 hover:bg-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto"
             >
               <span className="whitespace-nowrap">Ver recorrido operativo</span>
               <svg className="h-3.5 w-3.5 shrink-0 text-burgundy/50 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -360,28 +364,25 @@ export const Hero = () => {
         </div>
 
         {/* Columna derecha — mockups */}
-        <div className="relative flex h-[600px] w-full max-w-[500px] items-center justify-center mt-10 lg:mt-0 lg:ml-auto">
+        <div className="relative flex h-[340px] sm:h-[400px] md:h-[400px] lg:h-[600px] w-full max-w-[500px] items-center justify-center mx-auto lg:mx-0 mt-2 sm:mt-4 md:mt-6 lg:mt-0 lg:ml-auto md:scale-[0.7] md:origin-center">
           {/* Flores decorativas detrás de los mockups */}
           <Image
             src={floralLeft}
             alt=""
             priority
-            className="hero-floral-left pointer-events-none absolute -left-[55%] -top-[15%] z-[2] opacity-0 -rotate-[8deg]"
-            style={{ width: '1600px', height: 'auto' }}
+            className="hero-floral-left pointer-events-none absolute -left-[5%] sm:-left-[10%] md:-left-[30%] lg:-left-[55%] -top-[5%] sm:-top-[8%] md:-top-[12%] lg:-top-[15%] z-[2] opacity-0 -rotate-[8deg] w-[280px] sm:w-[350px] md:w-[500px] lg:w-[1600px]"
           />
           <Image
             src={floralRight}
             alt=""
             priority
-            className="hero-floral-right pointer-events-none absolute -right-[65%] -bottom-[16%] z-[2] w-[1100px] opacity-0 rotate-[12deg]"
+            className="hero-floral-right pointer-events-none absolute -right-[5%] sm:-right-[10%] md:-right-[35%] lg:-right-[65%] -bottom-[5%] sm:-bottom-[8%] md:-bottom-[12%] lg:-bottom-[16%] z-[2] opacity-0 rotate-[12deg] w-[220px] sm:w-[280px] md:w-[380px] lg:w-[1100px]"
           />
 
           {/* Círculo rosa de fondo */}
           <div
-            className="hero-pink-circle absolute opacity-0"
+            className="hero-pink-circle absolute opacity-0 w-[300px] h-[300px] sm:w-[380px] sm:h-[380px] md:w-[420px] md:h-[420px] lg:w-[720px] lg:h-[720px]"
             style={{
-              width: '720px',
-              height: '720px',
               borderRadius: '50%',
               backgroundColor: '#F9D9E3',
               zIndex: 1,
@@ -389,24 +390,24 @@ export const Hero = () => {
           />
 
           {/* Teléfono principal */}
-          <div className="hero-mockup-phone opacity-0 absolute z-10 -translate-x-32 translate-y-8 -rotate-[2deg]">
+          <div className="hero-mockup-phone opacity-0 absolute z-10 -translate-x-10 sm:-translate-x-14 md:-translate-x-16 lg:-translate-x-32 translate-y-2 sm:translate-y-3 md:translate-y-4 lg:translate-y-8 -rotate-[2deg] scale-[0.65] sm:scale-[0.7] md:scale-[0.75] lg:scale-100">
             <PhoneMockup />
           </div>
 
           {/* Teléfono secundario (Cuenta) */}
-          <div className="hero-mockup-ticket hidden sm:block opacity-0 absolute z-10 translate-x-40 -translate-y-12 rotate-[3deg]">
+          <div className="hero-mockup-ticket hidden sm:block opacity-0 absolute z-10 translate-x-14 sm:translate-x-20 md:translate-x-24 lg:translate-x-40 -translate-y-4 sm:-translate-y-6 md:-translate-y-6 lg:-translate-y-12 rotate-[3deg] scale-[0.65] sm:scale-[0.7] md:scale-[0.75] lg:scale-100">
             <TicketMockup />
           </div>
 
           {/* Toast Superior: Orden enviada */}
-          <div className="hero-toast opacity-0 absolute -top-[18%] -right-24 z-20 flex items-center gap-4 rounded-2xl bg-white px-5 py-4 shadow-xl ring-1 ring-black/5">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-500">
-              <UtensilsCrossed className="h-6 w-6" />
+          <div className="hero-toast opacity-0 absolute top-[8%] sm:top-[2%] md:top-[5%] lg:-top-[18%] right-2 sm:right-0 md:right-0 lg:-right-24 z-20 hidden sm:flex items-center gap-3 md:gap-3 rounded-2xl bg-white px-4 md:px-4 lg:px-5 py-3 md:py-3 lg:py-4 shadow-xl ring-1 ring-black/5">
+            <div className="flex h-10 w-10 md:h-10 lg:h-12 md:w-10 lg:w-12 shrink-0 items-center justify-center rounded-full bg-rose-100 p-2 md:p-2 lg:p-2.5">
+              <Image src={iconCuchilloTenedor} alt="" className="h-full w-full object-contain" />
             </div>
             <div>
-              <p className="font-bold text-burgundy text-sm">Orden enviada</p>
-              <p className="text-xs font-medium text-burgundy/50">Mesa 12 &middot; 14:32</p>
-              <p className="mt-1 flex items-center gap-1.5 text-[0.65rem] font-bold text-sage-deep">
+              <p className="font-bold text-burgundy text-xs md:text-xs lg:text-sm">Orden enviada</p>
+              <p className="text-[0.7rem] md:text-[0.7rem] lg:text-xs font-medium text-burgundy/50">Mesa 12 &middot; 14:32</p>
+              <p className="mt-1 flex items-center gap-1.5 text-[0.6rem] md:text-[0.6rem] lg:text-[0.65rem] font-bold text-sage-deep">
                 <span className="h-1.5 w-1.5 rounded-full bg-sage-deep" />
                 En preparación
               </p>
@@ -414,14 +415,14 @@ export const Hero = () => {
           </div>
 
           {/* Toast Inferior: Pago registrado */}
-          <div className="hero-toast opacity-0 absolute -bottom-[12%] -left-8 z-20 flex items-center gap-4 rounded-2xl bg-white px-5 py-4 shadow-xl ring-1 ring-black/5">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-rose-100 text-rose-500">
-              <Receipt className="h-6 w-6" />
+          <div className="hero-toast opacity-0 absolute -bottom-[2%] sm:-bottom-[5%] md:-bottom-[5%] lg:-bottom-[12%] -left-2 sm:-left-4 md:-left-4 lg:-left-8 z-20 hidden sm:flex items-center gap-3 md:gap-3 rounded-2xl bg-white px-4 md:px-4 lg:px-5 py-3 md:py-3 lg:py-4 shadow-xl ring-1 ring-black/5">
+            <div className="flex h-10 w-10 md:h-10 lg:h-12 md:w-10 lg:w-12 shrink-0 items-center justify-center rounded-full bg-rose-100 p-2 md:p-2 lg:p-2.5">
+              <Image src={iconRecibo} alt="" className="h-full w-full object-contain" />
             </div>
             <div>
-              <p className="font-bold text-burgundy text-sm">Pago registrado</p>
-              <p className="text-xs font-medium text-burgundy/50">Mesa 12 &middot; 14:45</p>
-              <p className="mt-1 flex items-center gap-1.5 text-[0.65rem] font-bold text-sage-deep">
+              <p className="font-bold text-burgundy text-xs md:text-xs lg:text-sm">Pago registrado</p>
+              <p className="text-[0.7rem] md:text-[0.7rem] lg:text-xs font-medium text-burgundy/50">Mesa 12 &middot; 14:45</p>
+              <p className="mt-1 flex items-center gap-1.5 text-[0.6rem] md:text-[0.6rem] lg:text-[0.65rem] font-bold text-sage-deep">
                 <span className="h-1.5 w-1.5 rounded-full bg-sage-deep" />
                 Completado
               </p>

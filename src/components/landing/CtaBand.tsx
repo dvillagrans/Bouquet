@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import floralLeft from "@/assets/floral-assets/branches/complete_2.png";
 
 export const CtaBand = () => {
   const [formData, setFormData] = useState({
@@ -27,7 +29,7 @@ export const CtaBand = () => {
   return (
     <section
       id="contacto"
-      className="relative flex min-h-[80dvh] flex-col justify-center border-t border-burgundy/10 bg-rose-cream py-20 lg:py-28 overflow-hidden"
+      className="relative flex min-h-[80dvh] flex-col justify-center border-t border-burgundy/10 bg-[#FCF5F7] py-20 lg:py-28 overflow-hidden"
     >
       {/* Bookend */}
       <div
@@ -35,8 +37,16 @@ export const CtaBand = () => {
         className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-burgundy/8 via-burgundy/0 to-transparent"
       />
 
-      {/* Decoración floral */}
-      <svg viewBox="0 0 400 100" className="absolute -right-20 top-10 h-24 w-96 opacity-20" aria-hidden="true">
+      {/* Decoración floral Izquierda */}
+      <Image
+        src={floralLeft}
+        alt=""
+        className="pointer-events-none absolute -left-[20%] top-1/2 -translate-y-1/2 w-[600px] opacity-40 z-0"
+        aria-hidden="true"
+      />
+
+      {/* Decoración floral Derecha */}
+      <svg viewBox="0 0 400 100" className="absolute -right-20 top-10 h-24 w-96 opacity-20 z-0" aria-hidden="true">
         <path d="M0 50 Q100 10 200 50 Q300 90 400 50" stroke="#C75B7A" strokeWidth="1" fill="none" />
         <circle cx="50" cy="35" r="6" fill="#E8A5B0" />
         <circle cx="150" cy="55" r="5" fill="#D68C9F" />
@@ -44,16 +54,16 @@ export const CtaBand = () => {
         <circle cx="350" cy="60" r="5" fill="#E8A5B0" />
       </svg>
 
-      <div className="mx-auto grid max-w-[1200px] gap-12 px-6 lg:grid-cols-[1fr_auto] lg:items-start lg:px-8">
+      <div className="mx-auto grid max-w-[1200px] gap-12 px-6 lg:grid-cols-[1fr_auto] lg:items-start lg:px-8 relative z-10">
         <div className="max-w-2xl">
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.32em] text-burgundy/38">
             Siguiente paso
           </p>
-          <h2 className="mt-4 text-balance font-sans text-4xl font-black tracking-[-0.05em] text-burgundy sm:text-5xl md:text-6xl lg:text-[4.5rem] lg:leading-[0.95]">
-            Haz que el turno florezca.
+          <h2 className="mt-4 text-balance font-serif text-5xl md:text-6xl lg:text-[4.5rem] font-semibold text-burgundy lg:leading-[1]">
+            Haz que el <br className="hidden lg:block" /> turno <span className="italic">florezca.</span>
           </h2>
 
-          <p className="mt-7 max-w-xl text-balance text-lg leading-[1.8] text-burgundy/60 font-medium">
+          <p className="mt-7 max-w-xl text-balance text-[1.1rem] leading-[1.75] text-burgundy/60 font-medium">
             Si querés que Bouquet se adapte a tu servicio, dejanos tus datos. Te
             contactamos en menos de 2 horas para mostrarte el flujo completo.
           </p>
@@ -66,9 +76,11 @@ export const CtaBand = () => {
             ].map((item) => (
               <p
                 key={item}
-                className="inline-flex items-center gap-2.5 rounded-full border border-burgundy/10 bg-white px-4 py-2 text-[0.75rem] font-semibold text-burgundy/70 shadow-[0_1px_2px_rgba(74,26,44,0.04)]"
+                className="inline-flex items-center gap-2.5 rounded-full border border-rose-200/50 bg-white/70 px-4 py-2 text-[0.75rem] font-semibold text-burgundy/80 shadow-sm"
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-sage-deep shrink-0" aria-hidden="true" />
+                <span className="flex items-center justify-center h-4 w-4 rounded-full bg-rose-100 text-rose-500 shrink-0">
+                  <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                </span>
                 {item}
               </p>
             ))}

@@ -19,7 +19,8 @@ export default function TableManager({
           className="absolute inset-0 z-0 opacity-30 mix-blend-overlay"
           style={{ backgroundImage: `url("${NOISE_SVG}")`, backgroundRepeat: "repeat" }}
         />
-        <div className="absolute top-0 right-0 h-[min(80vh,600px)] w-[min(100vw,800px)] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(201,160,84,0.06),transparent_60%)] blur-3xl opacity-60" />
+        <div className="absolute -top-32 right-0 h-[min(80vh,600px)] w-[min(100vw,800px)] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(244,114,182,0.05),transparent_60%)] blur-3xl opacity-45" />
+        <div className="absolute -bottom-40 -left-20 h-[min(60vh,500px)] w-[min(80vw,700px)] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(167,243,208,0.04),transparent_55%)] blur-3xl opacity-35" />
       </div>
 
       <div className="relative z-10 px-6 py-12 md:px-12 md:py-16 mx-auto max-w-[1600px]">

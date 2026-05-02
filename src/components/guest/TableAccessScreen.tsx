@@ -3,19 +3,25 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { Users, User, ShieldCheck, Sun, ArrowLeft, Flower2 } from "lucide-react";
 import { guestJoinTable } from "@/actions/comensal";
 import { GuestMenuThemeToggle } from "@/components/guest/GuestMenuThemeToggle";
 import { useGuestMenuTheme } from "@/hooks/useGuestMenuTheme";
 
 type TableAccessScreenProps = {
-  /** Si ya hay mesa ocupada, reutilizamos el pax declarado en la primera sesión. Si no, 1 (solo quien escanea). */
   existingPax?: number;
   tableCode: string;
   isLikelyValid: boolean;
   requiresJoinCode?: boolean;
 };
 
-export function TableAccessScreen({ tableCode, isLikelyValid, existingPax, requiresJoinCode = false }: TableAccessScreenProps) {
+export function TableAccessScreen({ 
+  tableCode, 
+  isLikelyValid, 
+  existingPax, 
+  requiresJoinCode = false 
+}: TableAccessScreenProps) {
   const router = useRouter();
   const { menuTheme, changeGuestMenuTheme } = useGuestMenuTheme();
   const [guestName, setGuestName] = useState("");
@@ -23,26 +29,15 @@ export function TableAccessScreen({ tableCode, isLikelyValid, existingPax, requi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  /** Sin selector: 1 comensal por defecto; al unirse a mesa ya abierta se alinea con la sesión existente. */
   const paxForSession = Math.max(1, Math.min(20, existingPax ?? 1));
-
   const normalizedCode = tableCode.toUpperCase();
   const trimmedName = guestName.trim();
   const joinChars = joinCode.replace(/\s/g, "").length;
+  
   const canContinue =
     isLikelyValid &&
     trimmedName.length >= 2 &&
     (!requiresJoinCode || joinChars === 4);
-
-  /** Por qué el botón puede seguir deshabilitado — evita confusiones cuando falta nombre o código. */
-  const accessBlockedHint =
-    !isLikelyValid || isSubmitting
-      ? null
-      : trimmedName.length < 2
-        ? "Escribe tu nombre con al menos 2 letras para poder continuar."
-        : requiresJoinCode && joinChars !== 4
-          ? "Ya hay personas en esta mesa: introduce el código de acceso completo (4 caracteres)."
-          : null;
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,225 +56,219 @@ export function TableAccessScreen({ tableCode, isLikelyValid, existingPax, requi
         setIsSubmitting(false);
         return;
       }
-      /** Sin nombre en URL: la identidad queda solo en sesión+cookie httpOnly */
       await router.push(`/mesa/${encodeURIComponent(result.canonicalQr)}/menu`);
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "No pudimos continuar. Intenta nuevamente.";
+      const message = err instanceof Error ? err.message : "No pudimos continuar. Intenta nuevamente.";
       setSubmitError(message);
       setIsSubmitting(false);
     }
   }
 
   return (
-    <main
-      className="guest-menu-vt-root min-h-screen bg-cream pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] guest-dark:bg-[var(--guest-bg-page,#0c0907)]"
-      aria-labelledby="access-heading"
-    >
-      <div className="mx-auto max-w-2xl">
-
-      {/* ─── ZONE 1: Logo ───────────────────────────────────────────
-          Generous top padding — the logo floats, doesn't crowd.
-          Padding respeta safe area y da más espacio en 320px.        */}
-      <div
-        className="flex items-start justify-between gap-4 px-4 pt-6 pb-8 sm:px-8 sm:pt-10 sm:pb-10 lg:px-12"
-        style={{ animation: "table-access-enter 0.5s cubic-bezier(0.25, 1, 0.5, 1) 0s both" }}
-      >
-        <Link
-          href="/"
-          className="inline-flex items-baseline gap-2 transition-opacity duration-200 hover:opacity-60"
-          aria-label="Bouquet — volver al inicio"
+    <main className="relative min-h-screen w-full overflow-hidden bg-[#1c0d12] font-sans text-light antialiased selection:bg-pink-glow/20">
+      {/* ─── Background Decoration ─── */}
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <motion.div 
+          initial={{ opacity: 0, x: -40 }}
+          animate={{ opacity: 0.15, x: 0 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          className="absolute -left-32 top-1/2 -translate-y-1/2"
         >
-          <span className="text-[1.5rem] font-semibold tracking-tight text-charcoal guest-dark:text-light font-sans">
-            bouquet
-          </span>
-          <span className="text-[0.5rem] font-bold uppercase tracking-[0.34em] text-charcoal/28 guest-dark:text-dim">
-            ops
-          </span>
-        </Link>
-        <GuestMenuThemeToggle mode={menuTheme} onChange={changeGuestMenuTheme} className="shrink-0" />
+          <img src="/floral-assets/branches/complete_2.png" alt="" className="h-[800px] w-auto rotate-[-15deg] brightness-0 invert" />
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 0.15, x: 0 }}
+          transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
+          className="absolute -right-32 top-1/2 -translate-y-1/2"
+        >
+          <img src="/floral-assets/branches/complete_3.png" alt="" className="h-[800px] w-auto rotate-[15deg] brightness-0 invert" />
+        </motion.div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1c0d12]/60 to-[#1c0d12]" />
       </div>
 
-      {/* ─── ZONE 2: Table code ─────────────────────────────────────
-          The code is the hero — large, unhurried, with room above
-          and below before the divider.                               */}
-      <div
-        className="border-b border-charcoal/[0.07] px-4 pb-8 guest-dark:border-wire/40 sm:px-8 sm:pb-10 lg:px-12"
-        style={{ animation: "table-access-enter 0.5s cubic-bezier(0.25, 1, 0.5, 1) 0.08s both" }}
-      >
-        <p
-          className="max-w-full break-all font-sans text-[clamp(2.1rem,11vw,5.5rem)] font-semibold leading-[0.95] tracking-[0.05em] text-charcoal [overflow-wrap:anywhere] sm:tracking-[0.12em] guest-dark:text-light"
-          aria-label={`Código de mesa: ${normalizedCode}`}
-        >
-          {normalizedCode}
-        </p>
+      <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-8">
+        {/* ─── Header ─── */}
+        <header className="flex items-center justify-between">
+          <Link href="/" className="group flex items-baseline gap-2">
+            <span className="text-2xl font-semibold tracking-tight text-white group-hover:text-pink-glow transition-colors">
+              bouquet
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-dim">
+              ops
+            </span>
+          </Link>
 
-        <div className="mt-10">
-          <span
-            className={[
-              "inline-flex items-center gap-2 text-[0.56rem] font-bold uppercase tracking-[0.3em]",
-              isLikelyValid ? "text-sage-deep" : "text-ember",
-            ].join(" ")}
-            role="status"
+          <div className="flex items-center gap-4">
+            <button className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-dim hover:text-white transition-all">
+              <Sun className="h-5 w-5" />
+            </button>
+          </div>
+        </header>
+
+        {/* ─── Stepper ─── */}
+        <div className="mt-12 flex items-center justify-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-pink-glow shadow-[0_0_8px_rgba(244,114,182,0.8)]" />
+            <span className="text-[11px] font-bold uppercase tracking-widest text-pink-glow">Listo para unirte</span>
+          </div>
+          <div className="h-[1px] w-12 bg-white/10" />
+          <div className="h-2 w-2 rounded-full border border-white/20 bg-transparent" />
+          <div className="h-[1px] w-12 bg-white/10" />
+          <div className="h-2 w-2 rounded-full border border-white/20 bg-transparent" />
+          <div className="h-[1px] w-12 bg-white/10" />
+          <div className="h-2 w-2 rounded-full border border-white/20 bg-transparent" />
+        </div>
+
+        {/* ─── Main Content ─── */}
+        <div className="mt-16 grid flex-1 grid-cols-1 gap-8 lg:grid-cols-2 lg:items-center">
+          
+          {/* Left Card: Info */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="flex flex-col items-center rounded-[40px] border border-white/10 bg-white/[0.03] p-10 text-center backdrop-blur-xl lg:h-[600px] lg:justify-center"
           >
-            <span
-              className={["h-1.5 w-1.5 rounded-full", isLikelyValid ? "bg-sage-deep" : "bg-ember"].join(" ")}
-              aria-hidden="true"
-            />
-            {isLikelyValid ? "Lista para entrar" : "Formato no reconocido"}
-          </span>
+            <div className="relative mb-12 flex h-24 w-24 items-center justify-center rounded-full border border-pink-glow/20 bg-pink-glow/5">
+              <div className="absolute inset-0 rounded-full bg-pink-glow/10 blur-xl" />
+              <Users className="relative h-10 w-10 text-pink-glow" />
+            </div>
 
-          {!isLikelyValid && (
-            <p
-              className="mt-4 max-w-xs text-sm leading-relaxed text-charcoal/45 guest-dark:text-dim"
-              style={{ animation: "table-access-error-enter 0.22s cubic-bezier(0.25, 1, 0.5, 1) both" }}
-            >
-              Pide apoyo al personal o intenta con otro QR.
+            <div className="mb-6 flex items-center gap-3">
+              <div className="h-[1px] w-4 bg-pink-glow/30" />
+              <span className="text-[11px] font-bold uppercase tracking-[0.4em] text-pink-glow">
+                ◆ TU CÓDIGO DE MESA ◆
+              </span>
+              <div className="h-[1px] w-4 bg-pink-glow/30" />
+            </div>
+
+            <h2 className="mb-10 font-mono text-[clamp(2.5rem,6vw,4rem)] font-bold tracking-[0.25em] text-white">
+              {normalizedCode}
+            </h2>
+
+            <div className="mb-10 flex w-full items-center justify-center gap-6 opacity-30">
+              <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-white" />
+              <Flower2 className="h-4 w-4" />
+              <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-white" />
+            </div>
+
+            <h1 className="mb-6 font-serif text-[clamp(1.75rem,4vw,2.5rem)] font-medium leading-tight text-white">
+              Identifícate para<br />entrar a tu mesa
+            </h1>
+
+            <p className="max-w-xs text-[15px] leading-relaxed text-dim">
+              Estás a un paso de unirte a tu grupo y comenzar a disfrutar de una gran experiencia.
             </p>
-          )}
-        </div>
-      </div>
+          </motion.div>
 
-      {/* ─── ZONE 3: Form ───────────────────────────────────────────
-          Each field lives in its own row with breathing room.
-          Touch targets ≥44px; labels legibles en móvil.              */}
-      <div
-        className="px-4 pt-8 sm:px-8 sm:pt-10 lg:px-12"
-        style={{ animation: "table-access-enter 0.5s cubic-bezier(0.25, 1, 0.5, 1) 0.16s both" }}
-      >
-        <div className="max-w-sm">
-
-          <h1
-            id="access-heading"
-            className="mb-6 sm:mb-8 font-sans text-[clamp(1.75rem,5vw,2.2rem)] font-semibold leading-[1.08] tracking-tight text-charcoal guest-dark:text-light"
+          {/* Right Card: Form */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+            className="flex flex-col rounded-[40px] border border-white/10 bg-white/[0.03] p-10 backdrop-blur-xl lg:h-[600px] lg:justify-center"
           >
-            Identifícate para<br />entrar a tu mesa.
-          </h1>
-
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-8 sm:space-y-10"
-            aria-describedby="form-status"
-            aria-busy={isSubmitting}
-            noValidate
-            suppressHydrationWarning
-          >
-
-            {/* Name */}
-            <div>
-              <label
-                htmlFor="guest-name"
-                className="mb-3 sm:mb-5 block text-xs font-bold uppercase tracking-[0.34em] text-charcoal/30 guest-dark:text-dim sm:text-[0.57rem]"
-              >
-                Tu nombre
-              </label>
-              <input
-                id="guest-name"
-                type="text"
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                placeholder="Como quieres que te llamen"
-                className="w-full min-h-[48px] border-b border-charcoal/14 bg-transparent pb-4 pt-2 text-base text-charcoal outline-none placeholder:text-charcoal/20 transition-colors duration-200 focus:border-charcoal/40 guest-dark:border-wire/55 guest-dark:text-light guest-dark:placeholder:text-dim guest-dark:focus:border-glow sm:text-[1.1rem] sm:pb-5 sm:pt-1"
-                maxLength={40}
-                autoComplete="given-name"
-                required
-                aria-required="true"
-                suppressHydrationWarning
-              />
-            </div>
-
-            {/* Código de acceso — solo si la mesa ya tiene gente */}
-            {requiresJoinCode && (
-              <div>
-                <label
-                  htmlFor="join-code"
-                  className="mb-3 sm:mb-5 block text-xs font-bold uppercase tracking-[0.34em] text-charcoal/30 guest-dark:text-dim sm:text-[0.57rem]"
-                >
-                  Código de acceso
+            <form onSubmit={handleSubmit} className="flex flex-col gap-10">
+              <div className="flex flex-col gap-4">
+                <label className="text-[11px] font-bold uppercase tracking-[0.3em] text-dim">
+                  TU NOMBRE
                 </label>
-                <p className="mb-3 text-[0.72rem] text-charcoal/40 guest-dark:text-dim leading-relaxed">
-                  Pídele el código al anfitrión de tu mesa.
+                <div className="group relative">
+                  <div className="absolute left-5 top-1/2 -translate-y-1/2">
+                    <User className="h-5 w-5 text-dim group-focus-within:text-pink-glow transition-colors" />
+                  </div>
+                  <input
+                    type="text"
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    placeholder="¿Cómo quieres que te llamen?"
+                    className="h-16 w-full rounded-2xl border border-white/10 bg-white/5 pl-14 pr-6 text-lg text-white placeholder:text-dim/60 focus:border-pink-glow/30 focus:outline-none focus:ring-4 focus:ring-pink-glow/5 transition-all"
+                    maxLength={40}
+                    required
+                  />
+                </div>
+                <p className="text-[12px] text-dim/60 italic">
+                  Tu nombre será visible para el mesero y tu grupo.
                 </p>
-                <input
-                  id="join-code"
-                  type="text"
-                  value={joinCode}
-                  onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4))}
-                  placeholder="XXXX"
-                  className="w-full min-h-[48px] border-b border-charcoal/14 bg-transparent pb-4 pt-2 text-center text-[1.8rem] font-bold tracking-[0.3em] text-charcoal outline-none placeholder:text-charcoal/15 transition-colors duration-200 focus:border-charcoal/40 guest-dark:border-wire/55 guest-dark:text-light guest-dark:placeholder:text-dim guest-dark:focus:border-glow"
-                  maxLength={4}
-                  autoComplete="off"
-                  autoCapitalize="characters"
-                  spellCheck={false}
-                  inputMode="text"
-                  required
-                  suppressHydrationWarning
-                />
               </div>
-            )}
 
-            {submitError && (
-              <p
-                className="text-sm font-medium text-ember"
-                role="alert"
-                style={{ animation: "table-access-error-enter 0.22s cubic-bezier(0.25, 1, 0.5, 1) both" }}
-              >
-                {submitError}
-              </p>
-            )}
-
-            {/* Submit — altura mínima 48px para touch; pulse sutil al cargar */}
-            <div className="pt-4 sm:pt-6">
-              {accessBlockedHint && (
-                <p
-                  id="access-blocked-hint"
-                  role="status"
-                  className="mb-4 text-sm font-medium leading-relaxed text-charcoal/55 guest-dark:text-dim"
-                >
-                  {accessBlockedHint}
-                </p>
+              {requiresJoinCode && (
+                <div className="flex flex-col gap-4">
+                  <label className="text-[11px] font-bold uppercase tracking-[0.3em] text-dim">
+                    CÓDIGO DE ACCESO
+                  </label>
+                  <input
+                    type="text"
+                    value={joinCode}
+                    onChange={e => setJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4))}
+                    placeholder="XXXX"
+                    className="h-20 w-full rounded-2xl border border-white/10 bg-white/5 text-center text-3xl font-bold tracking-[0.5em] text-white focus:border-pink-glow/30 focus:outline-none transition-all"
+                    maxLength={4}
+                    required
+                  />
+                  <p className="text-[12px] text-dim/60 italic">
+                    Pídele el código de 4 dígitos al anfitrión de la mesa.
+                  </p>
+                </div>
               )}
-              <button
-                type="submit"
-                disabled={!canContinue || isSubmitting}
-                aria-busy={isSubmitting}
-                aria-describedby={accessBlockedHint ? "access-blocked-hint" : undefined}
-                className="w-full min-h-12 bg-gold py-4 text-[0.76rem] font-bold uppercase tracking-[0.22em] text-charcoal transition-[transform,opacity,background-color] duration-200 ease-[cubic-bezier(0.25,1,0.5,1)] hover:-translate-y-px hover:bg-gold-light active:scale-[0.99] active:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold disabled:cursor-not-allowed disabled:opacity-[0.42] touch-manipulation sm:py-5"
-                style={
-                  isSubmitting
-                    ? { animation: "table-access-loading-pulse 1.2s ease-in-out infinite" }
-                    : undefined
-                }
-                suppressHydrationWarning
-              >
-                {isSubmitting ? "Entrando…" : "Entrar a la mesa"}
-              </button>
-            </div>
 
-          </form>
+              {submitError && (
+                <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-[13px] text-red-400">
+                  {submitError}
+                </div>
+              )}
 
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center gap-3 text-[12px] text-dim/80">
+                  <ShieldCheck className="h-4 w-4 text-pink-glow/60" />
+                  Puedes continuar con al menos 2 letras.
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={!canContinue || isSubmitting}
+                  className="relative h-16 w-full overflow-hidden rounded-2xl bg-gradient-to-r from-[#d946ef] to-[#db2777] font-bold uppercase tracking-widest text-white shadow-[0_10px_30px_-10px_rgba(219,39,119,0.5)] transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 disabled:hover:scale-100"
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      Entrando...
+                    </div>
+                  ) : (
+                    "ENTRAR A LA MESA"
+                  )}
+                </button>
+
+                <Link 
+                  href="/"
+                  className="mx-auto text-[13px] text-dim underline underline-offset-8 decoration-white/10 hover:text-white hover:decoration-pink-glow transition-all"
+                >
+                  Volver al inicio
+                </Link>
+              </div>
+            </form>
+          </motion.div>
         </div>
+
+        {/* ─── Footer ─── */}
+        <footer className="mt-16 flex flex-col items-center gap-4">
+          <div className="flex w-full items-center gap-6 opacity-10">
+            <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-white" />
+            <Flower2 className="h-5 w-5" />
+            <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-white" />
+          </div>
+          <div className="flex flex-col items-center text-center">
+            <p className="text-[13px] font-medium text-dim/60">
+              Gracias por elegirnos.
+            </p>
+            <p className="text-[13px] font-medium text-dim/60">
+              Que disfrutes tu visita.
+            </p>
+          </div>
+        </footer>
       </div>
-
-      {/* ─── ZONE 4: Footer ────────────────────────────────────────── */}
-      <div
-        className="px-4 pb-8 pt-8 sm:px-8 sm:pb-10 sm:pt-10 lg:px-12"
-        style={{ animation: "table-access-enter 0.5s cubic-bezier(0.25, 1, 0.5, 1) 0.24s both" }}
-      >
-        <Link
-          href="/"
-          className="text-[0.65rem] font-medium text-charcoal/25 underline underline-offset-4 decoration-charcoal/10 transition-colors duration-200 hover:text-charcoal/50 guest-dark:text-dim guest-dark:decoration-wire/40 guest-dark:hover:text-light"
-        >
-          Volver al inicio
-        </Link>
-      </div>
-
-      </div>{/* /mx-auto max-w-2xl */}
-
-      <p id="form-status" className="sr-only" aria-live="polite">
-        {accessBlockedHint ? `${accessBlockedHint} ` : ""}
-        {isSubmitting ? "Procesando acceso a la mesa." : ""}
-      </p>
     </main>
   );
 }
+

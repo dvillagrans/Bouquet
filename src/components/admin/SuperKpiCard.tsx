@@ -7,7 +7,7 @@ interface SuperKpiCardProps {
   label: string;
   value: string;
   delta?: string;
-  deltaTone?: "green" | "amber" | "red";
+  deltaTone?: "green" | "amber" | "red" | "neutral";
   unit?: string;
   trend?: number[];
   accent?: "pink" | "blue" | "green";
@@ -24,6 +24,7 @@ const deltaClasses: Record<string, string> = {
   green: "text-dash-green",
   amber: "text-dash-amber",
   red: "text-pink-light-glow",
+  neutral: "text-dim",
 };
 
 export function SuperKpiCard({
@@ -64,7 +65,9 @@ export function SuperKpiCard({
                   ? "var(--color-dash-green-bg)"
                   : deltaTone === "amber"
                     ? "var(--color-dash-amber-bg)"
-                    : "var(--color-dash-red-bg)",
+                    : deltaTone === "red"
+                      ? "var(--color-dash-red-bg)"
+                      : "rgba(255,255,255,0.05)",
             }}
           >
             <span
@@ -75,7 +78,9 @@ export function SuperKpiCard({
                     ? "var(--color-dash-green)"
                     : deltaTone === "amber"
                       ? "var(--color-dash-amber)"
-                      : "var(--color-pink-light-glow)",
+                      : deltaTone === "red"
+                        ? "var(--color-pink-light-glow)"
+                        : "var(--color-dim)",
               }}
             />
             {delta}

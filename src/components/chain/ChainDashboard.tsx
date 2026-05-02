@@ -18,6 +18,7 @@ import {
   ShieldAlert,
   UserCheck,
   Mail,
+  Pencil,
 } from "lucide-react";
 import { getChainDashboard } from "@/actions/chain";
 import type { ChainDashboardData } from "@/actions/chain";

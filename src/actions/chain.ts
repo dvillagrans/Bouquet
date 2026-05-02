@@ -25,7 +25,7 @@ export interface ZoneSummary {
   activeTables: number;
 }
 
-export interface ChainStaffRow {
+export interface ChainDashboardStaffRow {
   id: string;
   name: string;
   email: string;
@@ -49,7 +49,7 @@ export interface ChainDashboardData {
   };
   zones: ZoneSummary[];
   restaurants: RestaurantSummary[];
-  staff: ChainStaffRow[];
+  staff: ChainDashboardStaffRow[];
   alerts: {
     id: string;
     name: string;
@@ -273,17 +273,20 @@ export async function getChainDashboard(tenantId: string): Promise<ChainDashboar
       },
       restaurant: {
         select: { name: true }
+      },
+      role: {
+        select: { name: true }
       }
     },
     take: 50,
     orderBy: { assignedAt: 'desc' }
   });
 
-  const staff: ChainStaffRow[] = staffMembers.map(sm => ({
+  const staff: ChainDashboardStaffRow[] = staffMembers.map(sm => ({
     id: sm.user.id,
     name: `${sm.user.firstName} ${sm.user.lastName}`,
     email: sm.user.email,
-    role: sm.role,
+    role: (sm as any).role?.name || "STAFF",
     restaurantName: sm.restaurant?.name || "Corporativo",
     lastActive: new Date().toISOString() // Placeholder
   }));

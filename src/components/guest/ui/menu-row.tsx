@@ -76,7 +76,7 @@ export const MenuRow = memo(function MenuRow({
       whileHover={reduceMotion || item.isSoldOut ? undefined : { y: -4 }}
       className={cn(
         "group flex h-full flex-col overflow-hidden rounded-2xl",
-        "border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)]",
+        "border border-[var(--guest-divider)] bg-[color-mix(in_srgb,var(--guest-bg-surface)_92%,transparent)]",
         "backdrop-blur-sm ring-1 ring-white/[0.03]",
         "transition-[border-color,box-shadow] duration-300",
         item.isSoldOut

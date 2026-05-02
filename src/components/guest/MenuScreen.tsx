@@ -680,48 +680,65 @@ export function MenuScreen({
 
       {/* ── BODY ─────────────────────────────────────────────────────── */}
       <div className="relative z-10 mx-auto max-w-7xl px-4 pb-36 sm:px-8 lg:px-12 lg:pb-24">
+        {/* ── Sticky Header (masthead + tabs unified) ── */}
+        <header className="sticky top-0 z-40 -mx-4 -mt-4 px-4 pb-3 pt-3 sm:-mx-8 sm:-mt-4 sm:px-8 sm:pt-4 lg:-mx-12 lg:px-12 backdrop-blur-xl bg-[color-mix(in_srgb,var(--guest-bg-page)_88%,transparent)]">
+          {/* Restaurant name */}
+          {restaurantName && (
+            <p className="mb-3 font-serif text-[13px] italic leading-tight text-[var(--guest-muted)]">
+              {restaurantName} · Bienvenido
+            </p>
+          )}
+          <GuestMasthead
+            restaurantName={restaurantName}
+            tableNumber={tableNumber}
+            guestName={guestName}
+            isHost={isHostLive}
+            guests={guests}
+            billRequested={billRequested}
+            menuTheme={menuTheme}
+            onThemeChange={changeGuestMenuTheme}
+            displayTableCode={displayTableCode}
+            joinCode={joinCode}
+            onShareQr={() => setQrInviteFullscreenOpen(true)}
+            qrOpen={qrInviteFullscreenOpen}
+            onOpenCompanions={() => setTableCompanionsOpen(true)}
+            orderStatusVisible={orders.length > 0}
+            orderStatusLabel={orderTrackerSummary.active === 0 ? "Opciones de pago" : orderTrackerTone.label}
+            orderStatusSummary={orderTrackerSummary.active === 0 ? "Ver tu cuenta y pagar" : orderTrackerSummaryText}
+            orderStatusToneKey={(orderTrackerSummary.active === 0 ? "checkout" : orderTrackerTone.key) as any}
+            hasOrderActivity={orderTrackerSummary.active > 0}
+            onOpenOrderStatus={() => {
+              if (orderTrackerSummary.active === 0) {
+                router.push(cuentaHref);
+              } else {
+                setOrderTrackerModalOpen(true);
+              }
+            }}
+          />
+
+          <div className="mt-3 border-b border-[var(--guest-divider)] py-2">
+            <div className="min-w-0">
+              <CategoryTabs
+                tabs={categoryTabItems}
+                activeId={activeCategory}
+                onChange={setCategory}
+                layoutId="guest-menu-cat"
+              />
+            </div>
+          </div>
+        </header>
+
         <div className="lg:grid lg:grid-cols-[minmax(0,7fr)_minmax(280px,3fr)] lg:gap-12 lg:items-start">
           <div>
-            <GuestMasthead
-              restaurantName={restaurantName}
-              tableNumber={tableNumber}
-              guestName={guestName}
-              isHost={isHostLive}
-              guests={guests}
-              billRequested={billRequested}
-              menuTheme={menuTheme}
-              onThemeChange={changeGuestMenuTheme}
-              displayTableCode={displayTableCode}
-              joinCode={joinCode}
-              onShareQr={() => setQrInviteFullscreenOpen(true)}
-              qrOpen={qrInviteFullscreenOpen}
-              onOpenCompanions={() => setTableCompanionsOpen(true)}
-              orderStatusVisible={orders.length > 0}
-              orderStatusLabel={orderTrackerSummary.active === 0 ? "Opciones de pago" : orderTrackerTone.label}
-              orderStatusSummary={orderTrackerSummary.active === 0 ? "Ver tu cuenta y pagar" : orderTrackerSummaryText}
-              orderStatusToneKey={(orderTrackerSummary.active === 0 ? "checkout" : orderTrackerTone.key) as any}
-              hasOrderActivity={orderTrackerSummary.active > 0}
-              onOpenOrderStatus={() => {
-                if (orderTrackerSummary.active === 0) {
-                  router.push(cuentaHref);
-                } else {
-                  setOrderTrackerModalOpen(true);
-                }
-              }}
-            />
-
-            <div className="sticky top-0 z-30 mt-4 border-b border-[var(--guest-divider)] bg-[color-mix(in_srgb,var(--guest-bg-page)_92%,transparent)] py-3 backdrop-blur-xl">
-              <div className="min-w-0">
-                <CategoryTabs
-                  tabs={categoryTabItems}
-                  activeId={activeCategory}
-                  onChange={setCategory}
-                  layoutId="guest-menu-cat"
-                />
-              </div>
-            </div>
-
             <div role="tabpanel" className="mt-8">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeCategory}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                >
               {visibleItems.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] px-6 py-16 text-center">
                   <p className="font-serif text-2xl text-[var(--guest-text)]">Sin platillos aquí</p>
@@ -744,7 +761,7 @@ export function MenuScreen({
                   <div key={cat.id} style={{ contentVisibility: "auto", containIntrinsicSize: "0 500px" }}>
                     <CategoryHeading title={cat.name} count={items.length} />
                     <div className="grid grid-cols-2 gap-4 pb-8 sm:grid-cols-3 lg:grid-cols-3">
-                    {items.map((item) => {
+                    {items.map((item, idx) => {
                       const hasVariants = item.variants && item.variants.length > 0;
                       const selectedVariantName = hasVariants
                         ? (variantChoice[item.id] ?? item.variants[0]!.name)
@@ -778,6 +795,8 @@ export function MenuScreen({
                   </div>
                 );
               })}
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             {orders && orders.length > 0 && (

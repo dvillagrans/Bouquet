@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "framer-motion";
-import { RefreshCw, LayoutGrid, Link as LinkIcon, Users, Wallet, Brush, Sparkles, Plus, QrCode, ListChecks, FileText, History } from "lucide-react";
+import { RefreshCw, LayoutGrid, Link as LinkIcon, Plus, QrCode, ListChecks, FileText, History } from "lucide-react";
 import { getWaiterTablesSummary, regenerateTableQr, updateTableStatus } from "@/actions/waiter";
 import { getTables } from "@/actions/tables";
 import { createTableGroup, releaseTableGroup } from "@/actions/table-groups";
@@ -321,8 +321,8 @@ export default function WaiterDashboard({
 
   const filterItems: SegmentedItem<FilterType>[] = [
     { id: "todas", label: "Todas" },
-    { id: "ocupadas", label: "Ocupadas", count: stats.occupied, dotClass: "bg-gold" },
-    { id: "pendientes", label: "Cocina", count: stats.pending, dotClass: "bg-gold/70" },
+    { id: "ocupadas", label: "Ocupadas", count: stats.occupied, dotClass: "bg-pink-glow" },
+    { id: "pendientes", label: "Cocina", count: stats.pending, dotClass: "bg-pink-glow/70" },
     { id: "listas", label: "Listos", count: stats.ready, dotClass: "bg-dash-green" },
     { id: "sucias", label: "Limpiar", count: stats.dirty, dotClass: "bg-dash-red" },
   ];
@@ -347,7 +347,7 @@ export default function WaiterDashboard({
           className="pointer-events-none fixed inset-x-0 top-0 z-[75] h-px overflow-hidden"
           aria-hidden
         >
-          <div className="waiter-sync-scan h-full w-[45%] bg-gradient-to-r from-transparent via-gold/55 to-transparent" />
+          <div className="waiter-sync-scan h-full w-[45%] bg-gradient-to-r from-transparent via-pink-glow/55 to-transparent" />
         </div>
       )}
 
@@ -389,19 +389,19 @@ export default function WaiterDashboard({
             className={`sticky top-0 z-[70] flex items-center justify-center gap-3 border-b px-4 py-2 ${
               networkStatus === "offline"
                 ? "border-dash-red/30 bg-dash-red/10"
-                : "border-gold/30 bg-gold/10"
+                : "border-pink-glow/30 bg-pink-glow/10"
             }`}
           >
             {/* pulsing dot */}
             <span className="relative flex size-1.5 shrink-0">
               <span
                 className={`absolute inline-flex size-full animate-ping rounded-full opacity-60 ${
-                  networkStatus === "offline" ? "bg-dash-red" : "bg-gold"
+                  networkStatus === "offline" ? "bg-dash-red" : "bg-pink-glow"
                 }`}
               />
               <span
                 className={`relative inline-flex size-1.5 rounded-full ${
-                  networkStatus === "offline" ? "bg-dash-red" : "bg-gold"
+                  networkStatus === "offline" ? "bg-dash-red" : "bg-pink-glow"
                 }`}
               />
             </span>
@@ -414,7 +414,7 @@ export default function WaiterDashboard({
               />
             ) : (
               <Wifi
-                className="size-3.5 shrink-0 text-gold"
+                className="size-3.5 shrink-0 text-pink-glow"
                 strokeWidth={2}
                 aria-hidden
               />
@@ -422,7 +422,7 @@ export default function WaiterDashboard({
 
             <span
               className={`font-mono text-[10px] font-bold uppercase tracking-[0.16em] ${
-                networkStatus === "offline" ? "text-dash-red" : "text-gold"
+                networkStatus === "offline" ? "text-dash-red" : "text-pink-glow"
               }`}
             >
               {networkStatus === "offline"
@@ -439,7 +439,7 @@ export default function WaiterDashboard({
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="space-y-1.5">
                 <p className="font-mono text-[10px] font-bold uppercase tracking-[0.25em] text-pink-glow/80">
-                  {restaurantName ? `SUCURSAL ${restaurantName.toUpperCase()}` : "SUCURSAL LINDAVISTA"}
+                  {restaurantName?.toUpperCase() ?? "SUCURSAL"}
                 </p>
                 <div className="flex items-center gap-3">
                   <h1 className="font-serif text-[40px] md:text-[44px] font-medium leading-none tracking-tight text-light">
@@ -453,8 +453,8 @@ export default function WaiterDashboard({
                     EN VIVO
                   </div>
                 </div>
-                <div className="flex items-center gap-2 pt-1 font-mono text-[11px] text-text-muted">
-                  <AnimatedNumber value={stats.occupied} /> en piso · {clockLive} {new Date().getHours() >= 12 ? 'P.M.' : 'A.M.'}
+                <div className="flex items-center gap-3 pt-1 font-mono text-[11px] text-text-muted">
+                  <AnimatedNumber value={stats.occupied} /> en piso · {clockLive}
                   <DynamicIsland loading={refreshing} banner={banner} />
                 </div>
               </div>
@@ -471,7 +471,7 @@ export default function WaiterDashboard({
                   <button
                     type="button"
                     onClick={() => setFilter("todas")}
-                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 text-xs font-semibold uppercase tracking-[0.12em] text-gold transition hover:bg-gold/15 active:scale-[0.98]"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-full border border-pink-glow/30 bg-pink-glow/8 px-4 text-xs font-semibold uppercase tracking-[0.12em] text-pink-glow transition hover:bg-pink-glow/12 active:scale-[0.98]"
                   >
                     Filtro: {filterLabelById[filter]} · Ver todas
                   </button>
@@ -486,7 +486,7 @@ export default function WaiterDashboard({
                     }}
                     className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-xs font-medium transition active:scale-[0.98] ${
                       isJoinMode
-                        ? "border-gold bg-gold/15 text-gold"
+                        ? "border-pink-glow bg-pink-glow/12 text-pink-glow"
                         : "border-border-main text-text-muted hover:border-border-bright hover:text-light"
                     }`}
                   >
@@ -499,34 +499,24 @@ export default function WaiterDashboard({
             </div>
 
             <div className="flex flex-col gap-3">
-              {(() => {
-                const kpis = [
-                  { id: "activas", label: "ACTIVAS", value: stats.occupied, icon: Users, colorClass: "text-pink-glow border-pink-glow/30 bg-pink-glow/[0.08]" },
-                  { id: "por-cobrar", label: "POR COBRAR", value: stats.pending, icon: Wallet, colorClass: "text-dash-amber border-dash-amber/30 bg-dash-amber/[0.08]" },
-                  { id: "por-limpiar", label: "POR LIMPIAR", value: stats.dirty, icon: Brush, colorClass: "text-text-muted border-border-main bg-white/[0.03]" },
-                  { id: "nuevas", label: "NUEVAS", value: stats.ready, icon: Sparkles, colorClass: "text-pink-light-glow border-pink-light-glow/30 bg-pink-light-glow/[0.08] shadow-[0_0_15px_rgba(244,114,182,0.1)]" },
-                ];
-                return (
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
-                    {kpis.map(({ id, label, value, icon: Icon, colorClass }) => (
-                      <div
-                        key={id}
-                        className="flex items-center gap-4 rounded-xl border border-white/[0.06] bg-bg-card px-4 py-3 shadow-[inset_0_1px_1px_rgba(255,255,255,0.03)]"
-                      >
-                        <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl border", colorClass)}>
-                          <Icon className="size-4" />
-                        </div>
-                        <div className="flex flex-col">
-                          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-text-muted/80">{label}</p>
-                          <p className="font-serif text-[1.5rem] font-bold tabular-nums leading-none text-light">
-                            <AnimatedNumber value={value} />
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
+                {[
+                  { label: "Ocupadas", value: stats.occupied, tone: "text-pink-glow" },
+                  { label: "En cocina", value: stats.pending, tone: "text-dash-amber" },
+                  { label: "Listos", value: stats.ready, tone: "text-dash-green" },
+                  { label: "Limpiar", value: stats.dirty, tone: "text-dim" },
+                ].map(({ label, value, tone }) => (
+                  <div
+                    key={label}
+                    className="rounded-xl border border-white/[0.04] bg-white/[0.015] px-4 py-3 backdrop-blur-sm"
+                  >
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-dim">{label}</p>
+                    <p className={`mt-1.5 font-mono text-[1.25rem] font-bold tabular-nums leading-none ${tone}`}>
+                      <AnimatedNumber value={value} />
+                    </p>
                   </div>
-                );
-              })()}
+                ))}
+              </div>
 
               <AnimatePresence>
                 {(stats.ready > 0 || stats.pending > 0) && (
@@ -565,12 +555,12 @@ export default function WaiterDashboard({
                           setFilter("pendientes");
                           setView("lista");
                         }}
-                        className="group flex w-full items-center justify-between rounded-2xl border border-gold/20 bg-gold/5 px-4 py-3 transition-colors hover:bg-gold/10 active:scale-[0.98] text-left"
+                        className="group flex w-full items-center justify-between rounded-2xl border border-pink-glow/15 bg-pink-glow/[0.04] px-4 py-3 transition-colors hover:bg-pink-glow/8 active:scale-[0.98] text-left"
                       >
                         <span className="text-sm text-text-muted">
                           <strong className="text-light">{stats.pending}</strong> {stats.pending === 1 ? "plato en preparación" : "platos en preparación"}
                         </span>
-                        <span className="text-xs font-semibold text-gold group-hover:underline">Ver mesas</span>
+                        <span className="text-xs font-semibold text-pink-glow group-hover:underline">Ver mesas</span>
                       </button>
                     )}
                   </motion.div>
@@ -665,7 +655,7 @@ export default function WaiterDashboard({
                     <button
                       type="button"
                       onClick={() => setFilter("todas")}
-                      className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full border border-border-bright bg-bg-solid px-6 text-xs font-semibold text-light transition hover:border-gold hover:text-gold active:scale-[0.98]"
+                      className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full border border-border-bright bg-bg-solid px-6 text-xs font-semibold text-light transition hover:border-pink-glow hover:text-pink-glow active:scale-[0.98]"
                     >
                       Ver todas las mesas
                     </button>
@@ -817,7 +807,7 @@ export default function WaiterDashboard({
                         initial={{ opacity: 0, scale: 0.85 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.85 }}
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gold/40 bg-gold/15 font-mono text-sm font-bold text-gold"
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-pink-glow/30 bg-pink-glow/10 font-mono text-sm font-bold text-pink-glow"
                       >
                         {num}
                       </motion.span>

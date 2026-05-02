@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
-import { Plus, Lock, Copy, ExternalLink, CheckCheck, Loader2, Share2, X, CreditCard, AlertTriangle, Users, Clock, Edit3, ArrowRightLeft, Brush, Bell } from "lucide-react";
+import { Plus, Lock, Copy, ExternalLink, CheckCheck, Loader2, Share2, X, CreditCard, AlertTriangle, Users, Clock, Edit3, ArrowRightLeft, Brush, Bell, Maximize2 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { advanceOrderStatus } from "@/actions/orders";
 import { getTableDetail, closeTable } from "@/actions/waiter";
@@ -60,6 +60,7 @@ export default function WaiterTableDetail({
   const [copyToast, setCopyToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [isClosingTable, setIsClosingTable] = useState(false);
+  const [showFullQr, setShowFullQr] = useState(false);
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
 
   const loadTableDetail = useCallback(async (opts?: { silent?: boolean }) => {
@@ -382,17 +383,110 @@ export default function WaiterTableDetail({
         )}
 
         {table.status === "DISPONIBLE" && !session && guestMenuUrl && (
-          <div className="mt-6 border-t border-border-main/50 pt-5">
-            <button
-              type="button"
-              onClick={() => void handleShareGuestQr()}
-              className="w-full inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-gold/45 bg-gold/12 px-4 text-[11px] font-bold uppercase tracking-wider text-gold transition hover:bg-gold/20"
-            >
-              <Share2 className="h-4 w-4" strokeWidth={1.8} />
-              Compartir QR de Mesa
-            </button>
+          <div className="mt-8 border-t border-border-main/50 pt-6">
+            <p className="text-center font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-gold mb-5">
+              Escanea para abrir mesa
+            </p>
+            
+            <div className="relative mx-auto w-fit group">
+              <div className="rounded-2xl border border-border-main bg-bg-solid p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+                <div className="rounded-[calc(1rem-0.25rem)] bg-white p-3">
+                  <QRCodeCanvas
+                    value={guestMenuUrl}
+                    size={160}
+                    level="M"
+                    marginSize={1}
+                    bgColor="#FFFFFF"
+                    fgColor="#000000"
+                  />
+                </div>
+              </div>
+              
+              <button 
+                onClick={() => setShowFullQr(true)}
+                className="absolute -right-2 -top-2 flex size-8 items-center justify-center rounded-full border border-border-main bg-bg-card text-text-muted shadow-lg transition-transform hover:scale-110 hover:text-light"
+                title="Ver en pantalla completa"
+              >
+                <Maximize2 className="size-4" />
+              </button>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => void handleShareGuestQr()}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-gold/45 bg-gold/12 px-4 text-[11px] font-bold uppercase tracking-wider text-gold transition hover:bg-gold/20"
+              >
+                <Share2 className="h-4 w-4" strokeWidth={1.8} />
+                Compartir
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(guestMenuUrl);
+                    setCopyToast({ type: "success", message: "Link copiado" });
+                  } catch {
+                    setCopyToast({ type: "error", message: "No se pudo copiar" });
+                  }
+                }}
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border-main px-4 text-[11px] font-bold uppercase tracking-wider text-light transition hover:border-border-bright"
+              >
+                <Copy className="h-4 w-4" strokeWidth={1.8} />
+                Copiar Enlace
+              </button>
+            </div>
           </div>
         )}
+
+        {/* Full Screen QR Overlay */}
+        <AnimatePresence>
+          {showFullQr && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-6"
+              onClick={() => setShowFullQr(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="relative max-w-sm w-full bg-white p-8 rounded-[2.5rem] shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setShowFullQr(false)}
+                  className="absolute -top-12 right-0 p-2 text-white hover:text-pink-glow transition-colors"
+                >
+                  <X className="size-8" />
+                </button>
+                
+                <div className="text-center mb-6">
+                  <p className="font-serif text-2xl font-bold text-ink">Mesa {table.number}</p>
+                  <p className="text-xs text-text-muted mt-1 uppercase tracking-widest font-mono">Menú Digital · Bouquet</p>
+                </div>
+
+                <div className="aspect-square w-full">
+                  <QRCodeCanvas
+                    value={guestMenuUrl}
+                    size={320}
+                    level="H"
+                    style={{ width: '100%', height: '100%' }}
+                    marginSize={1}
+                    bgColor="#FFFFFF"
+                    fgColor="#000000"
+                  />
+                </div>
+
+                <p className="text-center mt-6 text-[10px] text-text-muted font-mono leading-relaxed">
+                  Escanea con la cámara de tu celular para<br/>ver el menú y ordenar
+                </p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="mt-6 border-t border-border-main/50 pt-5">
           <div className="flex items-center justify-between mb-4">

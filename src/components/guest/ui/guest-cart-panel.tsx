@@ -203,7 +203,15 @@ export function GuestCartPanel({
       {cartCount === 0 ? (
         showCelebration
           ? <OrderCelebration />
-          : <p className="mt-8 text-sm italic text-[var(--guest-muted)]">Selecciona platillos del menú para agregarlos a tu orden.</p>
+          : (
+            <div className="mt-8 flex flex-col items-center text-center">
+              <svg className="mb-4 h-10 w-10 text-[color-mix(in_srgb,var(--guest-gold)_18%,transparent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
+                <path d="M18 8h1a4 4 0 010 8h-1M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8zM6 1v3M10 1v3M14 1v3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <p className="text-sm italic text-[var(--guest-muted)]">Tu mesa está lista.</p>
+              <p className="mt-1 text-xs text-[var(--guest-muted)]/70">Elige tus platillos del menú.</p>
+            </div>
+          )
       ) : (
         <>
           <div

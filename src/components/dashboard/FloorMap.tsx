@@ -235,7 +235,7 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGly
   const bodyGrad = {
     fillLinearGradientStartPoint: { x: 0, y: 0 },
     fillLinearGradientEndPoint:   { x: w, y: h },
-    fillLinearGradientColorStops: [0, fill + "2E", 0.48, "#0F0F0FEB", 1, "#00000088"] as (string | number)[],
+    fillLinearGradientColorStops: [0, fill + "1A", 0.5, fill + "12", 1, "#0000000A"] as (string | number)[],
   };
 
   return (
@@ -259,31 +259,31 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGly
         <>
           <Circle x={cx} y={cy} radius={cx}
             {...bodyGrad} stroke={stroke}
-            strokeWidth={isSelected ? 2 : 1.5}
+            strokeWidth={isSelected ? 3 : 2}
             shadowColor={fill} shadowBlur={hasGlow || isSelected ? 24 : 6} shadowOpacity={hasGlow ? 0.4 : isSelected ? 0.5 : 0.1} />
-          <Circle x={cx} y={cy} radius={cx * 0.68}
-            fill="#00000040" stroke="#FFFFFF0E" strokeWidth={0.8} listening={false} />
+          <Circle x={cx} y={cy} radius={cx * 0.72}
+            fill="#00000010" stroke={stroke + "1A"} strokeWidth={0.6} listening={false} />
         </>
       ) : isHex ? (
         <>
           <RegularPolygon x={cx} y={cy} sides={6} radius={cx}
             {...bodyGrad} stroke={stroke}
-            strokeWidth={isSelected ? 2 : 1.5}
+            strokeWidth={isSelected ? 3 : 2}
             shadowColor={fill} shadowBlur={hasGlow || isSelected ? 24 : 6} shadowOpacity={hasGlow ? 0.4 : isSelected ? 0.5 : 0.1} />
-          <RegularPolygon x={cx} y={cy} sides={6} radius={cx * 0.64}
-            fill="#00000040" stroke="#FFFFFF0E" strokeWidth={0.8} listening={false} />
+          <RegularPolygon x={cx} y={cy} sides={6} radius={cx * 0.68}
+            fill="#00000010" stroke={stroke + "1A"} strokeWidth={0.6} listening={false} />
         </>
       ) : (
         <>
           <Rect width={w} height={h} cornerRadius={cornerR}
             {...bodyGrad} stroke={stroke}
-            strokeWidth={isSelected ? 2 : 1.5}
+            strokeWidth={isSelected ? 3 : 2}
             shadowColor={fill} shadowBlur={hasGlow || isSelected ? 24 : 6} shadowOpacity={hasGlow ? 0.4 : isSelected ? 0.5 : 0.1} />
           <Rect
             x={w * 0.10} y={h * 0.12}
             width={w * 0.80} height={h * 0.76}
             cornerRadius={Math.max(7, cornerR - 5)}
-            fill="#00000040" stroke="#FFFFFF0E" strokeWidth={0.8} listening={false} />
+            fill="#00000010" stroke={stroke + "1A"} strokeWidth={0.6} listening={false} />
         </>
       )}
 
@@ -292,8 +292,8 @@ function TableNode({ table, editMode, selected, onSelect, onDragEnd, showSeatGly
         <Circle key={i} x={x} y={y} radius={seatR}
           fillLinearGradientStartPoint={{ x: -seatR, y: -seatR }}
           fillLinearGradientEndPoint={{ x: seatR, y: seatR }}
-          fillLinearGradientColorStops={[0, fill + "E6", 1, fill + "66"] as (string | number)[]}
-          stroke={stroke + "80"} strokeWidth={0.8}
+          fillLinearGradientColorStops={[0, fill + "99", 1, fill + "33"] as (string | number)[]}
+          stroke={stroke + "66"} strokeWidth={0.8}
           shadowColor={fill} shadowBlur={10} shadowOpacity={0.55}
           listening={false} />
       ))}
@@ -780,7 +780,14 @@ export default function FloorMap({
       <div
         ref={containerRef}
         className="relative overflow-hidden rounded-2xl border border-wire/40 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(237,232,225,0.03)]"
-        style={{ height: layoutBounds.logicalHeight * scale + 2 }}
+        style={{
+          height: layoutBounds.logicalHeight * scale + 2,
+          backgroundImage: `
+            linear-gradient(rgba(232,121,160,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(232,121,160,0.04) 1px, transparent 1px)
+          `,
+          backgroundSize: "40px 40px",
+        }}
       >
         {/* Floral decoration (corner) */}
         <img
@@ -808,27 +815,122 @@ export default function FloorMap({
               y={layoutBounds.marginY}
               width={layoutBounds.logicalWidth}
               height={layoutBounds.logicalHeight}
-              fill={C.canvas}
+              fill={C.ink}
               listening={false}
             />
 
-            {/* Dot grid */}
-            <Group x={layoutBounds.marginX} y={layoutBounds.marginY}>
-              <DotGridMemo width={layoutBounds.logicalWidth} height={layoutBounds.logicalHeight} />
-            </Group>
-
-            {/* Room border */}
+            {/* Room border — thicker, architectural feel */}
+            <Rect
+              x={layoutBounds.marginX + 16} y={layoutBounds.marginY + 16}
+              width={layoutBounds.logicalWidth - 32}
+              height={layoutBounds.logicalHeight - 32}
+              stroke="rgba(232,121,160,0.18)"
+              strokeWidth={2}
+              fill="transparent"
+              listening={false}
+            />
             <Rect
               x={layoutBounds.marginX + 20} y={layoutBounds.marginY + 20}
               width={layoutBounds.logicalWidth - 40}
               height={layoutBounds.logicalHeight - 40}
-              stroke={C.wire}
+              stroke="rgba(232,121,160,0.09)"
               strokeWidth={1}
               fill="transparent"
-              dash={[4, 8]}
-              opacity={0.5}
+              dash={[8, 12]}
               listening={false}
             />
+
+            {/* ── Architectural elements ── */}
+
+            {/* Bar area — top section */}
+            <Rect
+              x={layoutBounds.marginX + 28} y={layoutBounds.marginY + 28}
+              width={layoutBounds.logicalWidth - 56}
+              height={80}
+              stroke="rgba(232,121,160,0.1)"
+              strokeWidth={1.2}
+              fill="rgba(232,121,160,0.02)"
+              cornerRadius={6}
+              listening={false}
+            />
+            <Text
+              x={layoutBounds.marginX + layoutBounds.logicalWidth / 2 - 24}
+              y={layoutBounds.marginY + 62}
+              text="BARRA"
+              fontSize={9}
+              fontFamily="var(--font-mono)"
+              fill="rgba(232,121,160,0.3)"
+              letterSpacing={4}
+              fontStyle="bold"
+              listening={false}
+            />
+
+            {/* Center divider line */}
+            <Rect
+              x={layoutBounds.marginX + layoutBounds.logicalWidth / 2 - 1}
+              y={layoutBounds.marginY + 120}
+              width={2}
+              height={layoutBounds.logicalHeight - 220}
+              stroke="rgba(232,121,160,0.06)"
+              dash={[4, 16]}
+              fill="transparent"
+              listening={false}
+            />
+
+            {/* Entrance marker — bottom center */}
+            <Group x={layoutBounds.marginX + layoutBounds.logicalWidth / 2} y={layoutBounds.marginY + layoutBounds.logicalHeight - 68} listening={false}>
+              <Rect
+                x={-50} y={0}
+                width={100} height={44}
+                stroke="rgba(232,121,160,0.25)"
+                strokeWidth={1.5}
+                fill="transparent"
+                cornerRadius={5}
+                dash={[6, 3]}
+              />
+              <Text
+                x={-30} y={14}
+                text="ENTRADA"
+                fontSize={10}
+                fontFamily="var(--font-mono)"
+                fill="rgba(232,121,160,0.35)"
+                letterSpacing={3}
+                fontStyle="bold"
+              />
+              {/* Arrow pointing up */}
+              <Path
+                data="M -6,-10 L 0,-18 L 6,-10"
+                stroke="rgba(232,121,160,0.3)"
+                strokeWidth={1.5}
+                fill="transparent"
+                lineCap="round"
+                lineJoin="round"
+              />
+              <Path
+                data="M 0,-18 L 0,-4"
+                stroke="rgba(232,121,160,0.3)"
+                strokeWidth={1.5}
+                lineCap="round"
+              />
+            </Group>
+
+            {/* Decorative corner L-shapes */}
+            {[
+              { x: layoutBounds.marginX + 36, y: layoutBounds.marginY + 120 },
+              { x: layoutBounds.marginX + layoutBounds.logicalWidth - 56, y: layoutBounds.marginY + 120 },
+            ].map(({ x, y }, i) => (
+              <Path
+                key={i}
+                data="M 0,0 L 0,16 L 16,16"
+                x={x} y={y}
+                stroke="rgba(232,121,160,0.12)"
+                strokeWidth={1.2}
+                fill="transparent"
+                lineCap="round"
+                lineJoin="round"
+                listening={false}
+              />
+            ))}
 
             {/* Tables */}
             {tables.map(table => (

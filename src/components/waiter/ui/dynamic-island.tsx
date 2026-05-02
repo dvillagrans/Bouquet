@@ -21,7 +21,7 @@ function DynamicIslandInner({
     loading ? "Sincronizando" : banner && banner.length > 0 ? banner : "En vivo";
 
   const dotClass =
-    loading ? "bg-text-muted animate-pulse" : banner ? "bg-gold animate-pulse" : "bg-dash-green";
+    loading ? "bg-text-muted animate-pulse" : banner ? "bg-pink-glow animate-pulse" : "bg-dash-green";
 
   if (reduceMotion) {
     return (

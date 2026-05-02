@@ -262,7 +262,7 @@ export const Hero = () => {
       0.2
     )
     // 3. Subtítulo, descripción y pilares
-    .fromTo([".hero-subtitle", ".hero-desc", ".hero-pillar-item", ".hero-pillar-divider"],
+    .fromTo([".hero-subtitle", ".hero-desc", ".hero-pillar-item"],
       { y: 20, opacity: 0 },
       { y: 0, opacity: 1, duration: 0.6, stagger: 0.06 },
       0.4
@@ -319,21 +319,22 @@ export const Hero = () => {
           </p>
 
           {/* Pilares Unificados */}
-          <div className="hero-pillars mt-6 lg:mt-8 inline-flex flex-wrap items-center justify-center rounded-full border border-rose-100 bg-rose-50/50 px-2.5 py-2 md:px-3 md:py-2.5 shadow-sm">
-            <div className="hero-pillar-item opacity-0 flex items-center gap-2 md:gap-3 px-3 py-2 md:px-5 md:py-3">
-              <Image src={iconMesa} alt="" className="h-5 w-5 md:h-7 md:w-7 object-contain" />
-              <span className="text-[0.85rem] md:text-[1rem] font-bold text-burgundy">Mesas</span>
-            </div>
-            <div className="hero-pillar-divider opacity-0 hidden h-5 md:h-7 w-px bg-rose-200/60 sm:block" />
-            <div className="hero-pillar-item opacity-0 flex items-center gap-2 md:gap-3 px-3 py-2 md:px-5 md:py-3">
-              <Image src={iconCampana} alt="" className="h-5 w-5 md:h-7 md:w-7 object-contain" />
-              <span className="text-[0.85rem] md:text-[1rem] font-bold text-burgundy">Órdenes</span>
-            </div>
-            <div className="hero-pillar-divider opacity-0 hidden h-5 md:h-7 w-px bg-rose-200/60 sm:block" />
-            <div className="hero-pillar-item opacity-0 flex items-center gap-2 md:gap-3 px-3 py-2 md:px-5 md:py-3">
-              <Image src={iconTarjeta} alt="" className="h-5 w-5 md:h-7 md:w-7 object-contain" />
-              <span className="text-[0.85rem] md:text-[1rem] font-bold text-burgundy">Pagos</span>
-            </div>
+          <div className="hero-pillars mt-6 lg:mt-10 flex flex-wrap lg:flex-nowrap items-center justify-center lg:justify-start gap-3 md:gap-4">
+            {[
+              { label: "Gestión de Mesas", icon: iconMesa },
+              { label: "Flujo de Órdenes", icon: iconCampana },
+              { label: "Pagos Centrales", icon: iconTarjeta }
+            ].map((pillar, idx) => (
+              <div 
+                key={idx} 
+                className="hero-pillar-item opacity-0 group flex items-center gap-2.5 rounded-xl border border-rose/10 bg-white/40 px-3 py-1.5 backdrop-blur-md shadow-[0_4px_15px_-10px_rgba(199,91,122,0.1)] transition-all duration-300 hover:bg-white/60 hover:-translate-y-0.5"
+              >
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose/10 transition-colors duration-300 group-hover:bg-rose/20">
+                  <Image src={pillar.icon} alt="" className="h-3.5 w-3.5 object-contain opacity-80" />
+                </div>
+                <span className="font-serif text-[0.85rem] font-medium text-burgundy whitespace-nowrap">{pillar.label}</span>
+              </div>
+            ))}
           </div>
 
           {/* CTAs */}

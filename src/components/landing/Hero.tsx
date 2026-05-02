@@ -371,12 +371,14 @@ export const Hero = () => {
             src={floralLeft}
             alt=""
             priority
+            loading="eager"
             className="hero-floral-left pointer-events-none absolute -left-[5%] sm:-left-[10%] md:-left-[30%] lg:-left-[55%] -top-[5%] sm:-top-[8%] md:-top-[12%] lg:-top-[15%] z-[2] opacity-0 -rotate-[8deg] w-[280px] sm:w-[350px] md:w-[500px] lg:w-[1600px]"
           />
           <Image
             src={floralRight}
             alt=""
             priority
+            loading="eager"
             className="hero-floral-right pointer-events-none absolute -right-[5%] sm:-right-[10%] md:-right-[35%] lg:-right-[65%] -bottom-[5%] sm:-bottom-[8%] md:-bottom-[12%] lg:-bottom-[16%] z-[2] opacity-0 rotate-[12deg] w-[220px] sm:w-[280px] md:w-[380px] lg:w-[1100px]"
           />
 

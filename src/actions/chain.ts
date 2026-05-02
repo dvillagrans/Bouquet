@@ -276,7 +276,7 @@ export async function getChainDashboard(tenantId: string): Promise<ChainDashboar
       }
     },
     take: 50,
-    orderBy: { createdAt: 'desc' }
+    orderBy: { assignedAt: 'desc' }
   });
 
   const staff: ChainStaffRow[] = staffMembers.map(sm => ({

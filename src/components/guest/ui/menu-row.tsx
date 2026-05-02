@@ -75,13 +75,13 @@ export const MenuRow = memo(function MenuRow({
       transition={{ type: "spring", stiffness: 280, damping: 30 }}
       whileHover={reduceMotion || item.isSoldOut ? undefined : { y: -4 }}
       className={cn(
-        "group flex flex-col h-full overflow-hidden rounded-2xl",
+        "group flex h-full flex-col overflow-hidden rounded-2xl",
         "border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)]",
-        "shadow-[0_2px_10px_-4px_rgba(0,0,0,0.07)]",
+        "backdrop-blur-sm ring-1 ring-white/[0.03]",
         "transition-[border-color,box-shadow] duration-300",
         item.isSoldOut
           ? "opacity-55 grayscale-[0.4]"
-          : "hover:border-[color-mix(in_srgb,var(--guest-gold)_38%,transparent)] hover:shadow-[0_8px_28px_-8px_rgba(0,0,0,0.13)]"
+          : "hover:border-[color-mix(in_srgb,var(--guest-gold)_38%,transparent)] hover:shadow-[0_8px_28px_-8px_rgba(0,0,0,0.13)] hover:ring-[color-mix(in_srgb,var(--guest-gold)_10%,transparent)]"
       )}
     >
       {/* ── Image zone ─────────────────────────────────────────── */}

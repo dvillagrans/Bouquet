@@ -24,10 +24,12 @@ export function CartSummaryBar({ cartCount, cartTotal, onOpen }: CartSummaryBarP
             onOpen();
           }}
           whileTap={reduceMotion ? undefined : { scale: 0.985 }}
-          className="relative flex min-h-[52px] w-full items-center justify-between overflow-hidden rounded-[18px] border border-[color-mix(in_srgb,var(--guest-gold)_42%,transparent)] bg-[color-mix(in_srgb,var(--guest-gold)_82%,#2a2318)] px-5 py-3.5 text-[var(--guest-bg-page)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color-mix(in_srgb,var(--guest-gold)_55%,transparent)]"
+          className="group relative flex min-h-[52px] w-full items-center justify-between overflow-hidden rounded-[18px] bg-rose px-5 py-3.5 text-white shadow-[0_8px_24px_-8px_rgba(199,91,122,0.5)] transition-transform focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose"
           aria-haspopup="dialog"
           aria-label={`Ver orden: ${cartCount} platillos, total ${cartTotal.toLocaleString("es-MX")} pesos`}
         >
+          {/* Sheen */}
+          <div className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/15 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
           <AnimatePresence>
             {tapPulseKey > 0 && !reduceMotion ? (
               <motion.span

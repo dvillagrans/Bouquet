@@ -47,7 +47,7 @@ export function CategoryTabs({ tabs, activeId, onChange, layoutId }: CategoryTab
                 {active && (
                   <motion.span
                     layoutId={`${layoutId}-pill`}
-                    className="absolute inset-0 z-0 rounded-xl bg-[var(--guest-halo)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--guest-gold)_35%,transparent)]"
+                    className="absolute inset-0 z-0 rounded-xl bg-[var(--guest-halo)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--guest-gold)_35%,transparent),0_0_16px_-4px_color-mix(in_srgb,var(--guest-gold)_12%,transparent)]"
                     transition={{ type: "spring", stiffness: 420, damping: 34 }}
                   />
                 )}

@@ -386,7 +386,7 @@ export function GuestCartPanel({
                     disabled={isSubmitting}
                     className={cn(
                       "group/confirm relative mt-5 flex min-h-[50px] w-full items-center justify-center gap-2.5 overflow-hidden rounded-xl",
-                      "bg-[color-mix(in_srgb,var(--guest-gold)_90%,#1c1008)] text-[var(--guest-bg-page)]",
+                      "bg-[color-mix(in_srgb,var(--guest-gold)_90%,#1A0F14)] text-[var(--guest-bg-page)]",
                       "text-[11px] font-bold uppercase tracking-[0.2em]",
                       "shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_4px_20px_-6px_color-mix(in_srgb,var(--guest-gold)_35%,transparent)]",
                       "disabled:cursor-not-allowed disabled:opacity-40"
@@ -428,7 +428,7 @@ export function GuestCartPanel({
                   whileTap={reduceMotion ? undefined : { scale: 0.99 }}
                   onClick={() => setShowConfirm(true)}
                   disabled={isSubmitting}
-                  className="mt-5 block min-h-12 w-full rounded-xl bg-[color-mix(in_srgb,var(--guest-gold)_88%,#333)] py-4 text-center text-sm font-semibold uppercase tracking-wider text-[var(--guest-bg-page)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color-mix(in_srgb,var(--guest-gold)_55%,transparent)] disabled:opacity-50"
+                  className="mt-5 block min-h-12 w-full rounded-xl bg-[color-mix(in_srgb,var(--guest-gold)_88%,#1A0F14)] py-4 text-center text-sm font-semibold uppercase tracking-wider text-light shadow-[0_6px_20px_-6px_rgba(199,91,122,0.35),inset_0_1px_0_rgba(255,255,255,0.12)] transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-glow/50 disabled:opacity-50 active:scale-[0.98]"
                 >
                   Enviar orden
                 </motion.button>

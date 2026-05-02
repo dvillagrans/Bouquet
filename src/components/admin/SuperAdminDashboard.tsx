@@ -1112,8 +1112,6 @@ export default function SuperAdminDashboard() {
                       )}
                     </div>
                   </div>
-                    </div>
-                  </div>
                 ) : activeTab === "INFRAESTRUCTURA" ? (
                   <div className="flex flex-1 flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
                     <div className="flex items-end justify-between px-2">

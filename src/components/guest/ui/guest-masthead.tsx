@@ -108,9 +108,9 @@ export function GuestMasthead({
       dot: "bg-[var(--guest-gold)]",
     },
     checkout: {
-      bar: "border-transparent bg-[color-mix(in_srgb,var(--guest-gold)_85%,#221b14)] shadow-[0_4px_12px_rgba(183,146,93,0.3)]",
-      text: "text-white/80",
-      summaryText: "text-white",
+      bar: "border-[color-mix(in_srgb,var(--guest-gold)_15%,transparent)] bg-[var(--guest-bg-surface-2)]",
+      text: "text-[var(--guest-muted)]",
+      summaryText: "text-[var(--guest-text)]",
       dot: "bg-emerald-400",
     },
   } as const;
@@ -118,14 +118,14 @@ export function GuestMasthead({
   const activeTone = toneStyles[orderStatusToneKey];
 
   return (
-    <header className="relative z-40 pt-3 sm:pt-4">
-      <div className="flex items-center justify-between gap-2 rounded-full border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] px-3 py-2 shadow-sm backdrop-blur-md">
+    <header className="relative z-40">
+      <div className="scrollbar-hide flex items-center gap-2.5 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
 
         {/* ── Left: guest avatar stack ─────────────────────────── */}
         <button
           type="button"
           onClick={onOpenCompanions}
-          className="flex min-w-0 shrink cursor-pointer items-center gap-2.5 rounded-full p-1 pl-2 transition-colors hover:bg-[var(--guest-bg-surface-2)]"
+          className="flex shrink-0 items-center gap-2.5 rounded-full border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] px-1.5 py-1.5 pr-4 shadow-sm backdrop-blur-md transition-colors hover:border-[color-mix(in_srgb,var(--guest-gold)_30%,transparent)]"
           aria-label="Ver integrantes de la mesa"
         >
           <div className="flex items-center -space-x-2">
@@ -177,7 +177,7 @@ export function GuestMasthead({
             type="button"
             onClick={onOpenOrderStatus}
             className={cn(
-              "relative flex min-w-0 flex-1 items-center gap-2 rounded-full border px-3 py-2 text-left shadow-sm transition-transform active:scale-[0.99]",
+              "relative flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 text-left shadow-sm backdrop-blur-md transition-transform active:scale-[0.99]",
               activeTone.bar,
             )}
             aria-haspopup="dialog"
@@ -228,12 +228,12 @@ export function GuestMasthead({
               aria-expanded={open}
               aria-haspopup="true"
               className={cn(
-                "flex items-center gap-1.5 rounded-full border px-3 py-1.5 shadow-sm",
-                "font-mono text-[11px] font-bold tracking-[0.1em] text-[var(--guest-text)]",
+                "flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 shadow-sm backdrop-blur-md",
+                "font-mono text-xs font-bold tracking-[0.1em] text-[var(--guest-text)]",
                 "transition-all duration-200",
                 open
                   ? "border-[color-mix(in_srgb,var(--guest-gold)_55%,transparent)] bg-[var(--guest-halo)] text-[var(--guest-gold)]"
-                  : "border-[var(--guest-divider)] bg-[var(--guest-bg-surface-2)] hover:border-[color-mix(in_srgb,var(--guest-gold)_38%,transparent)]"
+                  : "border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] hover:border-[color-mix(in_srgb,var(--guest-gold)_38%,transparent)]"
               )}
             >
               {primaryCode}
@@ -363,7 +363,7 @@ export function GuestMasthead({
           <GuestMenuThemeToggle
             mode={menuTheme}
             onChange={onThemeChange}
-            className="size-8 shrink-0 rounded-full border-[var(--guest-divider)] bg-[var(--guest-bg-surface-2)] shadow-none sm:size-9"
+            className="flex size-[38px] shrink-0 items-center justify-center rounded-full border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] shadow-sm backdrop-blur-md transition-colors hover:border-[color-mix(in_srgb,var(--guest-gold)_38%,transparent)]"
           />
         </div>
       </div>

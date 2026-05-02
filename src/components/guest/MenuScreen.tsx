@@ -30,7 +30,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { GuestMenuTheme } from "@/lib/guest-menu-theme";
 import { useGuestMenuTheme } from "@/hooks/useGuestMenuTheme";
 import { cn } from "@/lib/utils";
-import { ChevronDown, Share2, X } from "lucide-react";
+import { ChevronDown, Share2, X, Flower2 } from "lucide-react";
 import { getSignedGuestPreviewUrl } from "@/actions/tables";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 
@@ -684,9 +684,12 @@ export function MenuScreen({
         <header className="sticky top-0 z-40 -mx-4 -mt-4 px-4 pb-3 pt-3 sm:-mx-8 sm:-mt-4 sm:px-8 sm:pt-4 lg:-mx-12 lg:px-12 backdrop-blur-xl bg-[color-mix(in_srgb,var(--guest-bg-page)_88%,transparent)]">
           {/* Restaurant name */}
           {restaurantName && (
-            <p className="mb-3 font-serif text-[13px] italic leading-tight text-[var(--guest-muted)]">
-              {restaurantName} · Bienvenido
-            </p>
+            <div className="mb-4 flex items-center gap-2 px-1">
+              <Flower2 className="size-4 text-[color-mix(in_srgb,var(--guest-gold)_80%,#dd9d9d)]" strokeWidth={1.5} />
+              <p className="font-serif text-[15px] italic leading-tight text-[var(--guest-muted)]">
+                {restaurantName} · Bienvenido
+              </p>
+            </div>
           )}
           <GuestMasthead
             restaurantName={restaurantName}
@@ -754,7 +757,7 @@ export function MenuScreen({
                   </button>
                 </div>
               )}
-              {visibleCats.map((cat) => {
+              {visibleCats.map((cat, catIdx) => {
                 const items = visibleItems.filter((i) => i.categoryId === cat.id);
                 if (items.length === 0) return null;
                 return (
@@ -773,22 +776,28 @@ export function MenuScreen({
                         : item.price;
                       const qtyLabel =
                         hasVariants && selectedVariantName ? `${item.name} (${selectedVariantName})` : item.name;
+                      
+                      // Highlight the first item of the very first visible category as horizontal
+                      const isFeatured = catIdx === 0 && idx === 0;
+                      
                       return (
-                        <MenuRow
-                          key={item.id}
-                          item={item}
-                          categoryInitial={cat.name}
-                          selectedVariantName={selectedVariantName}
-                          onVariantChange={(name) => setVariantChoice((prev) => ({ ...prev, [item.id]: name }))}
-                          unitPrice={unitPrice}
-                          qty={qty}
-                          qtyLabel={qtyLabel}
-                          onAdd={() => setQty(lineKey, 1)}
-                          onInc={() => setQty(lineKey, qty + 1)}
-                          onDec={() => setQty(lineKey, qty - 1)}
-                          disabledQty={billRequested}
-                          onViewDetail={() => setDetailItem(item)}
-                        />
+                        <div key={item.id} className={cn(isFeatured ? "col-span-full" : "col-span-1")}>
+                          <MenuRow
+                            item={item}
+                            categoryInitial={cat.name}
+                            selectedVariantName={selectedVariantName}
+                            onVariantChange={(name) => setVariantChoice((prev) => ({ ...prev, [item.id]: name }))}
+                            unitPrice={unitPrice}
+                            qty={qty}
+                            qtyLabel={qtyLabel}
+                            onAdd={() => setQty(lineKey, 1)}
+                            onInc={() => setQty(lineKey, qty + 1)}
+                            onDec={() => setQty(lineKey, qty - 1)}
+                            disabledQty={billRequested}
+                            onViewDetail={() => setDetailItem(item)}
+                            layoutVariant={isFeatured ? "horizontal" : "vertical"}
+                          />
+                        </div>
                       );
                     })}
                     </div>

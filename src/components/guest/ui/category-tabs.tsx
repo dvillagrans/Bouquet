@@ -26,7 +26,7 @@ export function CategoryTabs({ tabs, activeId, onChange, layoutId }: CategoryTab
 
       <LayoutGroup id={layoutId}>
         <div
-          className="scrollbar-hide flex gap-1 overflow-x-auto rounded-2xl border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] p-1.5 shadow-[inset_0_1px_0_color-mix(in_srgb,var(--guest-gold)_22%,transparent)] backdrop-blur-md"
+          className="scrollbar-hide flex gap-2 overflow-x-auto p-1.5"
           role="tablist"
           aria-label="Categorías del menú"
         >
@@ -40,14 +40,14 @@ export function CategoryTabs({ tabs, activeId, onChange, layoutId }: CategoryTab
                 aria-selected={active}
                 onClick={() => onChange(id)}
                 className={cn(
-                  "relative shrink-0 rounded-xl px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors min-h-[44px]",
-                  active ? "text-[var(--guest-text)]" : "text-[var(--guest-muted)] hover:text-[var(--guest-text)]",
+                  "relative shrink-0 rounded-full px-5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors",
+                  active ? "text-white" : "text-[var(--guest-muted)] hover:text-[var(--guest-text)] hover:bg-[var(--guest-bg-surface)]",
                 )}
               >
                 {active && (
                   <motion.span
                     layoutId={`${layoutId}-pill`}
-                    className="absolute inset-0 z-0 rounded-xl bg-[var(--guest-halo)] shadow-[inset_0_1px_0_color-mix(in_srgb,var(--guest-gold)_35%,transparent),0_0_16px_-4px_color-mix(in_srgb,var(--guest-gold)_12%,transparent)]"
+                    className="absolute inset-0 z-0 rounded-full bg-[color-mix(in_srgb,var(--guest-gold)_80%,#dd9d9d)] shadow-sm"
                     transition={{ type: "spring", stiffness: 420, damping: 34 }}
                   />
                 )}

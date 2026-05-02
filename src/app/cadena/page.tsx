@@ -1,4 +1,5 @@
 import ChainDashboard from "@/components/chain/ChainDashboard";
+import { ShellChromeProvider } from "@/components/dashboard/ShellChromeContext";
 
 export const metadata = {
   title: "Cadena | Bouquet",
@@ -13,5 +14,9 @@ export default async function ChainPage({
   searchParams: Promise<{ tenantId?: string }>;
 }) {
   const { tenantId } = await searchParams;
-  return <ChainDashboard tenantId={tenantId ?? ""} />;
+  return (
+    <ShellChromeProvider>
+      <ChainDashboard tenantId={tenantId ?? ""} />
+    </ShellChromeProvider>
+  );
 }

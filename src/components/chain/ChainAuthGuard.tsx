@@ -45,5 +45,12 @@ export default function ChainAuthGuard({ tenantId, onAuthenticated }: { tenantId
     );
   }
 
-  return null;
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-ink font-sans text-[13px] text-light antialiased">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-pink-glow border-t-transparent" />
+        <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-dim">Validando identidad...</span>
+      </div>
+    </div>
+  );
 }

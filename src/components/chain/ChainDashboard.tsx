@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertTriangle,
@@ -186,6 +187,7 @@ function BranchRankings({ branches }: { branches: BranchRankRow[] }) {
 // ─── Main Component ───
 
 export default function ChainDashboard({ tenantId }: { tenantId: string }) {
+  const router = useRouter();
   const reduceMotion = useReducedMotion();
   const [data, setData] = useState<ChainDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -261,7 +263,9 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
     return (
       <ChainAuthGuard
         tenantId={tenantId}
-        onAuthenticated={(_tid) => {}}
+        onAuthenticated={(tid) => {
+          router.replace(`/cadena?tenantId=${tid}`);
+        }}
       />
     );
   }

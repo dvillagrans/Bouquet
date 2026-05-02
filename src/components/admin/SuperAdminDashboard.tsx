@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, RefreshCw, Pencil, UserCog, Archive, Search, ArrowRight, MapPin, Building2, Layers, Users, ShieldCheck, Mail, Server, Database, Cpu, Activity, Terminal } from "lucide-react";
+import { Plus, RefreshCw, Pencil, UserCog, Archive, Search, ArrowRight, MapPin, Building2, Layers, Users, ShieldCheck, Mail, Server, Database, Cpu, Activity, Terminal, CreditCard, TrendingUp, DollarSign, History, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getSuperAdminDashboard, archiveTenant, getSuperAdminRestaurants, getSuperAdminUsers, getSuperAdminInfra, type SuperAdminDashboardData, type SuperAdminRestaurantRow, type SuperAdminUserRow, type SuperAdminInfraData } from "@/actions/admin";
+import { getSuperAdminDashboard, archiveTenant, getSuperAdminRestaurants, getSuperAdminUsers, getSuperAdminInfra, getSuperAdminPayments, type SuperAdminDashboardData, type SuperAdminRestaurantRow, type SuperAdminUserRow, type SuperAdminInfraData, type SuperAdminPaymentsData } from "@/actions/admin";
 import { CreateTenantDialog } from "@/components/admin/CreateTenantDialog";
 import { EditTenantDialog } from "@/components/admin/EditTenantDialog";
 import { ChangeAdminDialog } from "@/components/admin/ChangeAdminDialog";
@@ -95,7 +95,8 @@ function DashboardSkeleton() {
 export default function SuperAdminDashboard() {
   const [data, setData] = useState<SuperAdminDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"CONTROL" | "CADENAS" | "LOCALES" | "USUARIOS">("CONTROL");
+  const [mounted, setMounted] = useState(false);
+  const [activeTab, setActiveTab] = useState<"CONTROL" | "CADENAS" | "LOCALES" | "USUARIOS" | "INFRAESTRUCTURA" | "PAGOS">("CONTROL");
   const [isCreatingTenant, setIsCreatingTenant] = useState(false);
 
   const [editChain, setEditChain] = useState<{ id: string; name: string; currency: string } | null>(null);
@@ -111,6 +112,15 @@ export default function SuperAdminDashboard() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [infraData, setInfraData] = useState<SuperAdminInfraData | null>(null);
   const [loadingInfra, setLoadingInfra] = useState(false);
+  const [paymentsData, setPaymentsData] = useState<SuperAdminPaymentsData | null>(null);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    load();
+    const iv = setInterval(load, 60000);
+    return () => clearInterval(iv);
+  }, []);
 
   const load = async () => {
     try {
@@ -124,12 +134,6 @@ export default function SuperAdminDashboard() {
   };
 
   useEffect(() => {
-    load();
-    const iv = setInterval(load, 60000);
-    return () => clearInterval(iv);
-  }, []);
-
-  useEffect(() => {
     if (activeTab === "LOCALES" && restaurants.length === 0) {
       loadLocales();
     }
@@ -138,6 +142,9 @@ export default function SuperAdminDashboard() {
     }
     if (activeTab === "INFRAESTRUCTURA" && !infraData) {
       loadInfra();
+    }
+    if (activeTab === "PAGOS" && !paymentsData) {
+      loadPayments();
     }
   }, [activeTab]);
 
@@ -168,6 +175,16 @@ export default function SuperAdminDashboard() {
       setInfraData(res);
     } finally {
       setLoadingInfra(false);
+    }
+  };
+
+  const loadPayments = async () => {
+    setLoadingPayments(true);
+    try {
+      const res = await getSuperAdminPayments();
+      setPaymentsData(res);
+    } finally {
+      setLoadingPayments(false);
     }
   };
 
@@ -262,8 +279,8 @@ export default function SuperAdminDashboard() {
           <div className="px-3 pb-2 pt-4 text-[8.5px] font-bold uppercase tracking-[0.3em] text-dim">
             SISTEMA
           </div>
-          <NavRow label="Infraestructura" badge={null} />
-          <NavRow label="Pagos" badge={null} />
+          <NavRow label="Infraestructura" active={activeTab === "INFRAESTRUCTURA"} onClick={() => setActiveTab("INFRAESTRUCTURA")} badge={null} />
+          <NavRow label="Pagos" active={activeTab === "PAGOS"} onClick={() => setActiveTab("PAGOS")} badge={null} />
           <NavRow label="Integraciones" badge={null} />
           <NavRow label="Despliegues" badge={null} />
           <NavRow label="Auditoría" badge={null} />
@@ -326,11 +343,11 @@ export default function SuperAdminDashboard() {
                 setLoading(true);
                 load();
               }}
-              disabled={loading}
+              disabled={loading && mounted}
               className="hidden h-9 w-9 items-center justify-center rounded-xl border border-white/10 text-dim transition-colors hover:border-white/20 hover:text-light disabled:opacity-40 sm:flex"
               title="Actualizar"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 ${loading && mounted ? "animate-spin" : ""}`} />
             </button>
 
             <button
@@ -1263,6 +1280,125 @@ export default function SuperAdminDashboard() {
                           </div>
                         </div>
                       </div>
+                    ) : null}
+                  </div>
+                ) : activeTab === "PAGOS" ? (
+                  <div className="flex flex-1 flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="flex items-end justify-between px-2">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
+                          NEGOCIO · FACTURACIÓN & PAGOS
+                        </p>
+                        <h2 className="mt-1 font-serif text-[24px] font-medium leading-tight text-light">
+                          Revenue <span className="italic text-pink-glow">Stream</span>
+                        </h2>
+                      </div>
+                      <button
+                        onClick={loadPayments}
+                        className="flex h-9 items-center gap-2 rounded-full border border-white/5 bg-white/[0.03] px-4 text-[12px] text-dim hover:bg-white/10 hover:text-light transition-all"
+                      >
+                        <RefreshCw className={`h-3.5 w-3.5 ${loadingPayments ? 'animate-spin' : ''}`} />
+                        Actualizar Finanzas
+                      </button>
+                    </div>
+
+                    {loadingPayments && !paymentsData ? (
+                      <div className="flex h-60 items-center justify-center text-dim">
+                        <RefreshCw className="h-6 w-6 animate-spin" />
+                      </div>
+                    ) : paymentsData ? (
+                      <>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                          <SuperKpiCard
+                            label="MRR ACTUAL"
+                            value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(paymentsData.mrr)}
+                            delta="+12%"
+                            deltaTone="green"
+                            unit="MENSUAL"
+                            accent="pink"
+                            delay={0}
+                          />
+                          <SuperKpiCard
+                            label="ARR PROYECTADO"
+                            value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(paymentsData.arr)}
+                            delta="+18%"
+                            deltaTone="green"
+                            unit="ANUAL"
+                            accent="blue"
+                            delay={100}
+                          />
+                          <SuperKpiCard
+                            label="VOLUMEN RED"
+                            value={new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(paymentsData.totalVolumeCents / 100)}
+                            delta="TRANSACCIONAL"
+                            deltaTone="neutral"
+                            unit="TOTAL"
+                            accent="green"
+                            delay={200}
+                          />
+                        </div>
+
+                        <div className="bq-card flex flex-1 flex-col overflow-hidden !p-0">
+                          <div className="flex items-center justify-between border-b border-wire bg-white/[0.01] px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-glow/10 text-pink-glow">
+                                <History className="h-4 w-4" />
+                              </div>
+                              <h3 className="font-serif text-lg font-medium text-light">Pagos Recientes</h3>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2 text-[11px] text-dim">
+                                <Calendar className="h-3.5 w-3.5" />
+                                Últimos 30 días
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-1 flex-col overflow-y-auto custom-scrollbar">
+                            <div className="sticky top-0 z-10 flex border-b border-wire bg-bg-card/95 px-6 py-3 font-mono text-[9px] uppercase tracking-[0.2em] text-dim backdrop-blur-md">
+                              <span className="flex-1">CADENA</span>
+                              <span className="w-32">MONTO</span>
+                              <span className="w-32 text-center">PLAN</span>
+                              <span className="w-32 text-center">ESTADO</span>
+                              <span className="w-32 text-right">FECHA</span>
+                            </div>
+
+                            {paymentsData.recentPayments.map((p, i) => (
+                              <div
+                                key={p.id}
+                                className="group flex items-center border-b border-white/[0.04] px-6 py-4 transition-colors hover:bg-white/[0.02]"
+                                style={{ animation: `dash-row-enter 500ms ${i * 40}ms ease both` }}
+                              >
+                                <div className="flex flex-1 flex-col min-w-0">
+                                  <span className="font-medium text-light truncate">{p.chainName}</span>
+                                  <span className="text-[10px] text-dim font-mono truncate opacity-60">REF: {p.id.slice(0,8)}</span>
+                                </div>
+                                <span className="w-32 font-mono text-[13px] font-bold text-light">
+                                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: p.currency }).format(p.amount)}
+                                </span>
+                                <span className="w-32 text-center">
+                                  <span className="rounded-full bg-white/5 px-2.5 py-1 text-[10px] font-medium text-dim">
+                                    {p.plan}
+                                  </span>
+                                </span>
+                                <div className="w-32 flex justify-center">
+                                  <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                                    p.status === "PAID" ? 'bg-dash-green/10 text-dash-green' : 
+                                    p.status === "PENDING" ? 'bg-dash-amber/10 text-dash-amber' : 
+                                    'bg-red-500/10 text-red-400'
+                                  }`}>
+                                    <span className={`h-1 w-1 rounded-full ${p.status === "PAID" ? 'bg-dash-green' : p.status === "PENDING" ? 'bg-dash-amber' : 'bg-red-400'}`} />
+                                    {p.status}
+                                  </span>
+                                </div>
+                                <span className="w-32 text-right font-mono text-[11px] text-dim">
+                                  {new Date(p.date).toLocaleDateString()}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
                     ) : null}
                   </div>
                 ) : null}

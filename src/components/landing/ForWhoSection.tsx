@@ -206,8 +206,8 @@ export function ForWhoSection() {
               ref={waiterRef}
               src={cardRestaurant}
               alt="Mesero tomando orden en restaurante"
+              sizes="(min-width: 1024px) 32vw, 85vw"
               className="pointer-events-none absolute bottom-0 -left-[20%] z-20 h-[105%] w-auto max-w-none origin-bottom lg:-left-[35%] lg:h-[115%]"
-              priority
             />
 
             {/* Contenido texto */}
@@ -251,8 +251,8 @@ export function ForWhoSection() {
               ref={tacosRef}
               src={cardTaqueria}
               alt="Tacos en taquería"
+              sizes="(min-width: 1024px) 34vw, 92vw"
               className="pointer-events-none absolute -right-[30%] top-[5%] z-20 h-auto w-[110%] max-w-none origin-center rotate-[-2deg] object-contain lg:-right-[25%] lg:top-[12%] lg:w-[85%]"
-              priority
             />
 
             {/* Contenido texto */}
@@ -296,8 +296,8 @@ export function ForWhoSection() {
               ref={cocktailRef}
               src={cardBar}
               alt="Cóctel en barra"
+              sizes="(min-width: 1024px) 28vw, 96vw"
               className="pointer-events-none absolute -top-[15%] left-[60%] z-20 h-auto w-[160%] max-w-none -translate-x-1/2 lg:-top-[15%] lg:left-[65%] lg:w-[190%]"
-              priority
             />
 
             {/* Contenido texto */}

@@ -257,7 +257,7 @@ export const Features = () => {
           src={floralConnectorFull}
           alt=""
           className="w-full h-auto object-contain scale-105 md:scale-110"
-          priority
+          sizes="(min-width: 1280px) 72rem, (min-width: 768px) 88vw, 94vw"
           aria-hidden="true"
         />
 

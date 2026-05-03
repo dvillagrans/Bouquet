@@ -308,8 +308,18 @@ export const ProductSection = () => {
       id="producto"
     >
       {/* Flores en fondo */}
-      <Image src={floralLeft} alt="" priority loading="eager" className="absolute -left-[15%] top-[10%] w-[800px] opacity-20 pointer-events-none mix-blend-screen brightness-125 sepia-[.3] hue-rotate-[-30deg]" />
-      <Image src={floralRight} alt="" priority loading="eager" className="absolute -right-[10%] bottom-[10%] w-[600px] opacity-20 pointer-events-none mix-blend-screen brightness-125 sepia-[.3] hue-rotate-[-30deg]" />
+      <Image
+        src={floralLeft}
+        alt=""
+        sizes="(min-width: 1024px) 800px, 70vw"
+        className="absolute -left-[15%] top-[10%] w-[800px] opacity-20 pointer-events-none mix-blend-screen brightness-125 sepia-[.3] hue-rotate-[-30deg]"
+      />
+      <Image
+        src={floralRight}
+        alt=""
+        sizes="(min-width: 1024px) 600px, 55vw"
+        className="absolute -right-[10%] bottom-[10%] w-[600px] opacity-20 pointer-events-none mix-blend-screen brightness-125 sepia-[.3] hue-rotate-[-30deg]"
+      />
 
       {/* Radial glow */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(244,114,182,0.05)_0%,transparent_60%)]" aria-hidden="true" />

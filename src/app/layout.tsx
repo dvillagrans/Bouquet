@@ -11,21 +11,21 @@ import { cn } from "@/lib/utils";
 const spaceMono = Space_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
-  weight: ["400", "700"],
+  weight: ["400"],
   display: "swap",
 });
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-serif",
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "600"],
   style: ["normal", "italic"],
   display: "swap",
 });

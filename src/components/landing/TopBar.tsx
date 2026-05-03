@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BouquetLogo } from "./BouquetLogo";
-import { motion, AnimatePresence } from "framer-motion";
 
 const nav = [
   { label: "Plataforma", href: "#producto" },
@@ -15,7 +14,6 @@ const nav = [
 export const TopBar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const [hovered, setHovered] = useState<string | null>(null);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 40);
@@ -46,34 +44,19 @@ export const TopBar = () => {
         <nav
           className="hidden items-center lg:flex lg:gap-2"
           aria-label="Menú principal"
-          onMouseLeave={() => setHovered(null)}
         >
           {nav.map(({ label, href }) => (
             <Link
               key={href}
               href={href}
-              onMouseEnter={() => setHovered(href)}
               className={[
-                "relative whitespace-nowrap rounded-full px-4 py-2 text-[0.82rem] font-semibold tracking-tight transition-colors duration-300 lg:px-5",
-                hovered === href ? "text-burgundy" : "text-burgundy/60",
+                "group relative isolate whitespace-nowrap rounded-full px-4 py-2 text-[0.82rem] font-semibold tracking-tight text-burgundy/60 transition-colors duration-300 lg:px-5 hover:text-burgundy",
               ].join(" ")}
             >
-              <AnimatePresence>
-                {hovered === href && (
-                  <motion.div
-                    layoutId="nav-pill"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{
-                      type: "spring",
-                      bounce: 0.22,
-                      duration: 0.6,
-                    }}
-                    className="absolute inset-0 z-[-1] rounded-full bg-burgundy/[0.06] shadow-[inset_0_1px_0_rgba(74,26,44,0.05)]"
-                  />
-                )}
-              </AnimatePresence>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-burgundy/[0.06] opacity-0 scale-95 shadow-[inset_0_1px_0_rgba(74,26,44,0.05)] transition-[opacity,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:opacity-100 group-hover:scale-100"
+              />
               {label}
             </Link>
           ))}

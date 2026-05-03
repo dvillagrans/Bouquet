@@ -6,8 +6,6 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
-gsap.registerPlugin(ScrollTrigger);
-
 import cardRestaurant from "@/assets/industries/card_restaurant_waiter.png";
 import cardTaqueria from "@/assets/industries/card_taqueria_tacos.png";
 import cardBar from "@/assets/industries/card_bar_cocktail.png";
@@ -15,11 +13,11 @@ import cardBar from "@/assets/industries/card_bar_cocktail.png";
 export function ForWhoSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
-  
   const card1Ref = useRef<HTMLDivElement>(null);
   const card2Ref = useRef<HTMLDivElement>(null);
   const card3Ref = useRef<HTMLDivElement>(null);
-  
+  const card1BgRef = useRef<HTMLDivElement>(null);
+  const card3BgRef = useRef<HTMLDivElement>(null);
   const waiterRef = useRef<HTMLImageElement>(null);
   const tacosRef = useRef<HTMLImageElement>(null);
   const cocktailRef = useRef<HTMLImageElement>(null);
@@ -32,14 +30,20 @@ export function ForWhoSection() {
 
       if (prefersReduced) {
         gsap.set(
-          [".forwho-label", ".forwho-headline", ".forwho-desc", card1Ref.current, card2Ref.current, card3Ref.current],
+          [
+            ".forwho-label",
+            ".forwho-headline",
+            ".forwho-desc",
+            card1Ref.current,
+            card2Ref.current,
+            card3Ref.current,
+          ],
           { opacity: 1, x: 0, y: 0 }
         );
         return;
       }
 
       const ctx = gsap.context(() => {
-        // Header entrances
         gsap.fromTo(
           ".forwho-label",
           { y: 20, opacity: 0 },
@@ -55,6 +59,7 @@ export function ForWhoSection() {
             },
           }
         );
+
         gsap.fromTo(
           ".forwho-headline",
           { y: 40, opacity: 0 },
@@ -70,6 +75,7 @@ export function ForWhoSection() {
             },
           }
         );
+
         gsap.fromTo(
           ".forwho-desc",
           { y: 20, opacity: 0 },
@@ -86,7 +92,6 @@ export function ForWhoSection() {
           }
         );
 
-        // Cards entrance with stagger
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: gridRef.current,
@@ -120,29 +125,31 @@ export function ForWhoSection() {
     { scope: sectionRef }
   );
 
-  // Individual hover handlers
   const handleMouseEnter = (index: number) => {
     if (index === 0) {
       gsap.to(waiterRef.current, { y: -12, duration: 0.3, ease: "power2.out" });
-      gsap.to(".card1-bg", { y: -4, duration: 0.3, ease: "power2.out" });
-    } else if (index === 1) {
+      gsap.to(card1BgRef.current, { y: -4, duration: 0.3, ease: "power2.out" });
+    }
+    if (index === 1) {
       gsap.to(tacosRef.current, { scale: 1.04, rotate: -1, duration: 0.3, ease: "power2.out" });
-    } else if (index === 2) {
+    }
+    if (index === 2) {
       gsap.to(cocktailRef.current, { y: -10, duration: 0.3, ease: "power2.out" });
-      gsap.to(".card3-bg", { y: -3, duration: 0.3, ease: "power2.out" });
+      gsap.to(card3BgRef.current, { y: -3, duration: 0.3, ease: "power2.out" });
     }
   };
 
   const handleMouseLeave = (index: number) => {
     if (index === 0) {
       gsap.to(waiterRef.current, { y: 0, duration: 0.3, ease: "power2.out" });
-      gsap.to(".card1-bg", { y: 0, duration: 0.3, ease: "power2.out" });
-    } else if (index === 1) {
-      // rotate resets to -2deg as per initial inline styling
+      gsap.to(card1BgRef.current, { y: 0, duration: 0.3, ease: "power2.out" });
+    }
+    if (index === 1) {
       gsap.to(tacosRef.current, { scale: 1, rotate: -2, duration: 0.3, ease: "power2.out" });
-    } else if (index === 2) {
+    }
+    if (index === 2) {
       gsap.to(cocktailRef.current, { y: 0, duration: 0.3, ease: "power2.out" });
-      gsap.to(".card3-bg", { y: 0, duration: 0.3, ease: "power2.out" });
+      gsap.to(card3BgRef.current, { y: 0, duration: 0.3, ease: "power2.out" });
     }
   };
 
@@ -176,29 +183,26 @@ export function ForWhoSection() {
           <h2 className="forwho-headline opacity-0 font-serif text-[clamp(2.5rem,5vw,4.5rem)] font-medium italic leading-[1.05] tracking-tight text-rose-950">
             Diseñado para tu tipo de servicio.
           </h2>
-          <p className="forwho-desc opacity-0 mx-auto mt-6 max-w-[500px] text-[1.1rem] leading-[1.6] text-rose-900/60 font-medium">
+          <p className="forwho-desc opacity-0 mx-auto mt-6 max-w-[500px] text-[1.1rem] font-medium leading-[1.6] text-rose-900/60">
             No importa el formato: si tenés mesas, órdenes y pagos,<br className="hidden md:block"/> Bouquet se adapta a tu operación.
           </p>
         </div>
 
         {/* Layout Escénico Grid */}
-        <div 
-          ref={gridRef}
-          className="grid gap-x-6 gap-y-24 md:grid-cols-2 lg:grid-cols-[1.1fr_1.6fr_0.8fr] lg:gap-y-0 lg:items-center"
-        >
+        <div ref={gridRef} className="grid gap-x-6 gap-y-24 md:grid-cols-2 lg:grid-cols-[1.1fr_1.6fr_0.8fr] lg:gap-y-0 lg:items-center">
           {/* Card 1 — Restaurante de servicio completo */}
           <div
             ref={card1Ref}
-            className="group relative h-[480px] lg:h-[480px] w-full overflow-visible rounded-[2rem] opacity-0 mt-12 lg:mt-0"
             onMouseEnter={() => handleMouseEnter(0)}
             onMouseLeave={() => handleMouseLeave(0)}
+            className="group relative mt-12 h-[480px] w-full overflow-visible rounded-[2rem] opacity-0 lg:mt-0 lg:h-[480px]"
           >
             {/* Fondo decorativo interno */}
             <div
-              className="absolute inset-0 overflow-hidden rounded-[2rem] shadow-sm transition-all duration-500 group-hover:shadow-xl border border-white/60"
+              className="absolute inset-0 overflow-hidden rounded-[2rem] border border-white/60 shadow-sm transition-all duration-500 group-hover:shadow-xl"
               style={{ background: "linear-gradient(145deg, #FFF0F4 0%, #FCE3EA 100%)" }}
             >
-              <div className="card1-bg absolute inset-0" />
+              <div ref={card1BgRef} className="absolute inset-0" />
             </div>
 
             {/* Ilustración desbordante */}
@@ -234,16 +238,16 @@ export function ForWhoSection() {
           {/* Card 2 — Taquerías & Fast casual */}
           <div
             ref={card2Ref}
-            className="group relative h-[440px] lg:h-[480px] w-full overflow-hidden rounded-[2rem] opacity-0 mt-12 lg:mt-0"
             onMouseEnter={() => handleMouseEnter(1)}
             onMouseLeave={() => handleMouseLeave(1)}
+            className="group relative mt-12 h-[440px] w-full overflow-hidden rounded-[2rem] opacity-0 lg:mt-0 lg:h-[480px]"
           >
             {/* Fondo interno clipeado */}
             <div
-              className="absolute inset-0 overflow-hidden rounded-[2rem] shadow-sm transition-all duration-500 group-hover:shadow-xl border border-white/60"
+              className="absolute inset-0 overflow-hidden rounded-[2rem] border border-white/60 shadow-sm transition-all duration-500 group-hover:shadow-xl"
               style={{ background: "linear-gradient(145deg, #FDF9F1 0%, #F5EBE0 100%)" }}
             >
-              <div className="card2-bg absolute inset-0" />
+              <div className="absolute inset-0 transition-transform duration-500 group-hover:-translate-y-1" />
             </div>
 
             {/* Ilustración desbordante */}
@@ -279,16 +283,16 @@ export function ForWhoSection() {
           {/* Card 3 — Bares & Coctelerías */}
           <div
             ref={card3Ref}
-            className="group relative h-[500px] lg:h-[540px] w-full overflow-visible rounded-[2rem] opacity-0 mt-20 md:col-span-2 lg:col-span-1 lg:mt-0"
             onMouseEnter={() => handleMouseEnter(2)}
             onMouseLeave={() => handleMouseLeave(2)}
+            className="group relative mt-20 h-[500px] w-full overflow-visible rounded-[2rem] opacity-0 md:col-span-2 lg:col-span-1 lg:mt-0 lg:h-[540px]"
           >
             {/* Fondo interno clipeado */}
             <div
-              className="absolute inset-0 overflow-hidden rounded-[2rem] shadow-sm transition-all duration-500 group-hover:shadow-xl border border-white/60"
+              className="absolute inset-0 overflow-hidden rounded-[2rem] border border-white/60 shadow-sm transition-all duration-500 group-hover:shadow-xl"
               style={{ background: "linear-gradient(145deg, #F3F0FA 0%, #E6E0F5 100%)" }}
             >
-              <div className="card3-bg absolute inset-0" />
+              <div ref={card3BgRef} className="absolute inset-0" />
             </div>
 
             {/* Ilustración desbordante */}

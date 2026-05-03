@@ -1,4 +1,11 @@
-const openFaqIndex = 0;
+"use client";
+
+import { useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useGSAP } from "@gsap/react";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const faqs = [
   {
@@ -42,11 +49,24 @@ function FaqItem({
   answer: string;
   index: number;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <details className="faq-item group border-b border-burgundy/[0.08] open:border-burgundy/15">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-5 text-left text-[0.95rem] font-semibold text-burgundy transition-colors hover:text-burgundy lg:py-6 lg:text-[1.05rem] [&::-webkit-details-marker]:hidden">
-        <span>{question}</span>
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-burgundy/10 bg-white/60 transition-transform duration-300 group-open:rotate-45">
+    <div className="faq-item opacity-0 border-b border-burgundy/[0.08]">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex w-full items-center justify-between gap-4 py-5 text-left transition-colors hover:text-burgundy lg:py-6"
+        aria-expanded={isOpen}
+      >
+        <span className="text-[0.95rem] font-semibold text-burgundy lg:text-[1.05rem]">
+          {question}
+        </span>
+        <span
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-burgundy/10 bg-white/60 transition-transform duration-300 ${
+            isOpen ? "rotate-45" : ""
+          }`}
+        >
           <svg
             className="h-3.5 w-3.5 text-burgundy/60"
             viewBox="0 0 20 20"
@@ -61,17 +81,79 @@ function FaqItem({
             />
           </svg>
         </span>
-      </summary>
-      <div className="overflow-hidden pb-5 text-[0.9rem] leading-[1.75] text-burgundy/60 lg:pb-6 lg:text-[0.95rem]">
-        {answer}
+      </button>
+      <div
+        className="grid overflow-hidden transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
+        style={{ gridTemplateRows: isOpen ? "1fr" : "0fr" }}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="pb-5 text-[0.9rem] leading-[1.75] text-burgundy/60 lg:pb-6 lg:text-[0.95rem]">
+            {answer}
+          </div>
+        </div>
       </div>
-    </details>
+    </div>
   );
 }
 
 export function FaqSection() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      const prefersReduced = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+
+      if (prefersReduced) {
+        gsap.set([".faq-header > *", ".faq-item"], { opacity: 1, y: 0 });
+        return;
+      }
+
+      const ctx = gsap.context(() => {
+        gsap.fromTo(
+          ".faq-header > *",
+          { y: 24, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.6,
+            ease: "power2.out",
+            stagger: 0.1,
+            scrollTrigger: {
+              trigger: ".faq-header",
+              start: "top 85%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
+
+        gsap.fromTo(
+          ".faq-item",
+          { y: 16, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.5,
+            ease: "power2.out",
+            stagger: 0.06,
+            scrollTrigger: {
+              trigger: ".faq-list",
+              start: "top 85%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
+      }, sectionRef);
+
+      return () => ctx.revert();
+    },
+    { scope: sectionRef }
+  );
+
   return (
     <section
+      ref={sectionRef}
       id="faq"
       className="relative flex min-h-[80dvh] flex-col justify-center overflow-hidden bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,#FDF2F5_0%,#FAF6F3_100%)] py-24 lg:py-36"
     >
@@ -79,24 +161,24 @@ export function FaqSection() {
         <div className="grid gap-12 lg:grid-cols-[0.4fr_0.6fr] lg:gap-20">
           {/* Columna izquierda — sticky en desktop */}
           <div className="faq-header lg:sticky lg:top-32 lg:self-start">
-            <p className="mb-5 inline-flex items-center gap-3 text-[0.62rem] font-bold uppercase tracking-[0.34em] text-burgundy/45">
+            <p className="opacity-0 mb-5 inline-flex items-center gap-3 text-[0.62rem] font-bold uppercase tracking-[0.34em] text-burgundy/45">
               <span
                 className="h-px w-12 bg-gradient-to-r from-rose/80 to-rose/20"
                 aria-hidden="true"
               />
               Preguntas frecuentes
             </p>
-            <h2 className="font-serif text-[clamp(2rem,4vw,3.5rem)] font-medium italic leading-[1.05] tracking-tight text-burgundy">
+            <h2 className="opacity-0 font-serif text-[clamp(2rem,4vw,3.5rem)] font-medium italic leading-[1.05] tracking-tight text-burgundy">
               Todo lo que necesitas saber.
             </h2>
-            <p className="mt-6 max-w-sm text-[1rem] leading-[1.75] text-burgundy/55">
+            <p className="opacity-0 mt-6 max-w-sm text-[1rem] leading-[1.75] text-burgundy/55">
               Si no encontrás tu respuesta, escribinos. Respondemos en menos de
               2 horas.
             </p>
 
             <a
+              className="opacity-0 mt-8 inline-flex items-center gap-2 text-[0.85rem] font-semibold text-rose transition-colors hover:text-rose-light"
               href="#contacto"
-              className="mt-8 inline-flex items-center gap-2 text-[0.85rem] font-semibold text-rose transition-colors hover:text-rose-light"
             >
               Hablar con el equipo
               <svg

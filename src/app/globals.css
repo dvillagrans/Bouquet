@@ -518,6 +518,45 @@ body {
   to   { transform: translateY(0);    }
 }
 
+@keyframes ticker-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes ticker-marquee-reverse {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+
+.ticker-track {
+  animation-name: ticker-marquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.ticker-track-reverse {
+  animation-name: ticker-marquee-reverse;
+}
+
+.ticker-fade-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 15%, black 85%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, black 15%, black 85%, transparent 100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track,
+  .ticker-track-reverse {
+    animation: none;
+    transform: none;
+  }
+
+  .ticker-fade-mask {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
 @keyframes slide-from-top {
   from { transform: translateY(-20px); }
   to   { transform: translateY(0);     }

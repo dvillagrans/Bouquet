@@ -10,6 +10,23 @@
     "typecheck": "tsc --noEmit",
     "super-admin:seed": "tsx scripts/ensure-default-super-admin.ts"
   },
+  "browserslist": {
+    "production": [
+      "chrome >= 120",
+      "edge >= 120",
+      "firefox >= 122",
+      "safari >= 17.2",
+      "ios_saf >= 17.2",
+      "and_chr >= 120",
+      "and_ff >= 122",
+      "samsung >= 24"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
   "dependencies": {
     "@ai-sdk/deepseek": "^2.0.29",
     "@ai-sdk/openai": "^3.0.53",

@@ -62,91 +62,37 @@ export function PricingSection() {
   const [hoveredPlan, setHoveredPlan] = useState<number | null>(null);
 
   useGSAP(() => {
+    const scope = sectionRef.current;
+    if (!scope) {
+      return;
+    }
+
+    const label = scope.querySelectorAll<HTMLElement>(".pricing-label");
+    const headline = scope.querySelectorAll<HTMLElement>(".pricing-headline");
+    const desc = scope.querySelectorAll<HTMLElement>(".pricing-desc");
+    const cards = scope.querySelectorAll<HTMLElement>(".pricing-card");
+
     const prefersReduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
     if (prefersReduced) {
-      gsap.set(
-        [
-          ".pricing-label",
-          ".pricing-headline",
-          ".pricing-desc",
-          ".pricing-card",
-        ],
-        { opacity: 1, y: 0 }
-      );
+      gsap.set([label, headline, desc, cards], { opacity: 1, y: 0, scale: 1 });
       return;
     }
 
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".pricing-label",
-        { y: 20, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.8,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: ".pricing-label",
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-      gsap.fromTo(
-        ".pricing-headline",
-        { y: 40, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1,
-          ease: "power4.out",
-          scrollTrigger: {
-            trigger: ".pricing-headline",
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-      gsap.fromTo(
-        ".pricing-desc",
-        { y: 20, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.8,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: ".pricing-desc",
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: scope,
+        start: "top 85%",
+        once: true,
+      },
+      defaults: { ease: "power3.out" },
+    });
 
-      gsap.utils.toArray<HTMLElement>(".pricing-card").forEach((card, i) => {
-        gsap.fromTo(
-          card,
-          { y: 60, opacity: 0, scale: 0.97 },
-          {
-            y: 0,
-            opacity: 1,
-            scale: 1,
-            duration: 1,
-            ease: "power4.out",
-            delay: i * 0.15,
-            scrollTrigger: {
-              trigger: card,
-              start: "top 88%",
-              toggleActions: "play none none none",
-            },
-          }
-        );
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
+    tl.fromTo(label, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 }, 0)
+      .fromTo(headline, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: "power4.out" }, 0.1)
+      .fromTo(desc, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 }, 0.2)
+      .fromTo(cards, { y: 60, opacity: 0, scale: 0.97 }, { y: 0, opacity: 1, scale: 1, duration: 1, ease: "power4.out", stagger: 0.15 }, 0.28);
   }, { scope: sectionRef });
 
   return (

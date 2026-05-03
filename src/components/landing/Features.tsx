@@ -60,76 +60,70 @@ export const Features = () => {
 
   useGSAP(
     () => {
+      const scope = sectionRef.current;
+      if (!scope) {
+        return;
+      }
+
+      const corners = scope.querySelectorAll<HTMLElement>(".features-corner");
+      const labels = scope.querySelectorAll<HTMLElement>(".features-label");
+      const title = scope.querySelectorAll<HTMLElement>(".features-title");
+      const desc = scope.querySelectorAll<HTMLElement>(".features-desc");
+      const floral = scope.querySelectorAll<HTMLElement>(".features-floral");
+      const cards = scope.querySelectorAll<HTMLElement>(".features-card");
+      const petals = Array.from(scope.querySelectorAll<HTMLElement>(".features-petal"));
+
       const prefersReducedMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)"
       ).matches;
 
       if (prefersReducedMotion) {
-        gsap.set(
-          [
-            ".features-corner",
-            ".features-label",
-            ".features-title",
-            ".features-desc",
-            ".features-floral",
-            ".features-card",
-            ".features-petal",
-          ],
-          { opacity: 1, y: 0, x: 0, scale: 1 }
-        );
+        gsap.set([corners, labels, title, desc, floral, cards, petals], {
+          opacity: 1,
+          y: 0,
+          x: 0,
+          scale: 1,
+        });
         return;
       }
 
-      // ── Corner decorations ─────────────────────────
-      gsap.fromTo(
-        ".features-corner",
-        { opacity: 0, scale: 0.92 },
-        {
-          opacity: 1,
-          scale: 1,
-          duration: 1.6,
-          ease: "power2.out",
-          stagger: 0.2,
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-
-      // ── Header timeline ────────────────────────────
       const headerTl = gsap.timeline({
         scrollTrigger: {
-          trigger: ".features-header",
-          start: "top 80%",
-          toggleActions: "play none none none",
+          trigger: scope,
+          start: "top 82%",
+          once: true,
         },
         defaults: { ease: "power3.out" },
       });
 
       headerTl
         .fromTo(
-          ".features-label",
-          { x: -20, opacity: 0 },
-          { x: 0, opacity: 1, duration: 0.7 }
+          corners,
+          { opacity: 0, scale: 0.92 },
+          { opacity: 1, scale: 1, duration: 1.6, stagger: 0.2 },
+          0
         )
         .fromTo(
-          ".features-title",
+          labels,
+          { x: -20, opacity: 0 },
+          { x: 0, opacity: 1, duration: 0.7 },
+          0.08
+        )
+        .fromTo(
+          title,
           { y: 40, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.9 },
-          "-=0.5"
+          0.15
         )
         .fromTo(
-          ".features-desc",
+          desc,
           { y: 30, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.8 },
-          "-=0.6"
+          0.26
         );
 
-      // ── Floral image ───────────────────────────────
       gsap.fromTo(
-        ".features-floral",
+        floral,
         { opacity: 0, scale: 0.96, y: 30 },
         {
           opacity: 1,
@@ -137,19 +131,12 @@ export const Features = () => {
           y: 0,
           duration: 1.2,
           ease: "power3.out",
-          scrollTrigger: {
-            trigger: ".features-floral",
-            start: "top 82%",
-            toggleActions: "play none none none",
-          },
-        }
+        },
+        0.38
       );
 
-
-
-      // ── Feature cards ──────────────────────────────
       gsap.fromTo(
-        ".features-card",
+        cards,
         { y: 50, opacity: 0 },
         {
           y: 0,
@@ -157,16 +144,11 @@ export const Features = () => {
           duration: 0.85,
           ease: "power3.out",
           stagger: 0.15,
-          scrollTrigger: {
-            trigger: ".features-grid",
-            start: "top 82%",
-            toggleActions: "play none none none",
-          },
-        }
+        },
+        0.55
       );
 
-      // ── Floating petals organic drift ──────────────
-      gsap.utils.toArray<HTMLElement>(".features-petal").forEach((petal) => {
+      petals.forEach((petal) => {
         const delay = parseFloat(petal.dataset.delay || "0");
         gsap.to(petal, {
           y: "random(-18, 18)",

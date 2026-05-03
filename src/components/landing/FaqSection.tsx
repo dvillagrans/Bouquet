@@ -101,52 +101,34 @@ export function FaqSection() {
 
   useGSAP(
     () => {
+      const scope = sectionRef.current;
+      if (!scope) {
+        return;
+      }
+
+      const header = scope.querySelectorAll<HTMLElement>(".faq-header > *");
+      const items = scope.querySelectorAll<HTMLElement>(".faq-item");
+
       const prefersReduced = window.matchMedia(
         "(prefers-reduced-motion: reduce)"
       ).matches;
 
       if (prefersReduced) {
-        gsap.set([".faq-header > *", ".faq-item"], { opacity: 1, y: 0 });
+        gsap.set([header, items], { opacity: 1, y: 0 });
         return;
       }
 
-      const ctx = gsap.context(() => {
-        gsap.fromTo(
-          ".faq-header > *",
-          { y: 24, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.6,
-            ease: "power2.out",
-            stagger: 0.1,
-            scrollTrigger: {
-              trigger: ".faq-header",
-              start: "top 85%",
-              toggleActions: "play none none none",
-            },
-          }
-        );
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: scope,
+          start: "top 85%",
+          once: true,
+        },
+        defaults: { ease: "power2.out" },
+      });
 
-        gsap.fromTo(
-          ".faq-item",
-          { y: 16, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.5,
-            ease: "power2.out",
-            stagger: 0.06,
-            scrollTrigger: {
-              trigger: ".faq-list",
-              start: "top 85%",
-              toggleActions: "play none none none",
-            },
-          }
-        );
-      }, sectionRef);
-
-      return () => ctx.revert();
+      tl.fromTo(header, { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.1 }, 0)
+        .fromTo(items, { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, stagger: 0.06 }, 0.12);
     },
     { scope: sectionRef }
   );

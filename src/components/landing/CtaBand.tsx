@@ -24,42 +24,66 @@ export const CtaBand = () => {
   const [submitted, setSubmitted] = useState(false);
 
   useGSAP(() => {
-    const ctx = gsap.context(() => {
-      // Entrada del contenido principal
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: "top 75%",
-        }
-      });
+    const scope = containerRef.current;
+    if (!scope) {
+      return;
+    }
 
-      tl.fromTo(".cta-label", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" })
-        .fromTo(".cta-title", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }, "-=0.4")
-        .fromTo(".cta-desc", { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" }, "-=0.4")
-        .fromTo(".cta-chip", { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, stagger: 0.1, ease: "back.out(1.5)" }, "-=0.2")
-        .fromTo(".cta-form", { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 1, ease: "power3.out" }, "-=0.8");
+    const label = scope.querySelectorAll<HTMLElement>(".cta-label");
+    const title = scope.querySelectorAll<HTMLElement>(".cta-title");
+    const desc = scope.querySelectorAll<HTMLElement>(".cta-desc");
+    const chips = scope.querySelectorAll<HTMLElement>(".cta-chip");
+    const form = scope.querySelectorAll<HTMLElement>(".cta-form");
+    const floral1 = scope.querySelectorAll<HTMLElement>(".cta-floral-1");
+    const floral2 = scope.querySelectorAll<HTMLElement>(".cta-floral-2");
 
-      // Animación sutil de las flores
-      gsap.to(".cta-floral-1", {
-        y: -15,
-        rotation: 2,
-        duration: 4,
-        ease: "sine.inOut",
-        yoyo: true,
-        repeat: -1
-      });
-      gsap.to(".cta-floral-2", {
-        y: 15,
-        rotation: -2,
-        duration: 5,
-        ease: "sine.inOut",
-        yoyo: true,
-        repeat: -1,
-        delay: 1
-      });
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
 
-    }, containerRef);
-    return () => ctx.revert();
+    if (prefersReduced) {
+      gsap.set([label, title, desc, chips, form, floral1, floral2], {
+        opacity: 1,
+        x: 0,
+        y: 0,
+        scale: 1,
+        rotation: 0,
+      });
+      return;
+    }
+
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: scope,
+        start: "top 75%",
+        once: true,
+      },
+      defaults: { ease: "power3.out" },
+    });
+
+    tl.fromTo(label, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" }, 0)
+      .fromTo(title, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.8 }, 0.1)
+      .fromTo(desc, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "power2.out" }, 0.18)
+      .fromTo(chips, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, stagger: 0.1, ease: "back.out(1.5)" }, 0.28)
+      .fromTo(form, { x: 40, opacity: 0 }, { x: 0, opacity: 1, duration: 1, ease: "power3.out" }, 0.42);
+
+    gsap.to(floral1, {
+      y: -15,
+      rotation: 2,
+      duration: 4,
+      ease: "sine.inOut",
+      yoyo: true,
+      repeat: -1,
+    });
+    gsap.to(floral2, {
+      y: 15,
+      rotation: -2,
+      duration: 5,
+      ease: "sine.inOut",
+      yoyo: true,
+      repeat: -1,
+      delay: 1,
+    });
   }, { scope: containerRef });
 
   const handleSubmit = async (e: React.FormEvent) => {

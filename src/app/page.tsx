@@ -9,6 +9,7 @@ import { SocialProof } from "@/components/landing/SocialProof";
 import { FaqSection } from "@/components/landing/FaqSection";
 import { CtaBand } from "@/components/landing/CtaBand";
 import { Footer } from "@/components/landing/Footer";
+import { LandingScrollbar } from "@/components/landing/LandingScrollbar";
 
 export const metadata: Metadata = {
   title: "Bouquet — Hospitality OS para restaurantes",
@@ -49,6 +50,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <div className="relative min-h-screen bg-[radial-gradient(circle_at_top,#FDF2F5_0%,#F5D5DC_35%,#FAF6F3_100%)] font-sans text-burgundy selection:bg-rose/20 selection:text-burgundy">
+      <LandingScrollbar />
       {/* Skip-to-content */}
       <a
         href="#hero"

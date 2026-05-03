@@ -104,7 +104,7 @@ export function TableAccessScreen({
   return (
     <main
       ref={mainRef}
-      className="relative min-h-[100dvh] overflow-hidden bg-[var(--guest-bg-page)] font-sans text-[var(--guest-text)] antialiased selection:bg-[var(--guest-gold)]/20"
+      className="fixed inset-0 overflow-hidden bg-[var(--guest-bg-page)] font-sans text-[var(--guest-text)] antialiased selection:bg-[var(--guest-gold)]/20 flex flex-col"
     >
       {/* Film grain overlay */}
       <div
@@ -131,9 +131,9 @@ export function TableAccessScreen({
         aria-hidden="true"
       />
 
-      <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-8 lg:px-12 py-8 lg:py-0">
+      <div className="relative z-10 mx-auto w-full max-w-6xl h-full flex flex-col px-5 sm:px-8 lg:px-12">
         {/* Header */}
-        <header className="flex items-center justify-between py-4 lg:py-6">
+        <header className="shrink-0 flex items-center justify-between py-4 lg:py-6">
           <Link href="/" className="inline-flex transition-opacity hover:opacity-80">
             <BouquetLogo variant={isDark ? "light" : "dark"} size="sm" />
           </Link>
@@ -152,8 +152,9 @@ export function TableAccessScreen({
           </button>
         </header>
 
-        {/* Main content */}
-        <div className="lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:items-center lg:min-h-[100dvh]">
+        {/* Main content area */}
+        <div className="flex-1 flex flex-col justify-center overflow-y-auto lg:overflow-visible py-4 lg:py-0">
+          <div className="lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:items-center">
           {/* Left column */}
           <div className="flex flex-col items-start py-8 lg:py-16">
             <motion.span
@@ -296,6 +297,7 @@ export function TableAccessScreen({
               </Link>
             </form>
           </motion.div>
+          </div>
         </div>
       </div>
     </main>

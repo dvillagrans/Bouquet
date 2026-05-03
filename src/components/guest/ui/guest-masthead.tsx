@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { GuestMenuThemeToggle } from "@/components/guest/GuestMenuThemeToggle";
 import type { GuestMenuTheme } from "@/lib/guest-menu-theme";
 import type { GuestMenuThemeOrigin } from "@/components/guest/GuestMenuThemeToggle";
 import { cn } from "@/lib/utils";
-import { User, ChevronDown, Share2, Crown, Copy, Check } from "lucide-react";
+import { User, ChevronDown, Share2, Crown, Copy, Check, Hash } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 type GuestMastheadProps = {
@@ -14,8 +13,6 @@ type GuestMastheadProps = {
   guestName: string;
   isHost: boolean;
   billRequested: boolean;
-  menuTheme: GuestMenuTheme;
-  onThemeChange: (mode: GuestMenuTheme, origin?: GuestMenuThemeOrigin) => void;
   displayTableCode: string;
   joinCode: string | null | undefined;
   guests?: { name: string; isHost: boolean }[];
@@ -34,8 +31,6 @@ export function GuestMasthead({
   guestName,
   isHost,
   billRequested: _billRequested,
-  menuTheme,
-  onThemeChange,
   displayTableCode,
   joinCode,
   guests = [],
@@ -119,7 +114,14 @@ export function GuestMasthead({
 
   return (
     <header className="relative z-40">
-      <div className="scrollbar-hide flex items-center gap-2.5 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="flex justify-center">
+      <div
+        className="scrollbar-hide flex min-w-0 items-center gap-2.5 overflow-x-auto pb-2 pl-1 pr-4"
+        style={{
+          WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 1%, black 96%, transparent 100%)",
+          maskImage: "linear-gradient(to right, transparent 0%, black 1%, black 96%, transparent 100%)",
+        }}
+      >
 
         {/* ── Left: guest avatar stack ─────────────────────────── */}
         <button
@@ -228,21 +230,39 @@ export function GuestMasthead({
               aria-expanded={open}
               aria-haspopup="true"
               className={cn(
-                "flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 shadow-sm backdrop-blur-md",
-                "font-mono text-xs font-bold tracking-[0.1em] text-[var(--guest-text)]",
-                "transition-all duration-200",
+                "flex shrink-0 items-center gap-2.5 rounded-full border bg-[var(--guest-bg-surface)] px-1.5 py-1.5 pr-3 shadow-sm backdrop-blur-md",
+                "transition-colors",
                 open
-                  ? "border-[color-mix(in_srgb,var(--guest-gold)_55%,transparent)] bg-[var(--guest-halo)] text-[var(--guest-gold)]"
-                  : "border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] hover:border-[color-mix(in_srgb,var(--guest-gold)_38%,transparent)]"
+                  ? "border-[color-mix(in_srgb,var(--guest-gold)_55%,transparent)] bg-[var(--guest-halo)]"
+                  : "border-[var(--guest-divider)] hover:border-[color-mix(in_srgb,var(--guest-gold)_30%,transparent)]"
               )}
             >
-              {primaryCode}
+              <div className={cn(
+                "flex size-7 shrink-0 items-center justify-center rounded-full",
+                open ? "bg-[color-mix(in_srgb,var(--guest-gold)_15%,transparent)] text-[var(--guest-gold)]" : "bg-[var(--guest-bg-surface-2)] text-[var(--guest-muted)]"
+              )}>
+                <Hash className="size-3.5" strokeWidth={1.8} />
+              </div>
+              <div className="flex min-w-0 flex-col text-left">
+                <span className={cn(
+                  "text-[10px] font-bold uppercase tracking-wider",
+                  open ? "text-[var(--guest-gold)]" : "text-[var(--guest-muted)]"
+                )}>
+                  Mesa
+                </span>
+                <span className={cn(
+                  "font-mono text-[13px] font-bold tracking-[0.1em]",
+                  open ? "text-[var(--guest-gold)]" : "text-[var(--guest-text)]"
+                )}>
+                  {primaryCode}
+                </span>
+              </div>
               <motion.span
                 animate={{ rotate: open ? 180 : 0 }}
                 transition={{ type: "spring", stiffness: 340, damping: 28 }}
                 className="flex"
               >
-                <ChevronDown className="size-3.5 text-[var(--guest-muted)]" strokeWidth={2} />
+                <ChevronDown className={cn("size-3.5", open ? "text-[var(--guest-gold)]" : "text-[var(--guest-muted)]")} strokeWidth={2} />
               </motion.span>
             </button>
 
@@ -359,13 +379,8 @@ export function GuestMasthead({
               )}
             </AnimatePresence>
           </div>
-
-          <GuestMenuThemeToggle
-            mode={menuTheme}
-            onChange={onThemeChange}
-            className="flex size-[38px] shrink-0 items-center justify-center rounded-full border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] shadow-sm backdrop-blur-md transition-colors hover:border-[color-mix(in_srgb,var(--guest-gold)_38%,transparent)]"
-          />
         </div>
+      </div>
       </div>
     </header>
   );

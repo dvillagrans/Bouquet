@@ -68,7 +68,7 @@ function MetricTile({
       animate={{ opacity: 1, y: 0 }}
       transition={{ ...SPRING, delay }}
       whileHover={reduceMotion ? undefined : { y: -3 }}
-      className="group relative overflow-hidden rounded-2xl border border-border-main/80 bg-bg-card/50 p-5 shadow-[0_18px_42px_-22px_rgba(12,9,7,0.7)] backdrop-blur-sm"
+      className="group relative overflow-hidden rounded-2xl border border-border-main bg-bg-card/95 p-5 shadow-[0_22px_48px_-12px_rgba(0,0,0,0.8)] backdrop-blur-xl"
     >
       <div
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
@@ -105,7 +105,7 @@ function KitchenSignal({
 }) {
   const Icon = icon;
   return (
-    <div className="rounded-2xl border border-border-bright/80 bg-bg-solid/55 p-5">
+    <div className="rounded-2xl border border-border-bright/40 bg-white/[0.03] p-5 shadow-inner">
       <motion.div
         animate={reduceMotion ? undefined : { opacity: [0.45, 1, 0.45], y: [0, -2, 0] }}
         transition={{ duration: 2.6, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
@@ -242,8 +242,8 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
           className="absolute inset-0 z-0 opacity-30 mix-blend-overlay"
           style={{ backgroundImage: `url("${NOISE_SVG}")`, backgroundRepeat: "repeat" }}
         />
-        <div className="absolute -left-56 -top-52 h-[46rem] w-[46rem] rounded-full bg-[radial-gradient(circle,rgba(201,160,84,0.08),transparent_62%)] blur-3xl" />
-        <div className="absolute -bottom-40 right-[-12rem] h-[30rem] w-[38rem] rounded-full bg-[radial-gradient(circle,rgba(91,128,116,0.09),transparent_62%)] blur-3xl" />
+        <div className="absolute -left-56 -top-52 h-[46rem] w-[46rem] rounded-full bg-[radial-gradient(circle,rgba(201,160,84,0.18),transparent_62%)] blur-3xl" />
+        <div className="absolute -bottom-40 right-[-12rem] h-[30rem] w-[38rem] rounded-full bg-[radial-gradient(circle,rgba(91,128,116,0.22),transparent_62%)] blur-3xl" />
         {!reduceMotion && (
           <>
             <motion.div
@@ -332,7 +332,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
             {/* ── Pulso de cocina ── */}
             <motion.article
               variants={itemVariants}
-              className={`relative overflow-hidden rounded-2xl border border-border-main/80 bg-bg-card/45 p-5 backdrop-blur-sm transition-all duration-300 sm:p-7 ${
+              className={`relative overflow-hidden rounded-2xl border border-border-main bg-bg-card/92 p-5 backdrop-blur-xl transition-all duration-300 sm:p-7 ${
                 metrics.totalOrders === 0 ? "lg:row-span-1" : ""
               }`}
             >
@@ -390,7 +390,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
             </motion.article>
 
             {/* ── Densidad de piso ── */}
-            <motion.article variants={itemVariants} className="rounded-2xl border border-border-main/80 bg-bg-card/45 p-6 backdrop-blur-sm">
+            <motion.article variants={itemVariants} className="rounded-2xl border border-border-main bg-bg-card/92 p-6 backdrop-blur-xl">
               <h2 className="text-[11px] uppercase tracking-[0.18em] text-text-dim">Densidad de piso</h2>
 
               {metrics.totalTables === 0 ? (
@@ -429,7 +429,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
             {/* ── Tiempo promedio + Staff ── */}
             <motion.article
               variants={itemVariants}
-              className="flex flex-col gap-4 rounded-2xl border border-border-main/80 bg-bg-card/45 p-6 backdrop-blur-sm"
+              className="flex flex-col gap-4 rounded-2xl border border-border-main bg-bg-card/92 p-6 backdrop-blur-xl"
             >
               {/* Tiempo promedio */}
               <div>
@@ -471,7 +471,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
             {/* ── Ventas por hora ── */}
             <motion.article
               variants={itemVariants}
-              className="rounded-2xl border border-border-main/80 bg-bg-card/45 p-6 backdrop-blur-sm"
+              className="rounded-2xl border border-border-main bg-bg-card/92 p-6 backdrop-blur-xl"
             >
               <h2 className="text-[11px] uppercase tracking-[0.18em] text-text-dim">
                 Ventas · hoy por hora
@@ -492,7 +492,7 @@ export default function DashboardOverview({ data }: DashboardOverviewProps) {
             {/* ── Actividad reciente ── */}
             <motion.article
               variants={itemVariants}
-              className="flex flex-col overflow-hidden rounded-2xl border border-border-main/80 bg-bg-card/45 backdrop-blur-sm"
+              className="flex flex-col overflow-hidden rounded-2xl border border-border-main bg-bg-card/92 backdrop-blur-xl"
             >
               <div className="border-b border-border-main/80 px-5 py-4">
                 <h2 className="text-[11px] uppercase tracking-[0.18em] text-text-dim">

@@ -64,10 +64,24 @@ function DashboardPreview() {
               <span>$0</span>
             </div>
             <svg viewBox="0 0 200 80" className="h-[80px] w-full flex-1">
+              {/* Gradient for area */}
+              <defs>
+                <linearGradient id="dash-gradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#F472B6" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#F472B6" stopOpacity="0" />
+                </linearGradient>
+              </defs>
               {/* Grid lines */}
               {[0, 16, 32, 48, 64, 80].map((y) => (
                 <line key={y} x1="0" y1={y} x2="200" y2={y} stroke="rgba(255,255,255,0.05)" strokeWidth="1" strokeDasharray="2 2" />
               ))}
+              {/* Area */}
+              <path
+                className="dash-area-path"
+                d="M10 55 L40 45 L70 50 L100 35 L130 40 L160 25 L190 20 V80 H10 Z"
+                fill="url(#dash-gradient)"
+                opacity="0"
+              />
               {/* Line */}
               <path
                 className="dash-line-path"
@@ -257,7 +271,7 @@ export const ProductSection = () => {
           // Line draw
           gsap.to(".dash-line-path", { strokeDashoffset: 0, duration: 1.5, ease: "power2.inOut" });
           // Area fade in
-          gsap.to(".dash-area-path", { opacity: 0.2, duration: 1, delay: 0.5, ease: "power2.out" });
+          gsap.to(".dash-area-path", { opacity: 0.15, duration: 1, delay: 0.5, ease: "power2.out" });
           // Points pop in
           gsap.to(".dash-point", { opacity: 1, scale: 1, duration: 0.4, stagger: 0.08, delay: 0.8, ease: "back.out(2)" });
           // Donut segments
@@ -294,8 +308,8 @@ export const ProductSection = () => {
       id="producto"
     >
       {/* Flores en fondo */}
-      <Image src={floralLeft} alt="" className="absolute -left-[15%] top-[10%] w-[800px] opacity-20 pointer-events-none mix-blend-screen brightness-125 sepia-[.3] hue-rotate-[-30deg]" />
-      <Image src={floralRight} alt="" className="absolute -right-[10%] bottom-[10%] w-[600px] opacity-20 pointer-events-none mix-blend-screen brightness-125 sepia-[.3] hue-rotate-[-30deg]" />
+      <Image src={floralLeft} alt="" priority loading="eager" className="absolute -left-[15%] top-[10%] w-[800px] opacity-20 pointer-events-none mix-blend-screen brightness-125 sepia-[.3] hue-rotate-[-30deg]" />
+      <Image src={floralRight} alt="" priority loading="eager" className="absolute -right-[10%] bottom-[10%] w-[600px] opacity-20 pointer-events-none mix-blend-screen brightness-125 sepia-[.3] hue-rotate-[-30deg]" />
 
       {/* Radial glow */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(244,114,182,0.05)_0%,transparent_60%)]" aria-hidden="true" />

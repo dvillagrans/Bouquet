@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { BouquetLogo } from "./BouquetLogo";
+import { motion, AnimatePresence } from "framer-motion";
 
 const nav = [
   { label: "Plataforma", href: "#producto" },
@@ -14,6 +15,7 @@ const nav = [
 export const TopBar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState<string | null>(null);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 40);
@@ -41,13 +43,37 @@ export const TopBar = () => {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden items-center lg:flex lg:gap-8 xl:gap-10" aria-label="Menú principal">
+        <nav
+          className="hidden items-center lg:flex lg:gap-2"
+          aria-label="Menú principal"
+          onMouseLeave={() => setHovered(null)}
+        >
           {nav.map(({ label, href }) => (
             <Link
               key={href}
               href={href}
-              className="relative whitespace-nowrap rounded-full px-4 py-2 text-[0.84rem] font-medium text-burgundy/65 transition-colors duration-200 hover:bg-burgundy/[0.04] hover:text-burgundy lg:px-5"
+              onMouseEnter={() => setHovered(href)}
+              className={[
+                "relative whitespace-nowrap rounded-full px-4 py-2 text-[0.82rem] font-semibold tracking-tight transition-colors duration-300 lg:px-5",
+                hovered === href ? "text-burgundy" : "text-burgundy/60",
+              ].join(" ")}
             >
+              <AnimatePresence>
+                {hovered === href && (
+                  <motion.div
+                    layoutId="nav-pill"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{
+                      type: "spring",
+                      bounce: 0.22,
+                      duration: 0.6,
+                    }}
+                    className="absolute inset-0 z-[-1] rounded-full bg-burgundy/[0.06] shadow-[inset_0_1px_0_rgba(74,26,44,0.05)]"
+                  />
+                )}
+              </AnimatePresence>
               {label}
             </Link>
           ))}

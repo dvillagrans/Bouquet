@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { GuestMenuThemeToggle } from "@/components/guest/GuestMenuThemeToggle";
 import { submitComensalOrder, getGuestOrders, requestBill, transferHost, getGuestTableState, cancelGuestOrder } from "@/actions/comensal";
 import {
   CartSummaryBar,
@@ -679,16 +680,23 @@ export function MenuScreen({
       <NetworkBanner status={networkStatus} />
 
       {/* ── BODY ─────────────────────────────────────────────────────── */}
-      <div className="relative z-10 mx-auto max-w-7xl px-4 pb-36 sm:px-8 lg:px-12 lg:pb-24">
+      <div className="relative z-10 mx-auto max-w-7xl px-2 pb-36 sm:px-8 lg:px-12 lg:pb-24">
         {/* ── Sticky Header (masthead + tabs unified) ── */}
-        <header className="sticky top-0 z-40 -mx-4 -mt-4 px-4 pb-3 pt-3 sm:-mx-8 sm:-mt-4 sm:px-8 sm:pt-4 lg:-mx-12 lg:px-12 backdrop-blur-xl bg-[color-mix(in_srgb,var(--guest-bg-page)_88%,transparent)]">
+        <header className="sticky top-0 z-40 -mt-4 pb-3 pt-3 sm:-mx-8 sm:-mt-4 sm:px-8 sm:pt-4 lg:-mx-12 lg:px-12 backdrop-blur-xl bg-[color-mix(in_srgb,var(--guest-bg-page)_88%,transparent)]">
           {/* Restaurant name */}
           {restaurantName && (
-            <div className="mb-4 flex items-center gap-2 px-1">
-              <Flower2 className="size-4 text-[color-mix(in_srgb,var(--guest-gold)_80%,#dd9d9d)]" strokeWidth={1.5} />
-              <p className="font-serif text-[15px] italic leading-tight text-[var(--guest-muted)]">
-                {restaurantName} · Bienvenido
-              </p>
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Flower2 className="size-4 text-[color-mix(in_srgb,var(--guest-gold)_80%,#dd9d9d)]" strokeWidth={1.5} />
+                <p className="font-serif text-[15px] italic leading-tight text-[var(--guest-muted)]">
+                  {restaurantName} · Bienvenido
+                </p>
+              </div>
+              <GuestMenuThemeToggle
+                mode={menuTheme}
+                onChange={changeGuestMenuTheme}
+                className="flex size-[34px] shrink-0 items-center justify-center rounded-full border border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] shadow-sm backdrop-blur-md transition-colors hover:border-[color-mix(in_srgb,var(--guest-gold)_38%,transparent)]"
+              />
             </div>
           )}
           <GuestMasthead
@@ -698,8 +706,6 @@ export function MenuScreen({
             isHost={isHostLive}
             guests={guests}
             billRequested={billRequested}
-            menuTheme={menuTheme}
-            onThemeChange={changeGuestMenuTheme}
             displayTableCode={displayTableCode}
             joinCode={joinCode}
             onShareQr={() => setQrInviteFullscreenOpen(true)}
@@ -741,6 +747,7 @@ export function MenuScreen({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
+                  className=""
                 >
               {visibleItems.length === 0 && (
                 <div className="rounded-2xl border border-dashed border-[var(--guest-divider)] bg-[var(--guest-bg-surface)] px-6 py-16 text-center">

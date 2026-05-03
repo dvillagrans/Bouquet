@@ -16,17 +16,17 @@ export function CategoryTabs({ tabs, activeId, onChange, layoutId }: CategoryTab
   return (
     <div className="relative">
       <div
-        className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-8 bg-gradient-to-r from-[var(--guest-bg-page)] to-transparent"
+        className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-1 bg-gradient-to-r from-[var(--guest-bg-page)] to-transparent"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute inset-y-0 right-0 z-[1] w-8 bg-gradient-to-l from-[var(--guest-bg-page)] to-transparent"
+        className="pointer-events-none absolute inset-y-0 right-0 z-[1] w-3 bg-gradient-to-l from-[var(--guest-bg-page)] to-transparent"
         aria-hidden
       />
 
       <LayoutGroup id={layoutId}>
         <div
-          className="scrollbar-hide flex gap-2 overflow-x-auto p-1.5"
+          className="scrollbar-hide flex gap-2 overflow-x-auto py-1.5 px-0"
           role="tablist"
           aria-label="Categorías del menú"
         >

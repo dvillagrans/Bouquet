@@ -87,6 +87,8 @@ export const CtaBand = () => {
       <Image
         src={floralLeft}
         alt=""
+        priority
+        loading="eager"
         className="cta-floral-1 pointer-events-none absolute -left-[20%] top-1/2 -translate-y-1/2 w-[700px] opacity-[0.15] mix-blend-multiply drop-shadow-xl z-0"
         aria-hidden="true"
       />
@@ -95,6 +97,8 @@ export const CtaBand = () => {
       <Image
         src={floralRight}
         alt=""
+        priority
+        loading="eager"
         className="cta-floral-2 pointer-events-none absolute -right-[15%] bottom-0 w-[500px] opacity-[0.12] mix-blend-multiply drop-shadow-xl z-0"
         aria-hidden="true"
       />

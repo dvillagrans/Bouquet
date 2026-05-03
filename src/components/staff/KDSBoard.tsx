@@ -1058,10 +1058,6 @@ export default function KDSBoard({
       </AnimatePresence>
 
       <style dangerouslySetInnerHTML={{__html:`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
         @keyframes newOrderPulse {
           0%   { box-shadow: 0 0 0 0 rgba(244,114,182,0.5); }
           70%  { box-shadow: 0 0 0 12px rgba(244,114,182,0); }

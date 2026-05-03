@@ -198,21 +198,32 @@ function DashboardPreview() {
 
 export const ProductSection = () => {
   const sectionRef = useRef<HTMLElement>(null);
+  const mockupRef = useRef<HTMLDivElement>(null);
+  const bentoGridRef = useRef<HTMLDivElement>(null);
 
   useGSAP(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReduced) {
-      gsap.set([".product-pill", ".product-headline", ".product-desc", ".product-mockup", ".product-bento-item"], {
-        opacity: 1, y: 0, x: 0, scale: 1
-      });
-      gsap.set(".dash-line-path", { strokeDashoffset: 0 });
-      gsap.set(".dash-area-path", { opacity: 0.2 });
-      gsap.set(".dash-point", { opacity: 1, scale: 1 });
-      gsap.set(".dash-donut", { strokeDashoffset: 0 });
+      const productBentoItems = bentoGridRef.current?.querySelectorAll<HTMLElement>(".product-bento-item") ?? [];
+      const animatedNodes = [
+        sectionRef.current?.querySelector(".product-pill"),
+        sectionRef.current?.querySelector(".product-headline"),
+        sectionRef.current?.querySelector(".product-desc"),
+        mockupRef.current,
+        ...Array.from(productBentoItems),
+      ].filter(Boolean) as HTMLElement[];
+
+      gsap.set(animatedNodes, { opacity: 1, y: 0, x: 0, scale: 1 });
+      gsap.set(sectionRef.current?.querySelectorAll(".dash-line-path") ?? [], { strokeDashoffset: 0 });
+      gsap.set(sectionRef.current?.querySelectorAll(".dash-area-path") ?? [], { opacity: 0.2 });
+      gsap.set(sectionRef.current?.querySelectorAll(".dash-point") ?? [], { opacity: 1, scale: 1 });
+      gsap.set(sectionRef.current?.querySelectorAll(".dash-donut") ?? [], { strokeDashoffset: 0 });
       return;
     }
 
     const ctx = gsap.context(() => {
+      const productBentoItems = bentoGridRef.current?.querySelectorAll<HTMLElement>(".product-bento-item") ?? [];
+
       // Parallax for text
       gsap.fromTo(".product-text-col",
         { y: 60 },
@@ -229,7 +240,7 @@ export const ProductSection = () => {
       );
 
       // Parallax for mockup (slower)
-      gsap.fromTo(".product-mockup",
+      gsap.fromTo(mockupRef.current,
         { y: 120, scale: 0.96, opacity: 0 },
         {
           y: -80, scale: 1, opacity: 1,
@@ -265,23 +276,23 @@ export const ProductSection = () => {
 
       // Dashboard chart SVG draw animations
       ScrollTrigger.create({
-        trigger: ".product-mockup",
+        trigger: mockupRef.current,
         start: "top 75%",
         onEnter: () => {
           // Line draw
-          gsap.to(".dash-line-path", { strokeDashoffset: 0, duration: 1.5, ease: "power2.inOut" });
+          gsap.to(sectionRef.current?.querySelectorAll(".dash-line-path") ?? [], { strokeDashoffset: 0, duration: 1.5, ease: "power2.inOut" });
           // Area fade in
-          gsap.to(".dash-area-path", { opacity: 0.15, duration: 1, delay: 0.5, ease: "power2.out" });
+          gsap.to(sectionRef.current?.querySelectorAll(".dash-area-path") ?? [], { opacity: 0.15, duration: 1, delay: 0.5, ease: "power2.out" });
           // Points pop in
-          gsap.to(".dash-point", { opacity: 1, scale: 1, duration: 0.4, stagger: 0.08, delay: 0.8, ease: "back.out(2)" });
+          gsap.to(sectionRef.current?.querySelectorAll(".dash-point") ?? [], { opacity: 1, scale: 1, duration: 0.4, stagger: 0.08, delay: 0.8, ease: "back.out(2)" });
           // Donut segments
-          gsap.to(".dash-donut", { strokeDashoffset: 0, duration: 1.2, stagger: 0.15, delay: 0.3, ease: "power2.inOut" });
+          gsap.to(sectionRef.current?.querySelectorAll(".dash-donut") ?? [], { strokeDashoffset: 0, duration: 1.2, stagger: 0.15, delay: 0.3, ease: "power2.inOut" });
         },
         once: true,
       });
 
       // Bento grid items entrance
-      gsap.utils.toArray<HTMLElement>(".product-bento-item").forEach((item, i) => {
+      productBentoItems.forEach((item, i) => {
         gsap.fromTo(item,
           { y: 50, opacity: 0 },
           {
@@ -357,7 +368,7 @@ export const ProductSection = () => {
           </div>
 
           {/* Dashboard Preview */}
-          <div className="product-mockup opacity-0 relative rounded-3xl bg-gradient-to-b from-white/[0.05] to-white/[0.01] ring-1 ring-white/10 p-3 lg:p-4 shadow-2xl origin-center will-change-transform">
+          <div ref={mockupRef} className="product-mockup opacity-0 relative rounded-3xl bg-gradient-to-b from-white/[0.05] to-white/[0.01] ring-1 ring-white/10 p-3 lg:p-4 shadow-2xl origin-center will-change-transform">
             <DashboardPreview />
           </div>
         </div>
@@ -369,7 +380,7 @@ export const ProductSection = () => {
             <div className="h-px flex-1 bg-white/10" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-6">
+          <div ref={bentoGridRef} className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-6">
             {/* Feature 1 (Large / Main) */}
             <div className="product-bento-item opacity-0 md:col-span-12 lg:col-span-7 rounded-3xl ring-1 ring-white/10 bg-[#1A0C11] p-10 lg:p-14 relative group overflow-hidden">
               <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.03]" />

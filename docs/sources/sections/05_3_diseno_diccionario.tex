@@ -456,4 +456,65 @@ Tabla Gold de estimaciones exploratorias de demanda por producto y fecha.}
 \campo{computedAt}{timestamp}{No}{—}{Fecha y hora de cálculo.}
 \dictableend
 
+
+
+\dictable{AnalyticChainSalesDaily}{%
+Tabla Gold que consolida métricas diarias de venta a nivel cadena.}{%
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{chainId}{text}{No}{FK}{Cadena asociada a la métrica.}
+\campo{jobRunId}{text}{No}{FK}{Job analítico que generó el registro.}
+\campo{businessDate}{date}{No}{—}{Fecha operativa evaluada.}
+\campo{totalRevenueCents}{int}{No}{—}{Suma de ventas brutas de toda la cadena.}
+\campo{restaurantRanking}{jsonb}{No}{—}{Ranking de sucursales ordenadas por revenue.}
+\campo{revenueDeltaPercent}{float}{Sí}{—}{Cambio porcentual de ingresos frente al día operativo anterior.}
+\campo{computedAt}{timestamp}{No}{—}{Fecha y hora de cálculo.}
+\dictableend
+
+\dictable{AnalyticChainPeakHours}{%
+Tabla Gold que consolida métricas de horas pico a nivel cadena.}{%
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{chainId}{text}{No}{FK}{Cadena asociada.}
+\campo{jobRunId}{text}{No}{FK}{Job analítico que generó el registro.}
+\campo{businessDate}{date}{No}{—}{Fecha operativa evaluada.}
+\campo{peakHourBin}{int}{No}{—}{Franja horaria (0-23) de máxima afluencia.}
+\campo{sessionCount}{int}{No}{—}{Número de sesiones abiertas en esa franja horaria.}
+\campo{computedAt}{timestamp}{No}{—}{Fecha y hora de cálculo.}
+\dictableend
+
+\dictable{AnalyticZoneBranchComparison}{%
+Tabla Gold que permite comparar el desempeño de las sucursales dentro de una misma zona.}{%
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{zoneId}{text}{No}{FK}{Zona asociada a la métrica.}
+\campo{jobRunId}{text}{No}{FK}{Job analítico que generó el registro.}
+\campo{businessDate}{date}{No}{—}{Fecha operativa evaluada.}
+\campo{avgZoneTicketCents}{int}{No}{—}{Ticket promedio de todas las sucursales en la zona.}
+\campo{ticketStdDev}{float}{No}{—}{Desviación estándar del ticket promedio zonal.}
+\campo{branchOutliers}{jsonb}{No}{—}{Arreglo con IDs de restaurantes cuyo promedio se desvíe significativamente del zonal.}
+\campo{menuOverlapPercent}{float}{No}{—}{Porcentaje del menú que es compartido por todas las sucursales de la zona.}
+\campo{computedAt}{timestamp}{No}{—}{Fecha y hora de cálculo.}
+\dictableend
+
+\dictable{AnalyticRestaurantSessionDepth}{%
+Tabla Gold que captura el ticket promedio por comensal a nivel sucursal.}{%
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante asociado.}
+\campo{jobRunId}{text}{No}{FK}{Job analítico que generó el registro.}
+\campo{businessDate}{date}{No}{—}{Fecha operativa.}
+\campo{avgGuestTicketCents}{int}{No}{—}{Ticket promedio calculado como total/guestCount por sesión.}
+\campo{maxGuestTicketCents}{int}{No}{—}{Ticket más alto por comensal registrado en el día.}
+\campo{computedAt}{timestamp}{No}{—}{Fecha y hora de cálculo.}
+\dictableend
+
+\dictable{AnalyticRestaurantHourlyVelocity}{%
+Tabla Gold \textit{on-demand} que muestra las ventas por franja horaria del día en curso para una sucursal.}{%
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{restaurantId}{text}{No}{FK}{Restaurante evaluado.}
+\campo{jobRunId}{text}{No}{FK}{Job analítico que generó el registro.}
+\campo{businessDate}{date}{No}{—}{Fecha operativa actual.}
+\campo{hourBin}{int}{No}{—}{Franja horaria (0-23).}
+\campo{revenueCents}{int}{No}{—}{Ingresos generados en esta franja horaria.}
+\campo{orderCount}{int}{No}{—}{Número de órdenes recibidas en la franja.}
+\campo{computedAt}{timestamp}{No}{—}{Fecha y hora de cálculo.}
+\dictableend
+
 \clearpage

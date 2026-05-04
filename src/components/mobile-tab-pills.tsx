@@ -3,33 +3,33 @@
 import React, { createContext, useContext, useId } from "react";
 import { cn } from "@/lib/utils";
 
-type MobileTabPillsContextValue = {
-  activeValue: string;
-  onChange: (value: string) => void;
+type MobileTabPillsContextValue<T extends string> = {
+  activeValue: T;
+  onChange: (value: T) => void;
   baseId: string;
 };
 
-const MobileTabPillsContext = createContext<MobileTabPillsContextValue | null>(null);
+const MobileTabPillsContext = createContext<MobileTabPillsContextValue<any> | null>(null);
 
-function useTabs() {
-  const ctx = useContext(MobileTabPillsContext);
+function useTabs<T extends string>() {
+  const ctx = useContext(MobileTabPillsContext) as MobileTabPillsContextValue<T> | null;
   if (!ctx) throw new Error("MobileTabPills subcomponents must be used within MobileTabPills");
   return ctx;
 }
 
 /* ── Root Provider ── */
-export function MobileTabPills({
+export function MobileTabPills<T extends string>({
   value,
   onChange,
   children,
 }: {
-  value: string;
-  onChange: (value: string) => void;
+  value: T;
+  onChange: (value: T) => void;
   children: React.ReactNode;
 }) {
   const baseId = useId();
   return (
-    <MobileTabPillsContext.Provider value={{ activeValue: value, onChange, baseId }}>
+    <MobileTabPillsContext.Provider value={{ activeValue: value, onChange, baseId } as MobileTabPillsContextValue<T>}>
       {children}
     </MobileTabPillsContext.Provider>
   );
@@ -54,16 +54,16 @@ export function MobileTabPillsList({
 }
 
 /* ── Tab ── */
-export function MobileTabPillsTab({
+export function MobileTabPillsTab<T extends string>({
   value,
   children,
   className,
 }: {
-  value: string;
+  value: T;
   children: React.ReactNode;
   className?: string;
 }) {
-  const { activeValue, onChange, baseId } = useTabs();
+  const { activeValue, onChange, baseId } = useTabs<T>();
   const active = activeValue === value;
   const tabId = `${baseId}-tab-${value}`;
   const panelId = `${baseId}-panel-${value}`;
@@ -90,16 +90,16 @@ export function MobileTabPillsTab({
 }
 
 /* ── TabPanel ── */
-export function MobileTabPillsPanel({
+export function MobileTabPillsPanel<T extends string>({
   value,
   children,
   className,
 }: {
-  value: string;
+  value: T;
   children: React.ReactNode;
   className?: string;
 }) {
-  const { activeValue, baseId } = useTabs();
+  const { activeValue, baseId } = useTabs<T>();
   const active = activeValue === value;
   const panelId = `${baseId}-panel-${value}`;
   const tabId = `${baseId}-tab-${value}`;

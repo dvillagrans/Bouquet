@@ -203,13 +203,18 @@ mediante Prisma, sin depender de Spark durante la carga del dashboard.
   \label{fig:spark-tecnico}
 \end{figure}
 
-Las tablas Gold consideradas son:
+Las tablas Gold consideradas abarcan tres niveles jerárquicos e incluyen:
 
 \begin{itemize}[leftmargin=1.5em]
-  \item \texttt{analytic\_sales\_daily}
-  \item \texttt{analytic\_item\_velocity}
-  \item \texttt{analytic\_service\_times}
-  \item \texttt{analytic\_demand\_estimate}
+  \item \texttt{analytic\_chain\_sales\_daily} (Cadena)
+  \item \texttt{analytic\_chain\_peak\_hours} (Cadena)
+  \item \texttt{analytic\_zone\_branch\_comparison} (Zona)
+  \item \texttt{analytic\_sales\_daily} (Sucursal)
+  \item \texttt{analytic\_item\_velocity} (Sucursal)
+  \item \texttt{analytic\_service\_times} (Sucursal)
+  \item \texttt{analytic\_restaurant\_session\_depth} (Sucursal)
+  \item \texttt{analytic\_restaurant\_hourly\_velocity} (Sucursal)
+  \item \texttt{analytic\_demand\_estimate} (Sucursal)
 \end{itemize}
 
 Cada registro Gold conserva \texttt{jobRunId}, lo que permite rastrear qué ejecución del
@@ -229,14 +234,17 @@ o en los metadatos asociados de ejecución.
   resolviendo relaciones entre órdenes, ítems, sesiones, liquidaciones, menú, restaurantes
   y estaciones.
 
-  \item \textbf{Job 3 --- Aggregate Gold Metrics:} genera métricas de consumo diario,
-  velocidad de productos y tiempos de servicio.
+  \item \textbf{Job 3 --- Aggregate Gold Metrics:} genera métricas históricas a nivel cadena,
+  zona y sucursal (consumo diario, velocidad de productos, tiempos de servicio y ticket promedio).
 
   \item \textbf{Job 4 --- Demand Estimate:} calcula estimaciones exploratorias de demanda
   mediante métodos simples e interpretables sobre históricos.
 
   \item \textbf{Job 5 --- Write Back:} escribe tablas Gold en PostgreSQL y actualiza el
   estado final del job analítico.
+
+  \item \textbf{Job 6 --- Restaurant Hourly Velocity (On-demand):} procesa datos operativos
+  del día en curso para mostrar ventas por hora y estado de velocidad de la sucursal de forma casi en tiempo real.
 \end{enumerate}
 
 \subsubsection{Job 1 --- Extract Bronze}
@@ -264,23 +272,23 @@ sus responsabilidades se encuentran:
 
 \subsubsection{Job 3 --- Aggregate Gold Metrics}
 
-Este job produce las tablas \texttt{analytic\_sales\_daily},
-\texttt{analytic\_item\_velocity} y \texttt{analytic\_service\_times}. Sus agregaciones
-se basan en datos Silver enriquecidos, evitando que el dashboard ejecute joins históricos
-sobre la base OLTP.
+Este job procesa datos históricos para producir métricas en los tres niveles de la jerarquía del negocio. 
+Produce las tablas \texttt{analytic\_chain\_sales\_daily}, \texttt{analytic\_chain\_peak\_hours} (nivel cadena),
+\texttt{analytic\_zone\_branch\_comparison} (nivel zona), además de las tablas de nivel sucursal como \texttt{analytic\_sales\_daily},
+\texttt{analytic\_item\_velocity}, \texttt{analytic\_service\_times} y \texttt{analytic\_restaurant\_session\_depth}.
+
+Sus agregaciones se basan en datos Silver enriquecidos, resolviendo relaciones complejas (como la validación
+de overrides de menú zonales contra sucursal) sin bloquear la operación OLTP.
 
 Las métricas generadas incluyen:
 
 \begin{itemize}[leftmargin=1.5em]
-  \item número de órdenes registradas por fecha operativa;
-  \item número de ítems solicitados;
-  \item monto bruto de consumo registrado;
-  \item monto reducido por descuentos o cortesías autorizadas;
-  \item monto neto de consumo registrado;
-  \item productos más solicitados;
-  \item tiempos promedio de preparación;
-  \item percentiles de preparación por estación;
-  \item ítems retrasados según umbral operativo.
+  \item ventas totales y ranking de sucursales a nivel cadena (\texttt{analytic\_chain\_sales\_daily});
+  \item hora pico agregada de toda la cadena (\texttt{analytic\_chain\_peak\_hours});
+  \item comparación de ticket promedio y desviaciones entre sucursales de una zona (\texttt{analytic\_zone\_branch\_comparison});
+  \item número de órdenes registradas, ítems solicitados y montos de consumo (bruto, descuentos, neto) por sucursal;
+  \item tiempos de preparación promedio y percentil 90 por estación;
+  \item ticket promedio por comensal en cada sesión (\texttt{analytic\_restaurant\_session\_depth}).
 \end{itemize}
 
 \subsubsection{Job 4 --- Demand Estimate}
@@ -328,6 +336,17 @@ Para evitar duplicados, cada tabla Gold define llaves lógicas, por ejemplo:
 Cuando la tabla lo permite, se utiliza una operación tipo \textit{upsert} para actualizar
 métricas existentes sin afectar datos fuera de la ventana procesada. Cada registro escrito
 mantiene \texttt{jobRunId}, permitiendo rastrear su origen analítico.
+
+\subsubsection{Job 6 --- Restaurant Hourly Velocity (On-demand)}
+
+Este job produce la tabla \texttt{analytic\_restaurant\_hourly\_velocity} bajo un esquema de ejecución a demanda.
+A diferencia de los jobs históricos (como el Job 3) que se ejecutan en batch nocturno, el Job 6 se dispara
+únicamente cuando un operador de restaurante abre el dashboard operativo. 
+
+Calcula la velocidad horaria del día actual leyendo los datos transaccionales recientes y agregando 
+ventas por franjas de hora. Este modelo on-demand justifica el uso de Spark para métricas que 
+tienen valor únicamente si reflejan la operación en curso, sin afectar el rendimiento de las tablas 
+críticas de PostgreSQL.
 
 \subsection{Seguridad y Control Operacional}
 
@@ -540,6 +559,15 @@ Ninguna operación OLTP escribe directamente en estas tablas.
 \endhead
 \hline
 \endfoot
+\texttt{analytic\_chain\_sales\_daily} &
+Ventas totales de la cadena por día. Incluye ranking de sucursales ordenado por revenue y delta contra día anterior mediante funciones de ventana. \\
+\hline
+\texttt{analytic\_chain\_peak\_hours} &
+Hora pico agregada de toda la cadena, calculada mediante bines de 1 hora sobre las sesiones (\texttt{DiningSession.openedAt}). \\
+\hline
+\texttt{analytic\_zone\_branch\_comparison} &
+Comparación entre sucursales de la misma zona. Muestra el ticket promedio y detecta desviaciones estándar (outliers operativos). \\
+\hline
 \texttt{analytic\_sales\_daily} &
 Métricas diarias de consumo por restaurante. Incluye órdenes registradas, ítems,
 monto bruto de consumo, ajustes aplicados y monto neto de consumo. \\
@@ -551,6 +579,12 @@ asociado y nombre histórico del producto. \\
 \texttt{analytic\_service\_times} &
 Tiempos de preparación por estación y día. Incluye promedio, percentil 50, percentil 90
 e ítems retrasados según umbral operativo. \\
+\hline
+\texttt{analytic\_restaurant\_session\_depth} &
+Ticket promedio por comensal (no por mesa), calculado como el monto total entre el número de invitados por sesión, agregado por día. \\
+\hline
+\texttt{analytic\_restaurant\_hourly\_velocity} &
+Ventas por hora del día actual. Es la única métrica operativa generada on-demand para visualizar la tracción del restaurante en curso. \\
 \hline
 \texttt{analytic\_demand\_estimate} &
 Estimaciones exploratorias de demanda por producto y fecha. Incluye cantidad esperada,
@@ -590,3 +624,45 @@ decisiones que facilitan su evolución futura:
   \texttt{restaurantId}, el modelo organizacional permite extender análisis a nivel de zona
   o cadena mediante agregación sobre varias sucursales.
 \end{itemize}
+
+\subsection{Modelo de Métricas por Nivel Jerárquico}
+
+La arquitectura de Bouquet organiza el negocio en tres niveles: cadena, zona y sucursal. Cada nivel tiene actores con necesidades de información distintas y frecuencias de consulta diferentes. El pipeline Medallion no solo agrega datos --- los proyecta en tres granularidades distintas que corresponden directamente a esta jerarquía, produciendo tablas Gold especializadas por nivel que el dashboard consume en tiempo constante.
+
+\subsubsection{Nivel 1 --- Cadena}
+A nivel cadena, el \texttt{chain\_id} actúa como la dimensión de agregación principal. Las métricas calculadas por Spark en este nivel serían inviables mediante SQL directo sin degradar el OLTP, pues requieren \textit{joins} históricos y operaciones analíticas profundas:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{\texttt{analytic\_chain\_sales\_daily}:} Ventas totales de la cadena por día, con ranking de sucursales ordenado por revenue. El cálculo de deltas contra el día anterior se resuelve eficientemente como una \textit{window function} sobre el histórico, particionado por \texttt{restaurantId}.
+  \item \textbf{\texttt{analytic\_chain\_top\_products}:} Productos más vendidos a lo largo de todas las sucursales, incorporando índices de concentración (por ejemplo, validar si el 20\% de los productos genera el 80\% de las ventas).
+  \item \textbf{\texttt{analytic\_chain\_peak\_hours}:} Hora pico agregada de toda la cadena, calculada binarizando \texttt{DiningSession.openedAt} en bloques de 1 hora.
+\end{itemize}
+
+\subsubsection{Nivel 2 --- Zona}
+En este nivel, el \texttt{zone\_id} es la dimensión de agregación, lo cual permite realizar análisis comparativos entre pares regionales:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{\texttt{analytic\_zone\_branch\_comparison}:} Ticket promedio por sucursal dentro de la zona, incluyendo desviación estándar para identificar anomalías (como una sucursal que venda significativamente menos que su promedio zonal).
+  \item \textbf{\texttt{analytic\_zone\_menu\_overlap}:} Porcentaje del menú compartido entre sucursales de la misma zona frente a productos exclusivos. Esta métrica justifica la existencia de la tabla transaccional \texttt{ZoneMenuOverride}: el pipeline debe resolver el \textit{override} de precios o disponibilidad a nivel zona y restaurante en el mismo \textit{join}, validando la decisión arquitectónica de referenciar ambas entidades.
+\end{itemize}
+
+\subsubsection{Nivel 3 --- Sucursal}
+El nivel operativo principal utiliza el \texttt{restaurant\_id} como su dimensión:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{\texttt{analytic\_restaurant\_hourly\_velocity}:} Ventas por hora del día actual, justificación clave del modelo de ejecución \textit{on-demand}.
+  \item \textbf{\texttt{analytic\_restaurant\_station\_times}:} Extensión de \texttt{analytic\_service\_times} para registrar no sólo el promedio, sino el percentil 90 del tiempo de preparación por estación.
+  \item \textbf{\texttt{analytic\_restaurant\_session\_depth}:} Ticket promedio por comensal (calculado como \texttt{totalAmount / guestCount} de cada sesión operativa), agregado por día.
+\end{itemize}
+
+\subsection{Modelo de Ejecución Híbrido (Batch + On-Demand)}
+
+El modelo \textit{batch} nocturno tradicional es suficiente para métricas históricas (agregados por semana, mes, cadena, zona). Sin embargo, las métricas a nivel sucursal --- específicamente la velocidad horaria de ventas y los tiempos de estación en vivo --- poseen valor operativo únicamente si reflejan la realidad del día en curso. Por ello, la arquitectura emplea un modelo híbrido:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Ejecución Batch:} Los \textit{jobs} de nivel cadena y zona se ejecutan programados durante la madrugada (p. ej., mediante \textit{cron} a las 2:00 AM).
+  \item \textbf{Ejecución On-Demand:} Los \textit{jobs} de métricas al vuelo (como \texttt{analytic\_restaurant\_hourly\_velocity}) se disparan mediante un \textit{endpoint} REST en el orquestador que el dashboard invoca dinámicamente cuando el operador visualiza el estado del restaurante.
+\end{itemize}
+
+\textbf{Aislamiento y restricción de recursos:} Para viabilizar la ejecución en el VPS (estimado de 2vCPU y 8GB RAM), los \textit{jobs on-demand} se ejecutan con Spark en modo local y una configuración fuertemente acotada: \texttt{spark.driver.memory=2g}, \texttt{spark.executor.memory=2g}, y \texttt{spark.sql.shuffle.partitions=4}. Esta configuración es suficiente para el volumen de datos de una sucursal individual (< 10,000 registros diarios), garantizando tiempos de respuesta sub-minuto sin desestabilizar ni competir con el servidor de la base de datos principal.
+

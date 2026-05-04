@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCurrentSession } from "@/lib/auth-server";
-import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/auth-server";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 
 const zoneGroups = [
@@ -21,22 +20,22 @@ const zoneGroups = [
 ];
 
 export default async function ZoneLayout({ children }: { children: React.ReactNode }) {
-  const session = await getCurrentSession();
-  if (!session?.ok) {
+  const user = await getCurrentUser();
+  if (!user) {
     redirect("/login");
   }
 
   const allowed = ["PLATFORM_ADMIN", "CHAIN_ADMIN", "ZONE_MANAGER"];
-  if (!session.roles.some((r) => allowed.includes(r))) {
+  if (!user.roles.some((r) => allowed.includes(r))) {
     redirect("/login?error=unauthorized");
   }
 
-  const user = await prisma.appUser.findUnique({
-    where: { id: session.appUserId },
-    select: { firstName: true, lastName: true },
-  });
+  // Tenant scope: ZONE_MANAGER must administer at least one zone
+  if (user.roles.includes("ZONE_MANAGER") && user.zoneIds.length === 0) {
+    redirect("/login?error=unauthorized");
+  }
 
-  const userName = user ? `${user.firstName} ${user.lastName}`.trim() : "Gerente";
+  const userName = user.name || "Gerente";
   const userInitial = userName.charAt(0).toUpperCase();
 
   return (

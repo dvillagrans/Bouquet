@@ -8,12 +8,14 @@ const nav = [
   { label: "Plataforma", href: "#producto" },
   { label: "Flujo", href: "#como-funciona" },
   { label: "Segmentos", href: "#segmentos" },
+  { label: "Precios", href: "#precios" },
   { label: "Contacto", href: "#contacto" },
 ];
 
 export const TopBar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
     const fn = () => setScrolled(window.scrollY > 40);
@@ -21,9 +23,20 @@ export const TopBar = () => {
     return () => window.removeEventListener("scroll", fn);
   }, []);
 
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduceMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReduceMotion(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   return (
     <header
-      className="fixed inset-x-0 top-0 z-50 animate-[fade-in_0.5s_ease-out_forwards]"
+      className={[
+        "fixed inset-x-0 top-0 z-50",
+        reduceMotion ? "" : "animate-[fade-in_0.5s_ease-out_forwards]",
+      ].join(" ")}
       aria-label="Barra de navegación"
     >
       <div
@@ -65,7 +78,7 @@ export const TopBar = () => {
         <div className="flex items-center gap-2 shrink-0">
           <Link
             href="/scan"
-            className="hidden lg:inline-flex text-[0.78rem] font-semibold text-burgundy/55 transition-colors hover:text-burgundy px-3"
+            className="hidden lg:inline-flex text-[0.78rem] font-semibold text-burgundy/80 transition-colors hover:text-burgundy px-3"
           >
             App Comensal
           </Link>

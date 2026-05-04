@@ -1,9 +1,11 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getDefaultRestaurant } from "./restaurant";
+import { withAuth } from "@/lib/auth-action";
+import { createAuditLog } from "@/lib/audit";
 import { OrderStatus } from "@/lib/prisma-legacy-types";
 import { revalidatePath } from "next/cache";
+import { Permissions } from "@/lib/permissions";
 import {
   broadcastGuestOrdersRefresh,
   broadcastKdsOrdersRefresh,
@@ -24,131 +26,167 @@ async function notifyGuestMenuOrderUpdated(orderId: string) {
   if (order) await broadcastKdsOrdersRefresh(order.restaurantId);
 }
 
-export async function getLiveOrders() {
-  const restaurant = await getDefaultRestaurant();
+const ORDER_ROLES = ["PLATFORM_ADMIN", "CHAIN_ADMIN", "ZONE_MANAGER", "RESTAURANT_ADMIN", "ADMIN", "MESERO", "COCINA", "BARRA"];
 
-  const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
+export const getLiveOrders = withAuth(
+  async (ctx) => {
+    if (!ctx.restaurantId) throw new Error("No restaurant context");
 
-  const activeSessions = await prisma.diningSession.findMany({
-    where: {
-      status: { in: ["ACTIVA", "EN_CONSUMO"] },
-      restaurantId: restaurant.id,
-    },
-    select: { id: true },
-  });
-  const activeSessionIds = activeSessions.map((s) => s.id);
+    const startOfDay = new Date(new Date().setHours(0, 0, 0, 0));
 
-  if (activeSessionIds.length === 0) {
-    return [];
-  }
+    const activeSessions = await prisma.diningSession.findMany({
+      where: {
+        status: { in: ["ACTIVA", "EN_CONSUMO"] },
+        restaurantId: ctx.restaurantId,
+      },
+      select: { id: true },
+    });
+    const activeSessionIds = activeSessions.map((s) => s.id);
 
-  const orders = await prisma.restaurantOrder.findMany({
-    where: {
-      createdAt: { gte: startOfDay },
-      diningSessionId: { in: activeSessionIds },
-    },
-    include: {
-      items: {
-        include: {
-          menuItem: true
+    if (activeSessionIds.length === 0) {
+      return [];
+    }
+
+    const orders = await prisma.restaurantOrder.findMany({
+      where: {
+        createdAt: { gte: startOfDay },
+        diningSessionId: { in: activeSessionIds },
+      },
+      include: {
+        items: {
+          include: {
+            menuItem: true
+          }
         }
-      }
-    },
-    orderBy: { createdAt: "desc" }
-  });
+      },
+      orderBy: { createdAt: "desc" }
+    });
 
-  // Transformar al tipo esperado por el KDS UI
-  return orders.map(order => ({
-    id: order.id,
-    tableCode: `Sesión ${order.diningSessionId.slice(-4)}`, // Mapeo para el frontend (sin table directo)
-    status: order.status.toLowerCase() as
-      | "pending"
-      | "preparing"
-      | "ready"
-      | "delivered"
-      | "cancelled",
-    createdAt: order.createdAt,
-    deliveredAt: undefined,
-    guestName: undefined as string | undefined,
-    items: order.items.map((item) => {
-      const raw = String(item.menuItem?.stationId ?? "COCINA").toLowerCase();
-      const station: "cocina" | "barra" = raw === "barra" ? "barra" : "cocina";
-      return {
-        id: item.id,
-        name: item.itemNameSnapshot ?? item.menuItem?.name ?? "Platillo",
-        quantity: item.quantity,
-        notes: item.notes || undefined,
-        variantName: item.variantNameSnapshot ?? undefined,
-        station,
-      };
-    }),
-  }));
-}
+    return orders.map(order => ({
+      id: order.id,
+      tableCode: `Sesión ${order.diningSessionId.slice(-4)}`,
+      status: order.status.toLowerCase() as
+        | "pending"
+        | "preparing"
+        | "ready"
+        | "delivered"
+        | "cancelled",
+      createdAt: order.createdAt,
+      deliveredAt: undefined,
+      guestName: undefined as string | undefined,
+      items: order.items.map((item) => {
+        const raw = String(item.menuItem?.stationId ?? "COCINA").toLowerCase();
+        const station: "cocina" | "barra" = raw === "barra" ? "barra" : "cocina";
+        return {
+          id: item.id,
+          name: item.itemNameSnapshot ?? item.menuItem?.name ?? "Platillo",
+          quantity: item.quantity,
+          notes: item.notes || undefined,
+          variantName: item.variantNameSnapshot ?? undefined,
+          station,
+        };
+      }),
+    }));
+  },
+  { allowRoles: ORDER_ROLES, requireTenant: true }
+);
 
-export async function advanceOrderStatus(orderId: string, currentStatus: string) {
-  const statusFlow = {
-    "pending": "PREPARING",
-    "preparing": "READY",
-    "ready": "DELIVERED"
-  } as const;
+export const advanceOrderStatus = withAuth(
+  async (ctx, orderId: string, currentStatus: string) => {
+    const statusFlow = {
+      "pending": "PREPARING",
+      "preparing": "READY",
+      "ready": "DELIVERED"
+    } as const;
 
-  const nextStatus = statusFlow[currentStatus as keyof typeof statusFlow];
-  if (!nextStatus) return;
+    const nextStatus = statusFlow[currentStatus as keyof typeof statusFlow];
+    if (!nextStatus) return;
 
-  await prisma.restaurantOrder.update({
-    where: { id: orderId },
-    data: { status: nextStatus as OrderStatus }
-  });
+    await prisma.restaurantOrder.update({
+      where: { id: orderId },
+      data: { status: nextStatus as OrderStatus }
+    });
 
-  await notifyGuestMenuOrderUpdated(orderId);
+    createAuditLog({
+      actorUserId: ctx.userId,
+      restaurantId: ctx.restaurantId,
+      action: "UPDATE",
+      entityType: "RestaurantOrder",
+      entityId: orderId,
+      metadata: { oldStatus: currentStatus, newStatus: nextStatus },
+    });
 
-  revalidatePath("/cocina");
-  revalidatePath("/barra");
-  revalidatePath("/mesa/[codigo]/menu", "page");
-  revalidatePath("/mesero");
-}
+    await notifyGuestMenuOrderUpdated(orderId);
 
-export async function undoOrderStatus(orderId: string, currentStatus: string) {
-  const undoFlow = {
-    "preparing": "PENDING",
-    "ready": "PREPARING"
-  } as const;
+    revalidatePath("/cocina");
+    revalidatePath("/barra");
+    revalidatePath("/mesa/[codigo]/menu", "page");
+    revalidatePath("/mesero");
+  },
+  { allowRoles: ORDER_ROLES, permission: Permissions.ADVANCE_ORDER }
+);
 
-  const prevStatus = undoFlow[currentStatus as keyof typeof undoFlow];
-  if (!prevStatus) return;
+export const undoOrderStatus = withAuth(
+  async (ctx, orderId: string, currentStatus: string) => {
+    const undoFlow = {
+      "preparing": "PENDING",
+      "ready": "PREPARING"
+    } as const;
 
-  await prisma.restaurantOrder.update({
-    where: { id: orderId },
-    data: { status: prevStatus as OrderStatus }
-  });
+    const prevStatus = undoFlow[currentStatus as keyof typeof undoFlow];
+    if (!prevStatus) return;
 
-  await notifyGuestMenuOrderUpdated(orderId);
+    await prisma.restaurantOrder.update({
+      where: { id: orderId },
+      data: { status: prevStatus as OrderStatus }
+    });
 
-  revalidatePath("/cocina");
-  revalidatePath("/barra");
-  revalidatePath("/mesa/[codigo]/menu", "page");
-  revalidatePath("/mesero");
-}
+    createAuditLog({
+      actorUserId: ctx.userId,
+      restaurantId: ctx.restaurantId,
+      action: "UPDATE",
+      entityType: "RestaurantOrder",
+      entityId: orderId,
+      metadata: { oldStatus: currentStatus, newStatus: prevStatus },
+    });
 
-export async function moveOrderToStatus(
-  orderId: string,
-  targetStatus: "pending" | "preparing" | "ready"
-) {
-  const STATUS_MAP = {
-    pending:   "PENDING",
-    preparing: "PREPARING",
-    ready:     "READY",
-  } as const;
+    await notifyGuestMenuOrderUpdated(orderId);
 
-  await prisma.restaurantOrder.update({
-    where: { id: orderId },
-    data:  { status: STATUS_MAP[targetStatus] as OrderStatus },
-  });
+    revalidatePath("/cocina");
+    revalidatePath("/barra");
+    revalidatePath("/mesa/[codigo]/menu", "page");
+    revalidatePath("/mesero");
+  },
+  { allowRoles: ORDER_ROLES }
+);
 
-  await notifyGuestMenuOrderUpdated(orderId);
+export const moveOrderToStatus = withAuth(
+  async (ctx, orderId: string, targetStatus: "pending" | "preparing" | "ready") => {
+    const STATUS_MAP = {
+      pending:   "PENDING",
+      preparing: "PREPARING",
+      ready:     "READY",
+    } as const;
 
-  revalidatePath("/cocina");
-  revalidatePath("/barra");
-  revalidatePath("/mesa/[codigo]/menu", "page");
+    await prisma.restaurantOrder.update({
+      where: { id: orderId },
+      data:  { status: STATUS_MAP[targetStatus] as OrderStatus },
+    });
 
-}
+    createAuditLog({
+      actorUserId: ctx.userId,
+      restaurantId: ctx.restaurantId,
+      action: "UPDATE",
+      entityType: "RestaurantOrder",
+      entityId: orderId,
+      metadata: { newStatus: STATUS_MAP[targetStatus] },
+    });
+
+    await notifyGuestMenuOrderUpdated(orderId);
+
+    revalidatePath("/cocina");
+    revalidatePath("/barra");
+    revalidatePath("/mesa/[codigo]/menu", "page");
+  },
+  { allowRoles: ORDER_ROLES }
+);

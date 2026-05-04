@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
   res.cookies.set(`bq_gate_${table.publicCode}`, "1", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "strict",
     path: "/",
     maxAge: GATE_COOKIE_MAX_AGE,
   });

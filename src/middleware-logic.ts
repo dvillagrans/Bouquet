@@ -41,6 +41,14 @@ export function proxy(request: NextRequest) {
   // Pasar el pathname original para redirecciones post-login
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-bouquet-admin-pathname", pathname);
+
+  // Tunnel/proxy support: sync origin with forwarded host to prevent
+  // "x-forwarded-host does not match origin" server action rejections
+  const fwdHost = requestHeaders.get("x-forwarded-host");
+  if (fwdHost && requestHeaders.get("origin") !== fwdHost) {
+    requestHeaders.set("origin", `https://${fwdHost}`);
+  }
+
   return NextResponse.next({
     request: {
       headers: requestHeaders,

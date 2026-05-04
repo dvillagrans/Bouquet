@@ -8,9 +8,6 @@ import crypto from "node:crypto";
 function getTableJoinSecret(): string {
   const env = process.env.TABLE_JOIN_SECRET;
   if (env && env.length >= 16) return env;
-  if (process.env.NODE_ENV !== "production") {
-    return "__bouquet_dev_table_join_secret__";
-  }
   throw new Error(
     "TABLE_JOIN_SECRET no está configurado. Define una cadena aleatoria de al menos 16 caracteres.",
   );

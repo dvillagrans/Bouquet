@@ -184,7 +184,7 @@ export function ForWhoSection() {
             Diseñado para tu tipo de servicio.
           </h2>
           <p className="forwho-desc opacity-0 mx-auto mt-6 max-w-[500px] text-[1.1rem] font-medium leading-[1.6] text-rose-900/60">
-            No importa el formato: si tenés mesas, órdenes y pagos,<br className="hidden md:block"/> Bouquet se adapta a tu operación.
+            No importa el formato: si tienes mesas, órdenes y pagos,<br className="hidden md:block"/> Bouquet se adapta a tu operación.
           </p>
         </div>
 
@@ -195,7 +195,7 @@ export function ForWhoSection() {
             ref={card1Ref}
             onMouseEnter={() => handleMouseEnter(0)}
             onMouseLeave={() => handleMouseLeave(0)}
-            className="group relative mt-12 h-[480px] w-full overflow-visible rounded-[2rem] opacity-0 lg:mt-0 lg:h-[480px]"
+            className="group relative mt-12 min-h-[480px] h-auto w-full overflow-visible rounded-[2rem] opacity-0 lg:mt-0 lg:min-h-[480px]"
           >
             {/* Fondo decorativo interno */}
             <div
@@ -223,13 +223,13 @@ export function ForWhoSection() {
                 Restaurantes de<br/>servicio completo
               </h3>
               <p className="mb-6 text-[0.85rem] font-medium leading-[1.6] text-rose-900/70">
-                Tu sala entera en una pantalla. Sabé qué mesa espera, qué pide y cuándo liberar cubiertos, sin correr a preguntar a cocina.
+                Tu sala entera en una pantalla. Sabes qué mesa espera, qué pide y cuándo liberar cubiertos, sin correr a preguntar a cocina.
               </p>
               <a
                 href="#contacto"
                 className="inline-flex items-center gap-2 text-[0.82rem] font-bold text-rose-950 transition-colors hover:text-rose-600"
               >
-                Ver cómo funciona
+                Agendar demo
                 <span aria-hidden="true">→</span>
               </a>
             </div>
@@ -240,7 +240,7 @@ export function ForWhoSection() {
             ref={card2Ref}
             onMouseEnter={() => handleMouseEnter(1)}
             onMouseLeave={() => handleMouseLeave(1)}
-            className="group relative mt-12 h-[440px] w-full overflow-hidden rounded-[2rem] opacity-0 lg:mt-0 lg:h-[480px]"
+            className="group relative mt-12 min-h-[440px] h-auto w-full overflow-hidden rounded-[2rem] opacity-0 lg:mt-0 lg:min-h-[480px]"
           >
             {/* Fondo interno clipeado */}
             <div
@@ -274,7 +274,7 @@ export function ForWhoSection() {
                 href="#contacto"
                 className="inline-flex items-center gap-2 text-[0.82rem] font-bold text-rose-950 transition-colors hover:text-amber-700"
               >
-                Ver cómo funciona
+                Agendar demo
                 <span aria-hidden="true">→</span>
               </a>
             </div>
@@ -285,7 +285,7 @@ export function ForWhoSection() {
             ref={card3Ref}
             onMouseEnter={() => handleMouseEnter(2)}
             onMouseLeave={() => handleMouseLeave(2)}
-            className="group relative mt-20 h-[500px] w-full overflow-visible rounded-[2rem] opacity-0 md:col-span-2 lg:col-span-1 lg:mt-0 lg:h-[540px]"
+            className="group relative mt-20 min-h-[500px] h-auto w-full overflow-visible rounded-[2rem] opacity-0 md:col-span-2 lg:col-span-1 lg:mt-0 lg:min-h-[540px]"
           >
             {/* Fondo interno clipeado */}
             <div
@@ -319,7 +319,7 @@ export function ForWhoSection() {
                 href="#contacto"
                 className="inline-flex items-center gap-2 text-[0.82rem] font-bold text-rose-950 transition-colors hover:text-purple-700"
               >
-                Ver cómo funciona
+                Agendar demo
                 <span aria-hidden="true">→</span>
               </a>
             </div>

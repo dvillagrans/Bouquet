@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
-import { getCurrentSession } from "@/lib/auth-server";
+import { getCurrentUser } from "@/lib/auth-server";
 
 export default async function BarraLayout({ children }: { children: React.ReactNode }) {
-  const session = await getCurrentSession();
-  if (!session?.ok) {
+  const user = await getCurrentUser();
+  if (!user) {
     redirect("/login");
   }
 
@@ -15,7 +15,7 @@ export default async function BarraLayout({ children }: { children: React.ReactN
     "ADMIN",
     "BARRA",
   ];
-  if (!session.roles.some((r) => allowed.includes(r))) {
+  if (!user.roles.some((r) => allowed.includes(r))) {
     redirect("/login?error=unauthorized");
   }
 

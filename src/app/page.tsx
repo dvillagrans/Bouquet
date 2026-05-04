@@ -10,20 +10,12 @@ import { FaqSection } from "@/components/landing/FaqSection";
 import { CtaBand } from "@/components/landing/CtaBand";
 import { Footer } from "@/components/landing/Footer";
 import { LandingScrollbar } from "@/components/landing/LandingScrollbar";
+import { ScrollTriggerRefresh } from "@/components/landing/ScrollTriggerRefresh";
 
 export const metadata: Metadata = {
   title: "Bouquet — Hospitality OS para restaurantes",
   description:
     "Gestiona mesas, órdenes y pagos desde una sola plataforma. Pensada para restaurantes, taquerías y bares que no aceptan el desorden. Demo gratis en 20 minutos.",
-  keywords: [
-    "software para restaurantes",
-    "POS restaurante",
-    "gestión de mesas",
-    "sistema de órdenes",
-    "division de cuenta",
-    "Hospitality OS",
-    "Bouquet",
-  ],
   openGraph: {
     title: "Bouquet — Hospitality OS para restaurantes",
     description:
@@ -31,12 +23,21 @@ export const metadata: Metadata = {
     type: "website",
     locale: "es_MX",
     siteName: "Bouquet",
+    images: [
+      {
+        url: "https://bouquet.io/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Bouquet — Hospitality OS para restaurantes",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Bouquet — Hospitality OS para restaurantes",
     description:
       "Gestiona mesas, órdenes y pagos desde una sola plataforma.",
+    images: ["https://bouquet.io/og-image.jpg"],
   },
   robots: {
     index: true,
@@ -44,6 +45,9 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "https://bouquet.io",
+    languages: {
+      "es-MX": "https://bouquet.io",
+    },
   },
 };
 
@@ -69,8 +73,29 @@ export default function Home() {
         }}
       />
 
+      <ScrollTriggerRefresh />
       <TopBar />
-      <main id="hero" className="relative z-[2]">
+      <main id="hero" tabIndex={-1} className="relative z-[2] focus-visible:outline-none">
+        {/* Structured data for Google rich results */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              name: "Bouquet",
+              applicationCategory: "BusinessApplication",
+              operatingSystem: "Web",
+              offers: {
+                "@type": "Offer",
+                price: "0",
+                priceCurrency: "MXN",
+              },
+              description:
+                "Hospitality OS para restaurantes. Gestiona mesas, órdenes y pagos desde una sola plataforma.",
+            }),
+          }}
+        />
         <Hero />
         <Ticker />
         <Features />

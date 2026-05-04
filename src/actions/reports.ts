@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getDefaultRestaurant } from "./restaurant";
+import { withAuth } from "@/lib/auth-action";
 import {
   startOfDay, startOfWeek, startOfMonth,
   subDays, subWeeks, subMonths, endOfDay,
@@ -125,24 +125,26 @@ function buildTopItems(raw: PeriodRaw) {
   }));
 }
 
-export async function getDashboardReports(): Promise<DashboardReportData> {
-  const restaurant = await getDefaultRestaurant();
-  const restId     = restaurant.id;
-  const now        = new Date();
+export const getDashboardReports = withAuth(
+  async (ctx): Promise<DashboardReportData> => {
+    if (!ctx.restaurantId) throw new Error("No restaurant context");
+    const restId = ctx.restaurantId;
+    const now    = new Date();
 
-  // 6 parallel fetches: current + comparison period for each of Hoy / Semana / Mes
-  const [hoy, semana, mes, hoyPrev, semanaPrev, mesPrev] = await Promise.all([
-    fetchPeriodData(restId, startOfDay(now),                              endOfDay(now),                              "hoy"),
-    fetchPeriodData(restId, startOfWeek(now, { weekStartsOn: 1 }),        endOfDay(now),                              "semana"),
-    fetchPeriodData(restId, startOfMonth(now),                            endOfDay(now),                              "mes"),
-    fetchPeriodData(restId, startOfDay(subDays(now, 1)),                  endOfDay(subDays(now, 1)),                  "hoy"),
-    fetchPeriodData(restId, startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 }), endOfDay(subWeeks(now, 1)),           "semana"),
-    fetchPeriodData(restId, startOfMonth(subMonths(now, 1)),              endOfDay(subMonths(now, 1)),                "mes"),
-  ]);
+    const [hoy, semana, mes, hoyPrev, semanaPrev, mesPrev] = await Promise.all([
+      fetchPeriodData(restId, startOfDay(now),                              endOfDay(now),                              "hoy"),
+      fetchPeriodData(restId, startOfWeek(now, { weekStartsOn: 1 }),        endOfDay(now),                              "semana"),
+      fetchPeriodData(restId, startOfMonth(now),                            endOfDay(now),                              "mes"),
+      fetchPeriodData(restId, startOfDay(subDays(now, 1)),                  endOfDay(subDays(now, 1)),                  "hoy"),
+      fetchPeriodData(restId, startOfWeek(subWeeks(now, 1), { weekStartsOn: 1 }), endOfDay(subWeeks(now, 1)),           "semana"),
+      fetchPeriodData(restId, startOfMonth(subMonths(now, 1)),              endOfDay(subMonths(now, 1)),                "mes"),
+    ]);
 
-  return {
-    stats:    { Hoy: buildStats(hoy, hoyPrev),       Semana: buildStats(semana, semanaPrev),       Mes: buildStats(mes, mesPrev)       },
-    topItems: { Hoy: buildTopItems(hoy),              Semana: buildTopItems(semana),                Mes: buildTopItems(mes)              },
-    chartData:{ Hoy: hoy.chartData,                   Semana: semana.chartData,                     Mes: mes.chartData                   },
-  };
-}
+    return {
+      stats:    { Hoy: buildStats(hoy, hoyPrev),       Semana: buildStats(semana, semanaPrev),       Mes: buildStats(mes, mesPrev)       },
+      topItems: { Hoy: buildTopItems(hoy),              Semana: buildTopItems(semana),                Mes: buildTopItems(mes)              },
+      chartData:{ Hoy: hoy.chartData,                   Semana: semana.chartData,                     Mes: mes.chartData                   },
+    };
+  },
+  { requireTenant: true }
+);

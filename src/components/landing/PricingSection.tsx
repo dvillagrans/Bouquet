@@ -132,8 +132,8 @@ export function PricingSection() {
             Un plan para cada etapa.
           </h2>
           <p className="pricing-desc opacity-0 mx-auto mt-6 max-w-lg text-[1.05rem] leading-[1.75] text-white/50">
-            Sin costos ocultos, sin sorpresas. Empezás cuando querés y cancelás
-            cuando querés.
+            Sin costos ocultos, sin sorpresas. Empiezas cuando quieras y cancelas
+            cuando quieras.
           </p>
         </div>
 
@@ -269,12 +269,12 @@ export function PricingSection() {
 
         {/* Nota al pie */}
         <p className="mt-10 text-center text-[0.78rem] font-medium text-white/35">
-          ¿No sabés cuál elegir?{" "}
+          ¿No sabes cuál elegir?{" "}
           <a
             href="#contacto"
             className="text-rose/70 underline underline-offset-2 transition-colors hover:text-rose"
           >
-            Agendá una demo gratuita
+            Agenda una demo gratuita
           </a>{" "}
           y te asesoramos sin compromiso.
         </p>

@@ -4,10 +4,12 @@
  * Soporta login centralizado AppUser + UserRole.
  */
 
-const COOKIE_NAME = "bq_admin_session";
+const COOKIE_NAME = process.env.NODE_ENV === "production"
+  ? "__Host-bq_admin_session"
+  : "bq_admin_session";
 
 /**
- * Secreto HMAC para firmar la cookie de sesión admin (`bq_admin_session`).
+ * Secreto HMAC para firmar la cookie de sesión admin (`__Host-bq_admin_session`).
  *
  * **Variable recomendada:** `AUTH_SECRET` (misma convención que Auth.js / NextAuth v5).
  *
@@ -21,8 +23,6 @@ const COOKIE_NAME = "bq_admin_session";
  * - **`next dev`**: sin ninguna, fallback interno de desarrollo.
  * - **`next start` local** sin secret: `BOUQUET_ADMIN_ALLOW_DEV_AUTH_SECRET=1` (solo tu máquina).
  */
-export const DEV_ADMIN_AUTH_SECRET_FALLBACK = "bouquet-dev-admin-auth-secret-change-me-32";
-
 function encoder() {
   return new TextEncoder();
 }
@@ -90,6 +90,7 @@ export async function createAdminSessionToken(
   return `${payloadB64}.${sigB64}`;
 }
 
+/** @deprecated Use verifySessionToken from auth-session.ts instead. Kept for backward compatibility. */
 export async function verifyAdminSessionToken(
   token: string | undefined,
   secret: string
@@ -134,7 +135,7 @@ const ADMIN_AUTH_SECRET_KEYS = ["AUTH_SECRET", "NEXTAUTH_SECRET", "BOUQUET_ADMIN
  * En el Middleware (Edge) en Vercel, el acceso directo `process.env.AUTH_SECRET` a veces
  * queda inlinado vacío en el build; la forma dinámica evita eso y coincide con la guía de Next.
  */
-export function getAdminAuthSecret(): string | undefined {
+export function getAdminAuthSecret(): string {
   for (const key of ADMIN_AUTH_SECRET_KEYS) {
     const raw = process.env[key];
     if (typeof raw === "string") {
@@ -142,13 +143,11 @@ export function getAdminAuthSecret(): string | undefined {
       if (t.length > 0) return t;
     }
   }
-  return undefined;
+  throw new Error(
+    "AUTH_SECRET no está configurado. Define una de las siguientes variables de entorno: AUTH_SECRET, NEXTAUTH_SECRET, BOUQUET_ADMIN_AUTH_SECRET"
+  );
 }
 
-export function resolveAdminAuthSecret(): string | undefined {
-  const fromEnv = getAdminAuthSecret();
-  if (fromEnv) return fromEnv;
-  if (process.env.NODE_ENV !== "production") return DEV_ADMIN_AUTH_SECRET_FALLBACK;
-  if (process.env.BOUQUET_ADMIN_ALLOW_DEV_AUTH_SECRET === "1") return DEV_ADMIN_AUTH_SECRET_FALLBACK;
-  return undefined;
+export function resolveAdminAuthSecret(): string {
+  return getAdminAuthSecret();
 }

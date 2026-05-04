@@ -1,6 +1,8 @@
+import { redirect } from "next/navigation";
 import TableManager from "@/components/dashboard/TableManager";
 import { getTables } from "@/actions/tables";
-import { getDefaultRestaurant } from "@/actions/restaurant";
+import { getCurrentUser } from "@/lib/auth-server";
+import { resolveRestaurantForUser } from "@/actions/restaurant";
 
 export const metadata = {
   title: "Gestión de Mesas | Bouquet Dashboard",
@@ -10,7 +12,11 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function DashboardMesasPage() {
-  const restaurant = await getDefaultRestaurant();
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const restaurant = await resolveRestaurantForUser(user.userId);
+  if (!restaurant) throw new Error("No se encontró restaurante asociado");
+
   const tables = await getTables();
 
   return <TableManager initialTables={tables} restaurantId={restaurant.id} />;

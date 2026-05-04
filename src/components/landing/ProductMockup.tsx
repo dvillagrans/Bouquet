@@ -196,11 +196,12 @@ export const ProductMockup = () => {
                   </p>
                   <div className="mt-2.5 h-[2px] overflow-hidden rounded-full bg-charcoal/[0.06] w-full">
                     <motion.div
-                      initial={{ width: 0 }}
-                      whileInView={{ width: `${pct(t.mins)}%` }}
+                      initial={{ scaleX: 0 }}
+                      whileInView={{ scaleX: pct(t.mins) / 100 }}
+                      style={{ transformOrigin: "left" }}
                       viewport={{ once: true }}
                       transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] as const, delay: 0.5 }}
-                      className={["h-full rounded-full", timeBarColor[t.status]].join(" ")}
+                      className={["h-full w-full rounded-full", timeBarColor[t.status]].join(" ")}
                     />
                   </div>
                 </>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import Image from "next/image";
+import Turnstile from "react-turnstile";
 import { Lock, Mail, Eye, EyeOff, Loader2, AlertCircle, ChevronRight } from "lucide-react";
 import { BouquetLogo } from "@/components/landing/BouquetLogo";
 import floralLeft from "@/assets/floral-assets/branches/complete_2.png";
@@ -18,6 +19,7 @@ export default function LoginPageClient({ initialError }: { initialError?: strin
   const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState<string | null>(initialError ?? null);
   const [showPassword, setShowPassword] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   useGSAP(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -73,12 +75,16 @@ export default function LoginPageClient({ initialError }: { initialError?: strin
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    if (!turnstileToken) {
+      setFormError("Completa la verificación de seguridad.");
+      return;
+    }
     setPending(true);
     try {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, turnstileToken }),
       });
       const data = (await res.json()) as { ok?: boolean; error?: string; redirect?: string };
       if (!res.ok) {
@@ -290,6 +296,16 @@ export default function LoginPageClient({ initialError }: { initialError?: strin
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
+                </div>
+
+                {/* Turnstile CAPTCHA */}
+                <div className="flex justify-center">
+                  <Turnstile
+                    sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"}
+                    onVerify={(token) => setTurnstileToken(token)}
+                    onExpire={() => setTurnstileToken(null)}
+                    theme="dark"
+                  />
                 </div>
 
                 {/* Submit */}

@@ -577,6 +577,17 @@ body {
   mask-image: linear-gradient(to right, transparent 0, black 15%, black 85%, transparent 100%);
 }
 
+/* MarqueeStrip */
+.marquee-row {
+  animation: marquee 32s linear infinite;
+  will-change: transform;
+}
+
+.marquee-row-reverse {
+  animation: marquee-reverse 40s linear infinite;
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ticker-track,
   .ticker-track-reverse {
@@ -587,6 +598,12 @@ body {
   .ticker-fade-mask {
     -webkit-mask-image: none;
     mask-image: none;
+  }
+
+  .marquee-row,
+  .marquee-row-reverse {
+    animation: none;
+    transform: none;
   }
 }
 

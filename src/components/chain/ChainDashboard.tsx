@@ -18,7 +18,9 @@ import {
   ShieldAlert,
   UserCheck,
   Mail,
+  Menu,
   Pencil,
+  X,
 } from "lucide-react";
 import { getChainDashboard } from "@/actions/chain";
 import type { ChainDashboardData } from "@/actions/chain";
@@ -115,7 +117,7 @@ function OccupancyDial({ pct, reduceMotion }: { pct: number; reduceMotion: boole
       </motion.div>
       <div className="absolute inset-[12px] flex flex-col items-center justify-center rounded-full bg-bg-card/95 text-center shadow-[inset_0_0_30px_rgba(0,0,0,0.6)]">
         <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-dim">Pulso de sala</p>
-        <p className="mt-1 font-serif text-[36px] font-semibold leading-none tabular-nums text-pink-glow">
+        <p className="mt-1 font-serif text-[28px] sm:text-[36px] font-semibold leading-none tabular-nums text-pink-glow">
           {p.toFixed(0)}
           <span className="ml-0.5 text-base text-pink-glow/70">%</span>
         </p>
@@ -149,7 +151,7 @@ function BranchRankings({ branches }: { branches: BranchRankRow[] }) {
   }
 
   return (
-    <div className="flex-1 overflow-hidden">
+    <div className="flex-1 overflow-x-auto">
       {sorted.map((b, i) => {
         const delta = b.yesterdayRevenue > 0
           ? ((b.todayRevenue - b.yesterdayRevenue) / b.yesterdayRevenue) * 100
@@ -159,7 +161,7 @@ function BranchRankings({ branches }: { branches: BranchRankRow[] }) {
         return (
           <div
             key={b.id}
-            className="flex items-center gap-2 border-b border-white/[0.04] px-4 py-2.5 text-[12px] text-light transition-colors hover:bg-white/[0.015]"
+            className="flex items-center gap-2 border-b border-white/[0.04] px-3 py-2 sm:px-4 sm:py-2.5 text-[12px] text-light transition-colors hover:bg-white/[0.015]"
             style={{ animation: `dash-row-enter 500ms ${i * 55}ms ease both` }}
           >
             <span className="w-5 font-mono text-[10px] text-dim">
@@ -211,6 +213,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
   const [geoPoints, setGeoPoints] = useState<Record<string, [number, number]>>({});
   const [mapCenter, setMapCenter] = useState<[number, number]>([19.432608, -99.133209]);
   const [mapZoom, setMapZoom] = useState(11);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -359,7 +362,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
   }
 
   return (
-    <div className="relative flex min-h-screen bg-ink font-sans text-[13px] text-light antialiased selection:bg-pink-glow/20">
+    <div className="relative flex flex-col md:flex-row min-h-screen bg-ink font-sans text-[13px] text-light antialiased selection:bg-pink-glow/20">
       {/* ── Atmosphere ── */}
       <div
         className="pointer-events-none absolute inset-0 z-0"
@@ -371,8 +374,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
       />
       <div className="bq-grain" />
 
-      {/* ═══════ SIDEBAR ═══════ */}
-      <aside className="relative z-10 flex w-[232px] shrink-0 flex-col gap-5 border-r border-wire bg-burgundy-dark p-5">
+      {/* ═══════ SIDEBAR (desktop only) ═══════ */}
+      <aside className="relative z-10 hidden md:flex w-[232px] shrink-0 flex-col gap-5 border-r border-wire bg-burgundy-dark p-5">
         {/* Brand */}
         <div className="flex items-center gap-2.5 px-1">
           <div
@@ -494,21 +497,116 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
         </div>
       </aside>
 
+      {/* ═══════ MOBILE SIDEBAR OVERLAY ═══════ */}
+      {sidebarOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" onClick={() => setSidebarOpen(false)} />
+          <aside className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col gap-5 bg-burgundy-dark p-5 overflow-y-auto shadow-2xl md:hidden">
+            <button onClick={() => setSidebarOpen(false)} className="self-end p-2 text-dim hover:text-light">
+              <X className="h-5 w-5" />
+            </button>
+            {/* Brand */}
+            <div className="flex items-center gap-2.5 px-1">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] font-serif text-[18px] font-semibold italic text-ink"
+                style={{ background: "linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)", boxShadow: "0 4px 12px -4px rgba(199,91,122,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" }}>
+                b
+              </div>
+              <div className="min-w-0">
+                <div className="font-serif text-[18px] font-semibold italic leading-tight tracking-[-0.02em] text-light">bouquet</div>
+                <div className="font-mono text-[8.5px] tracking-[0.3em] text-pink-glow/55">CADENA · MASTER</div>
+              </div>
+            </div>
+            {/* Chain badge */}
+            {data && (
+              <div className="rounded-[10px] border border-pink-glow/20 bg-pink-glow/8 px-3 py-2.5">
+                <div className="text-[8.5px] font-bold uppercase tracking-[0.3em] text-pink-glow">CADENA</div>
+                <div className="mt-1 text-[13px] font-medium text-light truncate">{data.chain.name}</div>
+                <div className="mt-0.5 font-mono text-[10px] text-dim">{data.stats.restaurantCount} sucursales · {data.stats.staffTotal} staff</div>
+              </div>
+            )}
+            {/* Nav */}
+            <nav className="flex flex-col gap-0.5">
+              <div className="px-3 pb-2 pt-1 text-[8.5px] font-bold uppercase tracking-[0.3em] text-dim">PANEL MAESTRO</div>
+              {[
+                { id: "OVERVIEW" as const, label: "Visión General", badge: null },
+                { id: "ZONES" as const, label: "Zonas", badge: data ? String(data.zones.length) : null },
+                { id: "RESTAURANTS" as const, label: "Sucursales", badge: data ? String(data.stats.restaurantCount) : null },
+                { id: "STAFF" as const, label: "Staff", badge: data ? String(data.stats.staffTotal) : null },
+              ].map(tab => (
+                <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-colors ${
+                    activeTab === tab.id ? "bg-white/[0.06] text-light" : "text-dim hover:bg-white/[0.04] hover:text-light"
+                  }`}>
+                  <span>{tab.label}</span>
+                  {tab.badge && <span className="font-mono text-[11px] text-dim">{tab.badge}</span>}
+                </button>
+              ))}
+              <div className="px-3 pb-2 pt-4 text-[8.5px] font-bold uppercase tracking-[0.3em] text-dim">ESTANDARIZACIÓN</div>
+              <Link href={`/cadena/plantillas?tenantId=${tenantId}`} onClick={() => setSidebarOpen(false)}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light">Plantillas</Link>
+              <Link href={`/cadena/auditoria?tenantId=${tenantId}`} onClick={() => setSidebarOpen(false)}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light">Auditoría</Link>
+              <Link href={`/cadena/staff?tenantId=${tenantId}`} onClick={() => setSidebarOpen(false)}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light">Staff</Link>
+            </nav>
+            <div className="flex-1" />
+            <button type="button" onClick={() => { setSidebarOpen(false); setIsCreating(true); }}
+              className="flex w-full items-center gap-2 rounded-lg bg-white px-3 py-2 text-[12px] font-semibold text-ink transition-all hover:bg-white/90 active:scale-[0.98]">
+              <Plus className="h-3.5 w-3.5" /> Nueva sucursal
+            </button>
+            <Link href={`/cadena/zonas?tenantId=${tenantId}`} onClick={() => setSidebarOpen(false)}
+              className="flex w-full items-center gap-2 rounded-lg border border-white/[0.08] px-3 py-2 text-[12px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light">
+              <MapPin className="h-3.5 w-3.5" /> Gestionar zonas
+            </Link>
+          </aside>
+        </>
+      )}
+
+      {/* ═══════ MOBILE TOP BAR ═══════ */}
+      <div className="md:hidden flex items-center justify-between border-b border-wire bg-burgundy-dark px-4 py-3">
+        <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 text-dim hover:text-light">
+          <Menu className="h-5 w-5" />
+        </button>
+        <div className="font-serif text-[16px] font-semibold italic text-light truncate mx-2">
+          {data?.chain?.name ?? "Cadena"}
+        </div>
+        <button onClick={() => setIsCreating(true)} className="p-2 text-dim hover:text-light">
+          <Plus className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* ═══════ MOBILE TAB PILLS ═══════ */}
+      <div className="md:hidden scrollbar-hide flex gap-1 overflow-x-auto border-b border-wire bg-bg-solid px-3 py-2">
+        {[
+          { id: "OVERVIEW" as const, label: "Visión General" },
+          { id: "ZONES" as const, label: "Zonas" },
+          { id: "RESTAURANTS" as const, label: "Sucursales" },
+          { id: "STAFF" as const, label: "Staff" },
+        ].map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            className={`shrink-0 rounded-full px-4 py-1.5 text-[11px] font-semibold transition-colors ${
+              activeTab === tab.id ? "bg-rose text-white" : "text-dim hover:text-light hover:bg-white/[0.04]"
+            }`}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* ═══════ MAIN ═══════ */}
       <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
-        {/* ── Header ── */}
-        <header className="flex items-end justify-between border-b border-wire px-6 py-4">
+        {/* ── Header (desktop only) ── */}
+        <header className="hidden sm:flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 border-b border-wire px-4 py-3 sm:px-6 sm:py-4">
           <div>
             <p className="font-mono text-[10px] tracking-[0.25em] text-dim">
               {dateLabel} · CADENA
             </p>
-            <h1 className="mt-1.5 font-serif text-[28px] font-medium leading-[1.05] tracking-[-0.015em] text-light">
+            <h1 className="mt-1.5 font-serif text-[22px] sm:text-[28px] font-medium leading-[1.05] tracking-[-0.015em] text-light">
               {data.chain.name}{" "}
               <span className="italic text-pink-glow">bajo control</span>
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="rounded-full border border-pink-glow/15 bg-pink-glow/8 px-3 py-1.5 font-mono text-[11px] font-semibold text-pink-glow">
               {data.chain.currency}
             </span>
@@ -530,7 +628,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
         </header>
 
         {/* ── Content ── */}
-        <main className="flex flex-1 flex-col gap-5 overflow-y-auto p-5 custom-scrollbar">
+        <main className="flex flex-1 flex-col gap-5 overflow-y-auto p-3 sm:p-5 custom-scrollbar">
           {activeTab === "OVERVIEW" ? (
             <>
               {/* ── KPI Strip ── */}
@@ -612,11 +710,11 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                     <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
                       VENTAS · 7 DÍAS POR SUCURSAL
                     </p>
-                    <p className="mt-0.5 font-serif text-[20px] font-medium leading-tight text-light">
+                    <p className="mt-0.5 font-serif text-[17px] sm:text-[20px] font-medium leading-tight text-light">
                       El <span className="italic text-pink-glow">jardín</span> completo
                     </p>
                   </div>
-                  <div className="flex-1 p-3">
+                  <div className="flex-1 p-3 w-full overflow-hidden">
                     <MultiLineChart branches={mock7DayBranches} className="h-full" />
                   </div>
                   <div className="border-t border-wire px-4 py-2">
@@ -632,7 +730,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                     <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
                       RANKING · HOY
                     </p>
-                    <p className="mt-0.5 font-serif text-[20px] font-medium leading-tight text-light">
+                    <p className="mt-0.5 font-serif text-[17px] sm:text-[20px] font-medium leading-tight text-light">
                       ¿Quién <span className="italic text-pink-glow">lidera</span>?
                     </p>
                   </div>
@@ -640,8 +738,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                   <div className="flex items-center gap-2 border-b border-white/[0.04] px-4 py-2 font-mono text-[9px] tracking-[0.2em] text-dim">
                     <span className="w-5">#</span>
                     <span className="min-w-0 flex-1">SUCURSAL</span>
-                    <span className="w-[72px] text-right">HOY</span>
-                    <span className="w-[44px] text-right">Δ</span>
+                    <span className="w-14 sm:w-[72px] text-right">HOY</span>
+                    <span className="w-10 sm:w-[44px] text-right">Δ</span>
                     <span className="w-16">OCUP</span>
                   </div>
                   <BranchRankings
@@ -664,11 +762,11 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                 {/* RIGHT: Occupancy + Peak + Quick stats */}
                 <div className="flex flex-col gap-3 lg:order-3">
                   {/* Occupancy dial */}
-                  <div className="bq-card flex items-center justify-center gap-6 p-5">
+                  <div className="bq-card flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 p-3 sm:p-5">
                     <OccupancyDial pct={derived!.occPct} reduceMotion={reduceMotion} />
                     <div className="space-y-2">
                       <div>
-                        <p className="font-mono text-[18px] font-semibold tabular-nums text-light">
+                        <p className="font-mono text-[15px] sm:text-[18px] font-semibold tabular-nums text-light">
                           {data.stats.activeTables}
                           <span className="ml-1 font-mono text-[11px] text-dim">
                             / {data.restaurants.reduce((acc, r) => acc + r.totalTables, 0)}
@@ -677,7 +775,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                         <p className="text-[10px] text-dim">mesas activas/total</p>
                       </div>
                       <div>
-                        <p className="font-mono text-[18px] font-semibold tabular-nums text-light">
+                        <p className="font-mono text-[15px] sm:text-[18px] font-semibold tabular-nums text-light">
                           {data.stats.restaurantCount}
                         </p>
                         <p className="text-[10px] text-dim">sucursales</p>
@@ -690,7 +788,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                     <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
                       HORA PICO · CONSOLIDADO
                     </p>
-                    <p className="mt-0.5 font-serif text-[17px] font-medium leading-tight text-light">
+                    <p className="mt-0.5 font-serif text-[14px] sm:text-[17px] font-medium leading-tight text-light">
                       Pico a las{" "}
                       <span className="italic text-pink-glow">{peakLabel}</span>
                     </p>
@@ -761,7 +859,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                   <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
                     CADENA · TERRITORIOS
                   </p>
-                  <h2 className="mt-1 font-serif text-[24px] font-medium leading-tight text-light">
+                  <h2 className="mt-1 font-serif text-[20px] sm:text-[24px] font-medium leading-tight text-light">
                     Atlas de <span className="italic text-pink-glow">zonas</span>
                   </h2>
                 </div>
@@ -828,17 +926,17 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                   <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
                     CADENA · UNIDADES OPERATIVAS
                   </p>
-                  <h2 className="mt-1 font-serif text-[24px] font-medium leading-tight text-light">
+                  <h2 className="mt-1 font-serif text-[20px] sm:text-[24px] font-medium leading-tight text-light">
                     Control de <span className="italic text-pink-glow">sucursales</span>
                   </h2>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="relative hidden sm:block">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <div className="relative">
                     <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-dim" />
                     <input 
                       type="text" 
                       placeholder="Buscar sucursal..." 
-                      className="h-9 w-64 rounded-full border border-white/5 bg-white/[0.03] pl-9 pr-4 text-[12px] text-light placeholder:text-dim focus:border-pink-glow/30 focus:outline-none transition-all"
+                      className="h-9 w-full sm:w-64 rounded-full border border-white/5 bg-white/[0.03] pl-9 pr-4 text-[12px] text-light placeholder:text-dim focus:border-pink-glow/30 focus:outline-none transition-all"
                     />
                   </div>
                   <button 
@@ -856,12 +954,12 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                   <table className="w-full text-left">
                     <thead>
                       <tr className="border-b border-white/[0.04] bg-white/[0.01]">
-                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-dim">Sucursal</th>
-                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-dim">Zona</th>
-                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-dim">Ventas Hoy</th>
-                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-dim">Ocupación</th>
-                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-dim">Estado</th>
-                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-widest text-dim"></th>
+                        <th className="px-3 py-2.5 sm:px-6 sm:py-4 text-[10px] font-bold uppercase tracking-widest text-dim">Sucursal</th>
+                        <th className="px-3 py-2.5 sm:px-6 sm:py-4 text-[10px] font-bold uppercase tracking-widest text-dim">Zona</th>
+                        <th className="px-3 py-2.5 sm:px-6 sm:py-4 text-[10px] font-bold uppercase tracking-widest text-dim">Ventas Hoy</th>
+                        <th className="px-3 py-2.5 sm:px-6 sm:py-4 text-[10px] font-bold uppercase tracking-widest text-dim">Ocupación</th>
+                        <th className="px-3 py-2.5 sm:px-6 sm:py-4 text-[10px] font-bold uppercase tracking-widest text-dim">Estado</th>
+                        <th className="px-3 py-2.5 sm:px-6 sm:py-4 text-[10px] font-bold uppercase tracking-widest text-dim"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/[0.02]">
@@ -873,15 +971,15 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                             className="group hover:bg-white/[0.02] transition-colors"
                             style={{ animation: `dash-row-enter 500ms ${i * 40}ms ease both` }}
                           >
-                            <td className="px-6 py-4">
+                            <td className="px-3 py-2.5 sm:px-6 sm:py-4">
                               <div className="flex flex-col">
                                 <span className="font-medium text-light group-hover:text-pink-glow transition-colors">{res.name}</span>
                                 <span className="text-[10px] text-dim font-mono">{res.id.slice(0, 8)}</span>
                               </div>
                             </td>
-                            <td className="px-6 py-4 text-[12px] text-dim">{res.zoneName}</td>
-                            <td className="px-6 py-4 font-mono text-[13px] text-light">{fmt(res.todayRevenue)}</td>
-                            <td className="px-6 py-4">
+                            <td className="px-3 py-2.5 sm:px-6 sm:py-4 text-[12px] text-dim">{res.zoneName}</td>
+                            <td className="px-3 py-2.5 sm:px-6 sm:py-4 font-mono text-[13px] text-light">{fmt(res.todayRevenue)}</td>
+                            <td className="px-3 py-2.5 sm:px-6 sm:py-4">
                               <div className="flex w-32 items-center gap-3">
                                 <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/5">
                                   <div 
@@ -895,13 +993,13 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                                 <span className="font-mono text-[11px] text-dim">{occPct}%</span>
                               </div>
                             </td>
-                            <td className="px-6 py-4">
+                            <td className="px-3 py-2.5 sm:px-6 sm:py-4">
                               <span className="flex items-center gap-1.5 rounded-full bg-dash-green/10 px-2 py-0.5 text-[9px] font-bold text-dash-green border border-dash-green/20">
                                 <span className="h-1 w-1 rounded-full bg-dash-green" />
                                 ACTIVA
                               </span>
                             </td>
-                            <td className="px-6 py-4 text-right">
+                            <td className="px-3 py-2.5 sm:px-6 sm:py-4 text-right">
                               <button 
                                 onClick={() => router.push(`/cadena/restaurantes/${res.id}`)}
                                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/5 bg-white/[0.02] text-dim hover:bg-white/10 hover:text-light transition-all"
@@ -924,17 +1022,17 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                   <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
                     CADENA · RECURSOS HUMANOS
                   </p>
-                  <h2 className="mt-1 font-serif text-[24px] font-medium leading-tight text-light">
+                  <h2 className="mt-1 font-serif text-[20px] sm:text-[24px] font-medium leading-tight text-light">
                     Personal de la <span className="italic text-pink-glow">red</span>
                   </h2>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="relative hidden sm:block">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <div className="relative">
                     <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-dim" />
                     <input 
                       type="text" 
                       placeholder="Buscar personal..." 
-                      className="h-9 w-64 rounded-full border border-white/5 bg-white/[0.03] pl-9 pr-4 text-[12px] text-light placeholder:text-dim focus:border-pink-glow/30 focus:outline-none transition-all"
+                      className="h-9 w-full sm:w-64 rounded-full border border-white/5 bg-white/[0.03] pl-9 pr-4 text-[12px] text-light placeholder:text-dim focus:border-pink-glow/30 focus:outline-none transition-all"
                     />
                   </div>
                   <button className="flex h-9 items-center gap-2 rounded-full border border-white/5 bg-white/[0.03] px-4 text-[12px] text-dim hover:bg-white/10 hover:text-light transition-all">
@@ -964,7 +1062,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                           style={{ animation: `dash-row-enter 500ms ${i * 30}ms ease both` }}
                         >
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-[12px] font-bold text-light group-hover:bg-pink-glow/10 group-hover:text-pink-glow transition-all">
                                 {s.name.charAt(0)}
                               </div>
@@ -1001,7 +1099,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
               </div>
             </div>
           ) : (
-            <div className="flex flex-1 flex-col overflow-hidden rounded-[32px] border border-white/10 bg-ink relative">
+            <div className="flex flex-1 flex-col overflow-hidden rounded-[32px] border border-white/10 bg-ink relative min-h-[200px] sm:min-h-[350px]">
               <div className="absolute inset-0 z-0">
                 <Map
                   provider={(x, y, z) => `https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/${z}/${x}/${y}.png`}
@@ -1020,9 +1118,10 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                     return (
                       <Marker
                         key={rest.id}
-                        width={40}
+                        width={28}
                         anchor={coords}
                         onClick={() => router.push(`/cadena/restaurantes/${rest.id}`)}
+                        className="w-7 h-7 sm:w-10 sm:h-10"
                       >
                         <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-pink-glow text-[10px] font-bold text-ink shadow-lg transition-transform hover:scale-110">
                           {rest.name.charAt(0)}

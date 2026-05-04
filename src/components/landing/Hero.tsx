@@ -12,7 +12,7 @@ import iconCampana from "@/assets/campana.png";
 import iconTarjeta from "@/assets/tarjeta.png";
 import iconRecibo from "@/assets/recibo.png";
 import iconCuchilloTenedor from "@/assets/cuchillo_tenedor.png";
-import { Armchair, Bell, CreditCard, UtensilsCrossed, Receipt, ChevronRight, Clock, Users, CreditCard as CardIcon, MapPin, Utensils } from "lucide-react";
+import { ChevronRight, MapPin } from "lucide-react";
 
 /* ── iPhone Frame Shell ── */
 function IPhoneFrame({ children }: { children: React.ReactNode }) {
@@ -73,8 +73,85 @@ function PhoneMockup() {
               <div className="flex items-center gap-1 text-[0.6rem] text-burgundy/50">
                 <MapPin className="h-2.5 w-2.5" />
                 <span>Mesa 12 · Terraza</span>
+        </div>
+
+        {/* Content block — mobile: bottom, desktop: left column below title */}
+        <div className="max-w-xl mx-auto lg:mx-0 text-center lg:text-left lg:col-start-1">
+          {/* Tagline */}
+          <p className="hero-desc opacity-0 mt-4 lg:mt-6 max-w-lg mx-auto lg:mx-0 text-balance text-[0.95rem] md:text-[1.1rem] leading-[1.7] text-burgundy/70">
+            Bouquet conecta mesas, órdenes y pagos en una sola operación.
+            Menos caos, más control y un mejor servicio para tus clientes.
+          </p>
+
+          {/* Pilares Unificados */}
+          <div className="hero-pillars mt-6 lg:mt-10 hidden sm:flex flex-wrap lg:flex-nowrap items-center justify-center lg:justify-start gap-3 md:gap-4">
+            {[
+              { label: "Gestión de Mesas", icon: iconMesa },
+              { label: "Flujo de Órdenes", icon: iconCampana },
+              { label: "Pagos Centrales", icon: iconTarjeta }
+            ].map((pillar, idx) => (
+              <div 
+                key={idx} 
+                className="hero-pillar-item opacity-0 group flex items-center gap-2.5 rounded-xl border border-rose/10 bg-white/40 px-3 py-1.5 backdrop-blur-md shadow-[0_4px_15px_-10px_rgba(199,91,122,0.1)] transition-all duration-300 hover:bg-white/60 hover:-translate-y-0.5"
+              >
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose/10 transition-colors duration-300 group-hover:bg-rose/20">
+                  <Image src={pillar.icon} alt="" className="h-3.5 w-3.5 object-contain opacity-80" />
+                </div>
+                <span className="font-serif text-[0.85rem] font-medium text-burgundy whitespace-nowrap">{pillar.label}</span>
               </div>
-            </div>
+            ))}
+          </div>
+
+          {/* CTAs */}
+          <div className="mt-6 lg:mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
+            <a
+              href="#contacto"
+              className="hero-cta opacity-0 group inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-full bg-burgundy px-5 text-[0.9rem] md:text-[0.9375rem] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(74,26,44,0.5)] transition-colors duration-200 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto sm:justify-between"
+            >
+              <span className="whitespace-nowrap">Reservar demo de 20 min</span>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose/95 ring-1 ring-white/20 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:scale-105">
+                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M4 10h12m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            </a>
+
+            <a
+              href="#como-funciona"
+              className="hero-cta opacity-0 group hidden sm:inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-burgundy/10 bg-white/60 px-5 text-[0.9rem] md:text-[0.9375rem] font-semibold text-burgundy transition-colors duration-200 hover:border-burgundy/25 hover:bg-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto"
+            >
+              <span className="whitespace-nowrap">Ver recorrido operativo</span>
+              <svg className="h-3.5 w-3.5 shrink-0 text-burgundy/50 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M6 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </a>
+          </div>
+
+          {/* Trust bar — mobile: 1 line, desktop: full */}
+          <div className="mt-5 lg:mt-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 sm:justify-center lg:justify-start text-[0.8rem] font-medium text-burgundy/55">
+            <span className="inline-flex items-center gap-1.5">
+              <svg className="h-3.5 w-3.5 text-sage-deep" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 10l4 4 8-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              +40 restaurantes activos
+            </span>
+            <span className="hidden sm:inline text-burgundy/20">·</span>
+            <span className="hidden sm:inline-flex items-center gap-1.5">
+              <svg className="h-3.5 w-3.5 text-sage-deep" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 10l4 4 8-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              100% renovación
+            </span>
+            <span className="hidden sm:inline text-burgundy/20">·</span>
+            <span className="hidden sm:inline-flex items-center gap-1.5">
+              <svg className="h-3.5 w-3.5 text-sage-deep" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 10l4 4 8-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Setup en 1 día
+            </span>
+          </div>
+        </div>
+      </div>
           </div>
 
           {/* Welcome */}
@@ -95,8 +172,10 @@ function PhoneMockup() {
               { icon: iconMesa, label: "Cuenta compartida", desc: "4 comensales", color: "bg-sky-50 text-sky-600", ring: "ring-sky-200" },
               { icon: iconTarjeta, label: "Pagar", desc: "$1,240 total", color: "bg-emerald-50 text-emerald-600", ring: "ring-emerald-200" },
             ].map((item) => (
-              <button
+               <button
                 key={item.label}
+                tabIndex={-1}
+                aria-hidden="true"
                 className="group flex w-full items-center gap-4 rounded-2xl bg-white/70 px-4 py-3.5 shadow-[0_1px_3px_rgba(74,26,44,0.05)] ring-1 ring-burgundy/[0.06] backdrop-blur-sm transition-all active:scale-[0.98]"
               >
                 <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.color} ring-1 ${item.ring}`}>
@@ -288,7 +367,7 @@ export const Hero = () => {
   }, { scope: containerRef });
 
   return (
-    <section ref={containerRef} className="relative flex min-h-[100dvh] flex-col justify-center overflow-hidden pt-32 pb-20 lg:pt-44 lg:pb-28">
+    <section ref={containerRef} className="relative flex min-h-[100dvh] flex-col justify-center overflow-hidden pt-24 pb-20 lg:pt-44 lg:pb-28">
       {/* Fondo atmosférico */}
       <div className="absolute inset-0 -z-10 pointer-events-none">
         <div className="bg-blob absolute left-[-10%] top-[-5%] h-[30rem] w-[30rem] rounded-full bg-rose/10 blur-3xl opacity-0" />
@@ -297,106 +376,50 @@ export const Hero = () => {
       </div>
 
       <div className="mx-auto grid w-full max-w-7xl gap-6 px-6 md:gap-10 lg:grid-cols-[1fr_0.9fr] lg:items-center lg:gap-8 lg:px-10">
-        {/* Columna izquierda — texto */}
-        <div className="max-w-xl mx-auto lg:mx-0 text-center lg:text-left">
-          {/* Logo grande */}
+        {/* Title block — mobile: top, desktop: left column */}
+        <div className="max-w-xl mx-auto lg:mx-0 text-center lg:text-left lg:col-start-1">
           <div className="mt-0 lg:mt-8">
-            <p className="hero-subtitle opacity-0 mb-2 text-xs tracking-[0.25em] uppercase text-rose-700/60">
+            <p className="hero-subtitle opacity-0 mb-2 hidden sm:block text-xs tracking-[0.25em] uppercase text-rose-700/60">
               PARA RESTAURANTES QUE QUIEREN CRECER
             </p>
-            {/* Wrapper for overflow hidden reveal effect */}
             <div className="overflow-hidden leading-[0.85] pb-2">
-              <h1 className="hero-title-inner opacity-0 origin-left font-serif text-3xl sm:text-4xl md:text-[2.75rem] lg:text-7xl font-semibold italic tracking-[-0.03em] text-burgundy">
-                El sistema que <span style={{ color: '#C06A78' }}>ordena el servicio</span> de tu restaurante.
+              <h1 className="hero-title-inner opacity-0 font-serif text-3xl sm:text-4xl md:text-[2.75rem] lg:text-7xl font-semibold italic tracking-[-0.03em] text-burgundy">
+                El sistema que <span className="text-rose-600">ordena el servicio</span> de tu restaurante.
               </h1>
             </div>
           </div>
-
-          {/* Tagline */}
-          <p className="hero-desc opacity-0 mt-5 lg:mt-6 max-w-lg mx-auto lg:mx-0 text-balance text-[0.95rem] md:text-[1.1rem] leading-[1.7] text-burgundy/65">
-            Bouquet conecta mesas, órdenes y pagos en una sola operación.
-            Menos caos, más control y un mejor servicio para tus clientes.
-          </p>
-
-          {/* Pilares Unificados */}
-          <div className="hero-pillars mt-6 lg:mt-10 flex flex-wrap lg:flex-nowrap items-center justify-center lg:justify-start gap-3 md:gap-4">
-            {[
-              { label: "Gestión de Mesas", icon: iconMesa },
-              { label: "Flujo de Órdenes", icon: iconCampana },
-              { label: "Pagos Centrales", icon: iconTarjeta }
-            ].map((pillar, idx) => (
-              <div 
-                key={idx} 
-                className="hero-pillar-item opacity-0 group flex items-center gap-2.5 rounded-xl border border-rose/10 bg-white/40 px-3 py-1.5 backdrop-blur-md shadow-[0_4px_15px_-10px_rgba(199,91,122,0.1)] transition-all duration-300 hover:bg-white/60 hover:-translate-y-0.5"
-              >
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose/10 transition-colors duration-300 group-hover:bg-rose/20">
-                  <Image src={pillar.icon} alt="" className="h-3.5 w-3.5 object-contain opacity-80" />
-                </div>
-                <span className="font-serif text-[0.85rem] font-medium text-burgundy whitespace-nowrap">{pillar.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* CTAs */}
-          <div className="mt-8 lg:mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
-            <a
-              href="#contacto"
-              className="hero-cta opacity-0 group inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-full bg-burgundy px-5 text-[0.9rem] md:text-[0.9375rem] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(74,26,44,0.5)] transition-colors duration-200 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto sm:justify-between"
-            >
-              <span className="whitespace-nowrap">Reservar demo de 20 min</span>
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose/95 ring-1 ring-white/20 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:scale-105">
-                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                  <path d="M4 10h12m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-            </a>
-
-            <a
-              href="#como-funciona"
-              className="hero-cta opacity-0 group inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-burgundy/10 bg-white/60 px-5 text-[0.9rem] md:text-[0.9375rem] font-semibold text-burgundy transition-colors duration-200 hover:border-burgundy/25 hover:bg-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto"
-            >
-              <span className="whitespace-nowrap">Ver recorrido operativo</span>
-              <svg className="h-3.5 w-3.5 shrink-0 text-burgundy/50 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path d="M6 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </a>
-          </div>
-
         </div>
 
-        {/* Columna derecha — mockups */}
-        <div className="relative flex h-[340px] sm:h-[400px] md:h-[400px] lg:h-[600px] w-full max-w-[500px] items-center justify-center mx-auto lg:mx-0 mt-2 sm:mt-4 md:mt-6 lg:mt-0 lg:ml-auto md:scale-[0.7] md:origin-center">
+        {/* Mockup block — mobile: middle, desktop: right column spanning full height */}
+        <div className="relative flex h-[340px] sm:h-[400px] md:h-[500px] lg:h-[600px] w-full max-w-[500px] items-center justify-center mx-auto lg:mx-0 mt-0 mb-5 sm:mb-6 lg:my-0 lg:ml-auto lg:col-start-2 lg:row-start-1 lg:row-span-2 md:scale-[0.85] md:origin-center will-change-transform">
           {/* Flores decorativas detrás de los mockups */}
           <Image
             src={floralLeft}
             alt=""
+            priority
             sizes="(min-width: 1024px) 40vw, 70vw"
             className="hero-floral-left pointer-events-none absolute -left-[5%] sm:-left-[10%] md:-left-[30%] lg:-left-[55%] -top-[5%] sm:-top-[8%] md:-top-[12%] lg:-top-[15%] z-[2] opacity-0 -rotate-[8deg] w-[280px] sm:w-[350px] md:w-[500px] lg:w-[1600px]"
           />
           <Image
             src={floralRight}
             alt=""
+            priority
             sizes="(min-width: 1024px) 36vw, 64vw"
             className="hero-floral-right pointer-events-none absolute -right-[5%] sm:-right-[10%] md:-right-[35%] lg:-right-[65%] -bottom-[5%] sm:-bottom-[8%] md:-bottom-[12%] lg:-bottom-[16%] z-[2] opacity-0 rotate-[12deg] w-[220px] sm:w-[280px] md:w-[380px] lg:w-[1100px]"
           />
 
           {/* Círculo rosa de fondo */}
           <div
-            className="hero-pink-circle absolute opacity-0 w-[300px] h-[300px] sm:w-[380px] sm:h-[380px] md:w-[420px] md:h-[420px] lg:w-[720px] lg:h-[720px]"
-            style={{
-              borderRadius: '50%',
-              backgroundColor: '#F9D9E3',
-              zIndex: 1,
-            }}
+            className="hero-pink-circle absolute opacity-0 w-[300px] h-[300px] sm:w-[380px] sm:h-[380px] md:w-[420px] md:h-[420px] lg:w-[720px] lg:h-[720px] rounded-full bg-rose-100 z-[1]"
           />
 
           {/* Teléfono principal */}
-          <div className="hero-mockup-phone opacity-0 absolute z-10 -translate-x-10 sm:-translate-x-14 md:-translate-x-16 lg:-translate-x-32 translate-y-2 sm:translate-y-3 md:translate-y-4 lg:translate-y-8 -rotate-[2deg] scale-[0.65] sm:scale-[0.7] md:scale-[0.75] lg:scale-100">
+          <div aria-hidden="true" className="hero-mockup-phone opacity-0 absolute z-10 -translate-x-10 sm:-translate-x-14 md:-translate-x-16 lg:-translate-x-32 translate-y-2 sm:translate-y-3 md:translate-y-4 lg:translate-y-8 -rotate-[2deg] scale-[0.65] sm:scale-[0.7] md:scale-[0.75] lg:scale-100">
             <PhoneMockup />
           </div>
 
           {/* Teléfono secundario (Cuenta) */}
-          <div className="hero-mockup-ticket hidden sm:block opacity-0 absolute z-10 translate-x-14 sm:translate-x-20 md:translate-x-24 lg:translate-x-40 -translate-y-4 sm:-translate-y-6 md:-translate-y-6 lg:-translate-y-12 rotate-[3deg] scale-[0.65] sm:scale-[0.7] md:scale-[0.75] lg:scale-100">
+          <div aria-hidden="true" className="hero-mockup-ticket hidden sm:block opacity-0 absolute z-10 translate-x-14 sm:translate-x-20 md:translate-x-24 lg:translate-x-40 -translate-y-4 sm:-translate-y-6 md:-translate-y-6 lg:-translate-y-12 rotate-[3deg] scale-[0.65] sm:scale-[0.7] md:scale-[0.75] lg:scale-100">
             <TicketMockup />
           </div>
 
@@ -430,6 +453,84 @@ export const Hero = () => {
             </div>
           </div>
         </div>
+
+        {/* Content block — mobile: bottom, desktop: left column below title */}
+        <div className="max-w-xl mx-auto lg:mx-0 text-center lg:text-left lg:col-start-1">
+          {/* Tagline */}
+          <p className="hero-desc opacity-0 mt-4 lg:mt-6 max-w-lg mx-auto lg:mx-0 text-balance text-[0.95rem] md:text-[1.1rem] leading-[1.7] text-burgundy/70">
+            Bouquet conecta mesas, órdenes y pagos en una sola operación.
+            Menos caos, más control y un mejor servicio para tus clientes.
+          </p>
+
+          {/* Pilares Unificados */}
+          <div className="hero-pillars mt-6 lg:mt-10 hidden sm:flex flex-wrap lg:flex-nowrap items-center justify-center lg:justify-start gap-3 md:gap-4">
+            {[
+              { label: "Gestión de Mesas", icon: iconMesa },
+              { label: "Flujo de Órdenes", icon: iconCampana },
+              { label: "Pagos Centrales", icon: iconTarjeta }
+            ].map((pillar, idx) => (
+              <div 
+                key={idx} 
+                className="hero-pillar-item opacity-0 group flex items-center gap-2.5 rounded-xl border border-rose/10 bg-white/40 px-3 py-1.5 backdrop-blur-md shadow-[0_4px_15px_-10px_rgba(199,91,122,0.1)] transition-all duration-300 hover:bg-white/60 hover:-translate-y-0.5"
+              >
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose/10 transition-colors duration-300 group-hover:bg-rose/20">
+                  <Image src={pillar.icon} alt="" className="h-3.5 w-3.5 object-contain opacity-80" />
+                </div>
+                <span className="font-serif text-[0.85rem] font-medium text-burgundy whitespace-nowrap">{pillar.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* CTAs */}
+          <div className="mt-6 lg:mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
+            <a
+              href="#contacto"
+              className="hero-cta opacity-0 group inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-full bg-burgundy px-5 text-[0.9rem] md:text-[0.9375rem] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(74,26,44,0.5)] transition-colors duration-200 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto sm:justify-between"
+            >
+              <span className="whitespace-nowrap">Reservar demo de 20 min</span>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose/95 ring-1 ring-white/20 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:scale-105">
+                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                  <path d="M4 10h12m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            </a>
+
+            <a
+              href="#como-funciona"
+              className="hero-cta opacity-0 group hidden sm:inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-burgundy/10 bg-white/60 px-5 text-[0.9rem] md:text-[0.9375rem] font-semibold text-burgundy transition-colors duration-200 hover:border-burgundy/25 hover:bg-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto"
+            >
+              <span className="whitespace-nowrap">Ver recorrido operativo</span>
+              <svg className="h-3.5 w-3.5 shrink-0 text-burgundy/50 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M6 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </a>
+          </div>
+
+          {/* Trust bar — mobile: 1 line, desktop: full */}
+          <div className="mt-5 lg:mt-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 sm:justify-center lg:justify-start text-[0.8rem] font-medium text-burgundy/55">
+            <span className="inline-flex items-center gap-1.5">
+              <svg className="h-3.5 w-3.5 text-sage-deep" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 10l4 4 8-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              +40 restaurantes activos
+            </span>
+            <span className="hidden sm:inline text-burgundy/20">·</span>
+            <span className="hidden sm:inline-flex items-center gap-1.5">
+              <svg className="h-3.5 w-3.5 text-sage-deep" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 10l4 4 8-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              100% renovación
+            </span>
+            <span className="hidden sm:inline text-burgundy/20">·</span>
+            <span className="hidden sm:inline-flex items-center gap-1.5">
+              <svg className="h-3.5 w-3.5 text-sage-deep" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                <path d="M4 10l4 4 8-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Setup en 1 día
+            </span>
+          </div>
+        </div>
+
       </div>
     </section>
   );

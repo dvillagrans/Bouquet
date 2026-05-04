@@ -1,13 +1,28 @@
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/auth-password";
-import { createAdminSessionToken, resolveAdminAuthSecret } from "@/lib/admin-session";
-import { adminSessionCookieName } from "@/lib/admin-session";
+import {
+  createSessionToken,
+  resolveAuthSecret,
+  sessionCookieName,
+} from "@/lib/auth-session";
+import { rateLimit } from "@/lib/rate-limit";
+import { createAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const secret = resolveAdminAuthSecret();
+  const requestIp = (await headers()).get("x-forwarded-for") ?? "unknown";
+
+  if (!rateLimit(`${requestIp}:login`, 5, 15 * 60 * 1000)) {
+    return NextResponse.json(
+      { ok: false, error: "Demasiados intentos. Inténtalo más tarde." },
+      { status: 429 }
+    );
+  }
+
+  const secret = resolveAuthSecret();
   if (!secret) {
     return NextResponse.json(
       { ok: false, error: "Servidor sin AUTH_SECRET configurado." },
@@ -34,7 +49,7 @@ export async function POST(req: Request) {
     include: {
       userRoles: {
         where: { role: { scope: "PLATFORM" } },
-        select: { id: true },
+        include: { role: { select: { name: true } } },
       },
     },
   });
@@ -56,16 +71,25 @@ export async function POST(req: Request) {
     );
   }
 
-  const token = await createAdminSessionToken(secret, 24 * 60 * 60 * 1000, {
+  const roleNames = user.userRoles.map((ur) => ur.role.name);
+  const token = await createSessionToken(secret, 24 * 60 * 60 * 1000, {
     appUserId: user.id,
-    roles: ["platform_admin"],
+    roles: roleNames,
+  });
+
+  createAuditLog({
+    actorUserId: user.id,
+    action: "LOGIN",
+    entityType: "AppUser",
+    entityId: user.id,
+    ipAddress: requestIp,
   });
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(adminSessionCookieName(), token, {
+  res.cookies.set(sessionCookieName(), token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     path: "/",
     maxAge: 24 * 60 * 60,
   });

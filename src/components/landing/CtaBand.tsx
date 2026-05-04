@@ -8,9 +8,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
+gsap.registerPlugin(ScrollTrigger);
 
 export const CtaBand = () => {
   const containerRef = useRef<HTMLElement>(null);
@@ -29,13 +27,13 @@ export const CtaBand = () => {
       return;
     }
 
-    const label = scope.querySelectorAll<HTMLElement>(".cta-label");
-    const title = scope.querySelectorAll<HTMLElement>(".cta-title");
-    const desc = scope.querySelectorAll<HTMLElement>(".cta-desc");
+    const label = scope.querySelector<HTMLElement>(".cta-label");
+    const title = scope.querySelector<HTMLElement>(".cta-title");
+    const desc = scope.querySelector<HTMLElement>(".cta-desc");
     const chips = scope.querySelectorAll<HTMLElement>(".cta-chip");
-    const form = scope.querySelectorAll<HTMLElement>(".cta-form");
-    const floral1 = scope.querySelectorAll<HTMLElement>(".cta-floral-1");
-    const floral2 = scope.querySelectorAll<HTMLElement>(".cta-floral-2");
+    const form = scope.querySelector<HTMLElement>(".cta-form");
+    const floral1 = scope.querySelector<HTMLElement>(".cta-floral-1");
+    const floral2 = scope.querySelector<HTMLElement>(".cta-floral-2");
 
     const prefersReduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
@@ -98,7 +96,7 @@ export const CtaBand = () => {
     <section
       ref={containerRef}
       id="contacto"
-      className="relative flex min-h-[90dvh] flex-col justify-center bg-[#FCF5F7] py-20 lg:py-32 overflow-hidden"
+      className="relative flex min-h-[90dvh] flex-col justify-center bg-rose-50 py-20 lg:py-32 overflow-hidden"
     >
       {/* Background gradients and noise */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,#FFF0F4_0%,transparent_70%)] opacity-50" />
@@ -141,13 +139,13 @@ export const CtaBand = () => {
           </h2>
 
           <p className="cta-desc opacity-0 mt-8 max-w-lg text-balance text-[1.15rem] leading-[1.6] text-burgundy/60 font-medium">
-            Si querés que Bouquet se adapte a tu servicio, dejanos tus datos. Te
+            Si quieres que Bouquet se adapte a tu servicio, déjanos tus datos. Te
             contactamos en menos de 2 horas para mostrarte el flujo completo.
           </p>
 
           <div className="mt-10 flex flex-wrap gap-3">
             {[
-              "No tenés que cambiar equipo",
+              "No tienes que cambiar equipo",
               "Sin migración compleja",
               "Operación ininterrumpida",
             ].map((item) => (

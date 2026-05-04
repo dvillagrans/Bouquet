@@ -14,7 +14,7 @@ import floralRight from "@/assets/floral-assets/branches/complete_3.png";
 /* Dashboard preview card */
 function DashboardPreview() {
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl bg-[#1A0C11] ring-1 ring-white/10 shadow-2xl">
+    <div className="relative w-full overflow-hidden rounded-2xl bg-ink ring-1 ring-white/10 shadow-2xl">
       {/* Header del dashboard */}
       <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
         <div className="flex items-center gap-2.5">
@@ -41,7 +41,7 @@ function DashboardPreview() {
           { label: "Órdenes totales", value: "143", detail: "+8.2% vs ayer" },
           { label: "Ticket promedio", value: "$345", detail: "+5.1% vs ayer \u2191" },
         ].map((kpi, idx) => (
-          <div key={kpi.label} className="bg-[#1A0C11] p-5">
+          <div key={kpi.label} className="bg-ink p-5">
             <p className="text-[0.55rem] font-bold uppercase tracking-[0.15em] text-white/40">{kpi.label}</p>
             <p className="mt-2 font-serif text-[1.4rem] font-semibold tabular-nums text-white leading-none">{kpi.value}</p>
             <p className="mt-2 text-[0.6rem] text-white/30">{kpi.detail}</p>
@@ -52,7 +52,7 @@ function DashboardPreview() {
       {/* Charts area */}
       <div className="grid grid-cols-1 gap-px bg-white/5 sm:grid-cols-[1.5fr_1fr]">
         {/* Gráfico de línea */}
-        <div className="bg-[#1A0C11] p-5">
+        <div className="bg-ink p-5">
           <p className="mb-4 text-[0.55rem] font-bold uppercase tracking-[0.15em] text-white/40">Ventas por hora</p>
           <div className="flex">
             <div className="flex flex-col justify-between text-[0.5rem] text-white/30 mr-2 h-[80px]">
@@ -120,7 +120,7 @@ function DashboardPreview() {
         </div>
 
         {/* Gráfico de dona */}
-        <div className="bg-[#1A0C11] p-5">
+        <div className="bg-ink p-5">
           <p className="mb-4 text-[0.55rem] font-bold uppercase tracking-[0.15em] text-white/40">Top productos</p>
           <div className="flex items-center gap-6 mt-2">
             <svg viewBox="0 0 80 80" className="h-24 w-24 shrink-0">
@@ -175,7 +175,7 @@ function DashboardPreview() {
             </svg>
             <div className="space-y-2.5 flex-1">
               {[
-                { label: "Entradas", color: "bg-[#F472B6]", perc: "32%" },
+                { label: "Entradas", color: "bg-pink-glow", perc: "32%" },
                 { label: "Platos fuertes", color: "bg-[#A7F3D0]", perc: "45%" },
                 { label: "Bebidas", color: "bg-[#E4E4E7]", perc: "15%" },
                 { label: "Postres", color: "bg-[#FDA4AF]", perc: "8%" },
@@ -315,7 +315,7 @@ export const ProductSection = () => {
   return (
     <section
       ref={sectionRef}
-      className="relative flex flex-col justify-center bg-[#1A0C11] text-white pt-28 lg:pt-40 pb-32 lg:pb-48 overflow-hidden z-10"
+      className="relative flex flex-col justify-center bg-ink text-white pt-28 lg:pt-40 pb-32 lg:pb-48 overflow-hidden z-10"
       id="producto"
     >
       {/* Flores en fondo */}
@@ -342,7 +342,7 @@ export const ProductSection = () => {
           {/* Text Column */}
           <div className="product-text-col relative z-10">
             <div className="product-pill opacity-0 mb-6 flex items-center gap-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#F472B6]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-pink-glow" />
               <span className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-white/50">
                 La Plataforma
               </span>
@@ -350,16 +350,16 @@ export const ProductSection = () => {
 
             <h2 className="product-headline opacity-0 font-serif text-[clamp(3.5rem,6vw,4.5rem)] font-medium leading-[1] text-white m-0">
               Control <br />
-              <span className="italic text-[#F472B6]">absoluto.</span>
+              <span className="italic text-pink-glow">absoluto.</span>
             </h2>
 
             {/* Divisor decorativo */}
             <div className="my-8 flex items-center justify-start gap-3 opacity-40">
-              <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#F472B6]/60" />
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4 text-[#F472B6]">
+              <div className="h-px w-16 bg-gradient-to-r from-transparent to-pink-glow/60" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4 text-pink-glow">
                 <path d="M12 2L15 12L22 15L15 18L12 22L9 18L2 15L9 12Z" fill="currentColor" stroke="none" />
               </svg>
-              <div className="h-px w-16 bg-gradient-to-l from-transparent to-[#F472B6]/60" />
+              <div className="h-px w-16 bg-gradient-to-l from-transparent to-pink-glow/60" />
             </div>
 
             <p className="product-desc opacity-0 text-[1rem] font-medium leading-[1.8] text-white/50 max-w-sm">
@@ -382,20 +382,20 @@ export const ProductSection = () => {
 
           <div ref={bentoGridRef} className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-6">
             {/* Feature 1 (Large / Main) */}
-            <div className="product-bento-item opacity-0 md:col-span-12 lg:col-span-7 rounded-3xl ring-1 ring-white/10 bg-[#1A0C11] p-10 lg:p-14 relative group overflow-hidden">
+            <div className="product-bento-item opacity-0 md:col-span-12 lg:col-span-7 rounded-3xl ring-1 ring-white/10 bg-ink p-10 lg:p-14 relative group overflow-hidden">
               <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.03]" />
               
               {/* Decoración de fondo sutil */}
-              <div className="absolute right-0 top-0 w-64 h-64 bg-[#F472B6]/5 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute right-0 top-0 w-64 h-64 bg-pink-glow/5 rounded-full blur-3xl pointer-events-none" />
 
               {/* Icono */}
-              <div className="relative mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F472B6]/10 ring-1 ring-[#F472B6]/20 text-[#F472B6]">
+              <div className="relative mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-pink-glow/10 ring-1 ring-pink-glow/20 text-pink-glow">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
                 </svg>
               </div>
 
-              <p className="relative text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[#F472B6]/60 mb-8">Eficacia Operativa</p>
+              <p className="relative text-[0.65rem] font-bold uppercase tracking-[0.2em] text-pink-glow/60 mb-8">Eficacia Operativa</p>
               
               <div className="relative">
                 <h4 className="font-serif text-[2.5rem] lg:text-[3.2rem] font-medium leading-none text-white mb-6">Deploy Rápido</h4>
@@ -404,7 +404,7 @@ export const ProductSection = () => {
                 
                 <div className="flex items-baseline gap-4 mb-4">
                   <span className="font-serif text-[4.5rem] lg:text-[5.5rem] font-medium leading-none text-white">1</span>
-                  <span className="font-serif text-2xl lg:text-3xl italic text-[#F472B6]/70">día</span>
+                  <span className="font-serif text-2xl lg:text-3xl italic text-pink-glow/70">día</span>
                 </div>
                 
                 <p className="text-[0.95rem] font-medium leading-relaxed text-white/50 max-w-[25ch]">
@@ -414,7 +414,7 @@ export const ProductSection = () => {
 
               {/* SVG Clock (absolute right bottom) */}
               <div className="absolute -bottom-10 -right-10 opacity-30 pointer-events-none hidden md:block">
-                <svg width="300" height="300" viewBox="0 0 200 200" fill="none" className="text-[#F472B6]">
+                <svg width="300" height="300" viewBox="0 0 200 200" fill="none" className="text-pink-glow">
                   <circle cx="100" cy="100" r="80" stroke="currentColor" strokeWidth="1" strokeDasharray="4 4" />
                   <circle cx="100" cy="100" r="70" stroke="currentColor" strokeWidth="0.5" />
                   {/* Tick marks */}
@@ -432,7 +432,7 @@ export const ProductSection = () => {
             {/* Right Column Stack */}
             <div className="md:col-span-12 lg:col-span-5 flex flex-col gap-4 lg:gap-6">
               {/* Ecosistema */}
-              <div className="product-bento-item opacity-0 flex-1 rounded-3xl ring-1 ring-white/10 bg-[#1A0C11] p-8 lg:p-10 relative group overflow-hidden">
+              <div className="product-bento-item opacity-0 flex-1 rounded-3xl ring-1 ring-white/10 bg-ink p-8 lg:p-10 relative group overflow-hidden">
                 <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.03]" />
                 
                 <div className="relative mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 ring-1 ring-white/10 text-white/70">
@@ -441,7 +441,7 @@ export const ProductSection = () => {
                   </svg>
                 </div>
 
-                <p className="relative text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[#F472B6]/60 mb-3">Ecosistema</p>
+                <p className="relative text-[0.65rem] font-bold uppercase tracking-[0.2em] text-pink-glow/60 mb-3">Ecosistema</p>
                 <p className="relative font-serif text-[1.8rem] font-medium leading-[1.1] text-white mb-4">API Abierta</p>
                 <p className="relative text-[0.95rem] font-medium leading-relaxed text-white/50 max-w-[30ch]">
                   Integraciones nativas con POS de caja y terminales bancarias líderes.
@@ -449,16 +449,16 @@ export const ProductSection = () => {
               </div>
 
               {/* Soporte */}
-              <div className="product-bento-item opacity-0 flex-1 rounded-3xl ring-1 ring-[#F472B6]/20 bg-[#211319] p-8 lg:p-10 relative group overflow-hidden">
+              <div className="product-bento-item opacity-0 flex-1 rounded-3xl ring-1 ring-pink-glow/20 bg-[#211319] p-8 lg:p-10 relative group overflow-hidden">
                 <div className="pointer-events-none absolute inset-0 bg-white/0 transition-colors duration-500 group-hover:bg-white/[0.03]" />
                 
-                <div className="relative mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F472B6]/10 ring-1 ring-[#F472B6]/20 text-[#F472B6]">
+                <div className="relative mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-pink-glow/10 ring-1 ring-pink-glow/20 text-pink-glow">
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
 
-                <p className="relative text-[0.65rem] font-bold uppercase tracking-[0.2em] text-[#F472B6]/60 mb-3">Soporte Humano</p>
+                <p className="relative text-[0.65rem] font-bold uppercase tracking-[0.2em] text-pink-glow/60 mb-3">Soporte Humano</p>
                 <p className="relative font-serif text-[1.8rem] font-medium leading-[1.1] text-white mb-4">Acompañamiento real</p>
                 <p className="relative text-[0.95rem] font-medium leading-relaxed text-white/50 max-w-[30ch]">
                   Expertos que te guían en cada paso. Antes, durante y después.

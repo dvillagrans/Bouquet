@@ -5,7 +5,7 @@ import { ProductMockup } from "@/components/landing/ProductMockup";
  *  No card frames — just clean label + value + sub text in a grid row.
  */
 export const DashboardSection = () => (
-  <section className="bg-canvas py-28 lg:py-40" id="producto">
+  <section className="bg-canvas py-28 lg:py-40" id="dashboard">
     <div className="mx-auto max-w-7xl px-6 lg:px-10">
 
       {/* Header */}

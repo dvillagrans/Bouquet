@@ -67,9 +67,9 @@ export const Features = () => {
 
       const corners = scope.querySelectorAll<HTMLElement>(".features-corner");
       const labels = scope.querySelectorAll<HTMLElement>(".features-label");
-      const title = scope.querySelectorAll<HTMLElement>(".features-title");
-      const desc = scope.querySelectorAll<HTMLElement>(".features-desc");
-      const floral = scope.querySelectorAll<HTMLElement>(".features-floral");
+      const title = scope.querySelector<HTMLElement>(".features-title");
+      const desc = scope.querySelector<HTMLElement>(".features-desc");
+      const floral = scope.querySelector<HTMLElement>(".features-floral");
       const cards = scope.querySelectorAll<HTMLElement>(".features-card");
       const petals = Array.from(scope.querySelectorAll<HTMLElement>(".features-petal"));
 
@@ -120,33 +120,31 @@ export const Features = () => {
           { y: 30, opacity: 0 },
           { y: 0, opacity: 1, duration: 0.8 },
           0.26
+        )
+        .fromTo(
+          floral,
+          { opacity: 0, scale: 0.96, y: 30 },
+          {
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            duration: 1.2,
+            ease: "power3.out",
+          },
+          0.38
+        )
+        .fromTo(
+          cards,
+          { y: 50, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.85,
+            ease: "power3.out",
+            stagger: 0.15,
+          },
+          0.55
         );
-
-      gsap.fromTo(
-        floral,
-        { opacity: 0, scale: 0.96, y: 30 },
-        {
-          opacity: 1,
-          scale: 1,
-          y: 0,
-          duration: 1.2,
-          ease: "power3.out",
-        },
-        0.38
-      );
-
-      gsap.fromTo(
-        cards,
-        { y: 50, opacity: 0 },
-        {
-          y: 0,
-          opacity: 1,
-          duration: 0.85,
-          ease: "power3.out",
-          stagger: 0.15,
-        },
-        0.55
-      );
 
       petals.forEach((petal) => {
         const delay = parseFloat(petal.dataset.delay || "0");
@@ -224,7 +222,7 @@ export const Features = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 lg:gap-16 items-end">
           <h2 className="features-title font-serif italic text-4xl md:text-5xl lg:text-6xl text-rose-950 leading-[1.1]">
-            Tres pilares...
+            Tres pilares para tu operación
           </h2>
           <p className="features-desc text-[15px] md:text-base text-rose-950/70 leading-relaxed font-medium md:pb-1 lg:pb-2 max-w-md md:max-w-none">
             Nada de pantallas que compiten entre sí: mesa, cocina, barra y caja
@@ -282,6 +280,21 @@ export const Features = () => {
           );
         })}
       </div>
+
+      <style>{`
+        @media (prefers-reduced-motion: reduce) {
+          .features-corner,
+          .features-label,
+          .features-title,
+          .features-desc,
+          .features-floral,
+          .features-card,
+          .features-petal {
+            opacity: 1 !important;
+            transform: none !important;
+          }
+        }
+      `}</style>
     </section>
   );
 };

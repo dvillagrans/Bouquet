@@ -154,7 +154,7 @@ export function FaqSection() {
               Todo lo que necesitas saber.
             </h2>
             <p className="opacity-0 mt-6 max-w-sm text-[1rem] leading-[1.75] text-burgundy/55">
-              Si no encontrás tu respuesta, escribinos. Respondemos en menos de
+              Si no encuentras tu respuesta, escríbenos. Respondemos en menos de
               2 horas.
             </p>
 

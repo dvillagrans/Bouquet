@@ -144,7 +144,7 @@ export const SocialProof = () => {
         <div className="social-label opacity-0 flex items-center justify-center gap-4">
           <span className="h-px w-10 bg-white/20" aria-hidden="true" />
           <span className="text-[0.65rem] font-bold uppercase tracking-[0.25em] text-white/35">
-            Prueba social
+            Testimonios
           </span>
           <span className="h-px w-10 bg-white/20" aria-hidden="true" />
         </div>
@@ -154,9 +154,6 @@ export const SocialProof = () => {
             aria-hidden="true"
             className="pointer-events-none absolute -left-2 -top-8 font-serif text-[6rem] leading-none text-rose/20 select-none md:-left-6 md:text-[8rem]"
           >
-            &ldquo;
-          </span>
-          <span aria-hidden="true" className="pointer-events-none absolute -left-2 -top-8 font-serif text-[6rem] leading-none text-rose/20 select-none md:-left-6 md:text-[8rem]">
             &ldquo;
           </span>
           <blockquote ref={quoteRef} className="relative font-serif text-2xl font-medium italic leading-[1.3] tracking-tight text-white/90 md:text-4xl lg:text-[2.75rem] lg:leading-[1.25]">
@@ -185,6 +182,16 @@ export const SocialProof = () => {
               className={`h-1.5 rounded-full transition-all duration-300 ${i === active ? "w-6 bg-rose" : "w-1.5 bg-white/20 hover:bg-white/40"}`}
             />
           ))}
+        </div>
+
+        <div className="social-nav mt-8 flex justify-center opacity-0">
+          <a
+            href="#contacto"
+            className="inline-flex items-center gap-2 rounded-full bg-burgundy px-6 py-3 text-[0.85rem] font-semibold text-white shadow-[0_12px_30px_-12px_rgba(74,26,44,0.5)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-burgundy-light"
+          >
+            Quiero resultados como estos
+            <span aria-hidden="true">→</span>
+          </a>
         </div>
       </div>
 

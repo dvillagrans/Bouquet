@@ -110,13 +110,22 @@ function TableShape({
 }
 
 export const FloorPlan = () => {
-  const reduceMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const [reduceMotion, setReduceMotion] = useState(false);
   const [statusById, setStatusById] = useState<Record<string, Status>>(() =>
     Object.fromEntries(TABLES.map((t) => [t.id, t.status]))
   );
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduceMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReduceMotion(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) return;
     const advanceRandomTables = () => {
       setStatusById((prev) => {
         const next = { ...prev };
@@ -133,7 +142,7 @@ export const FloorPlan = () => {
     const t0 = 2800 + Math.random() * 1800;
     const id = setInterval(advanceRandomTables, t0);
     return () => clearInterval(id);
-  }, []);
+  }, [reduceMotion]);
 
   useGSAP(() => {
     if (reduceMotion || !containerRef.current) return;

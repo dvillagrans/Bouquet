@@ -1,5 +1,7 @@
+import { redirect } from "next/navigation";
 import WaiterDashboard from "@/components/waiter/WaiterDashboard";
-import { getDefaultRestaurant } from "@/actions/restaurant";
+import { getCurrentUser } from "@/lib/auth-server";
+import { resolveRestaurantForUser } from "@/actions/restaurant";
 
 export const metadata = {
   title: "Panel del Mesero | Bouquet",
@@ -9,7 +11,11 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function WaiterPage() {
-  const restaurant = await getDefaultRestaurant();
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  const restaurant = await resolveRestaurantForUser(user.userId);
+  if (!restaurant) throw new Error("No se encontró restaurante asociado");
+
   return (
     <WaiterDashboard
       allowJoinTables={restaurant.allowWaiterJoinTables}

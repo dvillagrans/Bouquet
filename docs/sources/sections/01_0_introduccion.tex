@@ -2,365 +2,177 @@
 
 \subsection{Planteamiento del Problema}
 
-En los establecimientos del sector restaurantero, la gesti\'on de pedidos y el proceso
-de pago representan una parte fundamental de la experiencia del cliente y del control
-operativo del negocio. Sin embargo, en muchos restaurantes estos procesos a\'un dependen
-de m\'etodos tradicionales que implican la intervenci\'on constante del personal, registros
-manuales o sistemas parcialmente digitalizados \cite{toast_success_2023, nra_state_2023}. Esto genera inconvenientes como errores
-en los pedidos, retrasos en la comunicaci\'on con cocina y dificultades al momento de dividir
-la cuenta entre varios comensales.
+En los establecimientos del sector restaurantero, la gestión de pedidos y el cierre de
+cuentas forman parte directa de la experiencia del cliente y del control operativo del
+negocio. Aunque en los últimos años se han incorporado sistemas de punto de venta,
+menús digitales y herramientas administrativas, en muchos restaurantes el flujo de
+atención todavía depende de registros manuales, comunicación verbal entre áreas o
+soluciones parcialmente digitalizadas \cite{toast_success_2023, nra_state_2023}. Esta
+situación favorece errores en los pedidos, retrasos entre el salón y cocina, y tiempos
+de espera innecesarios durante el cierre de la cuenta.
 
-Uno de los problemas m\'as frecuentes ocurre cuando un grupo de personas comparte una
-mesa y desea pagar \'unicamente por los productos que consumi\'o. En estos casos, el personal
-del restaurante debe identificar manualmente los consumos individuales, calcular proporciones
-o dividir la cuenta total, lo cual resulta tedioso, propenso a errores y genera tiempos de espera
-innecesarios \cite{lee_digital_2024, tan_tabletop_2020}.
+Uno de los casos donde estas limitaciones se vuelven más evidentes ocurre cuando varios
+comensales comparten una mesa y desean pagar únicamente los productos que consumieron.
+En esa situación, el personal del restaurante debe identificar consumos individuales,
+calcular proporciones, separar productos compartidos o dividir el total de la cuenta,
+lo cual incrementa la carga operativa y abre espacio a errores de cobro
+\cite{lee_digital_2024, tan_tabletop_2020}. El problema no se reduce al momento del
+pago: también involucra la forma en que se registran las órdenes, se asocian los
+productos con cada comensal y se conserva la información generada durante el servicio.
 
-En M\'exico, el sector de servicios de preparaci\'on de alimentos y bebidas concentra m\'as de
-700{,}000 unidades econ\'omicas de acuerdo con el Directorio Estad\'istico Nacional de Unidades
-Econ\'omicas (DENUE) del Instituto Nacional de Estad\'istica y Geograf\'ia (INEGI) \cite{inegi_denue_2024}.
-Asimismo, la C\'amara Nacional de la Industria de Restaurantes y Alimentos Condimentados (CANIRAC)
-proyect\'o un crecimiento del 4\% para 2024 \cite{inegi_canirac_2023} y de entre 5.5\% y 6\% para 2025 \cite{ramirez_canirac_2025},
-impulsado por la recuperaci\'on del consumo y la apertura de nuevas unidades.
-A pesar de esta expansi\'on, la brecha tecnol\'ogica entre los sistemas existentes y las expectativas
-de los comensales sigue siendo significativa: pocas soluciones integran en una misma plataforma
-la interacci\'on directa del comensal con el men\'u, la gesti\'on de \'ordenes y la divisi\'on
-aut\'onoma de pagos.
+En México, el sector de servicios de preparación de alimentos y bebidas concentra más de
+700{,}000 unidades económicas de acuerdo con el Directorio Estadístico Nacional de
+Unidades Económicas (DENUE) del Instituto Nacional de Estadística y Geografía (INEGI)
+\cite{inegi_denue_2024}. La Cámara Nacional de la Industria de Restaurantes y Alimentos
+Condimentados (CANIRAC) proyectó un crecimiento del 4\% para 2024
+\cite{inegi_canirac_2023} y de entre 5.5\% y 6\% para 2025
+\cite{ramirez_canirac_2025}, impulsado principalmente por la recuperación del consumo y
+la apertura de nuevas unidades. En un sector con esta escala, incluso mejoras puntuales
+en la captura de pedidos, el seguimiento de mesas y la conciliación interna de cuentas
+pueden traducirse en información valiosa para comprender la operación diaria.
 
-En los \'ultimos a\~nos han surgido diferentes sistemas tecnol\'ogicos orientados a la gesti\'on
-de restaurantes, tales como sistemas de punto de venta (POS), aplicaciones de pedidos digitales
-o plataformas de administraci\'on de inventarios. No obstante, muchas de estas soluciones se
-centran principalmente en la operaci\'on interna del restaurante y no integran completamente
-la participaci\'on directa del cliente en el proceso de selecci\'on de productos, gesti\'on de
-pedidos y divisi\'on de pagos dentro de una misma plataforma \cite{katagri_smart_2025} de manera individual o colaborativa.
+Desde la perspectiva de Ciencia de Datos, la problemática no consiste únicamente en
+automatizar la división de cuentas. El valor académico del proyecto se encuentra en
+convertir la operación restaurantera en datos transaccionales estructurados, trazables y
+aptos para análisis posterior. Cada selección de producto, cambio de estado en cocina,
+participación de un comensal, apertura de mesa o registro de liquidación interna puede
+interpretarse como un evento operativo. Si estos eventos se modelan y almacenan de forma
+consistente, dejan de ser acciones aisladas del servicio y se convierten en una fuente de
+información para construir métricas de negocio.
 
-Para efectos del presente trabajo, se entiende la omnicanalidad como la integración
-coordinada de las interfaces utilizadas por los distintos actores del restaurante:
-comensal, mesero, cocina y administración. Estas interfaces no operan como sistemas
-aislados, sino como puntos de interacción conectados a un mismo flujo transaccional,
-donde cada acción genera eventos persistidos en una base de datos común y posteriormente
-aprovechados para análisis operativo y generación de métricas de negocio.
+Para efectos de este trabajo, la liquidación interna se entiende como el registro y
+control del estado de pago dentro del sistema, sin procesar transacciones bancarias reales
+ni integrarse con agregadores externos. Su propósito es representar cuánto corresponde a
+cada comensal, qué aportaciones se han registrado, qué monto permanece pendiente y cuándo
+una mesa puede considerarse liquidada. Esta delimitación permite atender el problema
+operativo de la división de cuentas, al mismo tiempo que conserva los datos necesarios
+para analizar consumos, tiempos, comportamiento por mesa y patrones de demanda.
+
+En los últimos años han surgido diferentes soluciones tecnológicas para la gestión de
+restaurantes, como sistemas de punto de venta (POS), aplicaciones de pedidos digitales y
+plataformas de administración de inventarios. Sin embargo, muchas de ellas se concentran
+en la operación interna del establecimiento y no integran completamente la participación
+directa del cliente, ya sea individual o grupal, en la selección de productos, la gestión
+de pedidos y la división de pagos dentro de una misma plataforma \cite{katagri_smart_2025}.
+Esta separación limita la trazabilidad del flujo completo de atención y dificulta la
+construcción de indicadores derivados de la interacción entre comensales, meseros, cocina
+y administración.
+
+Para responder a esta situación, el presente trabajo propone una plataforma web progresiva
+orientada a la gestión de mesas, órdenes y liquidaciones internas en restaurantes. La
+solución se plantea como un sistema omnicanal en el sentido operativo del término: integra
+las interfaces utilizadas por comensales, meseros, cocina y personal administrativo dentro
+de un mismo flujo transaccional. De esta manera, las acciones realizadas por cada actor
+quedan conectadas a una base de datos común y pueden alimentar posteriormente un proceso
+de análisis basado en Apache Spark, separado de la operación transaccional del sistema.
 
 \subsection{Objetivos}
 
 \subsubsection{Objetivo General}
 
-Diseñar y desarrollar una plataforma web progresiva (PWA) para el sector restaurantero,
-orientada a la gestión estructurada de mesas, órdenes y liquidaciones internas, con el
-propósito de generar datos transaccionales consistentes que alimenten un modelo de base
-de datos centralizado y un pipeline analítico batch basado en Apache Spark.
+Diseñar y desarrollar una plataforma web progresiva para restaurantes que permita gestionar
+mesas, órdenes y liquidaciones internas, generando datos transaccionales estructurados para
+su almacenamiento, trazabilidad y análisis mediante una arquitectura de procesamiento basada
+en Apache Spark.
 
-El sistema permitirá que comensales, meseros, cocina y personal administrativo interactúen
-dentro de un flujo operativo coordinado mediante mesas virtuales accesibles por código QR,
-registro de órdenes individuales y compartidas, y control interno del estado de liquidación
-de cuentas. A partir de estos datos, se implementará una arquitectura analítica tipo
-Medallion (Bronze, Silver y Gold) para la transformación, agregación y visualización de
-métricas de negocio, tales como ventas por sucursal, productos más consumidos, tiempos
-operativos, comportamiento de consumo y estimaciones exploratorias de demanda.
+La plataforma permitirá que comensales, meseros, cocina y personal administrativo participen
+en un flujo operativo coordinado mediante mesas virtuales accesibles por código QR, registro
+de órdenes individuales y compartidas, seguimiento de estados de preparación y control interno
+de cuentas. A partir de los datos generados durante la operación, se construirá una arquitectura
+analítica tipo Medallion, organizada en capas Bronze, Silver y Gold, donde los datos crudos y
+procesados se almacenarán como archivos Parquet y los agregados finales se escribirán en tablas
+analíticas de PostgreSQL para su consulta desde el dashboard administrativo.
 
-El núcleo técnico del proyecto se centra en el diseño de la base de datos transaccional,
-la trazabilidad de los eventos generados durante la operación restaurantera, el procesamiento
-analítico mediante Apache Spark y la construcción de módulos de inteligencia de negocio
-que apoyen la toma de decisiones administrativas.
+El núcleo técnico del proyecto se centra en el diseño del modelo de datos, la consistencia de
+los eventos registrados, la seguridad de acceso según roles, el procesamiento analítico con
+Apache Spark y la visualización de indicadores relacionados con ventas, consumo, tiempos
+operativos, velocidad horaria y demanda exploratoria.
 
 \newpage
 
 \subsubsection{Objetivos Específicos}
 
-Los siguientes objetivos específicos describen los módulos funcionales, técnicos y
-analíticos que deberán desarrollarse para alcanzar el objetivo general. La plataforma
-operativa de mesas, órdenes y liquidaciones internas funcionará como mecanismo de
-captura estructurada de datos transaccionales, mientras que el núcleo técnico del
-trabajo se centrará en el diseño de la base de datos, la trazabilidad de eventos, el
-procesamiento batch con Apache Spark y la generación de indicadores analíticos para
-la toma de decisiones.
+Los objetivos específicos sintetizan los componentes funcionales, técnicos y analíticos
+necesarios para alcanzar el objetivo general. Su formulación se concentra en los resultados
+centrales del trabajo terminal; los módulos, criterios de validación y evidencias de
+implementación se desarrollan en secciones posteriores del documento.
 
-\noindent\textbf{Módulo 1 — Infraestructura, Base de Datos y Arquitectura Analítica}
+\begin{enumerate}
+    \item Diseñar el modelo de base de datos transaccional para representar la operación
+    restaurantera, considerando entidades como cadenas, zonas, sucursales, usuarios,
+    mesas físicas, mesas virtuales, comensales, productos, órdenes, estados de cocina y
+    registros de liquidación interna.
 
-\noindent\textbf{OE-01 Infraestructura Técnica del Sistema.}
-Configurar la infraestructura base del proyecto utilizando Vercel para el despliegue
-de la aplicación web progresiva, Supabase como plataforma de persistencia transaccional
-basada en PostgreSQL y un servidor privado virtual (VPS) para la ejecución del pipeline
-analítico batch con Apache Spark. Asimismo, establecer los ambientes de desarrollo,
-preview y producción necesarios para validar el funcionamiento del sistema.
+    \item Implementar los módulos operativos de la plataforma para gestionar la estructura
+    organizacional del restaurante, el catálogo de productos, las mesas físicas, las mesas
+    virtuales y la participación de los comensales mediante acceso por código QR.
 
-\textit{Evidencia: Aplicación desplegada en Vercel. Instancia de Supabase activa.
-VPS configurado para ejecución de jobs analíticos. Variables de entorno y ambientes
-separados documentados.}
+    \item Desarrollar el flujo de registro de órdenes individuales y compartidas, junto con
+    el tablero de cocina y los mecanismos de actualización de estados que permitan dar
+    seguimiento a la preparación y atención de los pedidos.
 
-\noindent\textbf{OE-02 Diseño de la Base de Datos Transaccional.}
-Diseñar e implementar un modelo de base de datos relacional que permita representar
-la operación restaurantera mediante entidades como cadena, zona, sucursal, usuarios,
-mesas físicas, mesas virtuales, comensales, productos, órdenes, estados de cocina y
-registros de liquidación interna. El modelo deberá garantizar integridad referencial,
-consistencia transaccional y trazabilidad histórica de los eventos relevantes.
+    \item Implementar el módulo de liquidación interna de cuentas para registrar consumos
+    individuales, productos compartidos, aportaciones de los comensales y estado de cierre
+    de la mesa, sin procesar pagos bancarios reales.
 
-\textit{Evidencia: Schema relacional implementado mediante Prisma ORM. Migraciones
-ejecutadas correctamente. Relaciones entre entidades validadas. Restricciones de
-integridad documentadas.}
+    \item Configurar mecanismos de autenticación, autorización, seguridad y auditoría que
+    restrinjan el acceso a la información según el rol y alcance organizacional de cada
+    usuario, aplicando políticas de protección de datos a nivel de aplicación y base de
+    datos.
 
-\noindent\textbf{OE-03 Arquitectura Analítica Medallion.}
-Definir e implementar una arquitectura analítica basada en capas Bronze, Silver y Gold
-para transformar los datos operativos del sistema en conjuntos analíticos. La capa
-Bronze almacenará extracciones crudas de la operación; la capa Silver contendrá datos
-limpios, normalizados y enriquecidos; y la capa Gold concentrará agregados listos para
-ser consultados desde el dashboard administrativo.
+    \item Construir un pipeline analítico con Apache Spark, coordinado mediante un
+    orquestador de ejecución y organizado bajo una arquitectura Medallion, para extraer,
+    limpiar, normalizar, enriquecer y agregar los datos transaccionales generados por la
+    plataforma.
 
-\textit{Evidencia: Estructura de almacenamiento Medallion creada. Datasets Bronze,
-Silver y Gold generados. Documentación del flujo de transformación entre capas.}
+    \item Generar tablas analíticas e indicadores de negocio en los niveles de cadena,
+    zona y sucursal, considerando ventas, productos más consumidos, actividad por mesa,
+    tiempos de preparación, comportamiento por franja horaria y estimaciones exploratorias
+    de demanda.
 
-\noindent\textbf{Módulo 2 — Organización, Usuarios y Control de Acceso}
-
-\noindent\textbf{OE-04 Estructura Organizacional del Restaurante.}
-Implementar los módulos de creación, edición y consulta de la estructura organizacional
-del sistema, considerando tres niveles principales: cadena restaurantera, zona y sucursal.
-Cada entidad deberá estar asociada jerárquicamente a su nivel superior, permitiendo que
-los datos operativos y analíticos puedan consultarse según el alcance correspondiente.
-
-\textit{Evidencia: CRUD funcional de cadena, zonas y sucursales. Validación de
-integridad jerárquica. Consultas filtradas por nivel organizacional.}
-
-\noindent\textbf{OE-05 Autenticación, Roles y Alcance de Usuarios.}
-Implementar un sistema de autenticación y autorización para usuarios colaboradores,
-definiendo roles con alcances diferenciados: Admin Cadena, Gerente Zona, Gerente
-Sucursal, Mesero y Cocina/Chef. El acceso a los datos deberá restringirse según el rol
-y el nivel organizacional asignado, aplicando el principio de mínimo privilegio.
-
-\textit{Evidencia: Matriz de roles y permisos documentada. Flujo de inicio de sesión
-funcional. Validación de acceso restringido por rol y nivel organizacional.}
-
-\noindent\textbf{OE-06 Gobernanza y Seguridad de Datos.}
-Configurar políticas de seguridad a nivel de fila mediante Row Level Security (RLS)
-en Supabase para evitar accesos indebidos entre cadenas, zonas y sucursales. Además,
-implementar mecanismos de auditoría para registrar operaciones críticas realizadas
-sobre entidades relevantes del sistema.
-
-\textit{Evidencia: Políticas RLS activas. Pruebas de aislamiento de datos entre niveles
-organizacionales. Tabla de auditoría con registros de usuario actor, entidad afectada,
-acción realizada y fecha de operación.}
-
-\noindent\textbf{Módulo 3 — Catálogo y Datos Operativos}
-
-\noindent\textbf{OE-07 Gestión de Catálogo de Productos.}
-Desarrollar el módulo de catálogo para administrar categorías, productos, variantes de
-precio y modificadores. El catálogo deberá alimentar directamente el flujo de órdenes,
-permitiendo capturar datos consistentes sobre productos consumidos, precios aplicados
-y configuraciones seleccionadas por los comensales.
-
-\textit{Evidencia: CRUD funcional de categorías, productos, variantes y modificadores.
-Productos disponibles para selección desde el menú digital. Datos de catálogo vinculados
-correctamente con órdenes registradas.}
-
-\noindent\textbf{OE-08 Captura Histórica de Productos en Órdenes.}
-Implementar un mecanismo de snapshots inmutables para los productos registrados dentro
-de una orden, almacenando información como nombre, precio, variante y modificadores al
-momento de la compra. Esto permitirá conservar la integridad histórica de las órdenes
-aun cuando el catálogo cambie posteriormente.
-
-\textit{Evidencia: Orden generada con snapshot de producto. Modificación posterior del
-catálogo sin afectar órdenes históricas. Validación de consistencia entre orden,
-producto original y datos almacenados.}
-
-\noindent\textbf{Módulo 4 — Mesas Físicas, Mesas Virtuales y Comensales}
-
-\noindent\textbf{OE-09 Gestión de Mesas Físicas.}
-Implementar el módulo de administración de mesas físicas por sucursal, permitiendo
-registrar número, capacidad, ubicación y estado operativo de cada mesa. El sistema
-deberá permitir asociar una o más mesas físicas a una sesión operativa para representar
-grupos de comensales durante el servicio.
-
-\textit{Evidencia: Registro y edición de mesas físicas. Visualización de estado de mesa.
-Asociación de mesas físicas a sesiones operativas. Persistencia correcta de cambios
-en base de datos.}
-
-\noindent\textbf{OE-10 Mesa Virtual y Acceso mediante QR.}
-Desarrollar el flujo de inicialización de mesa virtual mediante códigos QR generados
-por el personal autorizado. El enlace del QR deberá incluir una firma criptográfica
-basada en HMAC-SHA256 para evitar manipulación del identificador de mesa. Al escanear
-el QR, el comensal podrá unirse a una mesa virtual activa mediante una sesión temporal,
-siempre que la mesa se encuentre disponible y la validación de acceso sea correcta.
-
-\textit{Evidencia: QR generado con firma HMAC-SHA256 válida. Rechazo de enlaces alterados.
-Creación de sesión temporal de comensal. Unión exitosa a mesa virtual activa. Rechazo
-de acceso cuando la mesa se encuentre inactiva, liquidada o cerrada.}
-
-\noindent\textbf{OE-11 Estados de Mesa Virtual.}
-Definir e implementar el ciclo de vida de una mesa virtual mediante estados operativos
-claros: \textit{Libre}, \textit{Activa}, \textit{En consumo}, \textit{Por liquidar},
-\textit{Liquidada} y \textit{Cerrada}. Los cambios de estado deberán registrarse en
-la base de datos para permitir trazabilidad operativa y posterior análisis de tiempos
-de atención.
-
-\textit{Evidencia: Transiciones de estado implementadas. Registro de cambios de estado.
-Validación de reglas, como impedir nuevas órdenes en mesas liquidadas o cerradas.}
-
-\noindent\textbf{Módulo 5 — Órdenes, Cocina y Eventos Transaccionales}
-
-\noindent\textbf{OE-12 Registro de Órdenes Individuales y Compartidas.}
-Implementar la interfaz de menú digital para que los comensales puedan seleccionar
-productos, configurar modificadores y registrar órdenes individuales o compartidas.
-Cada orden deberá asociarse a la mesa virtual, al comensal correspondiente y al tipo
-de consumo, generando datos transaccionales estructurados para su posterior análisis.
-
-\textit{Evidencia: Orden individual registrada correctamente. Orden compartida asociada
-a mesa grupal. Relación entre comensal, mesa, productos y tipo de orden validada en
-base de datos.}
-
-\noindent\textbf{OE-13 Tablero de Cocina y Estados de Preparación.}
-Desarrollar la vista de cocina para visualizar órdenes activas de la sucursal, agrupadas
-por estado de preparación. El personal de cocina podrá actualizar el estado de cada
-orden, generando eventos operativos que permitan analizar tiempos de preparación,
-flujo de trabajo y desempeño de estaciones.
-
-\textit{Evidencia: Nueva orden visible en tablero de cocina. Cambio de estado reflejado
-en tiempo real. Registro histórico de transiciones de preparación. Datos disponibles
-para análisis posterior.}
-
-\noindent\textbf{OE-14 Sincronización en Tiempo Real.}
-Integrar mecanismos de actualización en tiempo real para reflejar cambios de órdenes,
-estados de cocina y estados de mesa entre las interfaces del comensal, mesero, cocina
-y administración. Esta sincronización permitirá mantener consistencia operativa durante
-la sesión activa.
-
-\textit{Evidencia: Actualización de órdenes sin recargar la página. Cambio de estado
-de cocina visible para los usuarios correspondientes. Validación de sincronización
-entre al menos dos interfaces conectadas simultáneamente.}
-
-\noindent\textbf{Módulo 6 — Liquidación Interna}
-
-\noindent\textbf{OE-15 Liquidación Interna de Cuentas.}
-Implementar el módulo de liquidación interna para que los comensales puedan visualizar
-el desglose de su consumo individual, los productos compartidos de la mesa y el monto
-pendiente. El sistema permitirá registrar aportaciones realizadas por los comensales,
-sin procesar transacciones bancarias reales ni integrarse con agregadores de pago
-externos en la versión 1.0.
-
-\textit{Evidencia: Visualización del desglose individual y compartido. Registro de
-aportaciones internas. Validación de que el monto liquidado no exceda el total de la
-cuenta. Cambio automático a estado \textit{Liquidada} cuando el total pendiente sea
-cubierto.}
-
-\noindent\textbf{OE-16 Consistencia Transaccional en Liquidaciones.}
-Diseñar e implementar mecanismos de control para evitar inconsistencias durante el
-registro de aportaciones simultáneas. El sistema deberá validar el estado actual de la
-mesa, el monto pendiente y las aportaciones previamente registradas antes de aceptar
-una nueva operación de liquidación. Para ello, se considerarán mecanismos de bloqueo
-transaccional en PostgreSQL, como \texttt{SELECT FOR UPDATE}.
-
-\textit{Evidencia: Intento de liquidación simultánea controlado. Rechazo de aportaciones
-duplicadas o superiores al monto pendiente. Persistencia consistente del estado financiero
-interno de la mesa.}
-
-\noindent\textbf{Módulo 7 — Procesamiento Analítico con Apache Spark}
-
-\noindent\textbf{OE-17 Extracción de Datos Transaccionales.}
-Implementar procesos de extracción batch desde la base de datos transaccional hacia
-la capa Bronze de la arquitectura analítica. Las extracciones deberán conservar los
-datos relevantes de operación, tales como órdenes, productos, mesas, comensales,
-estados de cocina, liquidaciones internas y estructura organizacional.
-
-\textit{Evidencia: Extracciones batch ejecutadas correctamente. Datos crudos almacenados
-en capa Bronze. Correspondencia validada entre registros transaccionales y archivos
-generados.}
-
-\noindent\textbf{OE-18 Transformación y Limpieza de Datos con Spark.}
-Desarrollar jobs de Apache Spark para limpiar, normalizar y enriquecer los datos
-extraídos en la capa Bronze, generando datasets Silver consistentes. Las transformaciones
-deberán resolver formatos de fecha, relaciones entre entidades, cálculo de montos,
-duraciones operativas y clasificación de eventos relevantes.
-
-\textit{Evidencia: Jobs de Spark documentados. Datasets Silver generados. Validación de
-reglas de transformación. Comparación entre datos crudos y datos procesados.}
-
-\noindent\textbf{OE-19 Generación de Tablas Analíticas Gold.}
-Construir tablas analíticas Gold a partir de los datasets Silver, enfocadas en indicadores
-de negocio y operación restaurantera. Estas tablas deberán permitir consultar métricas
-como ingresos por sucursal, productos más consumidos, actividad por mesa, tiempos de
-preparación, velocidad de venta, comportamiento por franja horaria y desempeño operativo
-por nivel organizacional.
-
-\textit{Evidencia: Tablas Gold generadas. Métricas calculadas correctamente. Consultas
-analíticas validadas contra datos transaccionales de origen.}
-
-\noindent\textbf{OE-20 Estimaciones Exploratorias de Demanda.}
-Implementar un componente analítico exploratorio para identificar patrones históricos
-de consumo por producto, sucursal y franja horaria. Este componente no tendrá como
-objetivo construir un sistema predictivo avanzado, sino generar estimaciones descriptivas
-y tendencias iniciales que apoyen la interpretación del comportamiento de demanda.
-
-\textit{Evidencia: Cálculo de tendencias por producto, sucursal y horario. Visualización
-de patrones de consumo. Documentación de método utilizado y limitaciones del análisis.}
-
-\noindent\textbf{Módulo 8 — Dashboard Analítico y Validación}
-
-\noindent\textbf{OE-21 Dashboard Administrativo de Inteligencia de Negocio.}
-Desarrollar un dashboard administrativo conectado a las tablas analíticas Gold para
-visualizar indicadores relevantes de operación y negocio. El dashboard deberá permitir
-filtrar información según el nivel organizacional del usuario, mostrando métricas
-consolidadas para Admin Cadena, métricas regionales para Gerente Zona y métricas
-locales para Gerente Sucursal.
-
-\textit{Evidencia: Dashboard funcional con métricas provenientes de tablas Gold.
-Filtros por nivel organizacional. Visualización de indicadores de ventas, productos,
-mesas, tiempos operativos y demanda exploratoria.}
-
-\noindent\textbf{OE-22 Validación de Métricas y Trazabilidad Analítica.}
-Validar que las métricas mostradas en el dashboard correspondan con los datos
-transaccionales registrados en el sistema. Para ello, se documentará la trazabilidad
-entre eventos operativos, registros de base de datos, transformaciones Spark y tablas
-analíticas finales.
-
-\textit{Evidencia: Matriz de trazabilidad entre datos operativos y métricas analíticas.
-Casos de prueba documentados. Comparación manual o automatizada entre registros
-transaccionales y resultados agregados.}
-
-\noindent\textbf{OE-23 Seguridad, Auditoría y Calidad del Sistema.}
-Implementar mecanismos básicos de seguridad y calidad, incluyendo comunicación cifrada
-mediante HTTPS, validación de accesos por rol, auditoría de operaciones críticas y
-pruebas funcionales sobre los módulos principales. La auditoría deberá registrar eventos
-administrativos y operativos relevantes para fortalecer la trazabilidad del sistema.
-
-\textit{Evidencia: Aplicación operando sobre HTTPS. Pruebas funcionales documentadas.
-Registros de auditoría generados. Validación de acceso por rol. Revisión de seguridad
-sin vulnerabilidades críticas conocidas en los flujos principales.}
+    \item Desarrollar un dashboard administrativo que permita visualizar las métricas
+    generadas y validar la trazabilidad entre los eventos operativos registrados, las
+    transformaciones analíticas y los indicadores presentados al usuario final.
+\end{enumerate}
 
 \newpage
 
 \subsection{Justificación}
 
-La relevancia de este proyecto radica en el diseño de una solución tecnológica que no
-solo atiende la gestión operativa de mesas, órdenes y liquidaciones en restaurantes, sino
-que además estructura dichos procesos como una fuente formal de datos transaccionales
-para su posterior análisis. En este sentido, la plataforma propuesta funciona como un
-sistema generador de eventos operativos, donde cada interacción del comensal, mesero,
-cocina y administración queda registrada de manera consistente en una base de datos
-centralizada.
+El proyecto resulta pertinente porque aborda la operación restaurantera como una fuente
+estructurada de datos, no únicamente como un flujo de atención al cliente. La división de
+cuentas, el registro de órdenes y el seguimiento de mesas son problemas cotidianos para
+muchos establecimientos; sin embargo, también representan puntos de captura que, si se
+modelan adecuadamente, permiten reconstruir el comportamiento operativo del negocio con
+mayor precisión.
 
-El valor principal del trabajo se encuentra en la integración entre el modelo transaccional
-y el modelo analítico. A partir de las órdenes registradas, los estados de preparación, las
-sesiones de mesa, los consumos individuales y las liquidaciones internas, el sistema permite
-construir un flujo de procesamiento batch mediante Apache Spark, organizado bajo una
-arquitectura Medallion en capas Bronze, Silver y Gold. Esta arquitectura facilita la limpieza,
-transformación y agregación de los datos para convertirlos en métricas útiles para la toma
-de decisiones.
+La propuesta no se limita a digitalizar el pedido o a mostrar un menú en línea. Su aporte
+principal está en vincular la operación diaria con un modelo transaccional diseñado para
+conservar eventos relevantes: productos seleccionados, comensales asociados a una mesa,
+estados de preparación, tiempos de atención, consumos compartidos y registros de
+liquidación interna. Esta información ofrece una base más consistente para generar
+indicadores que apoyen la toma de decisiones administrativas.
 
-Desde la perspectiva de Ciencia de Datos, el proyecto permite aplicar conocimientos de
-diseño de bases de datos, modelado transaccional, procesamiento distribuido, ingeniería de
-datos, construcción de indicadores y visualización analítica. Las métricas generadas podrán
-apoyar el análisis de ventas por sucursal, comportamiento de consumo, productos con mayor
-demanda, tiempos de atención, desempeño de estaciones de cocina y patrones operativos
-relevantes para la administración restaurantera.
+Desde la perspectiva de Ciencia de Datos, el trabajo integra conocimientos de diseño de
+bases de datos, modelado transaccional, ingeniería de datos, procesamiento distribuido,
+construcción de métricas y visualización analítica. El uso de Apache Spark y de una
+arquitectura Medallion permite organizar el procesamiento en capas, desde la extracción de
+datos crudos hasta la generación de tablas Gold listas para consulta desde la aplicación. Con
+ello, el proyecto conecta el desarrollo de software con un flujo de análisis capaz de producir
+información sobre ventas, demanda, tiempos operativos, velocidad de consumo y desempeño por
+nivel organizacional.
 
-A diferencia de una aplicación enfocada únicamente en la captura de pedidos, la propuesta
-plantea un flujo completo donde la operación diaria se convierte en información estructurada
-y explotable. De esta manera, el sistema no se limita a resolver una problemática inmediata
-de división de cuentas, sino que habilita una base de conocimiento para análisis posteriores,
-reportes administrativos y estimaciones exploratorias de demanda.
+Esta integración tiene valor académico porque permite estudiar el ciclo completo del dato:
+su origen en una interacción operativa, su persistencia en una base transaccional, su
+transformación mediante procesos batch u operaciones analíticas bajo demanda, y su presentación
+como indicador de negocio. En la mayoría de los casos, las aplicaciones restauranteras se enfocan
+en resolver necesidades inmediatas del servicio; este trabajo, en cambio, plantea que esas mismas
+interacciones pueden convertirse en insumos para análisis posteriores, métricas operativas y
+estimaciones exploratorias de demanda.
 
-Asimismo, el desarrollo conserva un enfoque práctico y delimitado: la versión 1.0 no
-procesará pagos bancarios reales ni integrará agregadores externos, sino que registrará el
-estado interno de liquidación de las cuentas. Esta decisión reduce riesgos técnicos, legales
-y de seguridad, permitiendo concentrar el trabajo terminal en el diseño de la base de datos,
-la trazabilidad de la operación, el procesamiento analítico y la generación de inteligencia
-de negocio.
-informaci\'on, constituyendo una aplicaci\'on pr\'actica e integradora de los conocimientos adquiridos en la formaci\'on acad\'emica.
+El desarrollo conserva un alcance práctico y delimitado. La versión 1.0 no procesará pagos
+bancarios reales ni se integrará con agregadores externos, sino que registrará el estado
+interno de liquidación de las cuentas. Esta decisión reduce riesgos técnicos, legales y de
+seguridad, y permite concentrar el trabajo terminal en los componentes con mayor relación
+con la formación académica: diseño de datos, trazabilidad operativa, procesamiento analítico
+e inteligencia de negocio aplicada al sector restaurantero.

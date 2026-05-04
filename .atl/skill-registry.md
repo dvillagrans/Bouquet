@@ -1,6 +1,6 @@
 # Skill Registry — Bouquet
 
-Generated: 2026-05-03
+Generated: 2026-05-04
 Mode: engram
 
 ## Project-Level Skills
@@ -21,6 +21,7 @@ Located in `.agents/skills/` (symlinked from `.claude/skills/`).
 | prisma-client-api | Prisma Client API reference covering model queries, filters, operators, and client methods. | prisma query, findMany, create, update, delete, $transaction |
 | prisma-database-setup | Guides for configuring Prisma with different database providers (PostgreSQL, MySQL, SQLite, MongoDB, etc.). | configure postgres, connect to mysql, setup mongodb, sqlite setup |
 | prisma-postgres | Prisma Postgres setup and operations guidance across Console, create-db CLI, Management API, and Management API SDK. | create Prisma Postgres, Prisma Console, create-db, create-pg, create-postgres |
+| redaccion-academica | Skill de redacción académica y profesional en español, nivel licenciatura. Opera en dos modos: GENERACIÓN (ideas → prosa) y REESCRITURA (texto → versión humana). | redactar, reescribir, pulir, mejorar, humanizar texto, suena a IA, hazlo más humano, redáctame esto, convierte ideas en texto, mejora la redacción, documento académico, tesis, trabajo terminal, reporte técnico |
 | seo | Optimize for search engine visibility and ranking. | improve SEO, optimize for search, fix meta tags, add structured data, sitemap optimization, search engine optimization |
 | supabase-postgres-best-practices | Postgres performance optimization and best practices from Supabase. | optimize Postgres queries, schema design, database configuration, Supabase performance |
 | tailwind-css-patterns | Provides comprehensive Tailwind CSS utility-first styling patterns including responsive design, layout utilities, flexbox, grid, spacing, typography, colors, and modern CSS best practices. | style React/Vue/Svelte components, responsive layout, design system, Tailwind CSS |

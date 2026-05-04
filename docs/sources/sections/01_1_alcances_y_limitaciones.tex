@@ -4,16 +4,16 @@
 
 \subsubsection{Funcionalidades Incluidas en la Versión 1.0}
 
-El presente apartado delimita con precisión el conjunto de funcionalidades, módulos,
-usuarios y restricciones técnicas que comprenden el sistema en su versión~1.0.
-Todo lo listado constituye un entregable comprometido del proyecto. La
-Tabla~\ref{tab:alcances} resume los alcances funcionales confirmados.
+Esta sección delimita las funcionalidades, módulos, usuarios y restricciones técnicas que
+comprende la versión~1.0 del sistema. Su propósito es establecer con claridad qué componentes
+forman parte del trabajo terminal y qué aspectos quedan fuera del desarrollo inicial. La
+Tabla~\ref{tab:alcances} resume los alcances funcionales confirmados para la plataforma.
 
 {\small
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.3}
 \begin{longtable}{>{\bfseries\centering}p{1.5cm} p{12.5cm}}
-\caption{Alcances Funcionales del Sistema v1.0} \label{tab:alcances} \\
+\caption{Alcances funcionales del sistema v1.0} \label{tab:alcances} \\
 \hline
 \thead{ID} & \thead{Funcionalidad incluida} \\
 \hline
@@ -25,47 +25,48 @@ Tabla~\ref{tab:alcances} resume los alcances funcionales confirmados.
 \endhead
 \hline
 \endfoot
-AL-01 & \textbf{Modelo de Base de Datos Transaccional.} Dise\~no e implementaci\'on de un modelo relacional en PostgreSQL para representar la operaci\'on restaurantera, incluyendo estructura organizacional, usuarios, mesas, sesiones, comensales, cat\'alogo, \'ordenes, estados de cocina, liquidaciones internas y eventos auditables, garantizando integridad referencial y trazabilidad de datos. \\
+AL-01 & \textbf{Modelo de base de datos transaccional.} Diseño e implementación de un modelo relacional en PostgreSQL para representar la operación restaurantera, incluyendo estructura organizacional, usuarios, mesas, sesiones, comensales, catálogo, órdenes, estados de cocina, liquidaciones internas y eventos auditables. El modelo deberá conservar integridad referencial, consistencia de datos y trazabilidad operativa. \\
 \rowcolor{altrow}
-AL-02 & \textbf{Estructura Organizacional Jer\'arquica.} Creaci\'on y administraci\'on de los tres niveles: Cadena, Zona y Sucursal, con integridad referencial y herencia de configuraciones (moneda, impuestos, propinas). \\
-AL-03 & \textbf{Gobernanza de Datos y RBAC.} Matriz de permisos detallada por rol (Admin Cadena, Gerente Zona, Gerente Sucursal, Mesero, Cocina/Chef y Comensal), con pol\'iticas de seguridad a nivel de fila (RLS) en Supabase seg\'un el nivel organizacional y alcance operativo correspondiente. \\
+AL-02 & \textbf{Estructura organizacional jerárquica.} Creación y administración de tres niveles organizacionales: cadena, zona y sucursal. Cada nivel deberá mantener su relación jerárquica y permitir la configuración de elementos operativos como moneda, impuestos y propinas, según el alcance correspondiente. \\
+AL-03 & \textbf{Gobernanza de datos y control de acceso por roles.} Definición de una matriz de permisos para los roles Admin Cadena, Gerente Zona, Gerente Sucursal, Mesero, Cocina/Chef y Comensal. El acceso a los datos se restringirá mediante reglas de autorización y políticas de seguridad a nivel de fila (RLS) en Supabase, de acuerdo con el nivel organizacional y operativo de cada usuario. \\
 \rowcolor{altrow}
-AL-04 & \textbf{Seguridad de Identidad y Contrase\~nas.} Alta de colaboradores con generaci\'on de contrase\~na temporal y flujo obligatorio de cambio en el primer inicio de sesi\'on (\texttt{isFirstLogin}). \\
-AL-05 & \textbf{Cat\'alogo de Men\'u Multinivel.} Gesti\'on de \textit{Templates} a nivel de cadena para estandarizaci\'on y men\'us locales por sucursal con categor\'ias, productos, variantes y modificadores. \\
+AL-04 & \textbf{Seguridad de identidad y contraseñas.} Alta de usuarios colaboradores con generación de contraseña temporal y flujo obligatorio de cambio en el primer inicio de sesión mediante el atributo \texttt{isFirstLogin}. \\
+AL-05 & \textbf{Catálogo de menú multinivel.} Gestión de plantillas de menú a nivel de cadena para estandarizar productos base, así como menús locales por sucursal con categorías, productos, variantes de precio y modificadores. \\
 \rowcolor{altrow}
-AL-06 & \textbf{Gesti\'on de Mesas y Floor Map.} Representaci\'on visual del sal\'on mediante coordenadas $X, Y$ y formas geom\'etricas (\texttt{rect}, \texttt{circle}); visualizaci\'on en tiempo real del estatus ocupacional. \\
-AL-07 & \textbf{Mesa Virtual y Seguridad QR.} Generaci\'on de c\'odigos QR asociados a mesas f\'isicas mediante enlaces firmados con HMAC-SHA256, con validaci\'on del identificador de mesa y control de acceso a sesiones activas. El acceso de los comensales se restringe mediante la mesa virtual activa, la clave de acceso y el estado operativo de la sesi\'on. \\
+AL-06 & \textbf{Gestión de mesas y mapa de piso.} Representación visual del salón mediante coordenadas $X, Y$ y formas geométricas básicas, como \texttt{rect} y \texttt{circle}. El módulo mostrará el estado ocupacional de las mesas para apoyar la operación del personal de servicio. \\
+AL-07 & \textbf{Mesa virtual y seguridad mediante QR.} Generación de códigos QR asociados a mesas físicas mediante enlaces firmados con HMAC-SHA256. El sistema validará el identificador de mesa, la firma del enlace y el estado operativo de la sesión antes de permitir el acceso de los comensales a una mesa virtual activa. \\
 \rowcolor{altrow}
-AL-08 & \textbf{Interacci\'on Colaborativa de Comensales.} Flujo de uni\'on de comensales (\textit{Guests}) a una sesi\'on mediante clave de acceso; soporte para \'ordenes simult\'aneas sobre una misma mesa compartida. \\
-AL-09 & \textbf{\'Ordenes con Integridad Hist\'orica.} Captura de \'ordenes individuales y compartidas con generaci\'on de \textit{snapshots} inmutables de nombre y precio para evitar inconsistencias por cambios futuros en el cat\'alogo. \\
+AL-08 & \textbf{Interacción colaborativa de comensales.} Flujo de unión de comensales a una sesión de mesa mediante clave de acceso, con soporte para registrar órdenes simultáneas dentro de una misma mesa compartida. \\
+AL-09 & \textbf{Órdenes con integridad histórica.} Captura de órdenes individuales y compartidas con generación de \textit{snapshots} inmutables de nombre, precio, variante y modificadores seleccionados, con el fin de evitar inconsistencias cuando el catálogo cambie después del registro de la orden. \\
 \rowcolor{altrow}
-AL-10 & \textbf{Personalizaci\'on de Productos y Modificadores.} Soporte para grupos de modificadores (\textit{Extras}, \textit{T\'erminos}) con reglas de sele\'ccion m\'inima/m\'axima y ajustes de precio autom\'aticos. \\
-AL-11 & \textbf{Cocina Digital y KDS.} Enrutamiento de comandas por estaciones de preparaci\'on; tablero en tiempo real con historial de transiciones de estado para m\'etricas de desempe\~no. \\
+AL-10 & \textbf{Personalización de productos y modificadores.} Soporte para grupos de modificadores, como extras o términos de preparación, con reglas de selección mínima y máxima, así como ajustes automáticos de precio cuando corresponda. \\
+AL-11 & \textbf{Cocina digital y tablero KDS.} Enrutamiento de comandas por estaciones de preparación mediante un tablero de cocina o \textit{Kitchen Display System} (KDS). El módulo registrará las transiciones de estado para analizar tiempos de preparación y desempeño operativo. \\
 \rowcolor{altrow}
-AL-12 & \textbf{Divisi\'on de Cuenta Flexible.} C\'alculo del desglose de consumo por comensal, productos compartidos y total de mesa, permitiendo identificar montos individuales, aportaciones a cuenta compartida y saldo pendiente sin procesar cobros bancarios reales. \\
-AL-13 & \textbf{Liquidaci\'on Interna.} Registro del estado de liquidaci\'on de cuentas individuales y compartidas, captura de aportaciones realizadas por los comensales, aplicaci\'on de descuentos autorizados y validaci\'on del monto pendiente con base en los consumos registrados. No se procesan transacciones bancarias reales ni se integran agregadores de pago en la versi\'on 1.0. \\
+AL-12 & \textbf{División de cuenta flexible.} Cálculo del desglose de consumo por comensal, productos compartidos y total de mesa, permitiendo identificar montos individuales, aportaciones a cuenta compartida y saldo pendiente sin procesar cobros bancarios reales. \\
+AL-13 & \textbf{Liquidación interna.} Registro del estado de liquidación de cuentas individuales y compartidas, captura de aportaciones realizadas por los comensales, aplicación de descuentos autorizados y validación del monto pendiente con base en los consumos registrados. La versión~1.0 no procesará transacciones bancarias reales ni se integrará con agregadores de pago. \\
 \rowcolor{altrow}
-AL-14 & \textbf{Control de Concurrencia Transaccional.} Implementaci\'on de mecanismos de bloqueo transaccional, como \texttt{SELECT FOR UPDATE}, para prevenir registros duplicados o inconsistentes durante aportaciones simult\'aneas y asegurar la actualizaci\'on correcta del estado de liquidaci\'on de la mesa. \\
-AL-15 & \textbf{Trazabilidad y Auditor\'ia.} Registro de operaciones administrativas y eventos cr\'iticos mediante una tabla de auditor\'ia que almacene usuario actor, fecha, acci\'on realizada, entidad afectada, direcci\'on IP, agente de usuario y estado previo/posterior cuando aplique. \\
+AL-14 & \textbf{Control de concurrencia transaccional.} Implementación de mecanismos de bloqueo transaccional, como \texttt{SELECT FOR UPDATE}, para prevenir registros duplicados o inconsistentes durante aportaciones simultáneas y asegurar la actualización correcta del estado de liquidación de la mesa. \\
+AL-15 & \textbf{Trazabilidad y auditoría.} Registro de operaciones administrativas y eventos críticos mediante una tabla de auditoría que almacene usuario actor, fecha, acción realizada, entidad afectada, dirección IP, agente de usuario y estado previo o posterior cuando aplique. \\
 \rowcolor{altrow}
-AL-16 & \textbf{Pipeline Anal\'itico Apache Spark.} Implementaci\'on de jobs batch para extraer datos transaccionales, almacenarlos en capa Bronze, limpiarlos y normalizarlos en capa Silver, y generar agregados anal\'iticos en capa Gold para el c\'alculo de indicadores operativos y de negocio. \\
-AL-17 & \textbf{Dashboard Administrativo de BI.} Visualizaci\'on de m\'etricas anal\'iticas generadas a partir de las capas Gold del pipeline, incluyendo ventas por sucursal, productos m\'as consumidos, tiempos de atenci\'on, actividad por mesa y estimaciones exploratorias de demanda, con filtros seg\'un el nivel organizacional del usuario. \\
+AL-16 & \textbf{Pipeline analítico con Apache Spark.} Implementación de jobs analíticos coordinados por un orquestador de ejecución para extraer datos transaccionales hacia capa Bronze, limpiarlos y enriquecerlos en capa Silver, generar agregados en capa Gold y escribir los resultados finales en tablas analíticas de PostgreSQL. El procesamiento considerará ejecuciones batch para métricas históricas y ejecución bajo demanda para indicadores operativos de la sucursal. \\
+AL-17 & \textbf{Dashboard administrativo de inteligencia de negocio.} Visualización de métricas analíticas generadas a partir de tablas Gold consultadas desde PostgreSQL, incluyendo ventas por cadena y sucursal, productos más consumidos, comparación por zona, tiempos de atención, actividad por mesa, velocidad horaria y estimaciones exploratorias de demanda, con filtros según el nivel organizacional del usuario. \\
 \rowcolor{altrow}
-AL-18 & \textbf{Trazabilidad Anal\'itica de Datos.} Documentaci\'on y validaci\'on del flujo de datos desde los registros transaccionales generados por la operaci\'on hasta las capas Bronze, Silver y Gold, asegurando que las m\'etricas del dashboard puedan relacionarse con su origen en la base de datos. \\
+AL-18 & \textbf{Trazabilidad analítica de datos.} Documentación y validación del flujo de datos desde los registros transaccionales generados por la operación hasta las capas Bronze, Silver y Gold. Cada métrica deberá poder relacionarse con sus fuentes de origen y con la ejecución analítica correspondiente mediante identificadores de job y ventanas de procesamiento. \\
 \end{longtable}
 }
 
 \newpage
 \subsubsection{Límites del Sistema — Funcionalidades Excluidas}
 
-La Tabla~\ref{tab:limites} describe explícitamente las funcionalidades que quedan
-fuera del alcance de la versión~1.0, con su justificación correspondiente.
+La Tabla~\ref{tab:limites} presenta las funcionalidades que quedan fuera del alcance de la
+versión~1.0. Estas exclusiones permiten acotar el desarrollo, reducir riesgos técnicos y
+concentrar el trabajo en el flujo transaccional y analítico definido para el proyecto.
 
 {\small
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.3}
 \begin{longtable}{>{\bfseries\centering}p{1.5cm} p{4.5cm} p{8cm}}
-\caption{Límites del Sistema v1.0 — Funcionalidades Excluidas} \label{tab:limites} \\
+\caption{Límites del sistema v1.0 — funcionalidades excluidas} \label{tab:limites} \\
 \hline
 \thead{ID} & \thead{Funcionalidad excluida} & \thead{Justificación} \\
 \hline
@@ -78,40 +79,32 @@ fuera del alcance de la versión~1.0, con su justificación correspondiente.
 \hline
 \endfoot
 LM-01 & Múltiples pisos o áreas por sucursal &
-  Requiere modelo de datos y plano de planta más complejo. Pospuesto para versión futura. \\
+  La versión~1.0 considera una sola representación plana del salón por sucursal. El soporte para múltiples pisos o áreas requeriría ampliar el modelo de datos y la lógica de visualización del mapa de piso. \\
 \rowcolor{altrow}
-LM-02 & Recuperación de contraseña de usuarios colaboradores &
-  El restablecimiento se gestiona manualmente por el usuario con permisos de alta. Se incluirá en v1.1. \\
-LM-03 & Motor de recomendaciones complejo &
-  Requiere integraci\'on de modelos de grafos o filtrado colaborativo avanzado. Pospuesto para versiones posteriores. \\
+LM-02 & Recuperación automática de contraseña de usuarios colaboradores &
+  El restablecimiento de credenciales será gestionado por usuarios con permisos administrativos. Un flujo automatizado de recuperación se considera trabajo posterior. \\
+LM-03 & Motor avanzado de recomendaciones &
+  La construcción de recomendaciones personalizadas requeriría modelos adicionales, mayor volumen de datos históricos y criterios de evaluación específicos. Por ello, no forma parte del alcance inicial. \\
 \rowcolor{altrow}
-LM-04 & Modelos predictivos avanzados de aprendizaje autom\'atico &
-  La versi\'on 1.0 contempla estimaciones exploratorias de demanda y an\'alisis descriptivo
-  sobre datos hist\'oricos o simulados, pero no incluye modelos avanzados de machine
-  learning, redes neuronales ni sistemas predictivos complejos. \\
+LM-04 & Modelos predictivos avanzados de aprendizaje automático &
+  La versión~1.0 contempla análisis descriptivo y estimaciones exploratorias de demanda mediante métodos simples e interpretables sobre datos históricos o simulados, pero no incluye redes neuronales, modelos predictivos complejos ni sistemas de machine learning en producción. \\
 LM-05 & Gestión de inventario en cocina &
-  La disponibilidad de productos se gestiona manualmente activando o desactivando ítems en el catálogo. \\
+  La disponibilidad de productos se manejará desde el catálogo mediante activación o desactivación manual de ítems. El control de existencias, mermas y abastecimiento queda fuera del desarrollo inicial. \\
 \rowcolor{altrow}
-LM-06 & Reservaciones y pre-orden de mesas &
-  La activación de la mesa virtual ocurre únicamente cuando el comensal está físicamente en el restaurante. \\
-LM-07 & Aplicación móvil nativa (iOS / Android) &
-  El sistema se desarrolla como PWA accesible desde el navegador. Sin apps en App Store ni Google Play. \\
+LM-06 & Reservaciones y preorden de mesas &
+  La activación de la mesa virtual ocurrirá únicamente cuando el comensal se encuentre físicamente en el restaurante. No se contemplan reservas anticipadas ni pedidos previos a la llegada. \\
+LM-07 & Aplicación móvil nativa para iOS o Android &
+  El sistema se desarrollará como aplicación web progresiva accesible desde navegador. No se publicarán aplicaciones nativas en App Store ni Google Play durante la versión~1.0. \\
 \rowcolor{altrow}
 LM-08 & Integración con sistemas POS externos &
-  La plataforma opera de forma independiente. Sin integración con Micros, Toast, Square, etc. \\
-LM-09 & Notificaciones push nativas fuera de la app &
-  La versi\'on 1.0 contempla notificaciones internas y actualizaciones en tiempo real
-  dentro de la PWA mientras la sesi\'on se encuentre activa. No se implementan
-  notificaciones push nativas del sistema operativo cuando la aplicaci\'on est\'e cerrada. \\
+  La plataforma operará de forma independiente. No se implementará integración con sistemas comerciales como Micros, Toast, Square u otros puntos de venta externos. \\
+LM-09 & Notificaciones push nativas fuera de la aplicación &
+  La versión~1.0 contempla notificaciones internas y actualizaciones en tiempo real dentro de la PWA mientras la sesión se encuentre activa. No se implementarán notificaciones push del sistema operativo cuando la aplicación esté cerrada. \\
 \rowcolor{altrow}
 LM-10 & Programa de lealtad o fidelización de comensales &
-  Los datos de consumo se registran para fines analíticos internos, no para programas al cliente final. \\
+  Los datos de consumo se utilizarán para análisis operativo y administrativo interno, no para campañas comerciales, segmentación de clientes ni programas dirigidos al consumidor final. \\
 LM-11 & Procesamiento de pagos con tarjeta o agregadores externos &
-  La versión 1.0 no procesará cobros reales con tarjeta, transferencias o billeteras
-  digitales. El sistema únicamente registrará el estado interno de liquidación de la
-  cuenta con base en los montos capturados en la aplicación. La integración futura
-  con agregadores de pago requerirá el uso de proveedores certificados y el cumplimiento
-  de lineamientos de seguridad aplicables, como PCI~DSS. \\
+  La versión~1.0 no procesará cobros reales con tarjeta, transferencias ni billeteras digitales. El sistema únicamente registrará el estado interno de liquidación de la cuenta. Una integración futura con agregadores de pago requerirá proveedores certificados y cumplimiento de lineamientos de seguridad aplicables, como PCI~DSS. \\
 \end{longtable}
 }
 
@@ -119,15 +112,16 @@ LM-11 & Procesamiento de pagos con tarjeta o agregadores externos &
 
 \subsubsection{Restricciones Técnicas Asumidas}
 
-La Tabla~\ref{tab:restricciones_asumidas} documenta las restricciones técnicas
-que han sido identificadas, evaluadas y asumidas como parte del diseño de la
-versión~1.0.
+La Tabla~\ref{tab:restricciones_asumidas} documenta las restricciones técnicas asumidas para
+la versión~1.0. A diferencia de los límites funcionales, estas restricciones no describen
+necesariamente módulos excluidos, sino condiciones de diseño bajo las cuales se desarrollará
+y evaluará el sistema.
 
 {\small
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.3}
 \begin{longtable}{>{\bfseries\raggedright}p{4.5cm} p{9.5cm}}
-\caption{Restricciones Técnicas Asumidas en la Versión 1.0} \label{tab:restricciones_asumidas} \\
+\caption{Restricciones técnicas asumidas en la versión 1.0} \label{tab:restricciones_asumidas} \\
 \hline
 \thead{Restricción} & \thead{Descripción y justificación} \\
 \hline
@@ -140,27 +134,22 @@ versión~1.0.
 \hline
 \endfoot
 Un solo piso por sucursal &
-  El m\'odulo de mesas f\'isicas gestiona una \'unica \'area plana por sucursal. No se implementa un sistema de coordenadas o plano de planta para m\'ultiples pisos o secciones. \\
+  El módulo de mesas físicas gestionará una única área plana por sucursal. No se implementará un sistema de coordenadas para múltiples pisos, terrazas o secciones independientes dentro de un mismo establecimiento. \\
 \rowcolor{altrow}
 Sin soporte offline &
-  La plataforma se desarrolla como una aplicaci\'on web progresiva (PWA) con el objetivo de
-  ofrecer una experiencia similar a una aplicaci\'on m\'ovil instalada, facilitar el acceso desde
-  dispositivos personales y permitir su incorporaci\'on a la pantalla de inicio sin pasar por
-  tiendas de aplicaciones. No obstante, debido a la naturaleza transaccional y colaborativa
-  del sistema, no se contempla operaci\'on offline en la versi\'on 1.0. Las acciones principales
-  requieren sincronizaci\'on en tiempo real. \\
-Un solo idioma (espa\~nol) &
-  La interfaz y todos los textos est\'an en espa\~nol. No se implementa internacionalizaci\'on (i18n) ni soporte multi-idioma. \\
+  La plataforma se desarrollará como una aplicación web progresiva (PWA) para ofrecer acceso desde dispositivos personales y permitir su incorporación a la pantalla de inicio. Debido a la naturaleza transaccional y colaborativa del sistema, las operaciones principales requerirán conexión y sincronización en tiempo real; por ello, no se contempla operación offline en la versión~1.0. \\
+Un solo idioma: español &
+  La interfaz y los textos del sistema estarán disponibles únicamente en español. No se implementará internacionalización (i18n) ni soporte multiidioma durante esta versión. \\
 \rowcolor{altrow}
 Acceso mediante PWA en navegador web &
-  Los comensales acceden desde el navegador de su dispositivo m\'ovil mediante c\'odigos QR.
-  La aplicaci\'on puede agregarse a la pantalla de inicio como PWA, pero no requiere
-  instalaci\'on desde tiendas de aplicaciones ni contempla versiones nativas para iOS o Android. \\
-Liquidaci\'on interna sin procesamiento bancario &
-  El sistema registra el estado de liquidaci\'on de las cuentas con base en los montos
-  capturados dentro de la aplicaci\'on. No se procesan pagos reales, tarjetas, transferencias
-  ni billeteras digitales en la versi\'on 1.0. La integraci\'on con agregadores de pago
-  queda documentada como trabajo futuro. \\
+  Los comensales accederán desde el navegador de su dispositivo móvil mediante códigos QR. La aplicación podrá agregarse a la pantalla de inicio como PWA, pero no requerirá instalación desde tiendas de aplicaciones ni contará con versiones nativas para iOS o Android. \\
+Liquidación interna sin procesamiento bancario &
+  El sistema registrará el estado de liquidación de las cuentas con base en los montos capturados dentro de la aplicación. No se procesarán pagos reales, tarjetas, transferencias ni billeteras digitales en la versión~1.0. La integración con agregadores de pago quedará documentada como trabajo futuro. \\
+\rowcolor{altrow}
+Procesamiento analítico en VPS &
+  Los jobs de Spark no se ejecutarán dentro de Vercel ni en el proceso principal de la aplicación web. El procesamiento analítico se realizará en un servidor VPS mediante un orquestador interno, con límites de memoria, CPU y concurrencia para evitar que las métricas afecten la operación transaccional. \\
+Modelo híbrido batch y bajo demanda &
+  Las métricas históricas se calcularán mediante ejecuciones batch, mientras que ciertos indicadores operativos de sucursal, como la velocidad horaria del día en curso, podrán generarse bajo demanda. Esta decisión permite separar el análisis histórico de las consultas que requieren mayor cercanía con la operación activa. \\
 \end{longtable}
 }
 

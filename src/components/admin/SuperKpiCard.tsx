@@ -90,7 +90,7 @@ export function SuperKpiCard({
 
       {/* Value */}
       <div className="mt-2">
-        <p className="font-serif text-[1.75rem] font-medium leading-none tracking-[-0.02em] text-light tabular-nums">
+        <p className="text-[1.75rem] font-light leading-none tracking-[-0.02em] text-light tabular-nums">
           {value}
         </p>
         {unit && (

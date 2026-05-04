@@ -14,9 +14,10 @@ import floralRight from "@/assets/floral-assets/branches/complete_3.png";
 /* Dashboard preview card */
 function DashboardPreview() {
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl bg-ink ring-1 ring-white/10 shadow-2xl">
+    <div className="relative w-full overflow-hidden rounded-2xl bg-[#130b11] ring-1 ring-rose-200/20 shadow-[0_28px_70px_-28px_rgba(250,160,194,0.55)]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(253,164,175,0.18),transparent_38%),radial-gradient(circle_at_88%_12%,rgba(244,114,182,0.18),transparent_42%)]" />
       {/* Header del dashboard */}
-      <div className="flex items-center justify-between border-b border-white/5 px-5 py-4">
+      <div className="relative flex items-center justify-between border-b border-white/10 px-5 py-4">
         <div className="flex items-center gap-2.5">
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10">
             <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 text-white" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -34,26 +35,26 @@ function DashboardPreview() {
         </div>
       </div>
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-px border-b border-white/5 bg-white/5 sm:grid-cols-4">
+      <div className="relative grid grid-cols-2 gap-px border-b border-white/10 bg-white/10 sm:grid-cols-4">
         {[
           { label: "Ventas totales", value: "$12,540", detail: "+12.5% vs ayer \u2191" },
           { label: "Mesas activas", value: "18", detail: "En tiempo real" },
           { label: "Órdenes totales", value: "143", detail: "+8.2% vs ayer" },
           { label: "Ticket promedio", value: "$345", detail: "+5.1% vs ayer \u2191" },
         ].map((kpi, idx) => (
-          <div key={kpi.label} className="bg-ink p-5">
-            <p className="text-[0.55rem] font-bold uppercase tracking-[0.15em] text-white/40">{kpi.label}</p>
+          <div key={kpi.label} className="bg-[#1a0f16] p-5">
+            <p className="text-[0.55rem] font-bold uppercase tracking-[0.15em] text-white/55">{kpi.label}</p>
             <p className="mt-2 font-serif text-[1.4rem] font-semibold tabular-nums text-white leading-none">{kpi.value}</p>
-            <p className="mt-2 text-[0.6rem] text-white/30">{kpi.detail}</p>
+            <p className="mt-2 text-[0.6rem] text-white/45">{kpi.detail}</p>
           </div>
         ))}
       </div>
 
       {/* Charts area */}
-      <div className="grid grid-cols-1 gap-px bg-white/5 sm:grid-cols-[1.5fr_1fr]">
+      <div className="relative grid grid-cols-1 gap-px bg-white/10 sm:grid-cols-[1.5fr_1fr]">
         {/* Gráfico de línea */}
-        <div className="bg-ink p-5">
-          <p className="mb-4 text-[0.55rem] font-bold uppercase tracking-[0.15em] text-white/40">Ventas por hora</p>
+        <div className="bg-[#1a0f16] p-5">
+          <p className="mb-4 text-[0.55rem] font-bold uppercase tracking-[0.15em] text-white/55">Ventas por hora</p>
           <div className="flex">
             <div className="flex flex-col justify-between text-[0.5rem] text-white/30 mr-2 h-[80px]">
               <span>$2.5k</span>
@@ -94,7 +95,6 @@ function DashboardPreview() {
                 pathLength="1"
                 strokeDasharray="1"
                 strokeDashoffset="1"
-                style={{ filter: "drop-shadow(0px 4px 6px rgba(244,114,182,0.3))" }}
               />
               {/* Points */}
               {[
@@ -120,8 +120,8 @@ function DashboardPreview() {
         </div>
 
         {/* Gráfico de dona */}
-        <div className="bg-ink p-5">
-          <p className="mb-4 text-[0.55rem] font-bold uppercase tracking-[0.15em] text-white/40">Top productos</p>
+        <div className="bg-[#1a0f16] p-5">
+          <p className="mb-4 text-[0.55rem] font-bold uppercase tracking-[0.15em] text-white/60">Top productos</p>
           <div className="flex items-center gap-6 mt-2">
             <svg viewBox="0 0 80 80" className="h-24 w-24 shrink-0">
               {/* Entradas 32% */}
@@ -183,9 +183,9 @@ function DashboardPreview() {
                 <div key={item.label} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className={`h-1.5 w-1.5 rounded-full ${item.color}`} />
-                    <span className="text-[0.65rem] font-medium text-white/50">{item.label}</span>
+                    <span className="text-[0.65rem] font-medium text-white/75">{item.label}</span>
                   </div>
-                  <span className="text-[0.65rem] font-bold text-white/70">{item.perc}</span>
+                  <span className="text-[0.65rem] font-bold text-white/90">{item.perc}</span>
                 </div>
               ))}
             </div>
@@ -223,6 +223,13 @@ export const ProductSection = () => {
 
     const ctx = gsap.context(() => {
       const productBentoItems = bentoGridRef.current?.querySelectorAll<HTMLElement>(".product-bento-item") ?? [];
+      const linePaths = sectionRef.current?.querySelectorAll(".dash-line-path") ?? [];
+      const areaPaths = sectionRef.current?.querySelectorAll(".dash-area-path") ?? [];
+      const points = sectionRef.current?.querySelectorAll(".dash-point") ?? [];
+      const donutPaths = sectionRef.current?.querySelectorAll(".dash-donut") ?? [];
+
+      gsap.set(points, { transformOrigin: "50% 50%", willChange: "transform,opacity" });
+      gsap.set([...linePaths, ...areaPaths, ...donutPaths], { willChange: "stroke-dashoffset,opacity" });
 
       // Parallax for text
       gsap.fromTo(".product-text-col",
@@ -234,7 +241,7 @@ export const ProductSection = () => {
             trigger: sectionRef.current,
             start: "top bottom",
             end: "bottom top",
-            scrub: 1.5,
+            scrub: 0.9,
           }
         }
       );
@@ -249,7 +256,7 @@ export const ProductSection = () => {
             trigger: sectionRef.current,
             start: "top bottom",
             end: "bottom top",
-            scrub: 1.2,
+            scrub: 0.75,
           }
         }
       );
@@ -279,14 +286,18 @@ export const ProductSection = () => {
         trigger: mockupRef.current,
         start: "top 75%",
         onEnter: () => {
-          // Line draw
-          gsap.to(sectionRef.current?.querySelectorAll(".dash-line-path") ?? [], { strokeDashoffset: 0, duration: 1.5, ease: "power2.inOut" });
-          // Area fade in
-          gsap.to(sectionRef.current?.querySelectorAll(".dash-area-path") ?? [], { opacity: 0.15, duration: 1, delay: 0.5, ease: "power2.out" });
-          // Points pop in
-          gsap.to(sectionRef.current?.querySelectorAll(".dash-point") ?? [], { opacity: 1, scale: 1, duration: 0.4, stagger: 0.08, delay: 0.8, ease: "back.out(2)" });
-          // Donut segments
-          gsap.to(sectionRef.current?.querySelectorAll(".dash-donut") ?? [], { strokeDashoffset: 0, duration: 1.2, stagger: 0.15, delay: 0.3, ease: "power2.inOut" });
+          const chartTl = gsap.timeline({ defaults: { overwrite: "auto" } });
+          chartTl
+            .to(linePaths, { strokeDashoffset: 0, duration: 1.05, ease: "power2.out" }, 0)
+            .to(areaPaths, { opacity: 0.18, duration: 0.55, ease: "power1.out" }, 0.2)
+            .fromTo(
+              points,
+              { opacity: 0, scale: 0.82 },
+              { opacity: 1, scale: 1, duration: 0.28, stagger: 0.05, ease: "power2.out" },
+              0.45
+            )
+            .to(donutPaths, { strokeDashoffset: 0, duration: 0.9, stagger: 0.08, ease: "power1.out" }, 0.15)
+            .set([...linePaths, ...areaPaths, ...donutPaths, ...points], { clearProps: "willChange" });
         },
         once: true,
       });

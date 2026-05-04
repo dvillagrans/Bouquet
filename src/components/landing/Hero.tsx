@@ -12,7 +12,7 @@ import iconCampana from "@/assets/campana.png";
 import iconTarjeta from "@/assets/tarjeta.png";
 import iconRecibo from "@/assets/recibo.png";
 import iconCuchilloTenedor from "@/assets/cuchillo_tenedor.png";
-import { ChevronRight, MapPin } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 /* ── iPhone Frame Shell ── */
 function IPhoneFrame({ children }: { children: React.ReactNode }) {
@@ -63,96 +63,6 @@ function PhoneMockup() {
         </div>
 
         <div className="px-6 pt-6 pb-8">
-          {/* Restaurant header */}
-          <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-burgundy/5 ring-1 ring-burgundy/10">
-              <span className="font-serif text-base font-bold italic text-burgundy">B</span>
-            </div>
-            <div>
-              <p className="text-[0.75rem] font-bold text-burgundy">Bistro Florecer</p>
-              <div className="flex items-center gap-1 text-[0.6rem] text-burgundy/50">
-                <MapPin className="h-2.5 w-2.5" />
-                <span>Mesa 12 · Terraza</span>
-        </div>
-
-        {/* Content block — mobile: bottom, desktop: left column below title */}
-        <div className="max-w-xl mx-auto lg:mx-0 text-center lg:text-left lg:col-start-1">
-          {/* Tagline */}
-          <p className="hero-desc opacity-0 mt-4 lg:mt-6 max-w-lg mx-auto lg:mx-0 text-balance text-[0.95rem] md:text-[1.1rem] leading-[1.7] text-burgundy/70">
-            Bouquet conecta mesas, órdenes y pagos en una sola operación.
-            Menos caos, más control y un mejor servicio para tus clientes.
-          </p>
-
-          {/* Pilares Unificados */}
-          <div className="hero-pillars mt-6 lg:mt-10 hidden sm:flex flex-wrap lg:flex-nowrap items-center justify-center lg:justify-start gap-3 md:gap-4">
-            {[
-              { label: "Gestión de Mesas", icon: iconMesa },
-              { label: "Flujo de Órdenes", icon: iconCampana },
-              { label: "Pagos Centrales", icon: iconTarjeta }
-            ].map((pillar, idx) => (
-              <div 
-                key={idx} 
-                className="hero-pillar-item opacity-0 group flex items-center gap-2.5 rounded-xl border border-rose/10 bg-white/40 px-3 py-1.5 backdrop-blur-md shadow-[0_4px_15px_-10px_rgba(199,91,122,0.1)] transition-all duration-300 hover:bg-white/60 hover:-translate-y-0.5"
-              >
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-rose/10 transition-colors duration-300 group-hover:bg-rose/20">
-                  <Image src={pillar.icon} alt="" className="h-3.5 w-3.5 object-contain opacity-80" />
-                </div>
-                <span className="font-serif text-[0.85rem] font-medium text-burgundy whitespace-nowrap">{pillar.label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* CTAs */}
-          <div className="mt-6 lg:mt-10 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
-            <a
-              href="#contacto"
-              className="hero-cta opacity-0 group inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-full bg-burgundy px-5 text-[0.9rem] md:text-[0.9375rem] font-semibold text-white shadow-[0_20px_40px_-20px_rgba(74,26,44,0.5)] transition-colors duration-200 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto sm:justify-between"
-            >
-              <span className="whitespace-nowrap">Reservar demo de 20 min</span>
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose/95 ring-1 ring-white/20 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-0.5 group-hover:scale-105">
-                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                  <path d="M4 10h12m-6-6l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-            </a>
-
-            <a
-              href="#como-funciona"
-              className="hero-cta opacity-0 group hidden sm:inline-flex h-11 w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-burgundy/10 bg-white/60 px-5 text-[0.9rem] md:text-[0.9375rem] font-semibold text-burgundy transition-colors duration-200 hover:border-burgundy/25 hover:bg-white active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose sm:w-auto"
-            >
-              <span className="whitespace-nowrap">Ver recorrido operativo</span>
-              <svg className="h-3.5 w-3.5 shrink-0 text-burgundy/50 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path d="M6 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </a>
-          </div>
-
-          {/* Trust bar — mobile: 1 line, desktop: full */}
-          <div className="mt-5 lg:mt-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 sm:justify-center lg:justify-start text-[0.8rem] font-medium text-burgundy/55">
-            <span className="inline-flex items-center gap-1.5">
-              <svg className="h-3.5 w-3.5 text-sage-deep" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path d="M4 10l4 4 8-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              +40 restaurantes activos
-            </span>
-            <span className="hidden sm:inline text-burgundy/20">·</span>
-            <span className="hidden sm:inline-flex items-center gap-1.5">
-              <svg className="h-3.5 w-3.5 text-sage-deep" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path d="M4 10l4 4 8-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              100% renovación
-            </span>
-            <span className="hidden sm:inline text-burgundy/20">·</span>
-            <span className="hidden sm:inline-flex items-center gap-1.5">
-              <svg className="h-3.5 w-3.5 text-sage-deep" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path d="M4 10l4 4 8-8" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Setup en 1 día
-            </span>
-          </div>
-        </div>
-      </div>
-          </div>
 
           {/* Welcome */}
           <div className="mb-6">

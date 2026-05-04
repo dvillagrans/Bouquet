@@ -28,7 +28,6 @@ import ChainAuthGuard from "./ChainAuthGuard";
 import CreateRestaurantDialog from "./CreateRestaurantDialog";
 import { Sparkline } from "@/components/admin/Sparkline";
 import { NavRow } from "@/components/admin/NavRow";
-import { SuperKpiCard } from "@/components/admin/SuperKpiCard";
 import { MultiLineChart } from "./MultiLineChart";
 import { PeakHourBar } from "./PeakHourBar";
 import { Map, Marker } from "pigeon-maps";
@@ -45,11 +44,30 @@ function compact(n: number) {
   return String(n);
 }
 
-function pctDiff(current: number, previous: number): string {
-  if (!previous) return "+0%";
+// ─── Typography System ───
+const LABEL = "text-[10px] font-bold uppercase tracking-[0.2em] opacity-50";
+const VALUE = "text-[32px] font-light tracking-[-0.02em]";
+const SUBLABEL = "text-[12px] opacity-60";
+const SECTION = "text-[13px] font-bold uppercase tracking-[0.12em]";
+
+function DeltaBadge({ value, text }: { value: number; text: string }) {
+  if (value === 0) return null;
+  const isPositive = value > 0;
+  const colorClass = isPositive ? "text-emerald-400" : "text-red-400";
+  const bgClass = isPositive ? "bg-emerald-400/10" : "bg-red-400/10";
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] ${colorClass} ${bgClass}`}>
+      <span className={`inline-block h-1 w-1 rounded-full ${colorClass}`} />
+      {text}
+    </span>
+  );
+}
+
+function deltaInfo(current: number, previous: number): { text: string; value: number } {
+  if (!previous) return { text: "+0%", value: 0 };
   const pct = ((current - previous) / previous) * 100;
   const sign = pct >= 0 ? "+" : "";
-  return `${sign}${pct.toFixed(1)}%`;
+  return { text: `${sign}${pct.toFixed(1)}%`, value: pct };
 }
 
 // ─── Mock data for features without API ───
@@ -117,7 +135,7 @@ function OccupancyDial({ pct, reduceMotion }: { pct: number; reduceMotion: boole
       </motion.div>
       <div className="absolute inset-[12px] flex flex-col items-center justify-center rounded-full bg-bg-card/95 text-center shadow-[inset_0_0_30px_rgba(0,0,0,0.6)]">
         <p className="font-mono text-[9px] uppercase tracking-[0.28em] text-dim">Pulso de sala</p>
-        <p className="mt-1 font-serif text-[28px] sm:text-[36px] font-semibold leading-none tabular-nums text-pink-glow">
+        <p className="mt-1 text-[28px] sm:text-[36px] font-light leading-none tabular-nums text-pink-glow">
           {p.toFixed(0)}
           <span className="ml-0.5 text-base text-pink-glow/70">%</span>
         </p>
@@ -136,7 +154,6 @@ interface BranchRankRow {
   zoneName: string | null;
   todayRevenue: number;
   yesterdayRevenue: number;
-  occupancyPct: number;
 }
 
 function BranchRankings({ branches }: { branches: BranchRankRow[] }) {
@@ -156,44 +173,29 @@ function BranchRankings({ branches }: { branches: BranchRankRow[] }) {
         const delta = b.yesterdayRevenue > 0
           ? ((b.todayRevenue - b.yesterdayRevenue) / b.yesterdayRevenue) * 100
           : 0;
-        const isUp = delta >= 0;
 
         return (
           <div
             key={b.id}
-            className="flex items-center gap-2 border-b border-white/[0.04] px-3 py-2 sm:px-4 sm:py-2.5 text-[12px] text-light transition-colors hover:bg-white/[0.015]"
+            className="flex items-center gap-2 border-b border-white/[0.04] px-3 py-3 sm:px-4 text-[13px] text-light transition-colors hover:bg-white/[0.015]"
             style={{ animation: `dash-row-enter 500ms ${i * 55}ms ease both` }}
           >
             <span className="w-5 font-mono text-[10px] text-dim">
               {String(i + 1).padStart(2, "0")}
             </span>
-            <span className="min-w-0 flex-1 truncate font-medium">{b.name}</span>
-            <span className="shrink-0 font-mono text-[11px] tabular-nums font-semibold">
+            <span className="min-w-0 flex-1 truncate">{b.name}</span>
+            <span className="shrink-0 font-mono text-[13px] tabular-nums">
               {fmt(b.todayRevenue)}
             </span>
-            <span
-              className={`shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[9px] font-semibold tabular-nums ${
-                isUp ? "bg-dash-green/10 text-dash-green" : "bg-pink-light-glow/10 text-pink-light-glow"
-              }`}
-            >
-              {isUp ? "+" : ""}{delta.toFixed(0)}%
-            </span>
-            <span className="flex w-16 items-center gap-1.5">
-              <span className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
-                <span
-                  className="block h-full rounded-full"
-                  style={{
-                    width: `${Math.min(100, b.occupancyPct)}%`,
-                    background:
-                      b.occupancyPct >= 70
-                        ? "var(--color-dash-green)"
-                        : b.occupancyPct >= 40
-                          ? "var(--color-dash-amber)"
-                          : "var(--color-pink-light-glow)",
-                  }}
-                />
+            {delta !== 0 && (
+              <span
+                className={`shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums ${
+                  delta > 0 ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"
+                }`}
+              >
+                {delta > 0 ? "+" : ""}{delta.toFixed(0)}%
               </span>
-            </span>
+            )}
           </div>
         );
       })}
@@ -567,7 +569,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
         <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 text-dim hover:text-light">
           <Menu className="h-5 w-5" />
         </button>
-        <div className="font-serif text-[16px] font-semibold italic text-light truncate mx-2">
+        <div className="text-[16px] font-semibold text-light truncate mx-2">
           {data?.chain?.name ?? "Cadena"}
         </div>
         <button onClick={() => setIsCreating(true)} className="p-2 text-dim hover:text-light">
@@ -600,9 +602,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
             <p className="font-mono text-[10px] tracking-[0.25em] text-dim">
               {dateLabel} · CADENA
             </p>
-            <h1 className="mt-1.5 font-serif text-[22px] sm:text-[28px] font-medium leading-[1.05] tracking-[-0.015em] text-light">
-              {data.chain.name}{" "}
-              <span className="italic text-pink-glow">bajo control</span>
+            <h1 className="mt-1.5 text-[22px] sm:text-[28px] font-medium leading-[1.05] tracking-[-0.015em] text-light">
+              {data.chain.name}
             </h1>
           </div>
 
@@ -633,44 +634,76 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
             <>
               {/* ── KPI Strip ── */}
               <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <SuperKpiCard
-                  label="VENTAS DEL DÍA"
-                  value={fmt(data.stats.totalRevenue)}
-                  delta={pctDiff(data.stats.totalRevenue, data.yesterday.totalRevenue)}
-                  deltaTone="green"
-                  unit={data.chain.currency}
-                  trend={[120, 180, 240, 310, 380, 420, 480, 520, 560, data.stats.totalRevenue / 1000]}
-                  accent="pink"
-                  delay={0}
-                />
-                <SuperKpiCard
-                  label="TICKET PROMEDIO"
-                  value={fmt(derived!.avgTicket)}
-                  delta={pctDiff(derived!.avgTicket, derived!.yesterdayAvgTicket)}
-                  deltaTone={derived!.avgTicket >= derived!.yesterdayAvgTicket ? "green" : "amber"}
-                  unit="POR COMANDA"
-                  accent="blue"
-                  delay={80}
-                />
-                <SuperKpiCard
-                  label="MESAS ACTIVAS"
-                  value={String(data.stats.activeTables)}
-                  delta={derived!.occPct.toFixed(0) + "%"}
-                  deltaTone={derived!.occPct >= 50 ? "green" : "amber"}
-                  unit="OCUPACIÓN RED"
-                  trend={[40, 45, 50, 55, 60, 62, 65, 68, 70, derived!.occPct]}
-                  accent="pink"
-                  delay={160}
-                />
-                <SuperKpiCard
-                  label="SESIONES"
-                  value={String(data.stats.totalSessions)}
-                  delta={pctDiff(data.stats.totalSessions, data.yesterday.totalSessions)}
-                  deltaTone="green"
-                  unit="COMENSALES HOY"
-                  accent="green"
-                  delay={240}
-                />
+                {/* VENTAS DEL DÍA */}
+                <article className="bq-card flex flex-col p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className={LABEL}>VENTAS DEL DÍA</span>
+                    <DeltaBadge {...deltaInfo(data.stats.totalRevenue, data.yesterday.totalRevenue)} />
+                  </div>
+                  <p className={`${VALUE} tabular-nums text-light mt-1`}>
+                    {fmt(data.stats.totalRevenue)}
+                  </p>
+                  <p className={`${SUBLABEL} mt-0.5`}>{data.chain.currency}</p>
+                  <div className="mt-2 h-8">
+                    <Sparkline
+                      data={[120, 180, 240, 310, 380, 420, 480, 520, 560, data.stats.totalRevenue / 1000]}
+                      w={120}
+                      h={32}
+                      fill
+                      color="var(--color-pink-glow)"
+                    />
+                  </div>
+                </article>
+
+                {/* TICKET PROMEDIO */}
+                <article className="bq-card flex flex-col p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className={LABEL}>TICKET PROMEDIO</span>
+                    <DeltaBadge {...deltaInfo(derived!.avgTicket, derived!.yesterdayAvgTicket)} />
+                  </div>
+                  <p className={`${VALUE} tabular-nums text-light mt-1`}>
+                    {fmt(derived!.avgTicket)}
+                  </p>
+                  <p className={`${SUBLABEL} mt-0.5`}>POR COMANDA</p>
+                </article>
+
+                {/* MESAS ACTIVAS */}
+                <article className="bq-card flex flex-col p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className={LABEL}>MESAS ACTIVAS</span>
+                    {derived!.occPct > 0 && (
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] ${derived!.occPct >= 50 ? "text-emerald-400 bg-emerald-400/10" : "text-amber-400 bg-amber-400/10"}`}>
+                        <span className={`inline-block h-1 w-1 rounded-full ${derived!.occPct >= 50 ? "bg-emerald-400" : "bg-amber-400"}`} />
+                        {derived!.occPct.toFixed(0)}%
+                      </span>
+                    )}
+                  </div>
+                  <p className={`${VALUE} tabular-nums text-light mt-1`}>
+                    {data.stats.activeTables}
+                  </p>
+                  <p className={`${SUBLABEL} mt-0.5`}>OCUPACIÓN RED</p>
+                  <div className="mt-2 h-8">
+                    <Sparkline
+                      data={[40, 45, 50, 55, 60, 62, 65, 68, 70, derived!.occPct]}
+                      w={120}
+                      h={32}
+                      fill
+                      color="var(--color-pink-glow)"
+                    />
+                  </div>
+                </article>
+
+                {/* SESIONES */}
+                <article className="bq-card flex flex-col p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <span className={LABEL}>SESIONES</span>
+                    <DeltaBadge {...deltaInfo(data.stats.totalSessions, data.yesterday.totalSessions)} />
+                  </div>
+                  <p className={`${VALUE} tabular-nums text-light mt-1`}>
+                    {data.stats.totalSessions}
+                  </p>
+                  <p className={`${SUBLABEL} mt-0.5`}>COMENSALES HOY</p>
+                </article>
               </section>
 
               {/* ── Alerts Banner ── */}
@@ -678,12 +711,12 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                 <motion.div
                   initial={{ opacity: 0, y: -6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="rounded-[18px] border border-pink-light-glow/20 bg-pink-light-glow/[0.04] p-4"
+                  className="rounded-[18px] border border-amber-400/20 bg-amber-400/[0.04] p-4"
                 >
                   <div className="mb-3 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-pink-light-glow" />
-                    <h3 className="text-[13px] font-semibold text-rose-pale">
-                      {data.alerts.length} sucursal{data.alerts.length > 1 ? "es" : ""} requiere{data.alerts.length === 1 ? "" : "n"} atención
+                    <AlertTriangle className="h-4 w-4 text-amber-400" />
+                    <h3 className={`${SECTION} text-amber-400`}>
+                      {data.alerts.length} SUCURSAL{data.alerts.length > 1 ? "ES" : ""} REQUIERE{data.alerts.length === 1 ? "" : "N"} ATENCIÓN
                     </h3>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -691,11 +724,11 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                       <Link
                         key={a.id}
                         href={`/dashboard?restaurantId=${a.id}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-pink-light-glow/15 bg-pink-light-glow/10 px-2.5 py-1.5 text-[11px] text-rose-pale transition-colors hover:bg-pink-light-glow/20"
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/15 bg-amber-400/10 px-2.5 py-1.5 text-[11px] text-amber-400 transition-colors hover:bg-amber-400/20"
                       >
-                        <span className="h-1.5 w-1.5 rounded-full bg-pink-light-glow" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                         <span className="font-medium">{a.name}</span>
-                        <span className="text-pink-light-glow/70">· {a.message}</span>
+                        <span className="text-amber-400/70">· {a.message}</span>
                       </Link>
                     ))}
                   </div>
@@ -707,12 +740,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                 {/* LEFT: 7-day chart */}
                 <div className="bq-card flex flex-col !p-0 overflow-hidden lg:order-1">
                   <div className="border-b border-wire px-4 py-3.5">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
-                      VENTAS · 7 DÍAS POR SUCURSAL
-                    </p>
-                    <p className="mt-0.5 font-serif text-[17px] sm:text-[20px] font-medium leading-tight text-light">
-                      El <span className="italic text-pink-glow">jardín</span> completo
-                    </p>
+                    <p className={SECTION}>VENTAS 7 DÍAS</p>
+                    <p className={`${SUBLABEL} mt-0.5`}>Ventas por sucursal, últimos 7 días</p>
                   </div>
                   <div className="flex-1 p-3 w-full overflow-hidden">
                     <MultiLineChart branches={mock7DayBranches} className="h-full" />
@@ -727,20 +756,14 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                 {/* MIDDLE: Branch rankings */}
                 <div className="bq-card flex flex-col !p-0 overflow-hidden lg:order-2">
                   <div className="border-b border-wire px-4 py-3.5">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
-                      RANKING · HOY
-                    </p>
-                    <p className="mt-0.5 font-serif text-[17px] sm:text-[20px] font-medium leading-tight text-light">
-                      ¿Quién <span className="italic text-pink-glow">lidera</span>?
-                    </p>
+                    <p className={SECTION}>RANKING · HOY</p>
                   </div>
                   {/* Table header */}
                   <div className="flex items-center gap-2 border-b border-white/[0.04] px-4 py-2 font-mono text-[9px] tracking-[0.2em] text-dim">
                     <span className="w-5">#</span>
                     <span className="min-w-0 flex-1">SUCURSAL</span>
-                    <span className="w-14 sm:w-[72px] text-right">HOY</span>
-                    <span className="w-10 sm:w-[44px] text-right">Δ</span>
-                    <span className="w-16">OCUP</span>
+                    <span className="w-14 sm:w-[72px] text-right">HOY $</span>
+                    <span className="w-10 sm:w-[44px] text-right">Δ%</span>
                   </div>
                   <BranchRankings
                     branches={data.restaurants.map((r, idx) => ({
@@ -749,7 +772,6 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                       zoneName: r.zoneName,
                       todayRevenue: r.todayRevenue,
                       yesterdayRevenue: r.todayRevenue * (0.75 + ((idx * 3) % 10) * 0.05), // Deterministic mock delta
-                      occupancyPct: r.totalTables > 0 ? (r.activeTables / r.totalTables) * 100 : 0,
                     }))}
                   />
                   <div className="border-t border-wire px-4 py-2.5">
@@ -785,14 +807,9 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
 
                   {/* Peak hour */}
                   <div className="bq-card flex flex-col p-4">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
-                      HORA PICO · CONSOLIDADO
-                    </p>
-                    <p className="mt-0.5 font-serif text-[14px] sm:text-[17px] font-medium leading-tight text-light">
-                      Pico a las{" "}
-                      <span className="italic text-pink-glow">{peakLabel}</span>
-                    </p>
-                    <div className="mt-2 h-[72px]">
+                    <p className={SECTION}>HORA PICO</p>
+                    <p className={`${SUBLABEL} mt-0.5`}>Pico a las {peakLabel}</p>
+                    <div className="mt-2 h-[120px]">
                       <PeakHourBar data={mockPeakHours} className="h-full" />
                     </div>
                     <div className="mt-1 font-mono text-[9px] tracking-[0.15em] text-dim">
@@ -856,12 +873,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
             <div className="flex flex-1 flex-col gap-6">
               <div className="flex items-end justify-between px-2">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
-                    CADENA · TERRITORIOS
-                  </p>
-                  <h2 className="mt-1 font-serif text-[20px] sm:text-[24px] font-medium leading-tight text-light">
-                    Atlas de <span className="italic text-pink-glow">zonas</span>
-                  </h2>
+                  <p className={SECTION}>ZONAS</p>
+                  <p className={`${SUBLABEL} mt-0.5`}>Atlas de territorios</p>
                 </div>
                 <button
                   onClick={() => setActiveTab("ZONES_MAP")}
@@ -892,7 +905,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                     </div>
                     
                     <div>
-                      <h3 className="font-serif text-lg font-medium text-light group-hover:text-pink-glow transition-colors">
+                      <h3 className="text-lg font-medium text-light group-hover:text-pink-glow transition-colors">
                         {zone.name}
                       </h3>
                       <p className="mt-1 text-[11px] text-dim">ID: {zone.id.slice(0, 8)}</p>
@@ -923,12 +936,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
             <div className="flex flex-1 flex-col gap-6 overflow-hidden">
               <div className="flex items-end justify-between px-2">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
-                    CADENA · UNIDADES OPERATIVAS
-                  </p>
-                  <h2 className="mt-1 font-serif text-[20px] sm:text-[24px] font-medium leading-tight text-light">
-                    Control de <span className="italic text-pink-glow">sucursales</span>
-                  </h2>
+                  <p className={SECTION}>SUCURSALES</p>
+                  <p className={`${SUBLABEL} mt-0.5`}>Unidades operativas</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <div className="relative">
@@ -994,8 +1003,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                               </div>
                             </td>
                             <td className="px-3 py-2.5 sm:px-6 sm:py-4">
-                              <span className="flex items-center gap-1.5 rounded-full bg-dash-green/10 px-2 py-0.5 text-[9px] font-bold text-dash-green border border-dash-green/20">
-                                <span className="h-1 w-1 rounded-full bg-dash-green" />
+                              <span className="flex items-center gap-1.5 rounded-full bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-400/20">
+                                <span className="h-1 w-1 rounded-full bg-emerald-400" />
                                 ACTIVA
                               </span>
                             </td>
@@ -1019,12 +1028,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
             <div className="flex flex-1 flex-col gap-6 overflow-hidden">
               <div className="flex items-end justify-between px-2">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-dim">
-                    CADENA · RECURSOS HUMANOS
-                  </p>
-                  <h2 className="mt-1 font-serif text-[20px] sm:text-[24px] font-medium leading-tight text-light">
-                    Personal de la <span className="italic text-pink-glow">red</span>
-                  </h2>
+                  <p className={SECTION}>STAFF</p>
+                  <p className={`${SUBLABEL} mt-0.5`}>Recursos humanos</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <div className="relative">

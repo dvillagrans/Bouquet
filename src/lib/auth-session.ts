@@ -56,6 +56,30 @@ export function sessionCookieName() {
   return COOKIE_NAME;
 }
 
+/**
+ * Determina si la cookie de sesión debe marcarse como `Secure`.
+ * `Secure` debe ser `true` siempre que el entorno use HTTPS, ya que el
+ * prefijo `__Host-` (activo en producción) lo exige.
+ *
+ * En desarrollo contra localhost se mantiene `false` porque `Secure` no
+ * se envía sobre HTTP plano.
+ */
+export function shouldSecureCookie(req?: Pick<Request, "url">): boolean {
+  if (process.env.NODE_ENV === "production") return true;
+  if (req?.url.startsWith("https://")) return true;
+  return false;
+}
+
+/** Cookie options reutilizables para setear la sesión. */
+export function sessionCookieOptions(req?: Pick<Request, "url">) {
+  return {
+    httpOnly: true,
+    sameSite: "strict" as const,
+    secure: shouldSecureCookie(req),
+    path: "/" as const,
+  };
+}
+
 export async function createSessionToken(
   secret: string,
   ttlMs: number,

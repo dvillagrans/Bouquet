@@ -105,7 +105,7 @@ export default function MobileBottomNav({
               <Link
                 key={item.href}
                 href={resolveNavHref(item.href, restaurantBase)}
-                className={`group relative flex min-h-[52px] min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1.5 rounded-[1.25rem] px-2 py-1.5 transition-all duration-500 ease-out active:scale-95 ${
+                className={`group relative flex min-h-[52px] min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1.5 rounded-[1.25rem] px-2 py-1.5 transition-all duration-500 ease-out active:scale-95 focus-visible:ring-2 focus-visible:ring-ring ${
                   active
                     ? "text-gold"
                     : "text-text-muted hover:text-white"
@@ -135,7 +135,7 @@ export default function MobileBottomNav({
           <button
             type="button"
             onClick={toggle}
-            className="group relative flex min-h-[52px] min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1.5 rounded-[1.25rem] px-2 py-1.5 text-text-muted transition-all duration-500 ease-out hover:text-white active:scale-95"
+            className="group relative flex min-h-[52px] min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1.5 rounded-[1.25rem] px-2 py-1.5 text-text-muted transition-all duration-500 ease-out hover:text-white active:scale-95 focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Abrir menú"
           >
             <span className="absolute inset-0 scale-95 rounded-[1.25rem] bg-white/5 opacity-0 transition-all duration-300 group-hover:scale-100 group-hover:opacity-100" />
@@ -197,7 +197,7 @@ export default function MobileBottomNav({
                           key={item.href}
                           href={resolveNavHref(item.href, restaurantBase)}
                           onClick={close}
-                          className={`relative flex min-h-[48px] touch-manipulation items-center gap-3 px-4 py-3.5 text-[15px] transition-colors active:bg-white/10 sm:text-[13px] ${
+                          className={`relative flex min-h-[48px] touch-manipulation items-center gap-3 px-4 py-3.5 text-[15px] transition-colors active:bg-white/10 focus-visible:ring-2 focus-visible:ring-ring sm:text-[13px] ${
                             active
                               ? "bg-gold/10 text-gold"
                               : "text-neutral-300 hover:bg-white/[0.08] hover:text-white"
@@ -217,7 +217,7 @@ export default function MobileBottomNav({
                 <button
                   type="button"
                   onClick={() => void handleLogout()}
-                  className="flex min-h-[48px] w-full touch-manipulation items-center justify-center gap-2 rounded-[1.25rem] border border-red-500/20 bg-red-500/10 px-4 py-3.5 text-[15px] font-medium text-red-400 shadow-inner transition-colors active:bg-red-500/20 hover:bg-red-500/15 hover:text-red-300 sm:text-[13px]"
+                  className="flex min-h-[48px] w-full touch-manipulation items-center justify-center gap-2 rounded-[1.25rem] border border-red-500/20 bg-red-500/10 px-4 py-3.5 text-[15px] font-medium text-red-400 shadow-inner transition-colors active:bg-red-500/20 hover:bg-red-500/15 hover:text-red-300 focus-visible:ring-2 focus-visible:ring-ring sm:text-[13px]"
                 >
                   <LogOut className="size-[1.125rem] shrink-0" aria-hidden />
                   Cerrar sesión

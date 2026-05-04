@@ -6,6 +6,7 @@ import {
   createSessionToken,
   resolveAuthSecret,
   sessionCookieName,
+  sessionCookieOptions,
 } from "@/lib/auth-session";
 import { rateLimit } from "@/lib/rate-limit";
 import { createAuditLog } from "@/lib/audit";
@@ -87,10 +88,7 @@ export async function POST(req: Request) {
 
   const res = NextResponse.json({ ok: true });
   res.cookies.set(sessionCookieName(), token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: true,
-    path: "/",
+    ...sessionCookieOptions(req),
     maxAge: 24 * 60 * 60,
   });
 

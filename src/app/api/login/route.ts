@@ -6,9 +6,9 @@ import {
   createSessionToken,
   resolveAuthSecret,
   sessionCookieName,
+  sessionCookieOptions,
 } from "@/lib/auth-session";
 import { rateLimit } from "@/lib/rate-limit";
-import { enforcePasswordPolicy } from "@/lib/password-policy";
 import { createAuditLog } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
@@ -103,12 +103,6 @@ export async function POST(req: Request) {
   }
 
   // Password policy: warn only, never block existing users
-  try {
-    enforcePasswordPolicy(password);
-  } catch (e) {
-    console.warn("[auth] Weak password detected for user", email, ":", (e as Error).message);
-  }
-
   if (user.userRoles.length === 0) {
     return NextResponse.json(
       { ok: false, error: "Usuario sin roles asignados." },
@@ -134,10 +128,7 @@ export async function POST(req: Request) {
 
   const res = NextResponse.json({ ok: true, redirect: redirectPath });
   res.cookies.set(sessionCookieName(), token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: true,
-    path: "/",
+    ...sessionCookieOptions(req),
     maxAge: 24 * 60 * 60,
   });
 

@@ -1,9 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { useMobileSheetAnimation } from "@/hooks/use-mobile-sheet-animation";
+import {
+  MobileTabPills,
+  MobileTabPillsList,
+  MobileTabPillsTab,
+  MobileTabPillsPanel,
+} from "@/components/mobile-tab-pills";
 import {
   AlertTriangle,
   Plus,
@@ -216,6 +224,9 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
   const [mapCenter, setMapCenter] = useState<[number, number]>([19.432608, -99.133209]);
   const [mapZoom, setMapZoom] = useState(11);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const sheetRef = useRef<HTMLElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
+  useMobileSheetAnimation(sheetRef, backdropRef, sidebarOpen);
 
   const load = useCallback(async () => {
     try {
@@ -447,19 +458,19 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
           </div>
           <Link
             href={`/cadena/plantillas?tenantId=${tenantId}`}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light focus-visible:ring-2 focus-visible:ring-ring"
           >
             Plantillas
           </Link>
           <Link
             href={`/cadena/auditoria?tenantId=${tenantId}`}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light focus-visible:ring-2 focus-visible:ring-ring"
           >
             Auditoría
           </Link>
           <Link
             href={`/cadena/staff?tenantId=${tenantId}`}
-            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light focus-visible:ring-2 focus-visible:ring-ring"
           >
             Staff
           </Link>
@@ -472,16 +483,16 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
           <button
             type="button"
             onClick={() => setIsCreating(true)}
-            className="flex w-full items-center gap-2 rounded-lg bg-white px-3 py-2 text-[12px] font-semibold text-ink transition-all hover:bg-white/90 active:scale-[0.98]"
+            className="flex w-full items-center gap-2 rounded-lg bg-white px-3 py-2 text-[12px] font-semibold text-ink transition-all hover:bg-white/90 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
             Nueva sucursal
           </button>
           <Link
             href={`/cadena/zonas?tenantId=${tenantId}`}
-            className="flex w-full items-center gap-2 rounded-lg border border-white/[0.08] px-3 py-2 text-[12px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light"
+            className="flex w-full items-center gap-2 rounded-lg border border-white/[0.08] px-3 py-2 text-[12px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <MapPin className="h-3.5 w-3.5" />
+            <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
             Atlas de zonas
           </Link>
         </div>
@@ -500,102 +511,154 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
       </aside>
 
       {/* ═══════ MOBILE SIDEBAR OVERLAY ═══════ */}
-      {sidebarOpen && (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden" onClick={() => setSidebarOpen(false)} />
-          <aside className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col gap-5 bg-burgundy-dark p-5 overflow-y-auto shadow-2xl md:hidden">
-            <button onClick={() => setSidebarOpen(false)} className="self-end p-2 text-dim hover:text-light">
-              <X className="h-5 w-5" />
-            </button>
-            {/* Brand */}
-            <div className="flex items-center gap-2.5 px-1">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] font-serif text-[18px] font-semibold italic text-ink"
-                style={{ background: "linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)", boxShadow: "0 4px 12px -4px rgba(199,91,122,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" }}>
-                b
-              </div>
-              <div className="min-w-0">
-                <div className="font-serif text-[18px] font-semibold italic leading-tight tracking-[-0.02em] text-light">bouquet</div>
-                <div className="font-mono text-[8.5px] tracking-[0.3em] text-pink-glow/55">CADENA · MASTER</div>
-              </div>
-            </div>
-            {/* Chain badge */}
-            {data && (
-              <div className="rounded-[10px] border border-pink-glow/20 bg-pink-glow/8 px-3 py-2.5">
-                <div className="text-[8.5px] font-bold uppercase tracking-[0.3em] text-pink-glow">CADENA</div>
-                <div className="mt-1 text-[13px] font-medium text-light truncate">{data.chain.name}</div>
-                <div className="mt-0.5 font-mono text-[10px] text-dim">{data.stats.restaurantCount} sucursales · {data.stats.staffTotal} staff</div>
-              </div>
-            )}
-            {/* Nav */}
-            <nav className="flex flex-col gap-0.5">
-              <div className="px-3 pb-2 pt-1 text-[8.5px] font-bold uppercase tracking-[0.3em] text-dim">PANEL MAESTRO</div>
-              {[
-                { id: "OVERVIEW" as const, label: "Visión General", badge: null },
-                { id: "ZONES" as const, label: "Zonas", badge: data ? String(data.zones.length) : null },
-                { id: "RESTAURANTS" as const, label: "Sucursales", badge: data ? String(data.stats.restaurantCount) : null },
-                { id: "STAFF" as const, label: "Staff", badge: data ? String(data.stats.staffTotal) : null },
-              ].map(tab => (
-                <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }}
-                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[13px] font-medium transition-colors ${
-                    activeTab === tab.id ? "bg-white/[0.06] text-light" : "text-dim hover:bg-white/[0.04] hover:text-light"
-                  }`}>
-                  <span>{tab.label}</span>
-                  {tab.badge && <span className="font-mono text-[11px] text-dim">{tab.badge}</span>}
-                </button>
-              ))}
-              <div className="px-3 pb-2 pt-4 text-[8.5px] font-bold uppercase tracking-[0.3em] text-dim">ESTANDARIZACIÓN</div>
-              <Link href={`/cadena/plantillas?tenantId=${tenantId}`} onClick={() => setSidebarOpen(false)}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light">Plantillas</Link>
-              <Link href={`/cadena/auditoria?tenantId=${tenantId}`} onClick={() => setSidebarOpen(false)}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light">Auditoría</Link>
-              <Link href={`/cadena/staff?tenantId=${tenantId}`} onClick={() => setSidebarOpen(false)}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light">Staff</Link>
-            </nav>
-            <div className="flex-1" />
-            <button type="button" onClick={() => { setSidebarOpen(false); setIsCreating(true); }}
-              className="flex w-full items-center gap-2 rounded-lg bg-white px-3 py-2 text-[12px] font-semibold text-ink transition-all hover:bg-white/90 active:scale-[0.98]">
-              <Plus className="h-3.5 w-3.5" /> Nueva sucursal
-            </button>
-            <Link href={`/cadena/zonas?tenantId=${tenantId}`} onClick={() => setSidebarOpen(false)}
-              className="flex w-full items-center gap-2 rounded-lg border border-white/[0.08] px-3 py-2 text-[12px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light">
-              <MapPin className="h-3.5 w-3.5" /> Gestionar zonas
-            </Link>
-          </aside>
-        </>
-      )}
+      <div
+        ref={backdropRef}
+        className={cn(
+          "fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden opacity-0",
+          sidebarOpen ? "pointer-events-auto" : "pointer-events-none"
+        )}
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden={!sidebarOpen}
+      />
+      <aside
+        ref={sheetRef}
+        className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col gap-5 bg-burgundy-dark p-5 overflow-y-auto shadow-2xl md:hidden"
+        style={{ transform: "translateX(-100%)" }}
+        aria-hidden={!sidebarOpen}
+      >
+        <button
+          onClick={() => setSidebarOpen(false)}
+          className="self-end flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-dim hover:text-light focus-visible:ring-2 focus-visible:ring-ring touch-manipulation"
+          aria-label="Cerrar menú"
+        >
+          <X className="h-5 w-5" aria-hidden="true" />
+        </button>
+        {/* Brand */}
+        <div className="flex items-center gap-2.5 px-1">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] font-serif text-[18px] font-semibold italic text-ink"
+            style={{ background: "linear-gradient(135deg, var(--color-rose) 0%, var(--color-rose-light) 100%)", boxShadow: "0 4px 12px -4px rgba(199,91,122,0.6), inset 0 1px 0 rgba(255,255,255,0.3)" }}>
+            b
+          </div>
+          <div className="min-w-0">
+            <div className="font-serif text-[18px] font-semibold italic leading-tight tracking-[-0.02em] text-light">bouquet</div>
+            <div className="font-mono text-[8.5px] tracking-[0.3em] text-pink-glow/55">CADENA · MASTER</div>
+          </div>
+        </div>
+        {/* Chain badge */}
+        {data && (
+          <div className="rounded-[10px] border border-pink-glow/20 bg-pink-glow/8 px-3 py-2.5">
+            <div className="text-[8.5px] font-bold uppercase tracking-[0.3em] text-pink-glow">CADENA</div>
+            <div className="mt-1 text-[13px] font-medium text-light truncate">{data.chain.name}</div>
+            <div className="mt-0.5 font-mono text-[10px] text-dim">{data.stats.restaurantCount} sucursales · {data.stats.staffTotal} staff</div>
+          </div>
+        )}
+        {/* Nav */}
+        <nav className="flex flex-col gap-0.5">
+          <div className="mt-6 mb-2 px-3 text-[8.5px] font-bold uppercase tracking-[0.3em] text-dim">PANEL MAESTRO</div>
+          {[
+            { id: "OVERVIEW" as const, label: "Visión General", badge: null },
+            { id: "ZONES" as const, label: "Zonas", badge: data ? String(data.zones.length) : null },
+            { id: "RESTAURANTS" as const, label: "Sucursales", badge: data ? String(data.stats.restaurantCount) : null },
+            { id: "STAFF" as const, label: "Staff", badge: data ? String(data.stats.staffTotal) : null },
+          ].map(tab => {
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "flex w-full min-h-[48px] touch-manipulation items-center justify-between rounded-lg px-5 text-left text-[13px] font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring",
+                  active
+                    ? "bg-accent text-accent-foreground"
+                    : "text-dim hover:bg-white/[0.04] hover:text-light"
+                )}
+              >
+                <span>{tab.label}</span>
+                {tab.badge != null && (
+                  <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-muted px-1.5 font-mono text-[10px] font-semibold tabular-nums text-muted-foreground">
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+          <div className="mt-6 mb-2 px-3 text-[8.5px] font-bold uppercase tracking-[0.3em] text-dim">ESTANDARIZACIÓN</div>
+          <Link
+            href={`/cadena/plantillas?tenantId=${tenantId}`}
+            onClick={() => setSidebarOpen(false)}
+            className="flex w-full min-h-[48px] touch-manipulation items-center gap-3 rounded-lg px-5 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="flex-1">Plantillas</span>
+            <span className="text-dim/40" aria-hidden="true">›</span>
+          </Link>
+          <Link
+            href={`/cadena/auditoria?tenantId=${tenantId}`}
+            onClick={() => setSidebarOpen(false)}
+            className="flex w-full min-h-[48px] touch-manipulation items-center gap-3 rounded-lg px-5 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="flex-1">Auditoría</span>
+            <span className="text-dim/40" aria-hidden="true">›</span>
+          </Link>
+          <Link
+            href={`/cadena/staff?tenantId=${tenantId}`}
+            onClick={() => setSidebarOpen(false)}
+            className="flex w-full min-h-[48px] touch-manipulation items-center gap-3 rounded-lg px-5 text-left text-[13px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <span className="flex-1">Staff</span>
+            <span className="text-dim/40" aria-hidden="true">›</span>
+          </Link>
+        </nav>
+        <div className="flex-1" />
+        <button
+          type="button"
+          onClick={() => { setSidebarOpen(false); setIsCreating(true); }}
+          className="flex w-full min-h-[48px] touch-manipulation items-center gap-2 rounded-lg bg-white px-5 py-2 text-[12px] font-semibold text-ink transition-all hover:bg-white/90 active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Nueva sucursal
+        </button>
+        <Link
+          href={`/cadena/zonas?tenantId=${tenantId}`}
+          onClick={() => setSidebarOpen(false)}
+          className="flex w-full min-h-[48px] touch-manipulation items-center gap-2 rounded-lg border border-white/[0.08] px-5 py-2 text-[12px] font-medium text-dim transition-colors hover:bg-white/[0.04] hover:text-light focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <MapPin className="h-3.5 w-3.5" aria-hidden="true" /> Gestionar zonas
+        </Link>
+      </aside>
 
       {/* ═══════ MOBILE TOP BAR ═══════ */}
       <div className="md:hidden flex items-center justify-between border-b border-wire bg-burgundy-dark px-4 py-3">
-        <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 text-dim hover:text-light">
-          <Menu className="h-5 w-5" />
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="flex size-11 items-center justify-center -ml-2 text-dim hover:text-light focus-visible:ring-2 focus-visible:ring-ring touch-manipulation"
+          aria-label="Abrir menú"
+        >
+          <Menu className="h-5 w-5" aria-hidden="true" />
         </button>
-        <div className="text-[16px] font-semibold text-light truncate mx-2">
-          {data?.chain?.name ?? "Cadena"}
+        <div className="flex flex-col items-center min-w-0 mx-2">
+          <span className="font-serif text-[16px] font-semibold italic leading-tight tracking-[-0.02em] text-light">bouquet</span>
+          <span className="text-[11px] text-dim/50 truncate max-w-[160px]">{data?.chain?.name ?? "Cadena"}</span>
         </div>
-        <button onClick={() => setIsCreating(true)} className="p-2 text-dim hover:text-light">
-          <Plus className="h-5 w-5" />
+        <button
+          onClick={() => setIsCreating(true)}
+          className="flex size-11 items-center justify-center text-dim hover:text-light focus-visible:ring-2 focus-visible:ring-ring touch-manipulation"
+          aria-label="Nueva sucursal"
+        >
+          <Plus className="h-5 w-5" aria-hidden="true" />
         </button>
       </div>
 
       {/* ═══════ MOBILE TAB PILLS ═══════ */}
-      <div className="md:hidden scrollbar-hide flex gap-1 overflow-x-auto border-b border-wire bg-bg-solid px-3 py-2">
-        {[
-          { id: "OVERVIEW" as const, label: "Visión General" },
-          { id: "ZONES" as const, label: "Zonas" },
-          { id: "RESTAURANTS" as const, label: "Sucursales" },
-          { id: "STAFF" as const, label: "Staff" },
-        ].map(tab => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-            className={`shrink-0 rounded-full px-4 py-1.5 text-[11px] font-semibold transition-colors ${
-              activeTab === tab.id ? "bg-rose text-white" : "text-dim hover:text-light hover:bg-white/[0.04]"
-            }`}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <MobileTabPills value={activeTab} onChange={setActiveTab}>
+        <MobileTabPillsList className="md:hidden border-b border-wire bg-bg-solid px-3 py-3">
+          <MobileTabPillsTab value="OVERVIEW">Visión General</MobileTabPillsTab>
+          <MobileTabPillsTab value="ZONES">Zonas</MobileTabPillsTab>
+          <MobileTabPillsTab value="RESTAURANTS">Sucursales</MobileTabPillsTab>
+          <MobileTabPillsTab value="STAFF">Staff</MobileTabPillsTab>
+        </MobileTabPillsList>
 
-      {/* ═══════ MAIN ═══════ */}
-      <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
+        {/* ═══════ MAIN ═══════ */}
+        <div className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* ── Header (desktop only) ── */}
         <header className="hidden sm:flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 border-b border-wire px-4 py-3 sm:px-6 sm:py-4">
           <div>
@@ -630,7 +693,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
 
         {/* ── Content ── */}
         <main className="flex flex-1 flex-col gap-5 overflow-y-auto p-3 sm:p-5 px-4 custom-scrollbar">
-          {activeTab === "OVERVIEW" ? (
+          <MobileTabPillsPanel value="OVERVIEW">
             <>
               {/* ── KPI Strip ── */}
               <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -869,7 +932,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                 </div>
               </div>
             </>
-          ) : activeTab === "ZONES" ? (
+          </MobileTabPillsPanel>
+          <MobileTabPillsPanel value="ZONES">
             <div className="flex flex-1 flex-col gap-6">
               <div className="flex items-end justify-between px-2">
                 <div>
@@ -912,7 +976,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                     </div>
 
                     <div className="mt-4 flex items-center justify-between border-t border-white/5 pt-4">
-                      <button className="text-[11px] font-medium text-dim hover:text-light transition-colors">
+                      <button className="text-[11px] font-medium text-dim hover:text-light transition-colors focus-visible:ring-2 focus-visible:ring-ring touch-manipulation">
                         Gestionar zona
                       </button>
                       <ArrowRight className="h-3.5 w-3.5 text-dim/40 group-hover:text-pink-glow transition-all group-hover:translate-x-1" />
@@ -923,7 +987,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                   </motion.div>
                 ))}
 
-                <button className="flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-white/5 bg-white/[0.01] p-8 text-dim transition-all hover:border-pink-glow/20 hover:bg-pink-glow/[0.02] hover:text-light">
+                <button className="flex flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-white/5 bg-white/[0.01] p-8 text-dim transition-all hover:border-pink-glow/20 hover:bg-pink-glow/[0.02] hover:text-light focus-visible:ring-2 focus-visible:ring-ring touch-manipulation">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/5 mb-4">
                     <Plus className="h-6 w-6" />
                   </div>
@@ -932,7 +996,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                 </button>
               </div>
             </div>
-          ) : activeTab === "RESTAURANTS" ? (
+          </MobileTabPillsPanel>
+          <MobileTabPillsPanel value="RESTAURANTS">
             <div className="flex flex-1 flex-col gap-6 overflow-hidden">
               <div className="flex items-end justify-between px-2">
                 <div>
@@ -1009,11 +1074,12 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                               </span>
                             </td>
                             <td className="px-3 py-2.5 sm:px-6 sm:py-4 text-right">
-                              <button 
+                              <button
                                 onClick={() => router.push(`/cadena/restaurantes/${res.id}`)}
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/5 bg-white/[0.02] text-dim hover:bg-white/10 hover:text-light transition-all"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/5 bg-white/[0.02] text-dim hover:bg-white/10 hover:text-light transition-all focus-visible:ring-2 focus-visible:ring-ring touch-manipulation"
+                                aria-label={`Ver detalle de ${res.name}`}
                               >
-                                <ArrowRight className="h-3.5 w-3.5" />
+                                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                               </button>
                             </td>
                           </tr>
@@ -1024,7 +1090,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                 </div>
               </div>
             </div>
-          ) : activeTab === "STAFF" ? (
+          </MobileTabPillsPanel>
+          <MobileTabPillsPanel value="STAFF">
             <div className="flex flex-1 flex-col gap-6 overflow-hidden">
               <div className="flex items-end justify-between px-2">
                 <div>
@@ -1040,8 +1107,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                       className="h-9 w-full sm:w-64 rounded-full border border-white/5 bg-white/[0.03] pl-9 pr-4 text-[12px] text-light placeholder:text-dim focus:border-pink-glow/30 focus:outline-none transition-all"
                     />
                   </div>
-                  <button className="flex h-9 items-center gap-2 rounded-full border border-white/5 bg-white/[0.03] px-4 text-[12px] text-dim hover:bg-white/10 hover:text-light transition-all">
-                    <Mail className="h-3.5 w-3.5" />
+                  <button className="flex h-9 items-center gap-2 rounded-full border border-white/5 bg-white/[0.03] px-4 text-[12px] text-dim hover:bg-white/10 hover:text-light transition-all focus-visible:ring-2 focus-visible:ring-ring touch-manipulation">
+                    <Mail className="h-3.5 w-3.5" aria-hidden="true" />
                     Invitar Staff
                   </button>
                 </div>
@@ -1092,8 +1159,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <button className="text-dim hover:text-light transition-colors">
-                              <Pencil className="h-3.5 w-3.5" />
+                            <button className="text-dim hover:text-light transition-colors focus-visible:ring-2 focus-visible:ring-ring touch-manipulation" aria-label="Editar colaborador">
+                              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                             </button>
                           </td>
                         </tr>
@@ -1103,7 +1170,8 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                 </div>
               </div>
             </div>
-          ) : (
+          </MobileTabPillsPanel>
+          <MobileTabPillsPanel value="ZONES_MAP">
             <div className="flex flex-1 flex-col overflow-hidden rounded-[32px] border border-white/10 bg-ink relative min-h-[200px] sm:min-h-[350px]">
               <div className="absolute inset-0 z-0">
                 <Map
@@ -1139,11 +1207,11 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
               
               {/* Map UI Overlay */}
               <div className="absolute top-6 left-6 z-10 flex flex-col gap-3">
-                <button 
+                <button
                   onClick={() => setActiveTab("ZONES")}
-                  className="flex h-10 items-center gap-2 rounded-full bg-ink/80 backdrop-blur-md border border-white/10 px-4 text-[12px] font-medium text-light hover:bg-ink transition-all"
+                  className="flex h-10 items-center gap-2 rounded-full bg-ink/80 backdrop-blur-md border border-white/10 px-4 text-[12px] font-medium text-light hover:bg-ink transition-all focus-visible:ring-2 focus-visible:ring-ring touch-manipulation"
                 >
-                  <ArrowRight className="h-4 w-4 rotate-180" />
+                  <ArrowRight className="h-4 w-4 rotate-180" aria-hidden="true" />
                   Volver a Lista
                 </button>
                 <div className="flex flex-col gap-1 rounded-2xl bg-ink/80 backdrop-blur-md border border-white/10 p-3 shadow-2xl">
@@ -1153,13 +1221,14 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
               </div>
 
               <div className="absolute bottom-6 right-6 z-10 flex flex-col overflow-hidden rounded-xl border border-white/10 bg-ink/80 backdrop-blur-md">
-                <button onClick={() => setMapZoom(z => Math.min(18, z + 1))} className="flex h-10 w-10 items-center justify-center text-lg text-light hover:bg-white/10">+</button>
-                <button onClick={() => setMapZoom(z => Math.max(1, z - 1))} className="flex h-10 w-10 items-center justify-center text-lg text-light hover:bg-white/10 border-t border-white/10">−</button>
+                <button onClick={() => setMapZoom(z => Math.min(18, z + 1))} className="flex h-10 w-10 items-center justify-center text-lg text-light hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-ring touch-manipulation" aria-label="Acercar mapa">+</button>
+                <button onClick={() => setMapZoom(z => Math.max(1, z - 1))} className="flex h-10 w-10 items-center justify-center text-lg text-light hover:bg-white/10 border-t border-white/10 focus-visible:ring-2 focus-visible:ring-ring touch-manipulation" aria-label="Alejar mapa">−</button>
               </div>
             </div>
-          )}
+          </MobileTabPillsPanel>
         </main>
       </div>
+      </MobileTabPills>
 
       {isCreating && (
         <CreateRestaurantDialog

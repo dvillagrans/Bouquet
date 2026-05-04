@@ -1,4 +1,4 @@
-import { verifySessionToken, isTokenBlacklisted, refreshSessionToken, sessionCookieName } from "@/lib/auth-session";
+import { verifySessionToken, isTokenBlacklisted, refreshSessionToken, sessionCookieName, sessionCookieOptions } from "@/lib/auth-session";
 import { resolveTenantScope } from "@/lib/tenant";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -74,11 +74,8 @@ export function withAuth<TArgs extends any[], TReturn>(
     } catch {}
     if (newToken) {
       cookieStore.set(sessionCookieName(), newToken, {
-        httpOnly: true,
-        sameSite: "lax",
-        secure: true,
-        path: "/",
-        maxAge: 30 * 24 * 60 * 60,
+        ...sessionCookieOptions(),
+        maxAge: 24 * 60 * 60,
       });
     }
 

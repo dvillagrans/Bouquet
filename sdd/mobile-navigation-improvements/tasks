@@ -1,0 +1,311 @@
+# Tasks: mobile-navigation-improvements
+
+> Phase: tasks  
+> Change: mobile-navigation-improvements  
+> Project: bouquet  
+> Last updated: 2026-05-03
+
+---
+
+## Summary
+
+This change improves mobile navigation across the Bouquet Hospitality OS by increasing touch targets, extracting reusable mobile tab components, adding GSAP-driven sidebar animations, and ensuring WCAG 2.2 compliance.
+
+**Execution order:** Sidebar foundation → Tab navigation → GSAP animation → Accessibility audit.
+
+---
+
+## Phase 1 — Sidebar Touch Targets (REQ-MOB-001)
+
+### TASK-01 — Increase `Sidebar.tsx` nav row touch targets
+
+**Requirement:** REQ-MOB-001  
+**File:** `src/components/dashboard/Sidebar.tsx`  
+**Type:** Modify
+
+**What to change:**
+- Increase nav link minimum height from `min-h-[42px]` to `min-h-[48px]` on mobile (`lg:min-h-[42px]` on desktop to preserve density).
+- Increase vertical spacing between nav rows from `mb-0.5` (~2px) to `mb-2` (~8px) to prevent accidental taps on adjacent items.
+- Ensure the change applies to all `<Link>` items inside the `items.map()` block (lines 121–149).
+
+**Acceptance criteria:**
+- [ ] Each nav row in `Sidebar.tsx` is at least 48px tall on viewports < 1024px.
+- [ ] Gap between consecutive nav rows is at least 8px.
+- [ ] Desktop sidebar (≥1024px) retains 42px row height to avoid excessive vertical expansion.
+- [ ] Visual regression: sidebar layout does not break or overflow on iPhone SE (375px).
+
+**Verification:**
+```bash
+# Inspect rendered height of first nav link in mobile viewport
+npx playwright open --viewport-size=375,812 http://localhost:3000/dashboard
+# Expect: computed height ≥ 48px, margin-bottom = 8px
+```
+
+---
+
+### TASK-02 — Increase `NavRow` touch target height
+
+**Requirement:** REQ-MOB-001  
+**File:** `src/components/admin/NavRow.tsx`  
+**Type:** Modify
+
+**What to change:**
+- Add `min-h-[48px]` to the `<button>` root class list.
+- Keep `items-center` so text stays vertically centered when height expands.
+- Retain existing horizontal padding (`px-3`) and active/hover states.
+
+**Acceptance criteria:**
+- [ ] `NavRow` renders at minimum 48px tall in all contexts (ChainDashboard desktop sidebar, admin panels).
+- [ ] Badge pill stays vertically centered inside the row.
+- [ ] No text truncation or overflow at 320px viewport width.
+
+**Dependencies:** None (foundational component).
+
+---
+
+### TASK-03 — Increase `ChainDashboard.tsx` mobile sidebar item sizing
+
+**Requirement:** REQ-MOB-001  
+**File:** `src/components/chain/ChainDashboard.tsx`  
+**Type:** Modify
+
+**What to change:**
+- In the mobile sidebar overlay (lines ~530–563), increase all `<button>` and `<Link>` items from `py-2` to `min-h-[48px] py-3` (or equivalent) to guarantee 48px touch targets.
+- Increase section header spacing (the "PANEL MAESTRO" / "ESTANDARIZACIÓN" labels) from `pt-1`/`pt-4` to `pt-2`/`pt-5` to maintain visual rhythm after row height increase.
+- Ensure the close button (line 507, `self-end p-2`) is at least 44px; if not, bump to `p-3` or `size-11`.
+
+**Acceptance criteria:**
+- [ ] Every tappable element in the ChainDashboard mobile sidebar is ≥ 48px tall.
+- [ ] Close button hit area is ≥ 44px × 44px.
+- [ ] Sidebar content remains fully scrollable without clipping on iPhone SE.
+
+**Dependencies:** TASK-02 (NavRow sizing should already be correct, but this task covers inline buttons/links that do not use `NavRow`).
+
+---
+
+## Phase 2 — Tab Navigation Mobile Sizing (REQ-MOB-002)
+
+### TASK-04 — Create `MobileTabPills` component
+
+**Requirement:** REQ-MOB-002  
+**File:** `src/components/chain/mobile-tab-pills.tsx` (new)  
+**Type:** Create
+
+**What to produce:**
+A self-contained, reusable component that replaces the inline tab pills currently embedded in `ChainDashboard.tsx` (lines 582–596).
+
+**Props interface:**
+```ts
+interface MobileTabPillsProps {
+  tabs: { id: string; label: string }[];
+  activeTab: string;
+  onChange: (id: string) => void;
+}
+```
+
+**Styling requirements:**
+- Minimum pill height: 44px (`min-h-[44px]`).
+- Minimum horizontal padding: `px-5` (increase from current `px-4`).
+- Minimum gap between pills: `gap-2` (increase from `gap-1.5`).
+- Active state: keep current `bg-rose text-white` + shadow.
+- Inactive state: keep current `text-dim hover:text-light hover:bg-white/[0.04]`.
+- Font size: `text-[12px]` (increase from `text-[11px]` for legibility at arm’s length).
+- Add `touch-manipulation` to prevent double-tap zoom delays.
+- Container: `overflow-x-auto scrollbar-hide flex` with `px-4 py-3` padding.
+
+**Accessibility:**
+- Render as `<div role="tablist">` with child `<button role="tab" aria-selected={active}>`.
+- Add `aria-label="Navegación por pestañas"` to the tablist container.
+
+**Acceptance criteria:**
+- [ ] Component file exists at `src/components/chain/mobile-tab-pills.tsx`.
+- [ ] Each pill is ≥ 44px tall and ≥ 80px wide (including padding) on a 375px viewport.
+- [ ] Active pill has `aria-selected="true"` and inactive pills `aria-selected="false"`.
+- [ ] Component is importable and TypeScript compiles without errors.
+- [ ] Styling matches Bouquet dark-theme palette (rose active, muted inactive).
+
+**Dependencies:** None.
+
+---
+
+### TASK-05 — Integrate `MobileTabPills` into `ChainDashboard.tsx`
+
+**Requirement:** REQ-MOB-002  
+**File:** `src/components/chain/ChainDashboard.tsx`  
+**Type:** Modify
+
+**What to change:**
+- Replace the inline tab map (lines 582–596) with the new `<MobileTabPills>` component.
+- Import the component at the top of the file.
+- Pass the four tab definitions (`OVERVIEW`, `ZONES`, `RESTAURANTS`, `STAFF`) and the `activeTab` / `setActiveTab` handlers as props.
+- Remove the old inline `<div className="md:hidden scrollbar-hide ...">` block entirely.
+
+**Acceptance criteria:**
+- [ ] ChainDashboard renders identically (or improved) on mobile after the swap.
+- [ ] Tab switching remains instantaneous (< 100ms perceived delay).
+- [ ] No prop-type or TypeScript errors.
+- [ ] Bundle does not duplicate tab styling logic elsewhere in the file.
+
+**Dependencies:** TASK-04.
+
+---
+
+## Phase 3 — GSAP Sidebar Animation (REQ-MOB-003)
+
+### TASK-06 — Create `useMobileSheetAnimation` hook
+
+**Requirement:** REQ-MOB-003  
+**File:** `src/hooks/use-mobile-sheet-animation.ts` (new)  
+**Type:** Create
+
+**What to produce:**
+A custom React hook that orchestrates GSAP slide-in/out animations for a mobile sidebar sheet.
+
+**Signature:**
+```ts
+import { RefObject } from "react";
+
+interface UseMobileSheetAnimationOptions {
+  duration?: number;        // default 0.35
+  ease?: string;            // default "power3.out"
+  reducedMotion?: boolean;  // auto-detected if omitted
+}
+
+interface UseMobileSheetAnimationReturn {
+  animateOpen: () => void;
+  animateClose: () => Promise<void>;
+  isAnimating: boolean;
+}
+
+export function useMobileSheetAnimation(
+  sidebarRef: RefObject<HTMLElement | null>,
+  backdropRef: RefObject<HTMLElement | null>,
+  options?: UseMobileSheetAnimationOptions
+): UseMobileSheetAnimationReturn;
+```
+
+**Behavior:**
+- `animateOpen`: slides sidebar from `translateX(-100%)` to `translateX(0%)`, fades backdrop from `opacity: 0` to `opacity: 1`.
+- `animateClose`: reverses the above; returns a Promise that resolves when GSAP timeline completes.
+- `isAnimating`: true while any GSAP timeline is active.
+- Respects `prefers-reduced-motion`: if true, skip translation and only toggle opacity instantly (duration 0.01s).
+- Cleans up all GSAP tweens on unmount to prevent memory leaks.
+- Uses `gsap.fromTo` for bidirectional control.
+- Does NOT read layout properties during animation (no layout thrashing).
+
+**Acceptance criteria:**
+- [ ] Hook file exists at `src/hooks/use-mobile-sheet-animation.ts`.
+- [ ] `animateOpen` / `animateClose` run without runtime errors when refs are attached to DOM elements.
+- [ ] Animation duration is ≤ 400ms (snappy mobile feel).
+- [ ] When `prefers-reduced-motion: reduce` is enabled, animation is instant (opacity only).
+- [ ] Hook cleans up pending tweens on unmount (no console warnings from GSAP).
+- [ ] TypeScript exports the interface and function with correct types.
+
+**Dependencies:** None (pure hook; GSAP is already installed).
+
+---
+
+### TASK-07 — Integrate GSAP animation into ChainDashboard mobile sidebar
+
+**Requirement:** REQ-MOB-003  
+**File:** `src/components/chain/ChainDashboard.tsx`  
+**Type:** Modify
+
+**What to change:**
+- Replace the current conditional `{sidebarOpen && (<><div className="fixed inset-0 ..." /> <aside ... /></>)}` with a permanently mounted (but visually hidden) structure that gets animated by GSAP.
+- Create two refs: `sidebarRef` (for the `<aside>`) and `backdropRef` (for the overlay `<div>`).
+- Import and call `useMobileSheetAnimation(sidebarRef, backdropRef)`.
+- Drive open/close via `useEffect` watching `sidebarOpen`:
+  ```ts
+  useEffect(() => {
+    if (sidebarOpen) animateOpen();
+    else animateClose();
+  }, [sidebarOpen]);
+  ```
+- Ensure the sidebar is `aria-hidden={!sidebarOpen}` and `inert={!sidebarOpen}` when closed to prevent focus leakage.
+- Keep the backdrop click-to-close behavior.
+- Add `will-change: transform` to the sidebar element for GPU compositing.
+
+**Acceptance criteria:**
+- [ ] Mobile sidebar slides in smoothly from the left when hamburger is tapped.
+- [ ] Backdrop fades in concurrently.
+- [ ] Tapping backdrop or close button triggers slide-out + fade-out.
+- [ ] Animation is skipped (instant) when `prefers-reduced-motion: reduce` is active.
+- [ ] Focus cannot leak to sidebar content when it is closed (test with Tab key).
+- [ ] No React state desync: rapid open/close clicks do not leave sidebar stuck in wrong state.
+- [ ] Lighthouse "Cumulative Layout Shift" score remains unchanged (≤ 0.1).
+
+**Dependencies:** TASK-06.
+
+---
+
+## Phase 4 — Touch Target Accessibility (WCAG 2.2) (REQ-MOB-004)
+
+### TASK-08 — WCAG 2.2 accessibility pass on sidebar and tab components
+
+**Requirement:** REQ-MOB-004  
+**Files:**
+- `src/components/dashboard/Sidebar.tsx`
+- `src/components/admin/NavRow.tsx`
+- `src/components/chain/ChainDashboard.tsx`
+- `src/components/chain/mobile-tab-pills.tsx`
+
+**Type:** Modify (cross-cutting)
+
+**What to change:**
+- **Target size:** Verify every interactive element (links, buttons, tabs) is at least 24×24px (WCAG 2.2 minimum) and ideally 44×44px on mobile. Address any violations found.
+- **Focus indicators:** Add visible focus rings (`focus-visible:ring-2 focus-visible:ring-gold/60 focus-visible:outline-none`) to all custom tappable elements that lack them (sidebar links, NavRow, tab pills, ChainDashboard mobile sidebar buttons).
+- **Color + shape:** Ensure active states are not communicated by color alone; confirm existing background/shadow differentiation is present.
+- **Touch-action:** Add `touch-manipulation` to all mobile-exclusive buttons to suppress 300ms double-tap delay.
+- **Landmarks / roles:** Confirm `role="tablist"` / `role="tab"` on tab pills, `aria-label` on nav containers, and `aria-current="page"` on active nav links.
+
+**Acceptance criteria:**
+- [ ] axe-core scan on `/dashboard` and `/cadena` shows 0 violations for "target-size" (WCAG 2.2 AA).
+- [ ] Tab key navigation shows a visible focus ring on every interactive element in the mobile sidebar and tab bar.
+- [ ] No element has `touch-action: auto` on a mobile-exclusive button (should be `touch-manipulation`).
+- [ ] Active nav item is programmatically determinable (`aria-current="page"` or `aria-selected="true"`).
+
+**Dependencies:** TASK-01, TASK-02, TASK-03, TASK-04, TASK-05.
+
+---
+
+### TASK-09 — Focus-indicator and touch-action pass on `MobileBottomNav.tsx`
+
+**Requirement:** REQ-MOB-004  
+**File:** `src/components/dashboard/MobileBottomNav.tsx`  
+**Type:** Modify
+
+**What to change:**
+- Add `focus-visible:ring-2 focus-visible:ring-gold/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-solid` to the four primary nav `<Link>` items and the "Más" `<button>`.
+- Add `focus-visible:ring-2 focus-visible:ring-white/30` to the Sheet content links/buttons.
+- Verify all items already have `touch-manipulation`; add if any are missing.
+- Ensure the active state bottom-nav item has `aria-current="page"` (already present — verify).
+
+**Acceptance criteria:**
+- [ ] Focus ring is clearly visible on all five bottom-nav items in mobile viewport.
+- [ ] Focus ring is visible on all Sheet menu items when opened.
+- [ ] axe-core reports 0 target-size or focus-indicator violations for this component.
+- [ ] No visual regression: focus rings do not distort the glassmorphism styling.
+
+**Dependencies:** None (can run in parallel with Phase 1–3, but logically grouped in Phase 4).
+
+---
+
+## Verification Matrix
+
+| Requirement | Tasks | Files modified / created |
+|-------------|-------|--------------------------|
+| REQ-MOB-001 | 01, 02, 03 | `Sidebar.tsx`, `NavRow.tsx`, `ChainDashboard.tsx` |
+| REQ-MOB-002 | 04, 05 | `mobile-tab-pills.tsx` (new), `ChainDashboard.tsx` |
+| REQ-MOB-003 | 06, 07 | `use-mobile-sheet-animation.ts` (new), `ChainDashboard.tsx` |
+| REQ-MOB-004 | 08, 09 | `Sidebar.tsx`, `NavRow.tsx`, `ChainDashboard.tsx`, `mobile-tab-pills.tsx`, `MobileBottomNav.tsx` |
+
+---
+
+## Notes
+
+- **No test runner** is configured; skip automated unit tests. Rely on manual QA, axe-core scan, and visual regression checks.
+- **GSAP** is already installed (`gsap`, `@gsap/react`); do not reinstall.
+- **Tailwind CSS v4** is active; use modern utility syntax (e.g., `min-h-[48px]`, `focus-visible:ring-2`).
+- **shadcn/ui Sheet** is used in `MobileBottomNav.tsx`; do NOT replace it with GSAP. Only the custom sidebar in `ChainDashboard.tsx` gets GSAP animation.
+- **Reduced motion:** Always respect `prefers-reduced-motion` in GSAP animations (handled in TASK-06 hook).

@@ -86,7 +86,7 @@ export default function Sidebar({
           <button
             onClick={onClose}
             aria-label="Cerrar menú"
-            className="flex h-8 w-8 items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light lg:hidden"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center border border-wire text-dim transition-colors hover:border-light/20 hover:text-light focus-visible:ring-2 focus-visible:ring-ring touch-manipulation lg:hidden"
           >
             <X className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
@@ -111,10 +111,10 @@ export default function Sidebar({
         {groups.map(({ label: groupLabel, items }, gi) => (
           <div
             key={groupLabel}
-            className="mb-5"
+            className="md:mb-5"
             style={{ animation: `fade-in 0.35s ease-out ${0.12 + gi * 0.08}s both` }}
           >
-            <p className="mb-1 px-3 text-[0.48rem] font-bold uppercase tracking-[0.38em] text-dim/35">
+            <p className="mt-6 mb-2 px-5 text-[0.48rem] font-bold uppercase tracking-[0.38em] text-dim/35 md:mt-0 md:mb-1 md:px-3">
               {groupLabel}
             </p>
 
@@ -127,12 +127,14 @@ export default function Sidebar({
                   key={href}
                   href={href}
                   onClick={onClose}
+                  aria-current={active ? "page" : undefined}
                   className={[
-                    "relative mb-0.5 flex min-h-[42px] items-center gap-3 px-3 text-[0.78rem] font-semibold",
-                    "transition-[color,background-color] duration-150",
+                    "relative mb-2 flex min-h-[48px] touch-manipulation items-center gap-3 px-5 text-[0.78rem] font-semibold",
+                    "transition-[color,background-color] duration-150 focus-visible:ring-2 focus-visible:ring-ring",
                     active
-                      ? "bg-glow/[0.08] text-light before:absolute before:left-0 before:top-0 before:h-full before:w-[2px] before:bg-glow"
+                      ? "bg-accent text-accent-foreground md:bg-glow/[0.08] md:text-light md:before:absolute md:before:left-0 md:before:top-0 md:before:h-full md:before:w-[2px] md:before:bg-glow"
                       : "text-dim hover:bg-white/[0.03] hover:text-light",
+                    "md:mb-0.5 md:min-h-[42px] md:px-3",
                   ].join(" ")}
                   style={{
                     animation: `fade-in 0.3s ease-out ${0.18 + gi * 0.08 + ii * 0.05}s both`,
@@ -140,11 +142,12 @@ export default function Sidebar({
                 >
                   <Icon
                     className={`h-4 w-4 shrink-0 transition-colors ${
-                      active ? "text-glow" : "text-dim/60"
+                      active ? "text-glow md:text-glow" : "text-dim/60"
                     }`}
                     aria-hidden="true"
                   />
-                  {label}
+                  <span className="flex-1">{label}</span>
+                  <span className="text-dim/40" aria-hidden="true">›</span>
                 </Link>
               );
             })}

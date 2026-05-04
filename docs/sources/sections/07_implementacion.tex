@@ -197,35 +197,35 @@ capacidades de análisis avanzado:
   identificar cuellos de botella operativos.
 \end{enumerate}
 
-\subsubsection{Monitoreo con Engram Persistent Memory}
+\subsubsection{Monitoreo del Pipeline}
 
-Para garantizar visibilidad y trazabilidad de las ejecuciones del
-pipeline, el orquestador se integra con Engram, un sistema de memoria
-persistente que registra cada ejecución como una observación
-estructurada. La integración opera de la siguiente forma:
+La visibilidad y trazabilidad de las ejecuciones del pipeline se
+materializan a través de los siguientes mecanismos de monitoreo:
 
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{Registro de ejecuciones}: al iniciar y finalizar cada
-  job, el orquestador invoca la API de Engram para guardar una
-  observación con el tipo de job, estado, duración, filas procesadas y
-  cualquier error detectado.
-  \item \textbf{Estructura de observación}: cada registro incluye los
-  campos \texttt{jobRunId}, \texttt{jobType}, \texttt{status},
-  \texttt{restaurantId}, \texttt{startedAt}, \texttt{completedAt},
-  \texttt{rowsProcessed} y \texttt{errorMessage}, almacenados en el
-  almacén de Engram.
-  \item \textbf{Sincronización automática a Engram Cloud}: un timer de
-  systemd ejecuta cada minuto el comando de sincronización
-  \texttt{engram cloud sync}, enviando las observaciones locales al
-  servicio Engram Cloud. Esto permite visualizar el historial de
-  ejecuciones desde el dashboard web de Engram sin necesidad de acceder
-  directamente al VPS.
+  \item \textbf{Registro en base de datos}: al iniciar y finalizar cada
+  job, el orquestador actualiza el registro correspondiente en la tabla
+  \texttt{AnalyticsJobRun} con el estado, duración, filas procesadas y
+  cualquier error detectado. Esta tabla constituye la fuente canónica
+  para consultar el historial de ejecuciones mediante el endpoint
+  \texttt{GET /jobs/\{id\}}.
+  \item \textbf{Archivos de registro (\textit{logs})}: los contenedores
+  Docker del orquestador y de Spark escriben registros detallados en la
+  salida estándar, capturados por el driver de logging de Docker. Estos
+  logs pueden consultarse mediante \texttt{docker logs} e incluyen
+  información de diagnóstico como trazas de excepciones, tiempos de cada
+  etapa de Spark y estadísticas de registros leídos y escritos.
+  \item \textbf{Métricas de Spark}: el contexto de Spark expone métricas
+  de ejecución a través de su interfaz web en el puerto 4040, accesible
+  desde el VPS. Estas métricas incluyen el progreso de stages, uso de
+  memoria del driver y distribución de tareas entre los núcleos
+  disponibles.
 \end{itemize}
 
-La integración con Engram proporciona un registro de auditoría inmutable
-del pipeline, facilitando la detección de fallos recurrentes, el análisis
-de tendencias de rendimiento y la generación de reportes de ejecución para
-el administrador.
+Este esquema de monitoreo proporciona un registro completo y consultable
+de cada ejecución del pipeline, facilitando la detección de fallos
+recurrentes, el análisis de tendencias de rendimiento y la generación de
+reportes para el administrador del sistema.
 
 \subsubsection{Topología de Archivos del Pipeline}
 
@@ -261,24 +261,16 @@ de servicios del sistema operativo, variables de entorno y límites de
 recursos. A continuación se detallan los componentes de configuración
 necesarios.
 
-\subsubsection{Sincronización Automática con Engram Cloud}
+\subsubsection{Registro de Ejecuciones}
 
-Para mantener actualizado el registro de ejecuciones en Engram Cloud,
-se utiliza un \textbf{timer de systemd} que ejecuta el comando de
-sincronización cada minuto. La configuración consta de dos archivos:
-
-\begin{itemize}[leftmargin=1.5em]
-  \item \texttt{/etc/systemd/system/engram-cloud-sync.service}: define
-  el servicio que ejecuta \texttt{engram cloud sync} con el proyecto
-  configurado como \texttt{bouquet-pipeline}.
-  \item \texttt{/etc/systemd/system/engram-cloud-sync.timer}: programa
-  la ejecución del servicio cada 60 segundos
-  (\texttt{OnUnitActiveSec=60s}), con persistencia tras reinicios
-  (\texttt{Persistent=true}).
-\end{itemize}
-
-Este mecanismo garantiza que incluso si el VPS se reinicia, la
-sincronización se reanuda automáticamente sin intervención manual.
+Cada invocación del pipeline queda registrada de forma permanente en la
+tabla \texttt{AnalyticsJobRun} de la base de datos PostgreSQL. Esta
+tabla funciona como bitácora central de todas las ejecuciones y es
+consultada por el dashboard administrativo para desplegar el historial
+de jobs, sus estados y métricas de rendimiento. Al residir en la misma
+base de datos que los datos transaccionales y analíticos, el registro de
+ejecuciones no requiere infraestructura externa adicional y se beneficia
+de las políticas de respaldo y replicación ya existentes en Supabase.
 
 \subsubsection{Orquestación de Contenedores con Docker Compose}
 
@@ -316,10 +308,6 @@ el VPS. Las principales variables definidas son:
   credenciales de solo lectura para la extracción de datos.
   \item \texttt{ANALYTICS\_API\_KEY}: clave secreta utilizada para
   autenticar las solicitudes a la API REST del orquestador.
-  \item \texttt{ENGRAM\_PROJECT}: identificador del proyecto en
-  Engram (\texttt{bouquet-pipeline}).
-  \item \texttt{ENGRAM\_CLOUD\_TOKEN}: token de autenticación para la
-  sincronización con Engram Cloud.
 \end{itemize}
 
 El archivo \texttt{.env} se excluye del control de versiones mediante
@@ -403,27 +391,31 @@ de mínimo privilegio y aislamiento de red:
   por el firewall.
 \end{itemize}
 
-\subsubsection{Auditoría mediante Engram Cloud con JWT}
+\subsubsection{Trazabilidad de Ejecuciones}
 
-La integración con Engram Cloud utiliza autenticación basada en JWT
-(\textit{JSON Web Token}) para garantizar que solo el VPS autorizado
-pueda escribir observaciones en el proyecto:
+La tabla \texttt{AnalyticsJobRun} proporciona un registro de auditoría
+de todas las ejecuciones del pipeline, permitiendo reconstruir la
+trazabilidad completa de cada dato analítico generado:
 
 \begin{itemize}[leftmargin=1.5em]
-  \item El token \texttt{ENGRAM\_CLOUD\_TOKEN} se genera desde el
-  panel de administración de Engram Cloud y se almacena en el archivo
-  \texttt{.env} del VPS.
-  \item Cada solicitud de sincronización incluye el token en el
-  encabezado \texttt{Authorization: Bearer <token>}.
-  \item Engram Cloud valida la firma JWT y la pertenencia del token al
-  proyecto \texttt{bouquet-pipeline} antes de aceptar observaciones.
-  \item El canal de comunicación utiliza TLS 1.3 para cifrar los datos
-  en tránsito.
+  \item Cada registro en las tablas Gold incluye el campo
+  \texttt{jobRunId} que lo generó, estableciendo una cadena de
+  trazabilidad desde el resultado agregado hasta la ejecución
+  específica del pipeline.
+  \item El esquema de base de datos garantiza la integridad referencial
+  entre \texttt{AnalyticsJobRun} y las tablas de resultados mediante
+  claves foráneas.
+  \item Las marcas temporales \texttt{startedAt} y
+  \texttt{completedAt} permiten auditar la ventana de procesamiento de
+  cada job y detectar posibles solapamientos entre ejecuciones.
+  \item El campo \texttt{errorMessage} preserva el diagnóstico de
+  fallos, facilitando la depuración retrospectiva de incidencias.
 \end{itemize}
 
-Este mecanismo proporciona un registro de auditoría inmutable de todas
-las ejecuciones del pipeline, accesible desde el dashboard de Engram
-Cloud para el administrador del sistema.
+Este mecanismo de trazabilidad, implementado enteramente sobre la capa
+de persistencia de PostgreSQL, permite al administrador del sistema
+verificar la integridad de los datos analíticos y diagnosticar fallos
+sin depender de servicios externos.
 
 \subsubsection{Endurecimiento del VPS}
 
@@ -500,9 +492,9 @@ todas las ejecuciones del pipeline. Para cada job ejecutado se registra:
   \item Mensaje de error en caso de fallo.
 \end{itemize}
 
-Este registro, complementado con la sincronización a Engram Cloud,
-permite al administrador monitorear la salud del pipeline, detectar
-degradaciones de rendimiento y auditar la integridad de los datos
-analíticos generados.
+Este registro, almacenado directamente en PostgreSQL junto con los
+datos analíticos, permite al administrador monitorear la salud del
+pipeline, detectar degradaciones de rendimiento y auditar la integridad
+de los datos generados.
 
 \newpage

@@ -26,11 +26,11 @@ def update_job(job_id, status, error=None):
 def run_pipeline(job_id: str, restaurant_id: str):
     update_job(job_id, "RUNNING")
     jobs = [
-        "jobs/job0_ingest.py",
-        "jobs/job1_cleanse.py",
-        "jobs/job2_aggregate.py",
-        "jobs/job3_forecast.py",
-        "jobs/job4_writeback.py",
+        "jobs/job1_extract_bronze.py",
+        "jobs/job2_build_silver.py",
+        "jobs/job3_aggregate_gold.py",
+        "jobs/job4_demand_estimate.py",
+        "jobs/job5_write_back.py",
     ]
     for job_path in jobs:
         result = subprocess.run(
@@ -75,3 +75,34 @@ async def get_status(job_id: str):
         "finishedAt": row[2],
         "error": row[3]
     }
+
+
+def run_ondemand_pipeline(job_id: str, restaurant_id: str, business_date: str):
+    update_job(job_id, "RUNNING")
+    
+    # Solo ejecutamos el Job 6
+    result = subprocess.run(
+        ["spark-submit", "--master", "local[*]", "jobs/job6_hourly_velocity.py", restaurant_id, business_date],
+        capture_output=True, text=True
+    )
+    
+    if result.returncode != 0:
+        update_job(job_id, "FAILED", result.stderr[-500:])
+        return
+        
+    update_job(job_id, "SUCCESS")
+
+@app.post("/run-job/hourly-velocity")
+async def run_hourly_velocity(restaurant_id: str,
+                              business_date: str,
+                              background_tasks: BackgroundTasks):
+    job_id = str(uuid4())
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO "AnalyticsJobRun"
+                (id, "restaurantId", "jobType", status, "startedAt", "dataWindowStart")
+                VALUES (%s, %s, 'HOURLY_VELOCITY', 'QUEUED', %s, %s)
+            """, (job_id, restaurant_id, datetime.utcnow(), business_date))
+    background_tasks.add_task(run_ondemand_pipeline, job_id, restaurant_id, business_date)
+    return {"jobId": job_id}

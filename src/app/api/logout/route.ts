@@ -32,27 +32,3 @@ export async function POST() {
   });
   return res;
 }
-
-  const adminToken = cookieStore.get(adminSessionCookieName())?.value;
-  if (adminToken) {
-    blacklistToken(adminToken);
-  }
-
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set(sessionCookieName(), "", {
-    path: "/",
-    httpOnly: true,
-    sameSite: "strict",
-    secure: true,
-    maxAge: 0,
-  });
-  // Limpiar cookie legacy también
-  res.cookies.set(adminSessionCookieName(), "", {
-    path: "/",
-    httpOnly: true,
-    sameSite: "strict",
-    secure: true,
-    maxAge: 0,
-  });
-  return res;
-}

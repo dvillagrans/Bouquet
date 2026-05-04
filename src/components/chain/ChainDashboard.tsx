@@ -13,18 +13,12 @@ import {
   MobileTabPillsPanel,
 } from "@/components/mobile-tab-pills";
 import {
-  AlertTriangle,
   Plus,
   MapPin,
   Store,
   Users,
   ArrowRight,
-  Maximize2,
-  Minimize2,
-  RefreshCw,
   Search,
-  ShieldAlert,
-  UserCheck,
   Mail,
   Menu,
   Pencil,
@@ -34,11 +28,14 @@ import { getChainDashboard } from "@/actions/chain";
 import type { ChainDashboardData } from "@/actions/chain";
 import ChainAuthGuard from "./ChainAuthGuard";
 import CreateRestaurantDialog from "./CreateRestaurantDialog";
-import { Sparkline } from "@/components/admin/Sparkline";
 import { NavRow } from "@/components/admin/NavRow";
 import { MultiLineChart } from "./MultiLineChart";
 import { PeakHourBar } from "./PeakHourBar";
 import { Map, Marker } from "pigeon-maps";
+import { DayHeroCard } from "./DayHeroCard";
+import { SecondaryMetrics } from "./SecondaryMetrics";
+import { BranchStatusList } from "./BranchStatusList";
+import { RankingTable } from "./RankingTable";
 
 // ─── Helpers ───
 
@@ -46,37 +43,9 @@ function fmt(n: number) {
   return `$${n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
 
-function compact(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return String(n);
-}
-
 // ─── Typography System ───
-const LABEL = "text-[10px] font-bold uppercase tracking-[0.2em] opacity-50";
-const VALUE = "text-[32px] font-light tracking-[-0.02em]";
 const SUBLABEL = "text-[12px] opacity-60";
 const SECTION = "text-[13px] font-bold uppercase tracking-[0.12em]";
-
-function DeltaBadge({ value, text }: { value: number; text: string }) {
-  if (value === 0) return null;
-  const isPositive = value > 0;
-  const colorClass = isPositive ? "text-emerald-400" : "text-red-400";
-  const bgClass = isPositive ? "bg-emerald-400/10" : "bg-red-400/10";
-  return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] ${colorClass} ${bgClass}`}>
-      <span className={`inline-block h-1 w-1 rounded-full ${colorClass}`} />
-      {text}
-    </span>
-  );
-}
-
-function deltaInfo(current: number, previous: number): { text: string; value: number } {
-  if (!previous) return { text: "+0%", value: 0 };
-  const pct = ((current - previous) / previous) * 100;
-  const sign = pct >= 0 ? "+" : "";
-  return { text: `${sign}${pct.toFixed(1)}%`, value: pct };
-}
 
 // ─── Mock data for features without API ───
 
@@ -154,62 +123,7 @@ function OccupancyDial({ pct, reduceMotion }: { pct: number; reduceMotion: boole
   );
 }
 
-// ─── Branch Rankings Table ───
 
-interface BranchRankRow {
-  id: string;
-  name: string;
-  zoneName: string | null;
-  todayRevenue: number;
-  yesterdayRevenue: number;
-}
-
-function BranchRankings({ branches }: { branches: BranchRankRow[] }) {
-  const sorted = [...branches].sort((a, b) => b.todayRevenue - a.todayRevenue);
-
-  if (sorted.length === 0) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-[13px] text-dim">
-        Sin sucursales. Añade la primera.
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex-1 overflow-x-auto">
-      {sorted.map((b, i) => {
-        const delta = b.yesterdayRevenue > 0
-          ? ((b.todayRevenue - b.yesterdayRevenue) / b.yesterdayRevenue) * 100
-          : 0;
-
-        return (
-          <div
-            key={b.id}
-            className="flex items-center gap-2 border-b border-white/[0.04] px-3 py-3 sm:px-4 text-[13px] text-light transition-colors hover:bg-white/[0.015]"
-            style={{ animation: `dash-row-enter 500ms ${i * 55}ms ease both` }}
-          >
-            <span className="w-5 font-mono text-[10px] text-dim">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <span className="min-w-0 flex-1 truncate">{b.name}</span>
-            <span className="shrink-0 font-mono text-[13px] tabular-nums">
-              {fmt(b.todayRevenue)}
-            </span>
-            {delta !== 0 && (
-              <span
-                className={`shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-semibold tabular-nums ${
-                  delta > 0 ? "bg-emerald-400/10 text-emerald-400" : "bg-red-400/10 text-red-400"
-                }`}
-              >
-                {delta > 0 ? "+" : ""}{delta.toFixed(0)}%
-              </span>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 // ─── Main Component ───
 
@@ -695,108 +609,28 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
         <main className="flex flex-1 flex-col gap-5 overflow-y-auto p-3 sm:p-5 px-4 custom-scrollbar">
           <MobileTabPillsPanel value="OVERVIEW">
             <>
-              {/* ── KPI Strip ── */}
-              <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                {/* VENTAS DEL DÍA */}
-                <article className="bq-card flex flex-col p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className={LABEL}>VENTAS DEL DÍA</span>
-                    <DeltaBadge {...deltaInfo(data.stats.totalRevenue, data.yesterday.totalRevenue)} />
-                  </div>
-                  <p className={`${VALUE} tabular-nums text-light mt-1`}>
-                    {fmt(data.stats.totalRevenue)}
-                  </p>
-                  <p className={`${SUBLABEL} mt-0.5`}>{data.chain.currency}</p>
-                  <div className="mt-2 h-8">
-                    <Sparkline
-                      data={[120, 180, 240, 310, 380, 420, 480, 520, 560, data.stats.totalRevenue / 1000]}
-                      w={120}
-                      h={32}
-                      fill
-                      color="var(--color-pink-glow)"
-                    />
-                  </div>
-                </article>
+              {/* ── Day Hero Card ── */}
+              <DayHeroCard
+                totalRevenue={data.stats.totalRevenue}
+                yesterdayRevenue={data.yesterday.totalRevenue}
+                currency={data.chain.currency}
+              />
 
-                {/* TICKET PROMEDIO */}
-                <article className="bq-card flex flex-col p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className={LABEL}>TICKET PROMEDIO</span>
-                    <DeltaBadge {...deltaInfo(derived!.avgTicket, derived!.yesterdayAvgTicket)} />
-                  </div>
-                  <p className={`${VALUE} tabular-nums text-light mt-1`}>
-                    {fmt(derived!.avgTicket)}
-                  </p>
-                  <p className={`${SUBLABEL} mt-0.5`}>POR COMANDA</p>
-                </article>
+              {/* ── Secondary Metrics ── */}
+              <SecondaryMetrics
+                avgTicket={derived!.avgTicket}
+                yesterdayAvgTicket={derived!.yesterdayAvgTicket}
+                activeTables={data.stats.activeTables}
+                totalTables={data.restaurants.reduce((acc, r) => acc + r.totalTables, 0)}
+                totalSessions={data.stats.totalSessions}
+                yesterdaySessions={data.yesterday.totalSessions}
+              />
 
-                {/* MESAS ACTIVAS */}
-                <article className="bq-card flex flex-col p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className={LABEL}>MESAS ACTIVAS</span>
-                    {derived!.occPct > 0 && (
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-[0.08em] ${derived!.occPct >= 50 ? "text-emerald-400 bg-emerald-400/10" : "text-amber-400 bg-amber-400/10"}`}>
-                        <span className={`inline-block h-1 w-1 rounded-full ${derived!.occPct >= 50 ? "bg-emerald-400" : "bg-amber-400"}`} />
-                        {derived!.occPct.toFixed(0)}%
-                      </span>
-                    )}
-                  </div>
-                  <p className={`${VALUE} tabular-nums text-light mt-1`}>
-                    {data.stats.activeTables}
-                  </p>
-                  <p className={`${SUBLABEL} mt-0.5`}>OCUPACIÓN RED</p>
-                  <div className="mt-2 h-8">
-                    <Sparkline
-                      data={[40, 45, 50, 55, 60, 62, 65, 68, 70, derived!.occPct]}
-                      w={120}
-                      h={32}
-                      fill
-                      color="var(--color-pink-glow)"
-                    />
-                  </div>
-                </article>
-
-                {/* SESIONES */}
-                <article className="bq-card flex flex-col p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className={LABEL}>SESIONES</span>
-                    <DeltaBadge {...deltaInfo(data.stats.totalSessions, data.yesterday.totalSessions)} />
-                  </div>
-                  <p className={`${VALUE} tabular-nums text-light mt-1`}>
-                    {data.stats.totalSessions}
-                  </p>
-                  <p className={`${SUBLABEL} mt-0.5`}>COMENSALES HOY</p>
-                </article>
-              </section>
-
-              {/* ── Alerts Banner ── */}
-              {data.alerts.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="rounded-[18px] border border-amber-400/20 bg-amber-400/[0.04] p-4"
-                >
-                  <div className="mb-3 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-amber-400" />
-                    <h3 className={`${SECTION} text-amber-400`}>
-                      {data.alerts.length} SUCURSAL{data.alerts.length > 1 ? "ES" : ""} REQUIERE{data.alerts.length === 1 ? "" : "N"} ATENCIÓN
-                    </h3>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {data.alerts.map((a) => (
-                      <Link
-                        key={a.id}
-                        href={`/dashboard?restaurantId=${a.id}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/15 bg-amber-400/10 px-2.5 py-1.5 text-[11px] text-amber-400 transition-colors hover:bg-amber-400/20"
-                      >
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                        <span className="font-medium">{a.name}</span>
-                        <span className="text-amber-400/70">· {a.message}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
+              {/* ── Branch Status List ── */}
+              <BranchStatusList
+                branches={data.restaurants}
+                alerts={data.alerts}
+              />
 
               {/* ── Lower Grid ── */}
               <div className="grid flex-1 gap-3 lg:grid-cols-1 xl:grid-cols-[1.3fr_0.95fr_0.85fr]">
@@ -816,32 +650,9 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
                   </div>
                 </div>
 
-                {/* MIDDLE: Branch rankings */}
-                <div className="bq-card flex flex-col !p-0 overflow-hidden lg:order-2">
-                  <div className="border-b border-wire px-4 py-3.5">
-                    <p className={SECTION}>RANKING · HOY</p>
-                  </div>
-                  {/* Table header */}
-                  <div className="flex items-center gap-2 border-b border-white/[0.04] px-4 py-2 font-mono text-[9px] tracking-[0.2em] text-dim">
-                    <span className="w-5">#</span>
-                    <span className="min-w-0 flex-1">SUCURSAL</span>
-                    <span className="w-14 sm:w-[72px] text-right">HOY $</span>
-                    <span className="w-10 sm:w-[44px] text-right">Δ%</span>
-                  </div>
-                  <BranchRankings
-                    branches={data.restaurants.map((r, idx) => ({
-                      id: r.id,
-                      name: r.name,
-                      zoneName: r.zoneName,
-                      todayRevenue: r.todayRevenue,
-                      yesterdayRevenue: r.todayRevenue * (0.75 + ((idx * 3) % 10) * 0.05), // Deterministic mock delta
-                    }))}
-                  />
-                  <div className="border-t border-wire px-4 py-2.5">
-                    <span className="font-mono text-[9px] tracking-[0.15em] text-dim">
-                      {data.restaurants.length} sucursales activas
-                    </span>
-                  </div>
+                {/* MIDDLE: Ranking Table */}
+                <div className="lg:order-2">
+                  <RankingTable branches={data.restaurants} currency={data.chain.currency} />
                 </div>
 
                 {/* RIGHT: Occupancy + Peak + Quick stats */}

@@ -208,6 +208,7 @@ Las tablas Gold consideradas abarcan tres niveles jerárquicos e incluyen:
 \begin{itemize}[leftmargin=1.5em]
   \item \texttt{analytic\_chain\_sales\_daily} (Cadena)
   \item \texttt{analytic\_chain\_peak\_hours} (Cadena)
+  \item \texttt{analytic\_chain\_top\_products} (Cadena)
   \item \texttt{analytic\_zone\_branch\_comparison} (Zona)
   \item \texttt{analytic\_sales\_daily} (Sucursal)
   \item \texttt{analytic\_item\_velocity} (Sucursal)
@@ -565,6 +566,9 @@ Ventas totales de la cadena por día. Incluye ranking de sucursales ordenado por
 \texttt{analytic\_chain\_peak\_hours} &
 Hora pico agregada de toda la cadena, calculada mediante bines de 1 hora sobre las sesiones (\texttt{DiningSession.openedAt}). \\
 \hline
+\texttt{analytic\_chain\_top\_products} &
+Productos más vendidos a lo largo de todas las sucursales. Incorpora índices de concentración para analizar si se cumple el principio de Pareto (ej. el 20\% de los productos genera el 80\% de las ventas). \\
+\hline
 \texttt{analytic\_zone\_branch\_comparison} &
 Comparación entre sucursales de la misma zona. Muestra el ticket promedio y detecta desviaciones estándar (outliers operativos). \\
 \hline
@@ -642,8 +646,7 @@ A nivel cadena, el \texttt{chain\_id} actúa como la dimensión de agregación p
 En este nivel, el \texttt{zone\_id} es la dimensión de agregación, lo cual permite realizar análisis comparativos entre pares regionales:
 
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{\texttt{analytic\_zone\_branch\_comparison}:} Ticket promedio por sucursal dentro de la zona, incluyendo desviación estándar para identificar anomalías (como una sucursal que venda significativamente menos que su promedio zonal).
-  \item \textbf{\texttt{analytic\_zone\_menu\_overlap}:} Porcentaje del menú compartido entre sucursales de la misma zona frente a productos exclusivos. Esta métrica justifica la existencia de la tabla transaccional \texttt{ZoneMenuOverride}: el pipeline debe resolver el \textit{override} de precios o disponibilidad a nivel zona y restaurante en el mismo \textit{join}, validando la decisión arquitectónica de referenciar ambas entidades.
+  \item \textbf{\texttt{analytic\_zone\_branch\_comparison}:} Ticket promedio por sucursal dentro de la zona, incluyendo desviación estándar para identificar anomalías operativas. Además, esta misma tabla incluye la métrica de \textbf{solapamiento de menú (\texttt{menuOverlapPercent})}, que mide el porcentaje del catálogo compartido entre sucursales de la zona frente a productos exclusivos. Esta métrica justifica la existencia de la tabla transaccional \texttt{ZoneMenuOverride}: el pipeline debe resolver el \textit{override} de precios o disponibilidad a nivel zona y restaurante en el mismo \textit{join}, validando la decisión arquitectónica de referenciar ambas entidades en la jerarquía.
 \end{itemize}
 
 \subsubsection{Nivel 3 --- Sucursal}
@@ -651,7 +654,7 @@ El nivel operativo principal utiliza el \texttt{restaurant\_id} como su dimensi�
 
 \begin{itemize}[leftmargin=1.5em]
   \item \textbf{\texttt{analytic\_restaurant\_hourly\_velocity}:} Ventas por hora del día actual, justificación clave del modelo de ejecución \textit{on-demand}.
-  \item \textbf{\texttt{analytic\_restaurant\_station\_times}:} Extensión de \texttt{analytic\_service\_times} para registrar no sólo el promedio, sino el percentil 90 del tiempo de preparación por estación.
+  \item \textbf{\texttt{analytic\_service\_times}:} Tiempos de preparación por estación, registrando no sólo el promedio, sino el percentil 90 del tiempo para evaluar el cumplimiento de SLAs operativos.
   \item \textbf{\texttt{analytic\_restaurant\_session\_depth}:} Ticket promedio por comensal (calculado como \texttt{totalAmount / guestCount} de cada sesión operativa), agregado por día.
 \end{itemize}
 

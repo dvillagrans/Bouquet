@@ -390,7 +390,7 @@ y linaje entre datos transaccionales y tablas Gold.}
 \campo{id}{text}{No}{PK}{Identificador único UUID.}
 \campo{restaurantId}{text}{No}{FK}{Restaurante procesado por el job.}
 \campo{triggeredByUserId}{text}{Sí}{FK}{Usuario que solicitó la ejecución, si aplica.}
-\campo{jobType}{enum}{No}{—}{\texttt{BRONZE}, \texttt{SILVER}, \texttt{GOLD}, \texttt{DEMAND\_ESTIMATE} o \texttt{SERVICE\_TIMES}.}
+\campo{jobType}{enum}{No}{—}{\texttt{BRONZE}, \texttt{SILVER}, \texttt{GOLD}, \texttt{DEMAND\_ESTIMATE}, \texttt{SERVICE\_TIMES} o \texttt{HOURLY\_VELOCITY}.}
 \campo{status}{enum}{No}{—}{\texttt{QUEUED}, \texttt{RUNNING}, \texttt{COMPLETED} o \texttt{FAILED}.}
 \campo{dataWindowStart}{timestamp}{Sí}{—}{Inicio de la ventana de datos procesada.}
 \campo{dataWindowEnd}{timestamp}{Sí}{—}{Fin de la ventana de datos procesada.}
@@ -478,6 +478,18 @@ Tabla Gold que consolida métricas de horas pico a nivel cadena.}{%
 \campo{businessDate}{date}{No}{—}{Fecha operativa evaluada.}
 \campo{peakHourBin}{int}{No}{—}{Franja horaria (0-23) de máxima afluencia.}
 \campo{sessionCount}{int}{No}{—}{Número de sesiones abiertas en esa franja horaria.}
+\campo{computedAt}{timestamp}{No}{—}{Fecha y hora de cálculo.}
+\dictableend
+
+\dictable{AnalyticChainTopProducts}{%
+Tabla Gold que consolida los productos más vendidos a nivel cadena y su índice de concentración.}{%
+\campo{id}{text}{No}{PK}{Identificador único UUID.}
+\campo{chainId}{text}{No}{FK}{Cadena asociada a la métrica.}
+\campo{jobRunId}{text}{No}{FK}{Job analítico que generó el registro.}
+\campo{businessDate}{date}{No}{—}{Fecha operativa evaluada.}
+\campo{menuItemId}{text}{No}{FK}{Producto del catálogo global.}
+\campo{chainTotalQuantity}{int}{No}{—}{Cantidad total vendida en toda la cadena.}
+\campo{revenueConcentrationPercent}{float}{No}{—}{Porcentaje del ingreso total de la cadena que este producto representa.}
 \campo{computedAt}{timestamp}{No}{—}{Fecha y hora de cálculo.}
 \dictableend
 

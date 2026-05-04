@@ -1,22 +1,508 @@
 \section{Implementación y Pruebas}
 
-\subsection{Módulos Construidos}
+% ============================================================
+\subsection{Arquitectura de Despliegue del Pipeline Analítico}
+% ============================================================
 
-% Por completar.
+El pipeline analítico de Bouquet se despliega de manera independiente sobre un
+servidor privado virtual (VPS), separado de la infraestructura transaccional
+alojada en Supabase y de la capa de presentación desplegada en Vercel. Esta
+separación responde a la necesidad de aislar las cargas de procesamiento batch
+de las operaciones OLTP en tiempo real, evitando que las tareas de extracción,
+transformación y agregación de datos compitan por recursos con las consultas
+operativas del restaurante.
 
-\subsection{Pruebas Unitarias}
+\subsubsection{Especificaciones del Servidor}
 
-% Por completar.
+El entorno de ejecución reside en un VPS con las siguientes características
+técnicas:
 
-\subsection{Pruebas de Integración}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Sistema operativo}: Ubuntu 25.10 (Plucky Puffin), kernel Linux
+  actualizado.
+  \item \textbf{CPU}: 2 núcleos virtuales AMD EPYC, arquitectura x86\_64, con
+  virtualización KVM.
+  \item \textbf{Memoria RAM}: 8 GB, suficiente para la ejecución concurrente del
+  orquestador FastAPI y los trabajos de Spark en modo local.
+  \item \textbf{Almacenamiento}: SSD con partición dedicada en \texttt{/data} para
+  los archivos Parquet generados por el pipeline.
+  \item \textbf{Red}: interfaz pública con firewall administrado mediante
+  \texttt{iptables} y \texttt{fail2ban}, más una red interna Docker para
+  comunicación entre contenedores sin exponer puertos de base de datos.
+\end{itemize}
 
-% Por completar.
+\subsubsection{Contenerización con Docker}
 
-\subsection{Resultados}
+La totalidad del pipeline se ejecuta dentro de contenedores Docker, lo que
+garantiza reproducibilidad del entorno, control de versiones de dependencias y
+aislamiento de procesos. El archivo \texttt{docker-compose.yml} define los
+servicios necesarios:
 
-% Por completar.
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Orquestador}: imagen Python 3.12 con FastAPI y dependencias
+  de Spark (PySpark). Expone el puerto 8000 para la API REST de control.
+  \item \textbf{Spark Driver}: instancia de Apache Spark en modo local
+  (\texttt{local[*]}) que ejecuta los jobs definidos por el orquestador.
+  \item \textbf{Red interna}: los contenedores se comunican mediante una red
+  Docker bridge que no expone puertos de base de datos al exterior.
+\end{itemize}
+
+\subsubsection{Stack Tecnológico del Pipeline}
+
+El procesamiento analítico se organiza en capas que siguen el flujo de datos
+desde la extracción hasta el consumo:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{FastAPI Orchestrator}: expone una API REST con autenticación
+  mediante clave API (\textit{API key}). Recibe solicitudes de ejecución de
+  jobs, crea registros de trazabilidad en la tabla
+  \texttt{AnalyticsJobRun} y coordina la ejecución de trabajos Spark.
+  \item \textbf{Apache Spark (modo local)}: motor de procesamiento batch
+  que ejecuta las transformaciones definidas en los jobs. Opera en modo
+  \texttt{local[*]} para aprovechar los dos núcleos disponibles, con
+  almacenamiento intermedio en disco para datasets que excedan la memoria
+  asignada.
+  \item \textbf{Supabase PostgreSQL}: base de datos transaccional de la cual
+  se extraen los datos operacionales mediante JDBC. Las tablas Gold
+  resultantes se escriben de vuelta en el mismo clúster para consulta por
+  parte del dashboard administrativo.
+\end{enumerate}
+
+\subsubsection{Arquitectura Medallion Aplicada}
+
+El pipeline implementa la arquitectura Medallion descrita en la sección
+anterior, con las siguientes responsabilidades por capa:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Bronze} (\textit{extracción cruda}): los jobs de extracción
+  leen las tablas transaccionales desde PostgreSQL mediante el conector JDBC
+  de Spark. Los datos se almacenan en formato Apache Parquet particionados
+  por fecha de ejecución, preservando el esquema original sin
+  transformaciones.
+  \item \textbf{Silver} (\textit{enriquecimiento}): los jobs de
+  transformación aplican joins entre dominios, normalizan estados
+  (\texttt{PENDING}, \texttt{IN\_PROGRESS}, \texttt{DONE},
+  \texttt{CANCELLED}), convierten marcas temporales a zonas horarias
+  locales y preparan campos derivados para agregación.
+  \item \textbf{Gold} (\textit{métricas agregadas}): los jobs de agregación
+  producen tablas consolidadas con indicadores de negocio como ventas por
+  franja horaria, productos más solicitados, tiempos de preparación promedio
+  y ocupación de mesas. Estas tablas se escriben en PostgreSQL para consumo
+  directo por el dashboard.
+\end{itemize}
 
 % ============================================================
-%  CAPÍTULO 7 — CONCLUSIONES  (en blanco)
+\subsection{Componentes del Pipeline}
 % ============================================================
+
+El pipeline analítico se descompone en componentes autónomos que pueden
+ejecutarse de manera independiente o encadenada. Cada componente se
+materializa como un \textit{job} de Spark invocado por el orquestador
+FastAPI.
+
+\subsubsection{Orquestador FastAPI}
+
+El orquestador constituye el punto de entrada al pipeline. Expone una API
+REST con dos endpoints principales:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{POST /jobs}: recibe una solicitud de ejecución con el tipo
+  de job, el identificador del restaurante y los parámetros de la ventana
+  de datos. Valida la clave API presente en el encabezado
+  \texttt{X-Analytics-Key}, crea un registro en
+  \texttt{AnalyticsJobRun} con estado \texttt{PENDING} y lanza el job
+  correspondiente mediante \texttt{spark-submit}.
+  \item \texttt{GET /jobs/\{id\}}: devuelve el estado actual del job
+  identificado, incluyendo el timestamp de inicio, duración estimada,
+  progreso de capas Medallion y cualquier error registrado durante la
+  ejecución.
+\end{itemize}
+
+El orquestador mantiene un registro de cada ejecución en la tabla
+\texttt{AnalyticsJobRun}, que incluye los siguientes campos:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{jobRunId}: identificador único generado como UUID v4.
+  \item \texttt{jobType}: tipo de job (\texttt{BRONZE\_EXTRACTION},
+  \texttt{SILVER\_ENRICHMENT}, \texttt{GOLD\_AGGREGATION},
+  \texttt{DEMAND\_FORECASTING}, \texttt{GOLD\_WRITEBACK},
+  \texttt{VELOCITY\_HOURLY}).
+  \item \texttt{restaurantId}: identificador del restaurante procesado.
+  \item \texttt{status}: estado del job (\texttt{PENDING},
+  \texttt{RUNNING}, \texttt{COMPLETED}, \texttt{FAILED}).
+  \item \texttt{startedAt}, \texttt{completedAt}: marcas temporales de
+  inicio y finalización.
+  \item \texttt{errorMessage}: mensaje de error en caso de fallo.
+\end{itemize}
+
+\subsubsection{Job 1: Extracción Bronze}
+
+El primer job del pipeline ejecuta la extracción de datos transaccionales
+desde Supabase PostgreSQL hacia la capa Bronze. Utiliza el conector JDBC
+de Spark para leer tablas completas o incrementales según la ventana de
+datos solicitada.
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Entrada}: tablas transaccionales de Supabase
+  (\texttt{Order}, \texttt{OrderItem}, \texttt{TableSession},
+  \texttt{Product}, \texttt{Category}, \texttt{Station},
+  \texttt{Restaurant}, entre otras).
+  \item \textbf{Salida}: archivos Apache Parquet con particionamiento
+  por fecha (\texttt{partitionBy("execution\_date")}), almacenados en
+  \texttt{/data/bronze/YYYY-MM-DD/}.
+  \item \textbf{Configuración}: la conexión JDBC utiliza la URL
+  definida en la variable de entorno \texttt{SUPABASE\_JDBC\_URL},
+  con credenciales almacenadas en el archivo \texttt{.env} del VPS y
+  montadas en el contenedor Docker como variables de entorno.
+\end{itemize}
+
+El particionamiento por fecha permite la ejecución de cargas
+incrementales, donde únicamente se extraen registros nuevos o
+modificados desde la última ejecución, optimizando el uso de
+recursos y el tiempo de procesamiento.
+
+\subsubsection{Jobs 2 a 6: Silver, Gold y Procesamiento Avanzado}
+
+Los jobs subsecuentes completan el flujo Medallion y añaden
+capacidades de análisis avanzado:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Job 2 --- Enriquecimiento Silver}: lee los datos Bronze,
+  aplica joins entre dominios transaccionales, normaliza estados y
+  convierte marcas temporales. Produce datasets normalizados en
+  \texttt{/data/silver/YYYY-MM-DD/}.
+
+  \item \textbf{Job 3 --- Agregación Gold}: consume los datasets Silver
+  y ejecuta agregaciones predefinidas: ventas totales por sucursal y
+  franja horaria, productos más solicitados, ticket promedio por mesa,
+  tiempos de preparación por estación y rotación de mesas. Los resultados
+  se almacenan en \texttt{/data/gold/YYYY-MM-DD/}.
+
+  \item \textbf{Job 4 --- Pronóstico de Demanda}: aplica modelos de
+  series temporales sobre las métricas Gold históricas para proyectar la
+  demanda esperada por franja horaria y día. Los resultados se almacenan
+  en tablas Gold de pronóstico, permitiendo al dashboard mostrar
+  estimaciones para planificación operativa.
+
+  \item \textbf{Job 5 --- Escritura de Vuelta (\textit{Write-Back})}:
+  toma las tablas Gold generadas en Parquet y las escribe en las tablas
+  analíticas de PostgreSQL mediante el conector JDBC. Cada registro
+  incluye el \texttt{jobRunId} que lo generó, garantizando trazabilidad
+  completa desde la extracción hasta el resultado final.
+
+  \item \textbf{Job 6 --- Velocidad Horaria}: calcula indicadores de
+  velocidad operativa por franja horaria: órdenes por hora, tiempo
+  promedio de atención, tasa de ocupación de mesas y productividad por
+  estación de cocina. Estas métricas permiten al administrador
+  identificar cuellos de botella operativos.
+\end{enumerate}
+
+\subsubsection{Monitoreo con Engram Persistent Memory}
+
+Para garantizar visibilidad y trazabilidad de las ejecuciones del
+pipeline, el orquestador se integra con Engram, un sistema de memoria
+persistente que registra cada ejecución como una observación
+estructurada. La integración opera de la siguiente forma:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Registro de ejecuciones}: al iniciar y finalizar cada
+  job, el orquestador invoca la API de Engram para guardar una
+  observación con el tipo de job, estado, duración, filas procesadas y
+  cualquier error detectado.
+  \item \textbf{Estructura de observación}: cada registro incluye los
+  campos \texttt{jobRunId}, \texttt{jobType}, \texttt{status},
+  \texttt{restaurantId}, \texttt{startedAt}, \texttt{completedAt},
+  \texttt{rowsProcessed} y \texttt{errorMessage}, almacenados en el
+  almacén de Engram.
+  \item \textbf{Sincronización automática a Engram Cloud}: un timer de
+  systemd ejecuta cada minuto el comando de sincronización
+  \texttt{engram cloud sync}, enviando las observaciones locales al
+  servicio Engram Cloud. Esto permite visualizar el historial de
+  ejecuciones desde el dashboard web de Engram sin necesidad de acceder
+  directamente al VPS.
+\end{itemize}
+
+La integración con Engram proporciona un registro de auditoría inmutable
+del pipeline, facilitando la detección de fallos recurrentes, el análisis
+de tendencias de rendimiento y la generación de reportes de ejecución para
+el administrador.
+
+\subsubsection{Topología de Archivos del Pipeline}
+
+El sistema de archivos del VPS organiza los artefactos del pipeline bajo
+una estructura predecible:
+
+\begin{verbatim}
+/srv/bouquet-pipeline/
+  docker-compose.yml
+  .env
+  orchestrator/
+    main.py
+    requirements.txt
+  spark-jobs/
+    bronze_extraction.py
+    silver_enrichment.py
+    gold_aggregation.py
+    demand_forecasting.py
+    gold_writeback.py
+    velocity_hourly.py
+/data/
+  bronze/YYYY-MM-DD/
+  silver/YYYY-MM-DD/
+  gold/YYYY-MM-DD/
+</verbatim>
+
+% ============================================================
+\subsection{Configuración del Entorno en VPS}
+% ============================================================
+
+La puesta en marcha del pipeline en el VPS requiere la configuración
+de servicios del sistema operativo, variables de entorno y límites de
+recursos. A continuación se detallan los componentes de configuración
+necesarios.
+
+\subsubsection{Sincronización Automática con Engram Cloud}
+
+Para mantener actualizado el registro de ejecuciones en Engram Cloud,
+se utiliza un \textbf{timer de systemd} que ejecuta el comando de
+sincronización cada minuto. La configuración consta de dos archivos:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{/etc/systemd/system/engram-cloud-sync.service}: define
+  el servicio que ejecuta \texttt{engram cloud sync} con el proyecto
+  configurado como \texttt{bouquet-pipeline}.
+  \item \texttt{/etc/systemd/system/engram-cloud-sync.timer}: programa
+  la ejecución del servicio cada 60 segundos
+  (\texttt{OnUnitActiveSec=60s}), con persistencia tras reinicios
+  (\texttt{Persistent=true}).
+\end{itemize}
+
+Este mecanismo garantiza que incluso si el VPS se reinicia, la
+sincronización se reanuda automáticamente sin intervención manual.
+
+\subsubsection{Orquestación de Contenedores con Docker Compose}
+
+El archivo \texttt{docker-compose.yml} define la configuración de los
+servicios del pipeline. Los aspectos principales incluyen:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Política de reinicio}: configurada como
+  \texttt{restart: unless-stopped} para ambos servicios, garantizando
+  que los contenedores se reinicien automáticamente tras una caída del
+  proceso o un reinicio del servidor.
+  \item \textbf{Montaje de volúmenes}: el directorio
+  \texttt{/data} del host se monta en ambos contenedores para
+  compartir los archivos Parquet generados. El archivo
+  \texttt{.env} se monta como volumen de solo lectura para las
+  variables de entorno.
+  \item \textbf{Red interna}: los servicios comparten una red Docker
+  tipo \texttt{bridge} denominada \texttt{pipeline-net}, que permite
+  la comunicación entre el orquestador y el driver de Spark sin
+  exponer puertos al exterior, salvo el puerto 8000 del orquestador
+  para la API REST.
+\end{itemize}
+
+\subsubsection{Variables de Entorno}
+
+Las credenciales y parámetros de configuración se almacenan en el
+archivo \texttt{.env}, ubicado en el directorio raíz del proyecto en
+el VPS. Las principales variables definidas son:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{SUPABASE\_JDBC\_URL}: URL de conexión JDBC a la base
+  de datos Supabase, con formato
+  \texttt{jdbc:postgresql://<host>:<port>/<database>}.
+  \item \texttt{SUPABASE\_USER} y \texttt{SUPABASE\_PASSWORD}:
+  credenciales de solo lectura para la extracción de datos.
+  \item \texttt{ANALYTICS\_API\_KEY}: clave secreta utilizada para
+  autenticar las solicitudes a la API REST del orquestador.
+  \item \texttt{ENGRAM\_PROJECT}: identificador del proyecto en
+  Engram (\texttt{bouquet-pipeline}).
+  \item \texttt{ENGRAM\_CLOUD\_TOKEN}: token de autenticación para la
+  sincronización con Engram Cloud.
+\end{itemize}
+
+El archivo \texttt{.env} se excluye del control de versiones mediante
+\texttt{.gitignore} y se transfiere al VPS por un canal seguro
+(SCP/SSH).
+
+\subsubsection{Límites de Recursos para Spark}
+
+Dado que el VPS dispone de 8 GB de RAM y 2 núcleos virtuales, se
+configuran los siguientes límites para Apache Spark:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \texttt{SPARK\_DRIVER\_MEMORY=2g}: asigna 2 GB de RAM al
+  proceso driver de Spark, responsable de coordinar la ejecución de
+  jobs y mantener el contexto de la aplicación.
+  \item \texttt{SPARK\_SHUFFLE\_PARTITIONS=4}: limita el número de
+  particiones durante las operaciones de \textit{shuffle} (joins,
+  agrupaciones) a 4, evitando la creación excesiva de archivos
+  temporales y la saturación del sistema de archivos.
+  \item \texttt{SPARK\_LOCAL\_DIR=/tmp/spark-temp}: define el
+  directorio para archivos temporales de Spark, evitando que ocupen
+  el almacenamiento principal.
+\end{itemize}
+
+Estos valores se establecen como variables de entorno en el
+\texttt{docker-compose.yml} y se aplican automáticamente al iniciar
+los contenedores.
+
+% ============================================================
+\subsection{Seguridad del Pipeline}
+% ============================================================
+
+La seguridad del pipeline analítico se aborda en múltiples capas:
+autenticación de la API, aislamiento de red, protección del servidor y
+trazabilidad de ejecuciones.
+
+\subsubsection{Autenticación por Clave API}
+
+El orquestador FastAPI implementa un middleware de validación que
+inspecciona el encabezado \texttt{X-Analytics-Key} en cada solicitud
+entrante. El mecanismo de autenticación funciona de la siguiente manera:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Toda solicitud a los endpoints \texttt{POST /jobs} y
+  \texttt{GET /jobs/\{id\}} debe incluir el encabezado
+  \texttt{X-Analytics-Key} con un valor que coincida con la variable
+  de entorno \texttt{ANALYTICS\_API\_KEY}.
+  \item Si el encabezado está ausente o el valor no coincide, el
+  orquestador responde con código HTTP 401 (\textit{Unauthorized}) y
+  un mensaje descriptivo.
+  \item La validación se realiza mediante comparación en tiempo
+  constante para mitigar ataques de temporización
+  (\textit{timing attacks}).
+  \item La clave API se rota periódicamente mediante actualización del
+  archivo \texttt{.env} y reinicio del contenedor del orquestador.
+\end{itemize}
+
+Este esquema proporciona una capa de seguridad adecuada para un
+pipeline interno, donde el único consumidor de la API es el dashboard
+administrativo de Bouquet.
+
+\subsubsection{Aislamiento de Conexiones a Base de Datos}
+
+Las conexiones a la base de datos PostgreSQL se rigen por el principio
+de mínimo privilegio y aislamiento de red:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Conexión JDBC interna}: la URL de conexión JDBC utiliza
+  el hostname interno de Supabase, no expuesto públicamente. Spark se
+  conecta a través de la red Docker interna del VPS, sin que el puerto
+  de base de datos sea accesible desde Internet.
+  \item \textbf{Usuario de solo lectura}: la extracción Bronze utiliza
+  un usuario de base de datos con permisos exclusivamente de lectura
+  (\texttt{SELECT}) sobre las tablas transaccionales. Las escrituras de
+  tablas Gold utilizan un usuario separado con permisos de escritura
+  limitados al esquema analítico.
+  \item \textbf{Sin exposición de puertos}: el archivo
+  \texttt{docker-compose.yml} no publica puertos de base de datos hacia
+  el host. La comunicación entre el contenedor de Spark y PostgreSQL se
+  realiza exclusivamente a través de la red externa del VPS, gestionada
+  por el firewall.
+\end{itemize}
+
+\subsubsection{Auditoría mediante Engram Cloud con JWT}
+
+La integración con Engram Cloud utiliza autenticación basada en JWT
+(\textit{JSON Web Token}) para garantizar que solo el VPS autorizado
+pueda escribir observaciones en el proyecto:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item El token \texttt{ENGRAM\_CLOUD\_TOKEN} se genera desde el
+  panel de administración de Engram Cloud y se almacena en el archivo
+  \texttt{.env} del VPS.
+  \item Cada solicitud de sincronización incluye el token en el
+  encabezado \texttt{Authorization: Bearer <token>}.
+  \item Engram Cloud valida la firma JWT y la pertenencia del token al
+  proyecto \texttt{bouquet-pipeline} antes de aceptar observaciones.
+  \item El canal de comunicación utiliza TLS 1.3 para cifrar los datos
+  en tránsito.
+\end{itemize}
+
+Este mecanismo proporciona un registro de auditoría inmutable de todas
+las ejecuciones del pipeline, accesible desde el dashboard de Engram
+Cloud para el administrador del sistema.
+
+\subsubsection{Endurecimiento del VPS}
+
+El servidor VPS se protege mediante las siguientes medidas de seguridad
+a nivel de sistema operativo:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Acceso SSH}: configurado exclusivamente mediante
+  autenticación por clave pública. El archivo
+  \texttt{/etc/ssh/sshd\_config} deshabilita el acceso por contraseña
+  (\texttt{PasswordAuthentication no}) y el acceso como superusuario
+  (\texttt{PermitRootLogin prohibit-password}).
+  \item \textbf{fail2ban}: servicio activo que monitorea los registros
+  de SSH y bloquea temporalmente direcciones IP que excedan el umbral
+  de intentos fallidos de autenticación. La configuración por defecto
+  aplica un baneo de 10 minutos tras 5 intentos fallidos en una ventana
+  de 600 segundos.
+  \item \textbf{Firewall con iptables}: las reglas de firewall
+  restringen el tráfico entrante a los puertos estrictamente
+  necesarios: 22 (SSH), 80/443 (HTTP/HTTPS para el dashboard) y 8000
+  (API del orquestador, con restricción por IP de origen cuando es
+  viable).
+  \item \textbf{Actualizaciones automáticas}: el paquete
+  \texttt{unattended-upgrades} aplica parches de seguridad del sistema
+  operativo de forma automática, reduciendo la ventana de exposición a
+  vulnerabilidades conocidas.
+\end{itemize}
+
+% ============================================================
+\subsection{Resultados y Métricas}
+% ============================================================
+
+El despliegue del pipeline analítico en el VPS produce resultados
+tangibles en dos dimensiones: la generación de datos analíticos para el
+dashboard administrativo y el registro de trazabilidad de las
+ejecuciones.
+
+\subsubsection{Generación de Datos Analíticos}
+
+Una vez que el pipeline se encuentra operativo, se espera la generación
+de los siguientes artefactos de datos:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Archivos Parquet diarios}: cada ejecución diaria del
+  pipeline produce conjuntos de archivos Parquet en las tres capas
+  Medallion, organizados por fecha en la estructura
+  \texttt{/data/\{bronze|silver|gold\}/YYYY-MM-DD/}. Estos archivos
+  permiten la reconstrucción de cualquier estado analítico histórico
+  sin necesidad de reprocesar desde el origen transaccional.
+  \item \textbf{Tablas Gold en PostgreSQL}: los resultados de las
+  agregaciones se persisten en tablas del esquema analítico de
+  Supabase, listas para ser consultadas por el dashboard mediante
+  Prisma. Cada registro incluye el identificador del job que lo generó
+  (\texttt{jobRunId}), permitiendo correlacionar métricas con
+  ejecuciones específicas del pipeline.
+  \item \textbf{Métricas clave}: el dashboard administrativo consume
+  indicadores como ventas totales por sucursal y franja horaria,
+  productos más solicitados, ticket promedio, tiempos de preparación
+  por estación, tasa de ocupación de mesas y pronóstico de demanda.
+\end{itemize}
+
+\subsubsection{Registro de Ejecuciones}
+
+La tabla \texttt{AnalyticsJobRun} constituye el registro canónico de
+todas las ejecuciones del pipeline. Para cada job ejecutado se registra:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Identificador único del job (\texttt{jobRunId}).
+  \item Tipo de job ejecutado.
+  \item Restaurante procesado.
+  \item Estado final (\texttt{COMPLETED} o \texttt{FAILED}).
+  \item Marcas temporales de inicio y finalización.
+  \item Duración total en segundos.
+  \item Mensaje de error en caso de fallo.
+\end{itemize}
+
+Este registro, complementado con la sincronización a Engram Cloud,
+permite al administrador monitorear la salud del pipeline, detectar
+degradaciones de rendimiento y auditar la integridad de los datos
+analíticos generados.
+
 \newpage

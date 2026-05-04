@@ -1,0 +1,38 @@
+# Bouquet Analytics Pipeline — Docker Compose
+#
+# Start:   docker-compose -f docker-compose.analytics.yml up -d
+# Stop:    docker-compose -f docker-compose.analytics.yml down
+# Build:   docker-compose -f docker-compose.analytics.yml build
+
+services:
+  bouquet-analytics:
+    build:
+      context: .
+      dockerfile: docker/analytics/Dockerfile
+    container_name: bouquet-analytics
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Data directories — persist Parquet files across container restarts
+      - analytics-bronze:/app/data/bronze
+      - analytics-silver:/app/data/silver
+      - analytics-gold:/app/data/gold
+      # Env file for Supabase and API credentials
+      - ./analytics/vps/.env:/app/.env:ro
+      # Logs
+      - analytics-logs:/app/logs
+    networks:
+      - timeup-network
+
+volumes:
+  analytics-bronze:
+  analytics-silver:
+  analytics-gold:
+  analytics-logs:
+
+networks:
+  timeup-network:
+    external: true

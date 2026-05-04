@@ -22,34 +22,7 @@ def run_hourly_velocity(restaurant_id: str, business_date: str):
         orders = spark.read.parquet(f"{SILVER}/orders_enriched")
     except Exception as e:
         print(f"Error al leer datos base: {e}")
-    
-
-    # --- Write-Back inmediato para on-demand ---
-    import os
-    DB_USER = os.getenv("DB_USER", "postgres")
-    DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
-    DB_HOST = os.getenv("DB_HOST", "db.xyz.supabase.co")
-    
-    JDBC_URL = f"jdbc:postgresql://{DB_HOST}:5432/postgres"
-    JDBC_PROPS = {
-        "user": DB_USER,
-        "password": DB_PASSWORD,
-        "driver": "org.postgresql.Driver"
-    }
-
-    try:
-        # En la práctica real, deberíamos usar una operación UPSERT. 
-        # Aquí usamos append asumiendo que el pipeline elimina/upserta manualmente o se limpia antes.
-        hourly_velocity.write.mode("append").jdbc(
-            url=JDBC_URL,
-            table='"analytic_restaurant_hourly_velocity"',
-            properties=JDBC_PROPS
-        )
-        print(f"[job6] Restaurant {restaurant_id}: {hourly_velocity.count()} registros actualizados on-demand")
-    except Exception as e:
-        print(f"Error en escritura JDBC on-demand: {e}")
-
-    spark.stop()
+        spark.stop()
         return
         
     # Filtramos para la sucursal actual
@@ -69,7 +42,6 @@ def run_hourly_velocity(restaurant_id: str, business_date: str):
 
     hourly_velocity.write.mode("overwrite") \
         .parquet(f"{GOLD}/analytic_restaurant_hourly_velocity/restaurant={restaurant_id}")
-
 
 
     # --- Write-Back inmediato para on-demand ---

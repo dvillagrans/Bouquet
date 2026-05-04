@@ -307,6 +307,7 @@ export const Hero = () => {
             src={floralLeft}
             alt=""
             priority
+            loading="eager"
             sizes="(min-width: 1024px) 40vw, 70vw"
             className="hero-floral-left pointer-events-none absolute -left-[5%] sm:-left-[10%] md:-left-[30%] lg:-left-[55%] -top-[5%] sm:-top-[8%] md:-top-[12%] lg:-top-[15%] z-[2] opacity-0 -rotate-[8deg] w-[280px] sm:w-[350px] md:w-[500px] lg:w-[1600px]"
           />

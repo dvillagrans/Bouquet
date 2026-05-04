@@ -5,7 +5,7 @@ const isProd = process.env.NODE_ENV === "production";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  allowedDevOrigins: ["*"],
+  allowedDevOrigins: ["localhost", "127.0.0.1", "192.168.0.160"],
   // Tunnel support: disable server action origin validation in dev
   ...(!isProd ? {
     experimental: {

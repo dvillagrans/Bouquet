@@ -629,7 +629,7 @@ export default function ChainDashboard({ tenantId }: { tenantId: string }) {
         </header>
 
         {/* ── Content ── */}
-        <main className="flex flex-1 flex-col gap-5 overflow-y-auto p-3 sm:p-5 custom-scrollbar">
+        <main className="flex flex-1 flex-col gap-5 overflow-y-auto p-3 sm:p-5 px-4 custom-scrollbar">
           {activeTab === "OVERVIEW" ? (
             <>
               {/* ── KPI Strip ── */}

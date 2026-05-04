@@ -22,8 +22,8 @@ export function PeakHourBar({ data, className }: PeakHourBarProps) {
   const max = Math.max(...data.map((d) => d.orders), 1);
 
   return (
-    <div className={className}>
-      <ResponsiveContainer width="100%" height="100%">
+    <div className={`min-w-0 min-h-[120px] ${className ?? ""}`}>
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={120}>
         <BarChart data={data} margin={{ top: 2, right: 0, bottom: 0, left: -20 }}>
           <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" vertical={false} />
           <XAxis

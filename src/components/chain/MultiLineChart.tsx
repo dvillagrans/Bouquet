@@ -56,8 +56,8 @@ export function MultiLineChart({ branches, className }: MultiLineChartProps) {
   }
 
   return (
-    <div className={className}>
-      <ResponsiveContainer width="100%" height="100%">
+    <div className={`min-w-0 min-h-[180px] ${className ?? ""}`}>
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={180}>
         <LineChart data={merged} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
           <CartesianGrid stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" />
           <XAxis
